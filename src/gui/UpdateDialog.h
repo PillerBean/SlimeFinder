@@ -43,6 +43,7 @@ signals:
 
 private:
     enum Source { Auto = 0, GitHub = 1, Pan = 2 };
+    enum Channel { Stable = 0, Test = 1 };
 
     struct Asset {
         QString name;
@@ -91,6 +92,8 @@ private:
     void onSumsDone(int httpCode, const QByteArray& body);
     void finishDownloadOk();
     void openDownloadFolder();
+    void startInstallerAndQuit();
+    bool isInstalledCopy() const;
 
     // ---- 网盘备用 ----
     void openPanPage();
@@ -107,6 +110,7 @@ private:
 
     // ---- UI 成员 ----
     QComboBox* m_source = nullptr;
+    QComboBox* m_channel = nullptr;   // 稳定 / 测试通道
     QComboBox* m_mirror = nullptr;   // 保持隐藏：镜像前缀仅供自动测速/高级配置
     QLabel* m_status = nullptr;
     QPlainTextEdit* m_notes = nullptr;
@@ -143,6 +147,12 @@ private:
     int m_downloadIndex = 0;
     QString m_activeMirror;      // 本轮选中的镜像前缀（用于下载优先）
     QString m_cachedMirror;      // 上次选中的镜像（下次测速候选之一）
+    qint64 m_cachedMirrorAt = 0; // 上次测速时间（Unix 秒）
+    bool m_waitingForceCheck = false; // 已展示缓存，下一次点击=强制刷新
+    QString m_cacheManifest;     // 缓存的清单原文（6 小时内复用）
+    qint64 m_cacheTime = 0;
+    int m_cacheChannel = -1;
+    QString m_lastCheckStatus;   // 缓存时用于显示
 
     QProcess* m_proc = nullptr;
     QString m_curlOutFile;

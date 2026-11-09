@@ -34,6 +34,7 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -45,16 +46,24 @@ Section "主程序（必需）" SecMain
     SectionIn RO
     SetOutPath "$INSTDIR"
 
-    ; ---- 旧版处理（必须在写文件之前：否则新 config.json 会覆盖掉旧文件）----
-    ; 旧配置：改名保留（程序只读 config.json，改名后不会被自动加载，用默认设置启动）
-    IfFileExists "$INSTDIR\config.json" 0 +2
-        Rename "$INSTDIR\config.json" "$INSTDIR\config.json.legacy"
-    ; 旧缓存（新扩展名）：改名保留，程序不会加载
-    IfFileExists "$INSTDIR\slime_cache.slimecache" 0 +2
-        Rename "$INSTDIR\slime_cache.slimecache" "$INSTDIR\slime_cache.slimecache.legacy"
-    ; 旧缓存（更早的扩展名，一并处理）
-    IfFileExists "$INSTDIR\slime_cache.cache" 0 +2
-        Rename "$INSTDIR\slime_cache.cache" "$INSTDIR\slime_cache.cache.legacy"
+    ; v3.10.12.10：自动更新以 /UPDATE=1 启动安装器时，保留用户设置与缓存（不按全新安装重置）
+    ${GetParameters} $R0
+    ${GetOptions} $R0 "/UPDATE=" $R1
+    IfErrors 0 +2
+    StrCpy $R1 "0"
+
+    ${If} $R1 != "1"
+        ; ---- 全新安装/旧版处理（必须在写文件之前：否则新 config.json 会覆盖掉旧文件）----
+        ; 旧配置：改名保留（程序只读 config.json，改名后不会被自动加载，用默认设置启动）
+        IfFileExists "$INSTDIR\config.json" 0 +2
+            Rename "$INSTDIR\config.json" "$INSTDIR\config.json.legacy"
+        ; 旧缓存（新扩展名）：改名保留，程序不会加载
+        IfFileExists "$INSTDIR\slime_cache.slimecache" 0 +2
+            Rename "$INSTDIR\slime_cache.slimecache" "$INSTDIR\slime_cache.slimecache.legacy"
+        ; 旧缓存（更早的扩展名，一并处理）
+        IfFileExists "$INSTDIR\slime_cache.cache" 0 +2
+            Rename "$INSTDIR\slime_cache.cache" "$INSTDIR\slime_cache.cache.legacy"
+    ${EndIf}
 
     ; ---- 程序本体 + 内置依赖（Qt 运行时 / OpenCL 加载器 / VC++ 运行时 / 平台插件）----
     File /r "${SOURCE_DIR}\*.*"

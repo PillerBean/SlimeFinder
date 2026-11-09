@@ -3,7 +3,11 @@
 
 #include <algorithm>
 
+#include <QApplication>
 #include <QComboBox>
+#include <QDateTime>
+#include <QMessageBox>
+#include <QTimer>
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDesktopServices>
@@ -25,6 +29,13 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 namespace {
 const char* kGithubApi =
     "https://api.github.com/repos/PillerBean/SlimeFinder/releases/latest";
@@ -33,6 +44,10 @@ const char* kPanUrl = "https://wwben.lanzoul.com/b01d77eebe";
 // v3.10.12.10：镜像回退用的版本清单（raw.githubusercontent.com，可被 gh-proxy 等代理）
 const char* kManifestRaw =
     "https://raw.githubusercontent.com/PillerBean/SlimeFinder/main/version.json";
+const char* kManifestBetaRaw =
+    "https://raw.githubusercontent.com/PillerBean/SlimeFinder/main/version-beta.json";
+const char* kGithubReleasesList =
+    "https://api.github.com/repos/PillerBean/SlimeFinder/releases?per_page=5";
 const char* kConfigRel = "update_config.json";
 
 QStringList defaultMirrorPresets()
@@ -98,6 +113,18 @@ void UpdateDialog::buildUi()
     srcRow->addWidget(m_source, 1);
     root->addLayout(srcRow);
 
+    // v3.10.12.10：更新通道（稳定=只正式版；测试=含 Pre-release）
+    auto* chRow = new QHBoxLayout();
+    chRow->addWidget(new QLabel(QStringLiteral("更新通道:"), this));
+    m_channel = new QComboBox(this);
+    m_channel->addItem(QStringLiteral("稳定版（只提示正式版）"), Stable);
+    m_channel->addItem(QStringLiteral("测试版（包含 Pre-release）"), Test);
+    m_channel->setToolTip(QStringLiteral(
+        "稳定版：只提示未勾选 Pre-release 的正式版；\n"
+        "测试版：还会提示勾了 Pre-release 的测试版本。"));
+    chRow->addWidget(m_channel, 1);
+    root->addLayout(chRow);
+
     // 镜像前缀不再让用户选择：官方不可达时自动测速全部内置镜像并选最快。
     m_mirror = new QComboBox(this);
     m_mirror->setVisible(false);
@@ -126,7 +153,7 @@ void UpdateDialog::buildUi()
     m_progress = new QProgressBar(this);
     m_progress->setVisible(false);
     m_progress->setTextVisible(true);
-    m_downloadBtn = new QPushButton(QStringLiteral("下载更新包（zip）"), this);
+    m_downloadBtn = new QPushButton(QStringLiteral("下载并安装更新（Setup）"), this);
     m_downloadBtn->setEnabled(false);
     m_folderBtn = new QPushButton(QStringLiteral("打开下载文件夹"), this);
     m_folderBtn->setVisible(false);
@@ -142,6 +169,15 @@ void UpdateDialog::buildUi()
         saveConfig();
     });
     connect(m_mirror, &QComboBox::currentTextChanged, this, [this](const QString&) { saveConfig(); });
+    connect(m_channel, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
+        // 通道切换后旧缓存不再适用
+        m_cacheManifest.clear();
+        m_cacheTime = 0;
+        m_cacheChannel = -1;
+        saveConfig();
+        if (!m_latestTag.isEmpty())
+            m_status->setText(QStringLiteral("已切换更新通道，请重新点击「检查更新」。"));
+    });
     connect(m_checkBtn, &QPushButton::clicked, this, &UpdateDialog::startCheck);
     connect(m_downloadBtn, &QPushButton::clicked, this, &UpdateDialog::startDownload);
     connect(m_folderBtn, &QPushButton::clicked, this, &UpdateDialog::openDownloadFolder);
@@ -178,6 +214,12 @@ void UpdateDialog::loadConfig()
         m_cachedMirror = mirror;
         m_mirror->setCurrentText(mirror);
     }
+    m_cachedMirrorAt = static_cast<qint64>(o.value(QStringLiteral("bestMirrorAt")).toDouble(0));
+    const int ch = o.value(QStringLiteral("channel")).toInt(Stable);
+    m_channel->setCurrentIndex(ch == Test ? Test : Stable);
+    m_cacheManifest = o.value(QStringLiteral("cacheManifest")).toString();
+    m_cacheTime = static_cast<qint64>(o.value(QStringLiteral("cacheTime")).toDouble(0));
+    m_cacheChannel = o.value(QStringLiteral("cacheChannel")).toInt(-1);
 }
 
 void UpdateDialog::saveConfig() const
@@ -185,7 +227,12 @@ void UpdateDialog::saveConfig() const
     if (!m_source || !m_mirror) return;
     QJsonObject o;
     o.insert(QStringLiteral("source"), m_source->currentIndex());
+    o.insert(QStringLiteral("channel"), m_channel ? m_channel->currentIndex() : Stable);
     o.insert(QStringLiteral("bestMirror"), m_cachedMirror);
+    o.insert(QStringLiteral("bestMirrorAt"), static_cast<double>(m_cachedMirrorAt));
+    o.insert(QStringLiteral("cacheManifest"), m_cacheManifest);
+    o.insert(QStringLiteral("cacheTime"), static_cast<double>(m_cacheTime));
+    o.insert(QStringLiteral("cacheChannel"), m_cacheChannel);
     const QString path = QCoreApplication::applicationDirPath() + QLatin1Char('/') + QLatin1String(kConfigRel);
     QFile f(path);
     if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) f.write(QJsonDocument(o).toJson());
@@ -265,10 +312,23 @@ void UpdateDialog::runCurl(const QStringList& args, const QString& outFile, bool
 // ---------------- 检查更新 ----------------
 QStringList UpdateDialog::buildOfficialUrls() const
 {
-    // 官方路径：GitHub API（信息最全）+ raw 清单（raw 通常比 api 更易访问）。
+    // 稳定通道：version.json（只含正式版）+ GitHub latest；
+    // 测试通道：version-beta.json（含 Pre-release）+ releases 列表。
+    // raw 清单优先（不消耗 GitHub API 限额）；镜像清单也只走 raw 清单，不代理 API。
     QStringList out;
-    out << envOr("SLIME_UPDATE_API_URL", kGithubApi);
-    out << envOr("SLIME_UPDATE_MANIFEST_URL", kManifestRaw);
+    const bool test = m_channel && m_channel->currentIndex() == Test;
+    const QString manifest = envOr("SLIME_UPDATE_MANIFEST_URL",
+                                   test ? kManifestBetaRaw : kManifestRaw);
+    out << manifest;
+    // 24h 内测速选出的镜像：先作为清单回退尝试，避免每次都跑完整测速
+    const qint64 now = QDateTime::currentSecsSinceEpoch();
+    if (!m_cachedMirror.isEmpty() && m_cachedMirrorAt > 0 && now - m_cachedMirrorAt < 86400) {
+        const QString viaMirror = transformGithubUrl(manifest, m_cachedMirror);
+        if (!viaMirror.isEmpty()) out << viaMirror;
+    }
+    const QString api = envOr("SLIME_UPDATE_API_URL",
+                              test ? kGithubReleasesList : kGithubApi);
+    out << api;
     out.removeDuplicates();
     return out;
 }
@@ -287,7 +347,6 @@ QStringList UpdateDialog::buildDownloadUrls(const QString& rawUrl) const
 {
     QStringList out;
     if (rawUrl.isEmpty()) return out;
-    // 本轮测速选中的镜像优先，其次官方原始地址，最后其他镜像兜底
     if (!m_activeMirror.isEmpty()) {
         const QString t = transformGithubUrl(rawUrl, m_activeMirror);
         if (!t.isEmpty()) out << t;
@@ -320,6 +379,22 @@ void UpdateDialog::startCheck()
         applySourceUi();
         return;
     }
+    // 6 小时内的缓存结果：先展示缓存，第二次点击“强制刷新”才联网
+    const qint64 nowSecs = QDateTime::currentSecsSinceEpoch();
+    if (!m_waitingForceCheck && m_cacheChannel == m_channel->currentIndex() &&
+        !m_cacheManifest.isEmpty() && m_cacheTime > 0 && nowSecs - m_cacheTime < 6 * 3600) {
+        m_waitingForceCheck = true;
+        m_checkBtn->setText(QStringLiteral("强制刷新"));
+        setStatusText(QStringLiteral("显示 6 小时内的缓存结果；再次点击「强制刷新」会重新联网检查。"));
+        setBusy(true);
+        m_progress->setRange(0, 0);
+        parseLatest(m_cacheManifest.toUtf8());
+        setBusy(false);
+        return;
+    }
+    m_waitingForceCheck = false;
+    m_checkBtn->setText(QStringLiteral("检查更新"));
+
     m_officialUrls = buildOfficialUrls();
     if (m_officialUrls.isEmpty()) {
         setStatusText(QStringLiteral("没有可用的检查地址。"));
@@ -537,6 +612,7 @@ void UpdateDialog::finishMirrorSelection()
     }
     m_activeMirror = best->prefix;
     m_cachedMirror = best->prefix;
+    m_cachedMirrorAt = QDateTime::currentSecsSinceEpoch();
     m_mirror->setCurrentText(best->prefix);
     saveConfig();
     setBusy(false);
@@ -574,11 +650,25 @@ void UpdateDialog::parseLatest(const QByteArray& body)
 {
     QJsonParseError err{};
     const QJsonDocument doc = QJsonDocument::fromJson(body, &err);
-    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+    if (err.error != QJsonParseError::NoError) {
         tryNextApi();
         return;
     }
-    const QJsonObject o = doc.object();
+    QJsonObject o;
+    if (doc.isObject()) {
+        o = doc.object();
+    } else if (doc.isArray()) {
+        const QJsonArray arr = doc.array();
+        for (const QJsonValue& v : arr) {
+            if (v.toObject().value(QStringLiteral("tag_name")).toString().isEmpty()) continue;
+            o = v.toObject();
+            break;
+        }
+    }
+    if (o.isEmpty()) {
+        tryNextApi();
+        return;
+    }
     // 两种格式：GitHub API（tag_name/body/assets[].browser_download_url）
     // 与 version.json 清单（version/notes/assets[].url）
     QString tag = o.value(QStringLiteral("tag_name")).toString();
@@ -610,11 +700,24 @@ void UpdateDialog::parseLatest(const QByteArray& body)
         as.url = a.value(QStringLiteral("browser_download_url")).toString();
         if (as.url.isEmpty()) as.url = a.value(QStringLiteral("url")).toString();
         as.size = static_cast<qint64>(a.value(QStringLiteral("size")).toDouble());
-        if (as.name.endsWith(QStringLiteral("-win64.zip")) && zip.url.isEmpty()) zip = as;
-        else if (as.name.startsWith(QStringLiteral("SHA256SUMS-")) && sums.url.isEmpty()) sums = as;
+        if (as.name.endsWith(QStringLiteral("-Setup.exe")) && zip.url.isEmpty()) {
+            zip = as;
+        } else if (as.name.endsWith(QStringLiteral("-win64.zip")) && zip.url.isEmpty()) {
+            zip = as;   // 旧版本兼容（3.10.12.10 起只发 Setup）
+        } else if (as.name.startsWith(QStringLiteral("SHA256SUMS-")) && sums.url.isEmpty()) {
+            sums = as;
+        }
     }
     m_zipAsset = zip;
     m_sumsAsset = sums;
+
+    if (!m_waitingForceCheck) {
+        // 网络结果缓存 6 小时（按通道区分）
+        m_cacheManifest = QString::fromUtf8(body);
+        m_cacheTime = QDateTime::currentSecsSinceEpoch();
+        m_cacheChannel = m_channel ? m_channel->currentIndex() : Stable;
+        saveConfig();
+    }
 
     setBusy(false);
     if (versionNewer(ver, current)) {
@@ -624,7 +727,7 @@ void UpdateDialog::parseLatest(const QByteArray& body)
         if (notes.isEmpty()) notes = QStringLiteral("（该版本没有提供更新说明。）");
         m_notes->setPlainText(notes);
         m_downloadBtn->setEnabled(!zip.url.isEmpty());
-        m_downloadBtn->setText(QStringLiteral("下载更新包（zip）"));
+        m_downloadBtn->setText(QStringLiteral("下载并安装更新（Setup）"));
         m_progress->setVisible(false);
     } else {
         m_updateAvailable = false;
@@ -643,7 +746,8 @@ QString UpdateDialog::manifestZipUrl(const QByteArray& body)
     for (const QJsonValue& v : assets) {
         const QJsonObject a = v.toObject();
         const QString name = a.value(QStringLiteral("name")).toString();
-        if (!name.endsWith(QStringLiteral("-win64.zip"))) continue;
+        if (!name.endsWith(QStringLiteral("-Setup.exe")) &&
+            !name.endsWith(QStringLiteral("-win64.zip"))) continue;
         QString url = a.value(QStringLiteral("browser_download_url")).toString();
         if (url.isEmpty()) url = a.value(QStringLiteral("url")).toString();
         if (!url.isEmpty()) return url;
@@ -798,13 +902,59 @@ void UpdateDialog::finishDownloadOk()
     m_progress->setVisible(true);
     m_progress->setRange(0, 100);
     m_progress->setValue(100);
-    emit probeDownloadFinished(true, m_downloadPath);
     m_folderBtn->setVisible(true);
     m_downloadBtn->setEnabled(false);
-    setStatusText(QStringLiteral("更新包已下载：\n%1\n\n"
-                                 "退出程序后解压覆盖即可完成更新。")
-                      .arg(QDir::toNativeSeparators(m_downloadPath)));
+    if (m_downloadPath.endsWith(QStringLiteral("-Setup.exe"), Qt::CaseInsensitive) && isInstalledCopy()) {
+        setStatusText(QStringLiteral("更新包已下载并通过 SHA256 校验。"));
+        const auto answer = QMessageBox::question(
+            this, QStringLiteral("安装更新"),
+            QStringLiteral("更新已下载并通过校验。\n\n将关闭当前程序并打开安装向导，"
+                           "请点击「下一步」完成覆盖安装（安装前会请求管理员权限）。\n\n现在开始安装吗？"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if (answer == QMessageBox::Yes) {
+            emit probeDownloadFinished(true, m_downloadPath);
+            startInstallerAndQuit();
+            return;
+        }
+        setStatusText(QStringLiteral("已跳过安装；可稍后手动运行下载的安装程序。"));
+    } else if (m_downloadPath.endsWith(QStringLiteral("-Setup.exe"), Qt::CaseInsensitive)) {
+        setStatusText(QStringLiteral("更新包已下载。当前是便携版，请手动运行安装程序完成安装。"));
+    } else {
+        setStatusText(QStringLiteral("更新包已下载：\n%1").arg(QDir::toNativeSeparators(m_downloadPath)));
+    }
     m_notes->appendPlainText(QStringLiteral("\n—— 下载位置 ——\n") + m_downloadPath);
+    emit probeDownloadFinished(true, m_downloadPath);
+}
+
+bool UpdateDialog::isInstalledCopy() const
+{
+#ifdef Q_OS_WIN
+    wchar_t buf[MAX_PATH * 2] = {};
+    DWORD size = sizeof(buf) - sizeof(wchar_t);
+    DWORD type = 0;
+    const LONG rc = RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\SlimeFinder", L"InstallDir",
+                                 RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY, &type, buf, &size);
+    if (rc != ERROR_SUCCESS) return false;
+    const QString installDir = QDir::cleanPath(QString::fromWCharArray(buf));
+    const QString appDir = QDir::cleanPath(QCoreApplication::applicationDirPath());
+    return installDir.compare(appDir, Qt::CaseInsensitive) == 0;
+#else
+    return false;
+#endif
+}
+
+void UpdateDialog::startInstallerAndQuit()
+{
+    if (m_downloadPath.isEmpty()) return;
+    // 以 /UPDATE=1 启动安装向导（保留 config.json/缓存）；用户自己点下一步。
+    const bool started = QProcess::startDetached(m_downloadPath, { QStringLiteral("/UPDATE=1") },
+                                                 QFileInfo(m_downloadPath).absolutePath());
+    if (!started) {
+        setStatusText(QStringLiteral("启动安装程序失败，请手动运行：\n%1")
+                          .arg(QDir::toNativeSeparators(m_downloadPath)));
+        return;
+    }
+    QTimer::singleShot(200, qApp, &QCoreApplication::quit);
 }
 
 void UpdateDialog::openDownloadFolder()

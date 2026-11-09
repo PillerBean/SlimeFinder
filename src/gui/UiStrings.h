@@ -272,6 +272,11 @@ inline const QHash<QString, QString>& zhToEn()
         { QStringLiteral("优化"), QStringLiteral("Improved") },
         { QStringLiteral("调整"), QStringLiteral("Adjusted") },
         { QStringLiteral("移除"), QStringLiteral("Removed") },
+        // ---- v3.10.12.10 Setup-only/通道 ----
+        { QStringLiteral("发布改为只提供 Setup 安装包：检查到新版本后获取 Setup、SHA256 校验通过则提示退出程序并打开安装向导（用户点下一步完成覆盖；安装器 /UPDATE 保留设置与缓存）；便携版提示改为安装版"), QStringLiteral("Releases now provide only the Setup installer: after an update is found, the app downloads the Setup, verifies SHA256, then closes and opens the installer for the user to click through (the installer runs with /UPDATE to keep settings and caches); portable copies are told to install the setup version") },
+        { QStringLiteral("新增更新通道：稳定版只提示正式版，测试版还会提示 Pre-release；检查更新优先读取 raw 清单（不消耗 GitHub API 限额），结果缓存 6 小时、镜像测速结果缓存 24 小时，重复检查不会反复访问"), QStringLiteral("Added update channels: Stable only offers official releases, Test also offers pre-releases; checks read the raw manifest first (no GitHub API quota), cache results for 6 hours and mirror speed-test results for 24 hours so repeated checks do not keep hitting the network") },
+        { QStringLiteral("不再发布便携 zip：Release 资产只保留 Setup 与 SHA256SUMS（历史版本 zip 仍可从旧 Release 获取）"), QStringLiteral("No more portable zip assets: releases now contain only the Setup and SHA256SUMS (older zips remain downloadable from historical releases)") },
+
         // ---- v3.10.12.10 修复补记 ----
         { QStringLiteral("修复环形「快速」在 Java 整图范围返回 0 个结果：规划器物理上限仍是 4 万亿格，低于整图 1.4e13 格，会静默返回空表；现在放开到整图上限，并按实际抽样点数统计扫描量（不再出现万亿/秒的假速度）"), QStringLiteral("Fixed the ring fast search returning zero results for the whole Java map: the planner limit was still 4e12 cells, below the 1.4e13-cell map, and silently returned an empty list; the limit now covers the whole map, and scan statistics report the real sample count instead of a fake trillion-per-second rate") },
         { QStringLiteral("密度模式的最小密度与「忽略阈值，取最优」移到密度面板常显（此前放在「结果要求」里，选预设后整组隐藏）；修改会自动切到自定义方案"), QStringLiteral("Moved the minimum density and ignore-threshold controls into the always-visible density panel (they used to live in Result Requirements and were hidden whenever a preset was selected); changing them switches to the Custom scheme") },
