@@ -4,15 +4,14 @@
 
 - 正式版：<https://github.com/PillerBean/SlimeFinder/releases/latest>
 - 测试版：Releases 页面里带 `Pre-release` 标记的版本
-- 两种包：
-  - `SlimeFinder-*-win64.zip`：便携版，解压即用
-  - `SlimeFinder-*-Setup.exe`：安装包，创建开始菜单/桌面快捷方式
+- 安装包：`SlimeFinder-*-Setup.exe`（默认安装到 Program Files，需要管理员权限；自动更新只支持安装版）
+- 便携 zip 已停发；旧版本 zip 仍可从历史 Release 获取
 
 系统要求：Windows 10/11 x64。GPU 加速为可选项（需要可用的 OpenCL 驱动）。
 
 ## 2. 首次搜索
 
-1. 运行 `SlimeFinder.exe`；
+1. 从开始菜单/桌面运行 `SlimeFinder.exe`；
 2. 选择 **Java 版 / 基岩版**，填入种子；
 3. 选择搜索范围（可用「附近/局部/全局」快捷按钮，或直接填半径）；
 4. 选择模式：

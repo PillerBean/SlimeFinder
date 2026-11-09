@@ -22,7 +22,9 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 | **测试版 / 历史版本** | <https://github.com/PillerBean/SlimeFinder/releases>（带 `Pre-release` 标记的是测试版；历史版本为二进制归档） |
 
 - 平台：Windows 10/11 x64；
-- 便携包 `SlimeFinder-*-win64.zip` 解压即用；安装包 `SlimeFinder-*-Setup.exe` 可选；
+- **只提供安装包** `SlimeFinder-*-Setup.exe`（默认安装到 Program Files，需管理员权限）；
+- 自动更新只支持安装版：检查到新版本后会下载 Setup、校验 SHA256，然后退出程序并打开安装向导（用户点下一步完成覆盖，保留设置与缓存）；
+- 便携 zip 已停发；旧版本 zip 仍可从历史 Release 获取；
 - 具体版本以 Releases 页面为准；当前源码版本：**v3.10.12.10**（待发布，发布后再更新下载入口）。
 
 > 📦 **按版本查找全部历史版本**：**[打开版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)**
@@ -41,8 +43,8 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 
 ## 快速开始
 
-1. 从 Releases 下载 `SlimeFinder-*-win64.zip` 并解压；
-2. 运行 `SlimeFinder.exe`；
+1. 从 Releases 获取 `SlimeFinder-*-Setup.exe`，按向导安装（需管理员权限）；
+2. 从开始菜单/桌面运行 `SlimeFinder.exe`；
 3. 选择 Java/基岩版、种子、搜索范围、密度或图案模式，点「开始搜索」；
 4. GPU 加速是可选项（设置 → 性能），显卡较新时建议开启。
 

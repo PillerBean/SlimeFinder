@@ -268,7 +268,9 @@ py -3 scripts\upload_history_releases.py --workers 6
 
 ### 发版后的固定动作
 
-1. 上传 Release（zip / Setup / SHA256SUMS）；
+1. 上传 Release（**只传 Setup + SHA256SUMS**；不再传便携 zip）；
+   - 正式版：不勾 Pre-release，并更新 `version.json`（稳定通道）；
+   - 测试版：勾 Pre-release，并更新 `version-beta.json`（测试通道）；
 2. 生成并提交版本清单（检查更新的镜像回退依赖它）：
 
 ```bat
