@@ -225,5 +225,10 @@ github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" -
 ### 当前状态
 
 - 仓库：https://github.com/PillerBean/SlimeFinder （Public）
-- 旧 Release `v3.10.12.8` 已按用户要求删除（含 tag），重新整理为 `v3.10.12.9` 后统一发布；
-- 发布 `v3.10.12.9` 时：作为正式发布（不勾 Pre-release）⇒ 成为 Latest。
+- 旧 Release `v3.10.12.8` 已按用户要求删除（含 tag）；
+- **`v3.10.12.9` 已发布**（正式发布、非 Pre-release）⇒ 当前 Latest：
+  https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.9
+- 自动更新接口：`https://api.github.com/repos/PillerBean/SlimeFinder/releases/latest`
+  （返回 `v3.10.12.9` + 三个资产，服务端 digest 与本地 SHA256 一致）
+- 仓库 About 已精简为：`Minecraft 史莱姆区块查找器 | C++20/Qt6 | GPU 加速 | 源码公开（非商业）`，
+  Homepage 指向 Releases 页。
