@@ -1,0 +1,39 @@
+﻿================ SlimeFinder v3.3.1 SIMD 内核自检/基准 ================
+FastMatch::cpuHasAvx2          = 是
+FastMt::cpuHasAvx2             = 是
+SLIME_FORCE_SCALAR             = (未设置)
+SLIME_MT_TABLE                 = (未设置)（当前查表开关 = 关）
+SLIME_DENSITY_MODE             = (未设置/自动)
+基准规模                       = QUICK
+
+================ A. 基岩版种子查表（P0-2.2） ================
+  [PASS] bedrockChunkSeedTable == bedrockChunkSeedScalar == 64 位乘法低 32 位（50080 组：边界 80 + 随机 50000）
+  [PASS] 表项 T[lo] 抽查 = low32(lo*0x1F1F1F1F)（9363 项）
+  [PASS] 查表开关默认值来自 SLIME_MT_TABLE（当前 = 关）
+  [PASS] setBedrockSeedTableEnabled 运行期可覆盖默认值
+  [PASS] bedrockSlimeScanScalarTable 与 bedrockSlimeScanScalar 逐位一致（开关两态，1200 个用例）
+
+================ B. 跨步采样扫描（cx = cx0 + i*step） ================
+  [PASS] step∈{1,2,3,8,64} × 13 个基址（含负/边界回绕）× count 0..9,1000 与独立参考逐位一致（1560 个用例 / 95875 个采样点）
+  [PASS] 随机 (cx0,cz,step,count) 与独立参考逐位一致（60 个用例 / 23984 个采样点）
+  [PASS] step=1 与既有 bedrockSlimeScan 逐位一致（30 个用例）
+  [PASS] step ≤ 0 按 1 处理；count ≤ 0 / out=nullptr 安全返回
+  [PASS] 跨步扫描 vs bedrockFirstDrawScalar（完整 init+twist）逐点一致（600 点）
+
+================ C. 密度 g×g 窗口计数（P1-3.1） ================
+  [PASS] densityWindowCountsAvx2/Scalar 与朴素实现逐位一致（298 组配置 / 384390 个窗口）
+  [PASS] 非法参数返回 false 且不写 out；空范围返回 true
+  [PASS] 结构化位图（全 0 / 全 1 / 交替）× g∈{1,5,32,64,65,257,512} 逐位一致（6321 个窗口）
+
+[D] 构建期嵌入的 OpenCL 内核
+  [PASS] 嵌入长度与生成期一致（实测 6058 字节 / 记录 6058 字节）
+  [PASS] 嵌入内容校验和与生成期一致（实测 997496561 / 记录 997496561）
+  [PASS] 两个 __kernel 入口签名完整（未被转义/换行注入破坏）
+  嵌入源码：133 行，首行 "// slime_kernel.cl - 史莱姆区块判定 OpenCL 内核（扫描用"
+  [PASS] 与磁盘 D:/DeepSeek harness/史莱姆区块查找器/SlimeFinder/src/gpu/slime_kernel.cl 逐字节一致（6058 字节）
+
+（--correct-only：仅做 bit-exact 校验，未跑基准）
+
+================ 汇总：17 项检查，0 项失败 ================
+RESULT: ALL PASS
+(sink=0)

@@ -1,0 +1,116 @@
+================================================================================
+v3.3.2 缓存 Bug 证据包（保存路径 / 过滤器字符串 / 对话框可见可选 / 旧格式兼容）
+机器：AMD Ryzen 5 5600 + AMD Radeon RX 6750 GRE 10GB ｜ 构建：MSVC 14.51 Release
+日期：2026-09-20 ｜ 证据来源：源码行号 + 运行期 GUI 自检输出 + 应用日志 + 历史二进制字符串
+================================================================================
+
+【1】修复前（历史版本，硬证据）
+
+1.1 v3.3.0 已发布二进制（dist/SlimeFinder-3.3.0-win64.zip → SlimeFinder.exe）内的字符串：
+
+    [ASCII ]  slime_cache.cache                      ← 保存/加载固定使用的文件名
+    [UTF-16]  史莱姆区块缓存 (*.cache);;所有文件 (*.*)   ← 「导入缓存」对话框过滤器
+    [UTF-16]  请使用发布包中的 scripts/convert_pkl_cache.py 将其转换为 .cache 二进制格式后再导入
+
+1.2 v3.1.1 源码（_v311_ref/史莱姆区块查找器V3.1.1/.../src/gui/MainWindow.cpp）：
+
+    L55 : constexpr const char* kCacheFileName = "slime_cache.cache";
+    L782: const QString path = QFileDialog::getOpenFileName(
+    L783:     this, QStringLiteral("选择史莱姆缓存文件"), QString(),        ← 第 3 参数为空！
+    L784:     QStringLiteral("史莱姆区块缓存 (*.cache);;所有文件 (*.*)"));
+
+1.3 根因（v3.3.2 复核结论）
+
+    * 缓存文件固定保存在**程序目录**（appDirPath()/slime_cache.cache）；
+    * 而「导入缓存」对话框的第 3 个参数（起始目录）为 **空 QString** —— Qt 回退到
+      进程工作目录 / 上次访问目录。用户从快捷方式或其它工作目录启动程序时，对话框
+      落在别处，程序目录里的缓存文件自然「存在但看不到」，这就是任务书描述的现象。
+    * 次因：过滤器只列 *.cache。若用户手里是更早的 Python 缓存（.pkl），或把缓存
+      放在了别处，在对话框里也看不到（需手动切到「所有文件」）。
+    * 说明：v3.1.1/v3.3.0 的保存名与过滤器**扩展名本身是匹配的**（都是 .cache），
+      因此「扩展名不一致」不是本次 Bug 的成因；真正的问题是**对话框起始目录未定位**
+      （外加历史格式未列入过滤器）。
+
+【2】修复后（v3.3.2 源码，行号取自当前提交）
+
+2.1 扩展名常量（src/gui/MainWindow.cpp L62-64）
+
+    // v3.3.1（任务书 2.1）：缓存扩展名统一为 .slimecache（保存/加载/过滤器/转换脚本一致），
+    // 旧版 .cache 保留兼容读取并在启动时自动迁移。
+    constexpr const char* kCacheFileName = "slime_cache.slimecache";   // 保存 / 加载 / 迁移目标
+    constexpr const char* kCacheLegacyFileName = "slime_cache.cache";  // 旧版（v3.1.1~v3.3.0）
+
+2.2 对话框过滤器（src/gui/MainWindow.cpp L187-196）
+
+    QString cacheImportFilter()
+    {
+        return QStringLiteral("史莱姆区块缓存 Slime Cache (*.slimecache *.cache *.pkl *.pickle);;"
+                              "新版缓存 New (*.slimecache);;"
+                              "旧版二进制缓存 Legacy (*.cache);;"
+                              "Python 旧版缓存 (*.pkl *.pickle);;"
+                              "所有文件 All Files (*.*)");
+    }
+
+2.3 对话框定位 + 预选当前缓存文件（src/gui/MainWindow.cpp L1415-1428）
+
+    void MainWindow::importCache()
+    {
+        QFileDialog dlg(this, QStringLiteral("选择史莱姆缓存文件"),
+                        QString::fromStdWString(appDirPath().wstring()));  // ← 起始目录 = 程序目录
+        dlg.setFileMode(QFileDialog::ExistingFile);
+        dlg.setNameFilters(cacheImportFilter().split(QStringLiteral(";;")));
+        dlg.selectFile(QString::fromStdString(kCacheFileName));            // ← 预选 slime_cache.slimecache
+        if (dlg.exec() != QDialog::Accepted) return;
+        ...
+    }
+
+2.4 落盘路径写日志（搜索后保存 / 导入合并保存）
+
+    Logger::info("缓存已更新保存：1 区域 / 6811 区块（路径 ...\build\slime_cache.slimecache）");
+
+【3】旧格式兼容矩阵（实际历史）
+
+    .slimecache   v3.3.1+ 保存格式  → 直接加载（当前默认）
+    .cache        v3.1.1~v3.3.0     → 直接加载；启动时若只存在旧文件则自动迁移为新格式（旧文件保留）
+    .pkl/.pickle  v3.1.0 及更早     → Python pickle，**不能**直接加载：对话框可见并选中后
+                                      给出提示，需用 scripts/convert_pkl_cache.py 转换
+    .bin          任务书列举的假设格式 → 本程序**历史上从未使用**（无任何保存/加载代码；
+                                       全仓库与全部历史二进制中均无 .bin 缓存相关字符串）
+
+【4】运行期证据（GUI 自检，v3.3.2 构建；SLIME_SELFTEST=1 + QT_QPA_PLATFORM=offscreen）
+
+4.1 过滤器与可见性（自检 12.5/12.6）
+
+    [UI自检] 过滤器首组=[*.slimecache *.cache *.pkl *.pickle] 目录内匹配=1 项
+    [UI自检] 对话框起始目录=C:/Users/Administrator/AppData/Local/Temp/slime_selftest_dlg
+             预选=C:/Users/Administrator/AppData/Local/Temp/slime_selftest_dlg/slime_cache.slimecache
+    [UI自检] 缓存导入对话框截图已保存: ...\ui_cache-import-dialog.png
+    （断言：默认过滤器下列表中可见 slime_cache.slimecache；无关文件 readme.txt 不在默认过滤器内；
+      「所有文件」兜底可见任意文件；首个分组的模式集合 = 新版+旧版+pkl+pickle）
+
+4.2 真实端到端（自检 12.7：基岩 256×256 搜索 → 生成缓存 → 重载 → 逐区块比对）
+
+    [UI自检] 缓存端到端：文件=...\build\slime_cache.slimecache 条目=6811 重载条目=6811
+             逐区块比对=65536 不一致=0
+
+4.3 应用日志（logs/SlimeFinder_2026-09-20.log）
+
+    [12:30:26.233] 开始搜索 | 版本=基岩版 ... 使用缓存 GPU扫描
+    [12:30:26.268] 缓存已更新保存：1 区域 / 6811 区块（路径 ...\build\slime_cache.slimecache）
+    [12:29:33.845] 启动加载缓存成功（...\build\slime_cache.slimecache）：1 区域 / 6811 区块   ← 重启自动加载
+    [12:30:44.614] 启动加载旧版缓存成功（slime_cache.cache）：1 区域 / 6811 区块            ← 旧格式识别
+    [12:30:44.615] 旧版缓存已迁移为新格式：slime_cache.slimecache（...）                     ← 自动迁移
+
+4.4 迁移后磁盘状态（手工演示：仅放旧文件 → 启动 → 关闭）
+
+    启动前： slime_cache.cache  54524 B                      （仅旧格式）
+    启动后： slime_cache.cache  54524 B（保留，未删除）
+             slime_cache.slimecache 54524 B（新建，程序此后使用）
+
+【5】任务书验收项对照
+
+    ☑ 保存缓存后，通过「导入缓存」能看到并选中该文件   → 4.1（过滤器匹配 + 预选 + 截图）
+    ☑ 加载后能正常读取，结果与保存前一致               → 4.2（重载条目 6811 = 保存前；65536 区块逐块一致）
+    ☑ 旧格式缓存能被识别                               → 4.3/4.4（.cache 直接加载并自动迁移）
+    ☑ 修复前后对比（保存路径 + 过滤器字符串）           → §1（修复前：空起始目录 + (*.cache)）vs §2（修复后）
+================================================================================

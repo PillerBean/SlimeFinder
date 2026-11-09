@@ -1,0 +1,576 @@
+﻿=== v3.3.7 根因排查实测证据（slime_tests.exe，只读运行，未改任何代码）
+
+
+
+################ 实验 a ################
+
+pattern(3x3) -> C:\Users\Administrator\AppData\Local\Temp\v337_probe_pattern.txt
+
+==============================================================================
+A1 分块 + 严格图案 + 目标 1（不勾及时反馈）
+  cmd: slime_tests.exe --near 1 12345 -104857 104857 0 19999 1 C:\Users\Administrator\AppData\Local\Temp\v337_probe_pattern.txt 1 0 0 1 --threads 12
+  env: {}
+==============================================================================
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 0] pre-run rows=4882
+  [   0.01s] [chunk 1] pre-run rows=4882
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 2] pre-run rows=4882
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 3] pre-run rows=4882
+  [   0.02s] [chunk 4] pre-run rows=480
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] grid ok rows=480 wpr=3277 tasks=480 nthreads=1
+  [   0.04s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.04s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.04s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.04s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   9.29s] [engine] scan done rows=480 collectNew=0
+  [   9.29s] [engine] match vi=0 rows=478 nthreads=1 parallel=0
+  [   9.30s] [chunk 4] post-run ok=1 results=0 newcache=0
+  [  92.26s] [engine] scan done rows=4882 collectNew=0
+  [  92.26s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.40s] [chunk 1] post-run ok=1 results=1 newcache=0
+  [  92.51s] [engine] scan done rows=4882 collectNew=0
+  [  92.51s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.52s] [engine] scan done rows=4882 collectNew=0
+  [  92.52s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.63s] [chunk 0] post-run ok=1 results=0 newcache=0
+  [  92.65s] [chunk 2] post-run ok=1 results=1 newcache=0
+  [  92.70s] [engine] scan done rows=4882 collectNew=0
+  [  92.70s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.80s] [chunk 3] post-run ok=1 results=0 newcache=0
+  ---- 退出码=0 总耗时=92.85s 采样峰值(WorkingSet)=507 MB
+  ---- 块完成间隔: 83.10s, 0.23s, 0.02s, 0.15s
+  ---- 峰值出现于 0.06s（507 MB）
+
+==============================================================================
+A2 分块 + 严格图案 + 目标 1 + --stop（勾及时反馈）
+  cmd: slime_tests.exe --near 1 12345 -104857 104857 0 19999 1 C:\Users\Administrator\AppData\Local\Temp\v337_probe_pattern.txt 1 0 0 1 --threads 12 --stop
+  env: {}
+==============================================================================
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 0] pre-run rows=4882
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 3] pre-run rows=4882
+  [   0.01s] [chunk 2] pre-run rows=4882
+  [   0.01s] [chunk 1] pre-run rows=4882
+  [   0.01s] [chunk 4] pre-run rows=480
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [engine] grid ok rows=480 wpr=3277 tasks=480 nthreads=1
+  [   0.03s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.03s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.03s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.03s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   9.08s] [engine] scan done rows=480 collectNew=0
+  [   9.08s] [engine] match vi=0 rows=478 nthreads=1 parallel=0
+  [   9.10s] [chunk 4] post-run ok=1 results=0 newcache=0
+  [  92.16s] [engine] scan done rows=4882 collectNew=0
+  [  92.16s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.32s] [chunk 0] post-run ok=1 results=0 newcache=0
+  [  92.42s] [engine] scan done rows=4882 collectNew=0
+  [  92.42s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.55s] [engine] scan done rows=4882 collectNew=0
+  [  92.55s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.59s] [chunk 1] post-run ok=1 results=1 newcache=0
+  [  92.61s] [engine] scan done rows=4882 collectNew=0
+  [  92.61s] [engine] match vi=0 rows=4880 nthreads=1 parallel=0
+  [  92.69s] [chunk 3] post-run ok=1 results=0 newcache=0
+  [  92.74s] [chunk 2] post-run ok=1 results=1 newcache=0
+  ---- 退出码=0 总耗时=92.79s 采样峰值(WorkingSet)=507 MB
+  ---- 块完成间隔: 83.22s, 0.27s, 0.10s, 0.05s
+  ---- 峰值出现于 0.06s（507 MB）
+
+
+
+################ 实验 b ################
+
+pattern(3x3) -> C:\Users\Administrator\AppData\Local\Temp\v337_probe_pattern.txt
+
+==============================================================================
+B 分块 + 密度 g=5（约 13 块 → 12 并发）
+  cmd: slime_tests.exe --near 1 12345 -104857 104857 0 58549 2 5 0.3 0 0 1 --threads 12
+  env: {}
+==============================================================================
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 0] pre-run rows=4882
+  [   0.01s] [chunk 1] pre-run rows=4882
+  [   0.01s] [chunk 3] pre-run rows=4882
+  [   0.01s] [chunk 2] pre-run rows=4882
+  [   0.01s] [chunk 6] pre-run rows=4882
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 4] pre-run rows=4882
+  [   0.01s] [chunk 10] pre-run rows=4882
+  [   0.01s] [chunk 11] pre-run rows=4882
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 7] pre-run rows=4882
+  [   0.01s] [engine] runImpl start cache=0
+  [   0.01s] [chunk 8] pre-run rows=4882
+  [   0.02s] [chunk 9] pre-run rows=4882
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [chunk 5] pre-run rows=4882
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.07s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.08s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.08s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.08s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [   0.08s] [engine] grid ok rows=4882 wpr=3277 tasks=4882 nthreads=1
+  [ 100.09s] [engine] scan done rows=4882 collectNew=0
+  [ 100.09s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 100.12s] [engine] scan done rows=4882 collectNew=0
+  [ 100.12s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 100.18s] [engine] scan done rows=4882 collectNew=0
+  [ 100.18s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 100.34s] [engine] scan done rows=4882 collectNew=0
+  [ 100.34s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 101.12s] [engine] scan done rows=4882 collectNew=0
+  [ 101.12s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 101.18s] [engine] scan done rows=4882 collectNew=0
+  [ 101.18s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 101.20s] [engine] scan done rows=4882 collectNew=0
+  [ 101.20s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 101.20s] [engine] scan done rows=4882 collectNew=0
+  [ 101.20s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 102.94s] [engine] scan done rows=4882 collectNew=0
+  [ 102.94s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 102.96s] [engine] scan done rows=4882 collectNew=0
+  [ 102.96s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 103.08s] [engine] scan done rows=4882 collectNew=0
+  [ 103.08s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 103.13s] [engine] scan done rows=4882 collectNew=0
+  [ 103.13s] [engine] match vi=0 rows=4878 nthreads=1 parallel=0
+  [ 104.05s] [chunk 2] post-run ok=1 results=1 newcache=0
+  [ 104.05s] [chunk 12] pre-run rows=14
+  [ 104.05s] [engine] runImpl start cache=0
+  [ 104.05s] [engine] grid ok rows=14 wpr=3277 tasks=14 nthreads=1
+  [ 104.06s] [chunk 1] post-run ok=1 results=1 newcache=0
+  [ 104.09s] [chunk 10] post-run ok=1 results=1 newcache=0
+  [ 104.26s] [chunk 9] post-run ok=1 results=1 newcache=0
+  [ 104.37s] [engine] scan done rows=14 collectNew=0
+  [ 104.37s] [engine] match vi=0 rows=10 nthreads=1 parallel=0
+  [ 104.38s] [chunk 12] post-run ok=1 results=1 newcache=0
+  [ 105.00s] [chunk 5] post-run ok=1 results=1 newcache=0
+  [ 105.08s] [chunk 11] post-run ok=1 results=1 newcache=0
+  [ 105.10s] [chunk 4] post-run ok=1 results=1 newcache=0
+  [ 105.12s] [chunk 0] post-run ok=1 results=1 newcache=0
+  [ 106.39s] [chunk 8] post-run ok=1 results=1 newcache=0
+  [ 106.40s] [chunk 6] post-run ok=1 results=1 newcache=0
+  [ 106.46s] [chunk 7] post-run ok=1 results=1 newcache=0
+  [ 106.62s] [chunk 3] post-run ok=1 results=1 newcache=0
+  ---- 退出码=0 总耗时=106.64s 采样峰值(WorkingSet)=1482 MB
+  ---- 块完成间隔: 0.01s, 0.03s, 0.17s, 0.12s, 0.63s, 0.08s, 0.02s, 0.02s, 1.27s, 0.01s, 0.06s, 0.16s
+  ---- 峰值出现于 103.15s（1482 MB）
+
+
+
+################ 实验 a3 ################
+
+pattern(1x1) -> C:\Users\Administrator\AppData\Local\Temp\v337_probe_pattern.txt
+
+==============================================================================
+A3 64 分块 + 常见图案 + 目标 1 + --stop（应提前停止）
+  cmd: slime_tests.exe --near 1 12345 -104857 104857 0 19999 1 C:\Users\Administrator\AppData\Local\Temp\v337_probe_pattern.txt 1 0 0 1 --threads 12 --stop
+  env: {'SLIME_CHUNK_WORDS': '1048576'}
+==============================================================================
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [chunk 0] pre-run rows=319
+  [   0.02s] [chunk 1] pre-run rows=319
+  [   0.02s] [chunk 2] pre-run rows=319
+  [   0.02s] [chunk 4] pre-run rows=319
+  [   0.02s] [chunk 6] pre-run rows=319
+  [   0.02s] [chunk 7] pre-run rows=319
+  [   0.02s] [chunk 8] pre-run rows=319
+  [   0.02s] [chunk 9] pre-run rows=319
+  [   0.02s] [chunk 10] pre-run rows=319
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [chunk 3] pre-run rows=319
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [chunk 5] pre-run rows=319
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [chunk 11] pre-run rows=319
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] runImpl start cache=0
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   0.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   6.62s] [engine] scan done rows=319 collectNew=0
+  [   6.62s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.69s] [engine] scan done rows=319 collectNew=0
+  [   6.69s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.76s] [engine] scan done rows=319 collectNew=0
+  [   6.76s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.84s] [engine] scan done rows=319 collectNew=0
+  [   6.84s] [chunk 4] post-run ok=1 results=1 newcache=0
+  [   6.84s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.84s] [chunk 12] pre-run rows=319
+  [   6.84s] [engine] runImpl start cache=0
+  [   6.84s] [engine] scan done rows=319 collectNew=0
+  [   6.84s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.84s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   6.85s] [engine] scan done rows=319 collectNew=0
+  [   6.85s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.85s] [engine] scan done rows=319 collectNew=0
+  [   6.85s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.88s] [engine] scan done rows=319 collectNew=0
+  [   6.88s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.88s] [engine] scan done rows=319 collectNew=0
+  [   6.88s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   6.88s] [chunk 9] post-run ok=1 results=1 newcache=0
+  [   6.88s] [chunk 13] pre-run rows=319
+  [   6.88s] [engine] runImpl start cache=0
+  [   6.88s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   6.99s] [chunk 0] post-run ok=1 results=1 newcache=0
+  [   6.99s] [chunk 14] pre-run rows=319
+  [   6.99s] [engine] runImpl start cache=0
+  [   6.99s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.04s] [chunk 6] post-run ok=1 results=1 newcache=0
+  [   7.04s] [chunk 15] pre-run rows=319
+  [   7.04s] [engine] runImpl start cache=0
+  [   7.04s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.04s] [chunk 8] post-run ok=1 results=1 newcache=0
+  [   7.04s] [chunk 16] pre-run rows=319
+  [   7.04s] [engine] runImpl start cache=0
+  [   7.05s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.05s] [chunk 1] post-run ok=1 results=1 newcache=0
+  [   7.05s] [chunk 17] pre-run rows=319
+  [   7.05s] [engine] runImpl start cache=0
+  [   7.05s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.05s] [chunk 5] post-run ok=1 results=1 newcache=0
+  [   7.05s] [chunk 18] pre-run rows=319
+  [   7.05s] [engine] runImpl start cache=0
+  [   7.05s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.07s] [chunk 11] post-run ok=1 results=1 newcache=0
+  [   7.07s] [chunk 19] pre-run rows=319
+  [   7.07s] [engine] runImpl start cache=0
+  [   7.07s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.09s] [chunk 7] post-run ok=1 results=1 newcache=0
+  [   7.09s] [chunk 20] pre-run rows=319
+  [   7.09s] [engine] runImpl start cache=0
+  [   7.09s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.12s] [engine] scan done rows=319 collectNew=0
+  [   7.12s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   7.13s] [engine] scan done rows=319 collectNew=0
+  [   7.13s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   7.14s] [engine] scan done rows=319 collectNew=0
+  [   7.14s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [   7.32s] [chunk 10] post-run ok=1 results=1 newcache=0
+  [   7.32s] [chunk 21] pre-run rows=319
+  [   7.32s] [engine] runImpl start cache=0
+  [   7.32s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.34s] [chunk 3] post-run ok=1 results=1 newcache=0
+  [   7.34s] [chunk 22] pre-run rows=319
+  [   7.34s] [engine] runImpl start cache=0
+  [   7.34s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [   7.35s] [chunk 2] post-run ok=1 results=1 newcache=0
+  [   7.35s] [chunk 23] pre-run rows=319
+  [   7.35s] [engine] runImpl start cache=0
+  [   7.35s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  13.47s] [engine] scan done rows=319 collectNew=0
+  [  13.47s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.56s] [engine] scan done rows=319 collectNew=0
+  [  13.56s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.63s] [engine] scan done rows=319 collectNew=0
+  [  13.63s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.63s] [engine] scan done rows=319 collectNew=0
+  [  13.63s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.65s] [chunk 13] post-run ok=1 results=1 newcache=0
+  [  13.65s] [chunk 24] pre-run rows=319
+  [  13.65s] [engine] runImpl start cache=0
+  [  13.65s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  13.71s] [engine] scan done rows=319 collectNew=0
+  [  13.71s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.75s] [chunk 12] post-run ok=1 results=1 newcache=0
+  [  13.75s] [chunk 25] pre-run rows=319
+  [  13.75s] [engine] runImpl start cache=0
+  [  13.76s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  13.78s] [engine] scan done rows=319 collectNew=0
+  [  13.78s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.80s] [engine] scan done rows=319 collectNew=0
+  [  13.80s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.82s] [chunk 17] post-run ok=1 results=1 newcache=0
+  [  13.82s] [chunk 26] pre-run rows=319
+  [  13.82s] [engine] runImpl start cache=0
+  [  13.83s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  13.83s] [chunk 15] post-run ok=1 results=1 newcache=0
+  [  13.83s] [chunk 27] pre-run rows=319
+  [  13.83s] [engine] runImpl start cache=0
+  [  13.83s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  13.91s] [engine] scan done rows=319 collectNew=0
+  [  13.91s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  13.91s] [chunk 14] post-run ok=1 results=1 newcache=0
+  [  13.92s] [chunk 28] pre-run rows=319
+  [  13.92s] [engine] runImpl start cache=0
+  [  13.92s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  13.99s] [chunk 18] post-run ok=1 results=1 newcache=0
+  [  13.99s] [chunk 29] pre-run rows=319
+  [  13.99s] [engine] runImpl start cache=0
+  [  13.99s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  14.00s] [chunk 19] post-run ok=1 results=1 newcache=0
+  [  14.00s] [chunk 30] pre-run rows=319
+  [  14.00s] [engine] runImpl start cache=0
+  [  14.00s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  14.09s] [chunk 21] post-run ok=1 results=1 newcache=0
+  [  14.09s] [chunk 31] pre-run rows=319
+  [  14.09s] [engine] runImpl start cache=0
+  [  14.09s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  14.37s] [engine] scan done rows=319 collectNew=0
+  [  14.37s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  14.38s] [engine] scan done rows=319 collectNew=0
+  [  14.38s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  14.58s] [chunk 20] post-run ok=1 results=1 newcache=0
+  [  14.58s] [chunk 32] pre-run rows=319
+  [  14.58s] [engine] runImpl start cache=0
+  [  14.58s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  14.58s] [chunk 16] post-run ok=1 results=1 newcache=0
+  [  14.58s] [chunk 33] pre-run rows=319
+  [  14.58s] [engine] runImpl start cache=0
+  [  14.58s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  14.62s] [engine] scan done rows=319 collectNew=0
+  [  14.62s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  14.65s] [engine] scan done rows=319 collectNew=0
+  [  14.65s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  14.84s] [chunk 22] post-run ok=1 results=1 newcache=0
+  [  14.84s] [chunk 34] pre-run rows=319
+  [  14.84s] [engine] runImpl start cache=0
+  [  14.85s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  14.85s] [chunk 23] post-run ok=1 results=1 newcache=0
+  [  14.85s] [chunk 35] pre-run rows=319
+  [  14.85s] [engine] runImpl start cache=0
+  [  14.85s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  20.53s] [engine] scan done rows=319 collectNew=0
+  [  20.53s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.56s] [engine] scan done rows=319 collectNew=0
+  [  20.56s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.56s] [engine] scan done rows=319 collectNew=0
+  [  20.56s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.69s] [engine] scan done rows=319 collectNew=0
+  [  20.69s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.71s] [chunk 25] post-run ok=1 results=1 newcache=0
+  [  20.71s] [chunk 36] pre-run rows=319
+  [  20.71s] [engine] runImpl start cache=0
+  [  20.71s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  20.74s] [chunk 26] post-run ok=1 results=1 newcache=0
+  [  20.74s] [engine] scan done rows=319 collectNew=0
+  [  20.74s] [chunk 37] pre-run rows=319
+  [  20.74s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.74s] [engine] runImpl start cache=0
+  [  20.74s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  20.75s] [chunk 27] post-run ok=1 results=1 newcache=0
+  [  20.75s] [chunk 38] pre-run rows=319
+  [  20.75s] [engine] runImpl start cache=0
+  [  20.76s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  20.76s] [engine] scan done rows=319 collectNew=0
+  [  20.76s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.87s] [chunk 28] post-run ok=1 results=1 newcache=0
+  [  20.87s] [chunk 39] pre-run rows=319
+  [  20.87s] [engine] runImpl start cache=0
+  [  20.87s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  20.91s] [engine] scan done rows=319 collectNew=0
+  [  20.91s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  20.92s] [chunk 29] post-run ok=1 results=1 newcache=0
+  [  20.92s] [chunk 40] pre-run rows=319
+  [  20.92s] [engine] runImpl start cache=0
+  [  20.92s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  20.94s] [chunk 30] post-run ok=1 results=1 newcache=0
+  [  20.94s] [chunk 41] pre-run rows=319
+  [  20.94s] [engine] runImpl start cache=0
+  [  20.95s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  21.00s] [engine] scan done rows=319 collectNew=0
+  [  21.00s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  21.08s] [chunk 24] post-run ok=1 results=1 newcache=0
+  [  21.08s] [chunk 42] pre-run rows=319
+  [  21.08s] [engine] runImpl start cache=0
+  [  21.09s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  21.17s] [chunk 31] post-run ok=1 results=1 newcache=0
+  [  21.17s] [chunk 43] pre-run rows=319
+  [  21.17s] [engine] runImpl start cache=0
+  [  21.17s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  21.77s] [engine] scan done rows=319 collectNew=0
+  [  21.77s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  21.82s] [engine] scan done rows=319 collectNew=0
+  [  21.82s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  21.97s] [chunk 32] post-run ok=1 results=1 newcache=0
+  [  21.97s] [chunk 44] pre-run rows=319
+  [  21.97s] [engine] runImpl start cache=0
+  [  21.97s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  22.01s] [engine] scan done rows=319 collectNew=0
+  [  22.01s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  22.02s] [chunk 35] post-run ok=1 results=1 newcache=0
+  [  22.02s] [chunk 45] pre-run rows=319
+  [  22.02s] [engine] runImpl start cache=0
+  [  22.02s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  22.20s] [chunk 33] post-run ok=1 results=1 newcache=0
+  [  22.20s] [chunk 46] pre-run rows=319
+  [  22.20s] [engine] runImpl start cache=0
+  [  22.20s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  22.24s] [engine] scan done rows=319 collectNew=0
+  [  22.24s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  22.43s] [chunk 34] post-run ok=1 results=1 newcache=0
+  [  22.43s] [chunk 47] pre-run rows=319
+  [  22.43s] [engine] runImpl start cache=0
+  [  22.43s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.40s] [engine] scan done rows=319 collectNew=0
+  [  27.40s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.42s] [engine] scan done rows=319 collectNew=0
+  [  27.42s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.49s] [engine] scan done rows=319 collectNew=0
+  [  27.49s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.51s] [engine] scan done rows=319 collectNew=0
+  [  27.51s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.62s] [engine] scan done rows=319 collectNew=0
+  [  27.62s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.62s] [chunk 36] post-run ok=1 results=1 newcache=0
+  [  27.62s] [chunk 48] pre-run rows=319
+  [  27.62s] [engine] runImpl start cache=0
+  [  27.62s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.64s] [chunk 38] post-run ok=1 results=1 newcache=0
+  [  27.64s] [chunk 49] pre-run rows=319
+  [  27.64s] [engine] runImpl start cache=0
+  [  27.64s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.64s] [engine] scan done rows=319 collectNew=0
+  [  27.64s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.69s] [chunk 39] post-run ok=1 results=1 newcache=0
+  [  27.69s] [chunk 50] pre-run rows=319
+  [  27.69s] [engine] runImpl start cache=0
+  [  27.69s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.73s] [chunk 37] post-run ok=1 results=1 newcache=0
+  [  27.73s] [chunk 51] pre-run rows=319
+  [  27.73s] [engine] runImpl start cache=0
+  [  27.73s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.73s] [engine] scan done rows=319 collectNew=0
+  [  27.73s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.81s] [engine] scan done rows=319 collectNew=0
+  [  27.81s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  27.82s] [chunk 40] post-run ok=1 results=1 newcache=0
+  [  27.82s] [chunk 52] pre-run rows=319
+  [  27.82s] [engine] runImpl start cache=0
+  [  27.82s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.84s] [chunk 41] post-run ok=1 results=1 newcache=0
+  [  27.84s] [chunk 53] pre-run rows=319
+  [  27.84s] [engine] runImpl start cache=0
+  [  27.84s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.91s] [chunk 42] post-run ok=1 results=1 newcache=0
+  [  27.91s] [chunk 54] pre-run rows=319
+  [  27.91s] [engine] runImpl start cache=0
+  [  27.92s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  27.99s] [chunk 43] post-run ok=1 results=1 newcache=0
+  [  27.99s] [chunk 55] pre-run rows=319
+  [  27.99s] [engine] runImpl start cache=0
+  [  27.99s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  29.05s] [engine] scan done rows=319 collectNew=0
+  [  29.05s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  29.10s] [engine] scan done rows=319 collectNew=0
+  [  29.10s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  29.22s] [chunk 44] post-run ok=1 results=1 newcache=0
+  [  29.22s] [chunk 56] pre-run rows=319
+  [  29.22s] [engine] runImpl start cache=0
+  [  29.23s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  29.26s] [engine] scan done rows=319 collectNew=0
+  [  29.26s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  29.28s] [chunk 45] post-run ok=1 results=1 newcache=0
+  [  29.28s] [chunk 57] pre-run rows=319
+  [  29.28s] [engine] runImpl start cache=0
+  [  29.28s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  29.43s] [chunk 46] post-run ok=1 results=1 newcache=0
+  [  29.43s] [chunk 58] pre-run rows=319
+  [  29.43s] [engine] runImpl start cache=0
+  [  29.43s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  29.46s] [engine] scan done rows=319 collectNew=0
+  [  29.46s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  29.65s] [chunk 47] post-run ok=1 results=1 newcache=0
+  [  29.66s] [chunk 59] pre-run rows=319
+  [  29.66s] [engine] runImpl start cache=0
+  [  29.66s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  34.14s] [engine] scan done rows=319 collectNew=0
+  [  34.14s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.25s] [engine] scan done rows=319 collectNew=0
+  [  34.25s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.28s] [engine] scan done rows=319 collectNew=0
+  [  34.28s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.28s] [engine] scan done rows=319 collectNew=0
+  [  34.28s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.33s] [chunk 48] post-run ok=1 results=1 newcache=0
+  [  34.33s] [chunk 60] pre-run rows=319
+  [  34.33s] [engine] runImpl start cache=0
+  [  34.34s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  34.42s] [engine] scan done rows=319 collectNew=0
+  [  34.42s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.45s] [engine] scan done rows=319 collectNew=0
+  [  34.45s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.45s] [chunk 51] post-run ok=1 results=1 newcache=0
+  [  34.45s] [chunk 61] pre-run rows=319
+  [  34.45s] [engine] runImpl start cache=0
+  [  34.45s] [engine] grid ok rows=319 wpr=3277 tasks=319 nthreads=1
+  [  34.46s] [engine] scan done rows=319 collectNew=0
+  [  34.46s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.48s] [chunk 49] post-run ok=1 results=1 newcache=0
+  [  34.48s] [chunk 62] pre-run rows=222
+  [  34.48s] [engine] runImpl start cache=0
+  [  34.49s] [engine] grid ok rows=222 wpr=3277 tasks=222 nthreads=1
+  [  34.49s] [chunk 50] post-run ok=1 results=1 newcache=0
+  [  34.53s] [engine] scan done rows=319 collectNew=0
+  [  34.53s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  34.62s] [chunk 52] post-run ok=1 results=1 newcache=0
+  [  34.64s] [chunk 54] post-run ok=1 results=1 newcache=0
+  [  34.65s] [chunk 53] post-run ok=1 results=1 newcache=0
+  [  34.72s] [chunk 55] post-run ok=1 results=1 newcache=0
+  [  35.82s] [engine] scan done rows=319 collectNew=0
+  [  35.82s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  35.85s] [engine] scan done rows=319 collectNew=0
+  [  35.85s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  35.96s] [chunk 56] post-run ok=1 results=1 newcache=0
+  [  36.00s] [chunk 57] post-run ok=1 results=1 newcache=0
+  [  36.01s] [engine] scan done rows=319 collectNew=0
+  [  36.01s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  36.16s] [chunk 58] post-run ok=1 results=1 newcache=0
+  [  36.21s] [engine] scan done rows=319 collectNew=0
+  [  36.21s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  36.33s] [chunk 59] post-run ok=1 results=1 newcache=0
+  [  38.74s] [engine] scan done rows=222 collectNew=0
+  [  38.74s] [engine] match vi=0 rows=222 nthreads=1 parallel=0
+  [  38.83s] [chunk 62] post-run ok=1 results=1 newcache=0
+  [  40.45s] [engine] scan done rows=319 collectNew=0
+  [  40.45s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  40.54s] [engine] scan done rows=319 collectNew=0
+  [  40.54s] [engine] match vi=0 rows=319 nthreads=1 parallel=0
+  [  40.56s] [chunk 60] post-run ok=1 results=1 newcache=0
+  [  40.63s] [chunk 61] post-run ok=1 results=1 newcache=0
+  ---- 退出码=0 总耗时=40.67s 采样峰值(WorkingSet)=103 MB
+  ---- 块完成间隔: 0.04s, 0.10s, 0.05s, 0.01s, 0.00s, 0.01s, 0.02s, 0.02s, 0.23s, 0.02s, 0.01s, 6.30s, 0.10s, 0.07s, 0.00s, 0.09s, 0.07s, 0.01s, 0.09s, 0.49s, 0.00s, 0.26s, 0.01s, 5.86s, 0.03s, 0.01s, 0.12s, 0.05s, 0.02s, 0.14s, 0.09s, 0.80s, 0.05s, 0.18s, 0.23s, 5.19s, 0.02s, 0.05s, 0.04s, 0.09s, 0.02s, 0.08s, 0.08s, 1.23s, 0.06s, 0.15s, 0.23s, 4.68s, 0.12s, 0.03s, 0.00s, 0.13s, 0.02s, 0.01s, 0.07s, 1.25s, 0.04s, 0.16s, 0.17s, 2.51s, 1.73s, 0.07s
+  ---- 峰值出现于 6.63s（103 MB）
+

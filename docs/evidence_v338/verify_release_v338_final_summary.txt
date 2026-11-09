@@ -1,0 +1,4 @@
+﻿SlimeFinder v3.3.8 final verify (skip-clean/skip-bench): total=14 pass=14 fail=0
+zip=dist\SlimeFinder-3.3.8-win64.zip sha256=EF5A2A9BADCD3CB5E1FFFF475CF28AD79D36F1D651C72B84E340F0FAC32029B5
+logs kept in: C:\Users\Administrator\AppData\Local\Temp\slime_verify_20260921_213857
+

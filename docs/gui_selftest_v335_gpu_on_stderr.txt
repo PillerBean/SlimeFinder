@@ -1,0 +1,275 @@
+﻿[CRASH] 0x4001000A at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=0000000000000021 rcx=0000000000000002 rdx=0000000000000000 r8=0000000000000001 r9=0000023CC99A15A0 rsp=00000047E87EC610 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB569B3D90 C:\Windows\System32\KERNELBASE.dll
+  #6 00007FFA86B933E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #7 00007FFA86B91056 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #8 00007FFA86B915EC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #9 00007FFA86B93317 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #10 00007FFA88AC9F6B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #11 00007FFA888CF81C C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #12 00007FFA888D11E9 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #13 00007FFA888D588A C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #14 00007FFA888C0745 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #15 00007FFA888E8BFC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #16 00007FFAD7F81A4B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #17 00007FFAD7DE3973 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #18 00007FFAD7DE2E36 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #19 00007FFAD7DBD001 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #20 00007FFAD7DBBF92 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #21 00007FFAD7DE04AA C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #22 00007FFAD7DFEE4E C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #23 00007FFAD7DE2034 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+[CRASH] 0x40010006 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=000004D0FFFFFB30 rcx=0000000000000021 rdx=0000000000000000 r8=00007FFB56C65EF8 r9=0000000C00000001 rsp=00000047E87EC330 rbp=0000000000000002
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB569B3E6C C:\Windows\System32\KERNELBASE.dll
+  #6 00007FFB569B3D9C C:\Windows\System32\KERNELBASE.dll
+  #7 00007FFA86B933E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #8 00007FFA86B91056 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #9 00007FFA86B915EC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #10 00007FFA86B93317 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #11 00007FFA88AC9F6B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #12 00007FFA888CF81C C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #13 00007FFA888D11E9 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #14 00007FFA888D588A C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #15 00007FFA888C0745 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #16 00007FFA888E8BFC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #17 00007FFAD7F81A4B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #18 00007FFAD7DE3973 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #19 00007FFAD7DE2E36 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #20 00007FFAD7DBD001 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #21 00007FFAD7DBBF92 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #22 00007FFAD7DE04AA C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #23 00007FFAD7DFEE4E C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+[设置] 滚轮过滤器已安装：10 个 SpinBox + 2 个 DoubleSpinBox（允许滚轮=0）
+[UI自检] GPU 开关检查…
+[UI自检] GPU 检测结果: 可用（）
+[UI自检] GPU 端到端搜索: ok=1 结果=10
+[UI自检] 真实搜索冒烟（512x512 Java 密度）…
+[UI自检] 搜索冒烟 GPU 状态: 勾选=1 可用=1
+[UI自检] 搜索冒烟结束 pumps=1 结果文本=53 行 阶段采样(信息性): 扫描=0 匹配引导=0 匹配进度=0
+[UI自检] 算法模式检查…
+[UI自检] 模式说明标签 宽=364 高=30 需要=26 | 竖滚动上限=586 | 设置区宽=386 横滚动上限=0
+[UI自检] 尺寸 1280x860：设置区横滚动上限=0 竖滚动上限=446
+[UI自检] 尺寸 1000x650：设置区横滚动上限=0 竖滚动上限=656
+[UI自检] 尺寸 1920x1080：设置区横滚动上限=0 竖滚动上限=226
+[UI自检] 模式[0] 说明: 宽=364 高=30 需要=26 | 单选宽=364 需要=252
+[UI自检] 模式[1] 说明: 宽=364 高=44 需要=40 | 单选宽=364 需要=276
+[UI自检] 模式[2] 说明: 宽=364 高=44 需要=40 | 单选宽=364 需要=204
+[UI自检] 模式[3] 说明: 宽=364 高=30 需要=26 | 单选宽=364 需要=216
+[UI自检] 估算模式真实搜索冒烟…
+[UI自检] 缓存扩展名检查…
+[UI自检] 缓存扩展名检查完成（新/旧/非法 三类均已覆盖）
+[UI自检] 缓存可用性（v3.3.2）检查…
+[UI自检] 过滤器首组=[*.slimecache *.cache *.pkl *.pickle] 目录内匹配=1 项
+[CRASH] 0xE06D7363 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=00007FFB59009EC4 rcx=0000000000000000 rdx=0000000000000000 r8=00000047E87E8710 r9=000000070000001E rsp=00000047E87E87D0 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB5683E836 C:\Windows\System32\ucrtbase.dll
+  #6 00007FFB53F72CA5 C:\Windows\SYSTEM32\windows.storage.dll
+  #7 00007FFB53FE8605 C:\Windows\SYSTEM32\windows.storage.dll
+  #8 00007FFB53E45550 C:\Windows\SYSTEM32\windows.storage.dll
+  #9 00007FFB53E45FB4 C:\Windows\SYSTEM32\windows.storage.dll
+  #10 00007FFB53E4545B C:\Windows\SYSTEM32\windows.storage.dll
+  #11 00007FFB53D3A958 C:\Windows\SYSTEM32\windows.storage.dll
+  #12 00007FFB53CF76FC C:\Windows\SYSTEM32\windows.storage.dll
+  #13 00007FFB53CF663F C:\Windows\SYSTEM32\windows.storage.dll
+  #14 00007FFB53D42E53 C:\Windows\SYSTEM32\windows.storage.dll
+  #15 00007FFB53CCB80A C:\Windows\SYSTEM32\windows.storage.dll
+  #16 00007FFB53D4ADE1 C:\Windows\SYSTEM32\windows.storage.dll
+  #17 00007FFA88AED0E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #18 00007FFA88AF3C0C C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #19 00007FFA88AF1664 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #20 00007FFAD8010D03 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #21 00007FFAD8013B21 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #22 00007FFAD7FFABAC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #23 00007FFAD8000B9F C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+[CRASH] 0xE06D7363 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=0000023CCB89B6B0 rcx=000003E800000000 rdx=408F1C00000003E8 r8=4037000000000000 r9=408EF00000000000 rsp=00000047E87E5150 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB5683E836 C:\Windows\System32\ucrtbase.dll
+  #6 00007FFB53F927CF C:\Windows\SYSTEM32\windows.storage.dll
+  #7 00007FFB53E45001 C:\Windows\SYSTEM32\windows.storage.dll
+  #8 00007FFB53E44EEC C:\Windows\SYSTEM32\windows.storage.dll
+  #9 00007FFB53E46970 C:\Windows\SYSTEM32\windows.storage.dll
+  #10 00007FFB53E468F3 C:\Windows\SYSTEM32\windows.storage.dll
+  #11 00007FFB542F4FA7 C:\Windows\SYSTEM32\windows.storage.dll
+  #12 00007FFB56843630 C:\Windows\System32\ucrtbase.dll
+  #13 00007FFB56840F6C C:\Windows\System32\ucrtbase.dll
+  #14 00007FFB591041B6 C:\Windows\SYSTEM32\ntdll.dll
+  #15 00007FFB53CF76FC C:\Windows\SYSTEM32\windows.storage.dll
+  #16 00007FFB53CF663F C:\Windows\SYSTEM32\windows.storage.dll
+  #17 00007FFB53D42E53 C:\Windows\SYSTEM32\windows.storage.dll
+  #18 00007FFB53CCB80A C:\Windows\SYSTEM32\windows.storage.dll
+  #19 00007FFB53D4ADE1 C:\Windows\SYSTEM32\windows.storage.dll
+  #20 00007FFA88AED0E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #21 00007FFA88AF3C0C C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #22 00007FFA88AF1664 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #23 00007FFAD8010D03 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+[CRASH] 0xE06D7363 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=036C0052FFFFFFFF rcx=0000000000000001 rdx=035D777F03A2AE7E r8=00007FFB5915838A r9=0000000000000004 rsp=00000047E87E88D0 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB5683E836 C:\Windows\System32\ucrtbase.dll
+  #6 00007FFB53F72CA5 C:\Windows\SYSTEM32\windows.storage.dll
+  #7 00007FFB53FE8605 C:\Windows\SYSTEM32\windows.storage.dll
+  #8 00007FFB53E45550 C:\Windows\SYSTEM32\windows.storage.dll
+  #9 00007FFB53E45FB4 C:\Windows\SYSTEM32\windows.storage.dll
+  #10 00007FFB53E4545B C:\Windows\SYSTEM32\windows.storage.dll
+  #11 00007FFB53D3A958 C:\Windows\SYSTEM32\windows.storage.dll
+  #12 00007FFB53CF76FC C:\Windows\SYSTEM32\windows.storage.dll
+  #13 00007FFB53CF663F C:\Windows\SYSTEM32\windows.storage.dll
+  #14 00007FFB53D42E53 C:\Windows\SYSTEM32\windows.storage.dll
+  #15 00007FFB53CCB80A C:\Windows\SYSTEM32\windows.storage.dll
+  #16 00007FFB53D4ADE1 C:\Windows\SYSTEM32\windows.storage.dll
+  #17 00007FFA88AED0E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #18 00007FFA88AF3C0C C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #19 00007FFA88AF863B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #20 00007FFAD80DCE86 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #21 00007FFAD7FFB5C4 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #22 00007FFAD8000B9F C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #23 00007FFAD7FF6C2A C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+[CRASH] 0xE06D7363 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=00007FFB3E9DF6E0 rcx=0000000000000000 rdx=000000000000000B r8=0000000000000104 r9=00007FFB41BDBA90 rsp=00000047E87E5250 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB5683E836 C:\Windows\System32\ucrtbase.dll
+  #6 00007FFB53F927CF C:\Windows\SYSTEM32\windows.storage.dll
+  #7 00007FFB53E45001 C:\Windows\SYSTEM32\windows.storage.dll
+  #8 00007FFB53E44EEC C:\Windows\SYSTEM32\windows.storage.dll
+  #9 00007FFB53E46970 C:\Windows\SYSTEM32\windows.storage.dll
+  #10 00007FFB53E468F3 C:\Windows\SYSTEM32\windows.storage.dll
+  #11 00007FFB542F4FA7 C:\Windows\SYSTEM32\windows.storage.dll
+  #12 00007FFB56843630 C:\Windows\System32\ucrtbase.dll
+  #13 00007FFB56840F6C C:\Windows\System32\ucrtbase.dll
+  #14 00007FFB591041B6 C:\Windows\SYSTEM32\ntdll.dll
+  #15 00007FFB53CF76FC C:\Windows\SYSTEM32\windows.storage.dll
+  #16 00007FFB53CF663F C:\Windows\SYSTEM32\windows.storage.dll
+  #17 00007FFB53D42E53 C:\Windows\SYSTEM32\windows.storage.dll
+  #18 00007FFB53CCB80A C:\Windows\SYSTEM32\windows.storage.dll
+  #19 00007FFB53D4ADE1 C:\Windows\SYSTEM32\windows.storage.dll
+  #20 00007FFA88AED0E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #21 00007FFA88AF3C0C C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #22 00007FFA88AF863B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #23 00007FFAD80DCE86 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+[UI自检] 对话框起始目录=C:/Users/Administrator/AppData/Local/Temp/slime_selftest_dlg 预选=C:/Users/Administrator/AppData/Local/Temp/slime_selftest_dlg/slime_cache.slimecache
+[CRASH] 0x4001000A at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=00000000000B0000 rcx=0000023CCBE700B8 rdx=0000000000380036 r8=00000000000AE000 r9=0000000000000000 rsp=00000047EA3FFA20 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB569B3D90 C:\Windows\System32\KERNELBASE.dll
+  #6 00007FFA86B933E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #7 00007FFA86B91056 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #8 00007FFA86B91266 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #9 00007FFA86E136FF C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #10 00007FFA86DBA45B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #11 00007FFB579FCD87 C:\Windows\System32\KERNEL32.DLL
+  #12 00007FFB5908CAEC C:\Windows\SYSTEM32\ntdll.dll
+[CRASH] 0x40010006 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=000004D0FFFFFB30 rcx=0000000000000021 rdx=0000023CC97402D0 r8=00007FFB56C65EF8 r9=0000000C00000001 rsp=00000047EA3FF740 rbp=0000000000000002
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB569B3E6C C:\Windows\System32\KERNELBASE.dll
+  #6 00007FFB569B3D9C C:\Windows\System32\KERNELBASE.dll
+  #7 00007FFA86B933E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #8 00007FFA86B91056 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #9 00007FFA86B91266 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #10 00007FFA86E136FF C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #11 00007FFA86DBA45B C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #12 00007FFB579FCD87 C:\Windows\System32\KERNEL32.DLL
+  #13 00007FFB5908CAEC C:\Windows\SYSTEM32\ntdll.dll
+[UI自检] 缓存端到端搜索（基岩 256x256，启用缓存）…
+[UI自检] 缓存端到端：文件=D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\slime_cache.slimecache 条目=6811 重载条目=6811 逐区块比对=65536 不一致=0
+[UI自检] 缓存可用性（v3.3.2）检查完成
+[UI自检] v3.3.3 检查（版本号/缓存标签/GPU 临界值/帮助/折叠/排序）…
+[UI自检] 缓存标签文本: 缓存已加载，共 6811 个区块（覆盖 1 个区域，约 0 MB）
+[UI自检] GPU=gfx1031（Advanced Micro Devices, Inc.） 显存=10224 MB 核数=12 → 临界值=1002352 区块
+[UI自检] 小范围提示触发: total=16 状态栏="当前范围较小（16 区块，低于本机临界值约 100 万），建议关闭 GPU 加速以获得更快速度。"
+[UI自检] 阶段文字: [正在扫描区块… 42% ｜ 速度 12.3 万/秒 ｜ 预计剩余 1:05] [扫描完成，正在匹配图案…] [正在匹配图案… 77%] [正在排序结果…]
+[UI自检] 无搜索结果：跳过排序视图断言
+[UI自检] 取消响应(立即): 调用 1.0 ms，停止 23.7 ms
+[UI自检] 取消响应(运行中=1): 停止 20.1 ms（若为 0 表示搜索已先完成，属正常）
+[UI自检] v3.3.5 检查（Tab 焦点/GPU 状态/日志开关/更新弹窗/基准/滚轮/设置/菜单/布局）…
+[CRASH] 0x4001000A at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=0000023CCB901790 rcx=0000023CC993BC50 rdx=00000047E87EA8C0 r8=00007FFAD7DB2FF6 r9=0000023C00000000 rsp=00000047E87EAEE0 rbp=0000000000000004
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB569B3D90 C:\Windows\System32\KERNELBASE.dll
+  #6 00007FFA86B933E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #7 00007FFA86B91056 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #8 00007FFA86B915EC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #9 00007FFA86B93317 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #10 00007FFA886E7D97 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #11 00007FFAD7E02399 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #12 00007FF7B2BE04B7 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #13 00007FF7B2BA5F28 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #14 00007FF7B2C27070 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #15 00007FF7B2C26779 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #16 00007FFB579FCD87 C:\Windows\System32\KERNEL32.DLL
+  #17 00007FFB5908CAEC C:\Windows\SYSTEM32\ntdll.dll
+[CRASH] 0x40010006 at 00007FFB569B41CA in C:\Windows\System32\KERNELBASE.dll
+[CRASH] regs rax=000004D0FFFFFB30 rcx=0000000000000021 rdx=0000023CC98F0000 r8=00007FFB56C65EF8 r9=0000000C00000001 rsp=00000047E87EAC00 rbp=0000000000000002
+  #0 00007FF7B2BA51A3 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #1 00007FFB590AC196 C:\Windows\SYSTEM32\ntdll.dll
+  #2 00007FFB590AB935 C:\Windows\SYSTEM32\ntdll.dll
+  #3 00007FFB58FEF88D C:\Windows\SYSTEM32\ntdll.dll
+  #4 00007FFB569B41CA C:\Windows\System32\KERNELBASE.dll
+  #5 00007FFB569B3E6C C:\Windows\System32\KERNELBASE.dll
+  #6 00007FFB569B3D9C C:\Windows\System32\KERNELBASE.dll
+  #7 00007FFA86B933E3 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #8 00007FFA86B91056 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #9 00007FFA86B915EC C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #10 00007FFA86B93317 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Core.dll
+  #11 00007FFA886E7D97 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Gui.dll
+  #12 00007FFAD7E02399 C:\Qt\6.11.2\msvc2022_64\bin\Qt6Widgets.dll
+  #13 00007FF7B2BE04B7 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #14 00007FF7B2BA5F28 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #15 00007FF7B2C27070 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #16 00007FF7B2C26779 D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\build\SlimeFinder.exe
+  #17 00007FFB579FCD87 C:\Windows\System32\KERNEL32.DLL
+  #18 00007FFB5908CAEC C:\Windows\SYSTEM32\ntdll.dll
+[UI自检] Tab×10：焦点事件 0 次，跑到其他控件=无
+[UI自检] 实测吞吐：CPU 16.1 亿/秒 ｜ GPU 78.86 亿/秒（含回读）｜ 交叉点约 22.7 万区块（config.json 缓存）
+[UI自检] v3.3.5 检查完成
+[UI自检] 设置分组：游戏设置 / 搜索范围 / 搜索模式 / 匹配方式 / 性能设置 / 缓存管理
+[UI自检]   分组最小宽 "游戏设置" = 200 px
+[UI自检]   分组最小宽 "搜索范围" = 288 px
+[UI自检]   分组最小宽 "搜索模式" = 220 px
+[UI自检]   分组最小宽 "匹配方式" = 294 px
+[UI自检]   分组最小宽 "性能设置" = 276 px
+[UI自检]   分组最小宽 "缓存管理" = 216 px
+[UI自检] 标签页：进度 / 反馈 / 日志 / 命令终端
+[UI自检] 左栏 340px（splitter 最左）：设置区横滚动上限=0
+[UI自检] v3.3.4 结构检查完成

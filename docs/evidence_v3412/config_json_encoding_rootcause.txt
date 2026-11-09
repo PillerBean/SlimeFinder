@@ -1,0 +1,72 @@
+v3.4.12 交付审计 FINDING 的根因与修复证据（config.json 被写坏）
+================================================================
+
+一、审计发现（scripts/audit_corruption.py [6] artefact consistency）
+----------------------------------------------------------------
+  build/config.json  JSON ERROR: Invalid control character at: line 59 column 55 (char 1267)
+  FINDINGS: 1
+
+  文件实际内容（截取）：
+    "device": "gfx1031锛圓dvanced Micro Devices, Inc.锛?,      ← 引号被吃掉，文件不再是合法 JSON
+  文件开头：EF BB BF 7B 0D 0A                                  ← 多了 UTF-8 BOM
+
+  期望内容：  "device": "gfx1031（Advanced Micro Devices, Inc.）",
+
+二、根因（两条，均已修）
+----------------------------------------------------------------
+[1] 辅助脚本用 PowerShell 5.1 的默认编码做了一次「读改写」往返：
+      scripts/gui_selftest.ps1   ：Get-Content -Raw（PS 5.1 默认按 ANSI/GBK 解码）
+                                   + Set-Content -Encoding UTF8（PS 5.1 写 BOM）
+      scripts/verify_release.ps1 ：同样的一段（每轮自检跑两次，损坏叠加）
+    设备名里的全角括号是 UTF-8 的 EF BC 88 / EF BC 89，被当成 GBK 解码后：
+      EF BC   → 锛（U+951B）
+      88 + 41 → 圓（U+5713，把 "Advanced" 的 A 吃掉了）
+      89 + 22 → 非法 GBK 序列 → '?'（把字符串收尾的引号吃掉了）⇒ JSON 从此非法
+    复现对照实验（scripts 修复前 / 修复后，同一段代码、同一台机器）：
+
+      旧写法（Get-Content -Raw + Set-Content -Encoding UTF8）
+        BOM：False → True
+        合法 JSON：否（Unexpected UTF-8 BOM: line 1 column 1）
+        设备名字节：b'gfx1031\xe9\x94\x9b\xe5\x9c\x93dvanced Micro Devices, Inc.\xe9\x94\x9b?'
+        ⇒ 与审计抓到的文件**逐字节相同**，根因确认
+
+      新写法（[System.IO.File]::ReadAllText/WriteAllText + UTF8Encoding($false)）
+        无 BOM=True  设备名完好=True  中文路径完好=True  enabled 已改=True
+        （脚本见 scripts/enc_test.py 的对照输出，证据文件：enc_roundtrip_proof.txt）
+
+[2] 应用自身的写入端不做 JSON 转义（真缺陷，用户可触发）：
+      src/gui/MainWindow.cpp 的 writeConfigFile() 是手工拼 JSON，
+      种子 / 缓存目录 / 日志子目录 / 设备名 里的引号与反斜杠会原样写进去。
+      Windows 上 cacheDir 形如 C:\Temp\cache ⇒ "\T" 是非法 JSON 转义
+      ⇒ 外部解析器（以及本审计）读不回来，等于整份设置丢失。
+
+三、修复内容
+----------------------------------------------------------------
+  src/gui/MainWindow.cpp
+    * 新增 jsonEscapeUtf8()：引号 / 反斜杠 / 控制字符按 JSON 规则转义；
+      非法 UTF-8 字节替换为 U+FFFD（某些 OpenCL 驱动返回 ANSI 设备名时也不会写坏文件）。
+      ← 写入端 8 处字符串值全部改走它（seed / terminal.history / defaultAlgorithm /
+        defaultPreset / cacheDir / logSubDir / theme / gpuBench.device）
+    * 新增 jsonUnescape()：读回端对称还原（否则 C:\Temp 会读成 C:\\Temp）。
+      兼容旧文件：未知转义（\T \c ...）原样保留；若反转义后出现控制字符而原文没有，
+      判定为「3.4.12 之前的未转义文件」，按原样返回。
+    * 自检新增两条断言（GUI 组 14.10 内）：
+        config.json 无 BOM（BOM 会让标准 JSON 解析器失败）
+        config.json 是合法 JSON（标准解析器可读回）   ← 用 QJsonDocument 复核
+      并把 probe 的 cacheDir / logSubDir 设为「C:\Temp\slime\缓存」「logs\自检」，
+      断言 setValues → currentValues → 落盘 → 读回 全链一致（覆盖反斜杠 + 中文）。
+
+  scripts/gui_selftest.ps1、scripts/verify_release.ps1
+    * 改用 [System.IO.File]::ReadAllText / WriteAllText + UTF8Encoding($false)，
+      不再用 Get-Content / Set-Content（消除 ANSI 解码与 BOM）。
+
+  scripts/package_release.ps1
+    * 随包默认 config.json 改为「无 BOM UTF-8」写出（避免随包文件本身就带 BOM）。
+
+四、修复后验证
+----------------------------------------------------------------
+  * 自检日志：  config.json：1460 字节 解析错误=0（0=OK）顶层键=10 BOM=0
+                （offscreen / GPU 开 / Windows 平台三轮均如此）
+  * scripts/audit_corruption.py ⇒ CLEAN: no corruption signature in 245 files（0 项发现）
+  * 对照实验：旧写法必坏、新写法完好（见第二节）
+  * 打包门禁：PACKAGE OK（含包内 GUI 自检 exit=0、单位测试、内核自检）

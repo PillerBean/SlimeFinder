@@ -1,0 +1,18 @@
+<!DOCTYPE RCC>
+<!-- v3.3.9（任务书 5.1）：程序图标（素材：模板：原始文件/程序图标.png，透明底史莱姆方块）。
+     用途：QApplication/窗口/任务栏/托盘图标；exe 文件图标由 src/app.rc 的 IDI_APPICON 提供。 -->
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file>appicon.png</file>
+        <!-- v3.4.7：勾选指示器（样式规范「复选 · 直角方形」= 1px 边框 + 内缩实心块，浅/深 × 正常/禁用） -->
+        <file>check_on_light.png</file>
+        <file>check_on_light_disabled.png</file>
+        <file>check_on_dark.png</file>
+        <file>check_on_dark_disabled.png</file>
+        <!-- v3.4.7：下拉箭头（自绘 7x4 实心三角，替代原生 QComboBox 箭头避免空框/黑块） -->
+        <file>arrow_down_light.png</file>
+        <file>arrow_down_light_disabled.png</file>
+        <file>arrow_down_dark.png</file>
+        <file>arrow_down_dark_disabled.png</file>
+    </qresource>
+</RCC>

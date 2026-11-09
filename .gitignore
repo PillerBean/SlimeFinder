@@ -1,0 +1,49 @@
+# ===== SlimeFinder GitHub .gitignore =====
+# 原则：仓库只保存源码/脚本/文档；编译产物、安装包、运行时缓存一律走 Releases 或本地。
+
+# --- 构建产物 / 打包产物（体积大，绝不提交）---
+build/
+build$r/
+dist/
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+*.exe
+*.msi
+
+# --- 本地运行时数据（可能含本机路径/用户设置，绝不提交）---
+config.json
+logs/
+crashes/
+*.log
+*.slimecache
+*.cache
+x/
+③
+依据：
+
+# --- 大型文档素材（可选：如需仓库内展示再单独用 Git LFS 或压缩）---
+docs/screenshots/
+docs/promo/
+
+# --- 编辑器 / IDE ---
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+CMakeUserPresets.json
+
+# --- 系统垃圾 ---
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- 临时文件 ---
+*.tmp
+*.bak
+*.orig
+*.rej
