@@ -5,6 +5,7 @@
 build/
 build$r/
 dist/
+release/
 *.obj
 *.pdb
 *.ilk
