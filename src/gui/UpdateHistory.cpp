@@ -32,6 +32,11 @@ struct RawEntry {
 
 // 严格按版本号从新到旧（生成时已排序，此处顺序即展示顺序）
 const RawEntry kRawEntries[] = {
+    { "3.10.12.9", "2026-11-09", false, 3, {
+        { HistoryTag::Added, "新增 PolyForm Noncommercial 1.0.0 许可证（含 Required Notice 来源署名要求）与 NOTICE 第三方组件说明：源码公开、非商业使用，再分发/修改版必须注明来源" },
+        { HistoryTag::Adjusted, "README 重写为面向新用户的精简结构（获取/功能/快速开始/构建/许可），完整变更历史移入 docs/update_history.md 并由脚本从更新历史数据自动生成" },
+        { HistoryTag::Adjusted, "正式/测试版规则统一：版本号保持四段，GitHub Release 通过「Pre-release」标记手动区分，Latest 由手动控制的 Release 决定（详见发布指南）" },
+    } },
     { "3.10.12.8", "2026-11-09", false, 3, {
         { HistoryTag::Improved, "「快速找最近 N 个」方案改为仅提前停止（不再强制「由近及远」）：实测 CPU 114.5 vs 123.1 ms、GPU 也更快；图案方案此前已是仅停止" },
         { HistoryTag::Improved, "快捷范围再上调一档（GPU 大幅提速后旧值偏保守）：附近 ±20000、局部 ±200000、全局 ±1000000 区块，GPU 下约 <1 秒/数秒/1 分钟内" },
@@ -878,7 +883,7 @@ std::string buildText()
     std::string s;
     s += "史莱姆区块查找器 更新历史\n";
     s += "==============================================\n";
-    s += "版本范围：1.0.0 → 3.10.12.8（正式版仅 V2.8.4 / V3.1.1 / V3.3.0）\n";
+    s += "版本范围：1.0.0 → 3.10.12.9（正式版仅 V2.8.4 / V3.1.1 / V3.3.0 / V3.5.0 / V3.6.19）\n";
     s += "\n";
     for (int i = 0; i < kEntryCount; ++i) {
         const RawEntry& r = kRawEntries[i];

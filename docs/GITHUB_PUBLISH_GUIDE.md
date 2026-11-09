@@ -175,31 +175,55 @@ powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Ver
 
 安装图形界面 GitHub Desktop 是可选项，不是必须。
 
-## 九、当前仓库信息（2026-11-09 已完成）
+## 九、已确定的发布规则（2026-11-09）
 
-- 账号：`PillerBean`
-- 仓库：https://github.com/PillerBean/SlimeFinder （Public，默认分支 main）
-- 发布页：https://github.com/PillerBean/SlimeFinder/releases
-- 最新 Release：https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.8
-  - `SlimeFinder-3.10.12.8-win64.zip`（15,988,096 B）
-  - `SlimeFinder-3.10.12.8-Setup.exe`（11,045,351 B）
-  - `SHA256SUMS-3.10.12.8.txt`
-- 自动更新接口（公开仓库可直接读）：
-  `https://api.github.com/repos/PillerBean/SlimeFinder/releases/latest`
-- 本机工具：
-  - GitHub CLI：`..\github_tools\gh_dir\bin\gh.exe`
-  - 登录 token：`..\github_tools\token.txt`（临时文件，建议后续删除）
-  - 历史版本资产收集脚本：`scripts/collect_release_assets.ps1`
+### 版本号与正式/测试版
 
-### 日常发版流程（以后每版）
+- **所有版本统一四段版本号**，例如 `3.10.12.9`、`3.10.12.10`（不再用 `X.Y.Z` 表示正式版）；
+- 正式 / 测试**不用版本号区分**，统一在 GitHub Release 上手动标记：
+  - **正式发布**：Release **不勾** `Pre-release` ⇒ 自动成为 **Latest**；
+  - **测试发布**：发布时勾选 `Pre-release`（或命令加 `--prerelease`）⇒ 不会成为 Latest；
+- Latest 由手动发布行为控制；自动更新默认只读 `/releases/latest`，
+  以后若要支持“测试通道”，再读 `/releases` 列表里 `prerelease=true` 的更高版本；
+- 应用内「更新历史」里的 ★正式版 仅用于历史里程碑（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0 / 3.6.19），
+  不再表示新版本一定是正式版。
+
+### 每次发版的固定流程
 
 ```bat
 cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+:: 1) 改版本号 + 更新历史（CMakeLists / main.cpp / app.rc / MainWindow / UpdateHistory / 脚本）
+cmd /c scripts\build_repo.cmd
+build\slime_tests.exe --unit
+py -3 tests\verify_against_reference.py
+py -3 scripts\audit_corruption.py
+powershell -NoProfile -Command "& .\scripts\gui_selftest.ps1 -LogDir build\final -GpuOn"
+:: 2) 提交并打 tag
 git add -A
 git commit -m "release: v3.10.12.9"
 git tag -a v3.10.12.9 -m "SlimeFinder v3.10.12.9"
 git push origin main
 git push origin v3.10.12.9
+:: 3) 打包并汇总资产
+powershell -NoProfile -Command "& .\scripts\package_release.ps1 -Version 3.10.12.9 -SkipSelfTest"
+powershell -NoProfile -Command "& .\scripts\build_installer.ps1 -Version 3.10.12.9"
 powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Version 3.10.12.9
+:: 4) 发布（正式版：不带 --prerelease；测试版：加 --prerelease）
 github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" --title "SlimeFinder v3.10.12.9" --notes-file docs\release_notes\v3.10.12.9.md
 ```
+
+### 许可证与仓库展示（已定）
+
+- 许可证：**PolyForm Noncommercial 1.0.0** + `Required Notice` 署名要求（见 `LICENSE`）；
+  源码公开、非商业使用；再分发/修改版必须注明来源
+  `SlimeFinder — https://github.com/PillerBean/SlimeFinder`；商业使用需作者书面授权；
+- `NOTICE` 列出第三方组件（cubiomes MIT / OpenCL-Headers Apache-2.0 / Qt 6）；
+- README 已重写为新人向结构（截图 + 下载 + 功能 + 快速开始 + 构建 + 许可），
+  完整历史移到 `docs/update_history.md`（由 `scripts/export_update_history.py` 自动生成）；
+- 仓库 About：一句话简介；Homepage 指向 Releases 页。
+
+### 当前状态
+
+- 仓库：https://github.com/PillerBean/SlimeFinder （Public）
+- 旧 Release `v3.10.12.8` 已按用户要求删除（含 tag），重新整理为 `v3.10.12.9` 后统一发布；
+- 发布 `v3.10.12.9` 时：作为正式发布（不勾 Pre-release）⇒ 成为 Latest。

@@ -15,7 +15,7 @@
 # parked in src/gpu/experimental/ (not built); there is no GPU density self-test target.
 #
 # Usage (from the SlimeFinder directory, or pass -Repo):
-#   pwsh -File scripts\verify_release.ps1 -Zip dist\SlimeFinder-3.10.12.8-win64.zip
+#   pwsh -File scripts\verify_release.ps1 -Zip dist\SlimeFinder-3.10.12.9-win64.zip
 #   powershell -ExecutionPolicy Bypass -File scripts\verify_release.ps1 -SkipClean -SkipBench
 #
 # Notes:

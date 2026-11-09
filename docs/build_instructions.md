@@ -1,4 +1,4 @@
-﻿# 编译指南（build_instructions.md）— v3.3.10.12.8
+﻿# 编译指南（build_instructions.md）— v3.3.10.12.9
 
 ## 1. 依赖环境
 
@@ -154,7 +154,7 @@ bench_v321\slime_tests_v321.exe --bench          :: v3.2.1 归档二进制（同
 ### 3.5 一键发布验证（v3.3.1 新增；v3.3.2+ 沿用）
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\verify_release.ps1 `
-           -Zip dist\SlimeFinder-3.10.12.8-win64.zip
+           -Zip dist\SlimeFinder-3.10.12.9-win64.zip
 ```
 依次执行并汇总：clean 全量重建（校验退出码与 error 行数）→ 单元测试 → 111 参考对照 →
 OpenCL 探测 → SIMD 内核自检（含嵌入内核逐字节校验）→ GUI 自检
@@ -168,15 +168,15 @@ OpenCL 探测 → SIMD 内核自检（含嵌入内核逐字节校验）→ GUI �
 > 产出**逐字节一致**的二进制，因此「先 clean 重建 → 打包 → 再验证」也能通过哈希检查
 > （实测：两次 clean 重建 + 重新链接后 `SlimeFinder.exe` SHA256 完全相同）。
 
-### 3.6 一键打包（v3.3.1 新增；`-Version 3.3.10.12.8` 可指定版本号）
+### 3.6 一键打包（v3.3.1 新增；`-Version 3.3.10.12.9` 可指定版本号）
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\package_release.ps1
 ```
 依次执行：复制 `build\` 产物（`SlimeFinder.exe`、`slime_tests.exe`、`slime_ocl_probe.exe`、
 `slime_kernel_tests.exe`）→ 刷新 `dist\SlimeFinder\docs\` 与 `README.md` → 清理运行期残留
-（`logs/`、`crashes/`、`*.log`、缓存文件）→ 压缩为 `dist\SlimeFinder-3.10.12.8-win64.zip` →
+（`logs/`、`crashes/`、`*.log`、缓存文件）→ 压缩为 `dist\SlimeFinder-3.10.12.9-win64.zip` →
 校验「build == dist == 解压包」SHA256、exe 内版本串、包内 GUI 自检 + 单元组 15 + 内核自检 →
-写入 `dist\SHA256SUMS-3.3.10.12.8.txt`。脚本退出码 0 表示打包与包内校验全部通过；
+写入 `dist\SHA256SUMS-3.3.10.12.9.txt`。脚本退出码 0 表示打包与包内校验全部通过；
 `-SkipSelfTest` 可跳过包内自检（仅快速重打包时使用）。
 
 ### 3.7 污染审计与证据导出（v3.3.5 新增）
@@ -209,7 +209,7 @@ powershell -ExecutionPolicy Bypass -File scripts\export_evidence.ps1 `
 
 **标准发布流程**：`audit_corruption.py`（污染门禁，必须退出码 0）→ `verify_release.ps1`
 （clean 重建 + 全量验证）→ `package_release.ps1`（打包）→ 再跑一次
-`verify_release.ps1 -SkipClean -SkipBench -Zip dist\SlimeFinder-3.10.12.8-win64.zip`
+`verify_release.ps1 -SkipClean -SkipBench -Zip dist\SlimeFinder-3.10.12.9-win64.zip`
 确认 dist/zip 哈希与包内自检 → `export_evidence.ps1` 导出证据（必须 0 缺陷）。
 
 ## 4. 部署（生成可分发目录）
@@ -227,7 +227,7 @@ C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release ^
   `Microsoft.VC145.OpenMP\vcomp140.dll` 到同一目录；
 - 可分发目录另需附上 `slime_tests.exe`、`slime_ocl_probe.exe`、`slime_kernel_tests.exe` 与 `docs/`；
   实际打包直接用 `scripts\package_release.ps1`（见 §3.6，自动完成复制/清理/压缩/校验/写哈希）；
-- 交付目录结构即 `dist/SlimeFinder/`；压缩包 `dist/SlimeFinder-3.10.12.8-win64.zip`。
+- 交付目录结构即 `dist/SlimeFinder/`；压缩包 `dist/SlimeFinder-3.10.12.9-win64.zip`。
   （`platforms/` 目录另含 `qoffscreen.dll`/`qminimal.dll`，便于无桌面环境自检。）
 - **发布前必须校验**：直接运行上面的 `scripts\verify_release.ps1`（等价于下列手工步骤）：
   ```powershell

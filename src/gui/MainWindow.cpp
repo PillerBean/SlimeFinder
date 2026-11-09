@@ -175,7 +175,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.10.12.8";
+constexpr const char* kAppVersion = "v3.10.12.9";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置 / 3 更新历史）
 constexpr int kNavCount = 4; // v3.5.4：地图移入搜索页，导航回到 4 项
@@ -10235,8 +10235,8 @@ int MainWindow::runSelfTest()
                 if (line.startsWith(QStringLiteral("V3.4.1 "))) hasAlias = true;
             }
             check(!hasAlias, "更新历史不列出 3.4.1（别名包，与 3.4.3 / 3.4.8 同二进制）");
-            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.8 全部版本（一条不漏）");
-            check(slime::updateHistoryEntryCount() == 155, "更新历史条目数 99（1.0.0 → 3.6.22）");
+            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.9 全部版本（一条不漏）");
+            check(slime::updateHistoryEntryCount() == 156, "更新历史条目数 99（1.0.0 → 3.6.22）");
             // v3.5.16：正式版恰好 4 个（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0）；3.5 之后一律测试版（用户要求）
             {
                 int official = 0;
@@ -13118,7 +13118,7 @@ int MainWindow::runSelfTest()
                   "过程面板：底部图标条已移除，保留 4 个页签 + 收起/展开按钮");
             check(m_settingsPage && m_settingsPage->tabs() && m_settingsPage->tabs()->count() == 5,
                   "设置页为五个标签（通用/搜索/缓存/日志/高级）");
-            check(slime::updateHistoryEntryCount() == 155, "更新历史条目数 99（1.0.0 → 3.6.22）");
+            check(slime::updateHistoryEntryCount() == 156, "更新历史条目数 99（1.0.0 → 3.6.22）");
             check(m_historyRows.size() == slime::updateHistoryEntryCount(),
                   "更新历史折叠行数与数据源一致（一个版本不漏）");
             {
