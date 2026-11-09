@@ -160,9 +160,46 @@ GET https://api.github.com/repos/<用户名>/SlimeFinder/releases/latest
 powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Version 3.10.12.8
 ```
 
-还未完成（需要你参与）：
-- GitHub 账号登录（`gh auth login` 的浏览器验证码步骤必须由你完成）；
-- 确认仓库用户名/仓库名/Public 或 Private；
-- 首次 push、创建远程仓库、创建 Release 并上传资产。
+已完成（2026-11-09）：
+- GitHub 账号 `PillerBean` 已通过设备码授权登录（token 保存在本机 GitHub CLI keyring）；
+- 公开仓库已创建并推送：https://github.com/PillerBean/SlimeFinder
+- tag `v3.10.12.8` 已推送；
+- Release 已发布并上传 3 个资产：
+  https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.8
+  资产 SHA256 与本地 `dist/SHA256SUMS-3.10.12.8.txt` 完全一致（GitHub 服务端 digest 已核对）。
+
+后续可做：
+- 历史版本安装包按需补传到 Releases（建议从 3.9.x 起，或打包成 legacy Release）；
+- 接入 GitHub Releases 自动更新（替换目前硬编码的蓝奏云链接）；
+- README 顶部加仓库/发布页链接。
 
 安装图形界面 GitHub Desktop 是可选项，不是必须。
+
+## 九、当前仓库信息（2026-11-09 已完成）
+
+- 账号：`PillerBean`
+- 仓库：https://github.com/PillerBean/SlimeFinder （Public，默认分支 main）
+- 发布页：https://github.com/PillerBean/SlimeFinder/releases
+- 最新 Release：https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.8
+  - `SlimeFinder-3.10.12.8-win64.zip`（15,988,096 B）
+  - `SlimeFinder-3.10.12.8-Setup.exe`（11,045,351 B）
+  - `SHA256SUMS-3.10.12.8.txt`
+- 自动更新接口（公开仓库可直接读）：
+  `https://api.github.com/repos/PillerBean/SlimeFinder/releases/latest`
+- 本机工具：
+  - GitHub CLI：`..\github_tools\gh_dir\bin\gh.exe`
+  - 登录 token：`..\github_tools\token.txt`（临时文件，建议后续删除）
+  - 历史版本资产收集脚本：`scripts/collect_release_assets.ps1`
+
+### 日常发版流程（以后每版）
+
+```bat
+cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+git add -A
+git commit -m "release: v3.10.12.9"
+git tag -a v3.10.12.9 -m "SlimeFinder v3.10.12.9"
+git push origin main
+git push origin v3.10.12.9
+powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Version 3.10.12.9
+github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" --title "SlimeFinder v3.10.12.9" --notes-file docs\release_notes\v3.10.12.9.md
+```
