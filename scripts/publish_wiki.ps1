@@ -18,6 +18,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 Copy-Item (Join-Path $src "*.md") $tmp -Force
 Push-Location $tmp
+git config user.name "PillerBean"
+git config user.email "320208917+PillerBean@users.noreply.github.com"
 git add -A
 git commit -m $Message
 if ($LASTEXITCODE -ne 0) {

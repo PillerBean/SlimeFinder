@@ -3,6 +3,11 @@
 Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 6**，支持 GPU 加速与超大范围搜索；
 判定结果与已验证的参考实现逐位一致。
 
+> ## 📦 按版本查找 / 下载
+> **[→ 打开版本索引（按版本号排序）](Version-Index)**
+> GitHub 的 Releases 页面固定按**发布时间**排序，补传历史版本后顺序会乱；
+> 找旧版本请用上面的版本索引。
+
 ![SlimeFinder 界面](https://raw.githubusercontent.com/PillerBean/SlimeFinder/main/docs/images/screenshot.png)
 
 ## 这是什么

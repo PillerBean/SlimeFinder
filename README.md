@@ -10,7 +10,7 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 
 > 英文简介：A slime chunk finder for Minecraft Java/Bedrock, native C++20/Qt6 with optional GPU acceleration.
 
-[下载](#下载) · [Wiki](https://github.com/PillerBean/SlimeFinder/wiki) · [功能](#功能) · [常见问题](#常见问题) · [更新历史](docs/update_history.md) · [问题反馈](https://github.com/PillerBean/SlimeFinder/issues)
+[下载](#下载) · **[📦 版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)** · [Wiki](https://github.com/PillerBean/SlimeFinder/wiki) · [功能](#功能) · [常见问题](#常见问题) · [更新历史](docs/update_history.md) · [问题反馈](https://github.com/PillerBean/SlimeFinder/issues)
 
 ![SlimeFinder 界面](docs/images/screenshot.png)
 
@@ -24,6 +24,9 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 - 平台：Windows 10/11 x64；
 - 便携包 `SlimeFinder-*-win64.zip` 解压即用；安装包 `SlimeFinder-*-Setup.exe` 可选；
 - 具体版本以 Releases 页面为准（README 不固定版本号）。
+
+> 📦 **按版本查找全部历史版本**：**[打开版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)**
+> GitHub Releases 页面按发布时间排序（补传历史后会乱序），版本索引按版本号从新到旧排列。
 
 ## 功能
 
@@ -89,6 +92,7 @@ build\slime_tests.exe --unit
 ## 文档与 Wiki
 
 - [Wiki（快速开始 / 功能 / GPU / 更新 / FAQ）](https://github.com/PillerBean/SlimeFinder/wiki)
+- [版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)
 - [用户手册](docs/user_manual.md)
 - [构建与打包](docs/build_instructions.md)
 - [更新历史](docs/update_history.md)
