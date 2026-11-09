@@ -12,7 +12,9 @@ Write-Host "== 1/3 package payload (internal zip is removed afterwards) ==" -For
 & (Join-Path $PSScriptRoot "package_release.ps1") -Version $Version -SkipSelfTest:$SkipSelfTest
 if ($LASTEXITCODE -ne 0) { throw "package_release.ps1 failed" }
 
-Write-Host "== 2/3 build NSIS installer ==" -ForegroundColor Cyan
+Write-Host "== 2/3 build NSIS installer (payload without config.json: keep existing settings on update) ==" -ForegroundColor Cyan
+$cfg = Join-Path $Repo "dist\SlimeFinder\config.json"
+if (Test-Path $cfg) { Remove-Item $cfg -Force }
 & (Join-Path $PSScriptRoot "build_installer.ps1") -Version $Version
 if ($LASTEXITCODE -ne 0) { throw "build_installer.ps1 failed" }
 
