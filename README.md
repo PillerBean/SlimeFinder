@@ -64,3 +64,9 @@ build\slime_tests.exe --unit
 - [更新历史](docs/update_history.md)
 - [GitHub 发布指南](docs/GITHUB_PUBLISH_GUIDE.md)
 - [社区性能对照](docs/community_benchmark_reference.md)
+
+## 作者与反馈
+
+- 作者：PillerBean
+- B 站主页：<https://space.bilibili.com/1413251461>
+- 问题反馈 / 功能建议：<https://github.com/PillerBean/SlimeFinder/issues>
