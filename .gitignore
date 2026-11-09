@@ -6,6 +6,7 @@ build/
 build$r/
 dist/
 release/
+release_upload_state.json
 *.obj
 *.pdb
 *.ilk

@@ -226,9 +226,27 @@ github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" -
 
 - 仓库：https://github.com/PillerBean/SlimeFinder （Public）
 - 旧 Release `v3.10.12.8` 已按用户要求删除（含 tag）；
-- **`v3.10.12.9` 已发布**（正式发布、非 Pre-release）⇒ 当前 Latest：
+- **`v3.10.12.9` 已发布，但按最新决定作为测试版**（Pre-release，不占 Latest）：
   https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.9
-- 自动更新接口：`https://api.github.com/repos/PillerBean/SlimeFinder/releases/latest`
-  （返回 `v3.10.12.9` + 三个资产，服务端 digest 与本地 SHA256 一致）
+- 历史版本正在批量归档到 Releases（见下一节）；全部完成后 Latest 指向最新的正式版 **v3.6.19**
 - 仓库 About 已精简为：`Minecraft 史莱姆区块查找器 | C++20/Qt6 | GPU 加速 | 源码公开（非商业）`，
   Homepage 指向 Releases 页。
+
+## 十、历史版本批量归档（2026-11-09）
+
+- 脚本：`scripts/upload_history_releases.py`
+  - 每个版本 **一个 Release**，zip 与 Setup 放在同一页；
+  - **正式版**（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0 / 3.6.19）：不勾 Pre-release；
+  - **测试版**（其余版本，含当前 3.10.12.9）：勾 Pre-release；
+  - 历史版本源码未保留，tag 统一用 `v<版本>-archive`（指向归档提交），不冒充历史源码 tag；
+  - 官方版本最后上传，保证 Latest 落在最新正式版（v3.6.19）；
+- 运行方式（后台，可随时中断后重跑）：
+
+```bat
+cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+set PATH=%PATH%;..\github_tools\gh_dir\bin
+py -3 scripts\upload_history_releases.py --workers 6
+```
+
+- 脚本会自动跳过远端已存在的 Release；状态保存在 `release_upload_state.json`；
+- `release_upload_state.json`、`release/` 均已加入 `.gitignore`，不会进仓库。
