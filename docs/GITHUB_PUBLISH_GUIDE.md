@@ -146,8 +146,23 @@ GET https://api.github.com/repos/<用户名>/SlimeFinder/releases/latest
 | 仓库太大 | 检查是否误加了 `build/`、`dist/`、`docs/screenshots/`、`docs/promo/` |
 | README 图片不显示 | 图片若在 `docs/screenshots/`（被忽略），改为压缩后放 `docs/images/` 再提交 |
 
-## 八、本机工具位置
+## 八、本机工具与已准备好的内容
 
-- Git：已安装（`git version 2.56.0.windows.4.niugit`）
-- GitHub CLI：`..\github_tools\gh_dir\bin\gh.exe`（下载 zip：`..\github_tools\gh.zip`）
-- 若后续需要图形界面，可再装 GitHub Desktop（可选，不是必须）
+已完成：
+- Git：已安装（`git version 2.56.0.windows.4.niugit`）；
+- GitHub CLI：已下载并验证 `gh version 2.103.3`，路径
+  `..\github_tools\gh_dir\bin\gh.exe`（压缩包 `..\github_tools\gh.zip` 保留）；
+- 本地仓库已初始化：`SlimeFinder/` 已 `git init -b main`，当前 2 个提交，已创建本地 tag `v3.10.12.8`；
+  仓库只跟踪源码/文档（452 个文件、约 7.6 MB），`build/`、`dist/`、`docs/screenshots/`、`docs/promo/` 等均已忽略；
+- `scripts/collect_release_assets.ps1` 已就绪并实测通过（3.10.12.8 三个资产已汇总到 `release/3.10.12.8/`）：
+
+```bat
+powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Version 3.10.12.8
+```
+
+还未完成（需要你参与）：
+- GitHub 账号登录（`gh auth login` 的浏览器验证码步骤必须由你完成）；
+- 确认仓库用户名/仓库名/Public 或 Private；
+- 首次 push、创建远程仓库、创建 Release 并上传资产。
+
+安装图形界面 GitHub Desktop 是可选项，不是必须。
