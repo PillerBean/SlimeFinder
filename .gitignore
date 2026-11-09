@@ -18,6 +18,7 @@ release_upload_state.json
 
 # --- 本地运行时数据（可能含本机路径/用户设置，绝不提交）---
 config.json
+update_config.json
 logs/
 crashes/
 *.log

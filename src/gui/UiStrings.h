@@ -272,6 +272,9 @@ inline const QHash<QString, QString>& zhToEn()
         { QStringLiteral("优化"), QStringLiteral("Improved") },
         { QStringLiteral("调整"), QStringLiteral("Adjusted") },
         { QStringLiteral("移除"), QStringLiteral("Removed") },
+        // ---- v3.10.12.10 entry ----
+        { QStringLiteral("新增「检查更新」对话框：支持 GitHub Releases 官方检查、镜像加速（gh-proxy / ghfast / ghproxy 等代理，raw version.json 清单回退）、SHA256 校验下载更新包；保留蓝奏云网盘手动备用源，网盘源不做自动更新适配"), QStringLiteral("Added an in-app \"Check for updates\" dialog: it checks GitHub Releases directly, supports mirror-accelerated proxies (gh-proxy, ghfast, ghproxy and configured prefixes, with a raw version.json manifest fallback), downloads and verifies the update zip with SHA256, and keeps the Lanzou cloud-drive page as a manual fallback source (no automatic updates through it)") },
+
         // ---- v3.10.12.9 entry ----
         { QStringLiteral("新增 PolyForm Noncommercial 1.0.0 许可证（含 Required Notice 来源署名要求）与 NOTICE 第三方组件说明：源码公开、非商业使用，再分发/修改版必须注明来源"), QStringLiteral("Added the PolyForm Noncommercial 1.0.0 license with a Required Notice attribution line, plus a NOTICE for third-party components: the source is public for noncommercial use, and redistributions or modified versions must credit the origin") },
         { QStringLiteral("README 重写为面向新用户的精简结构（下载/功能/快速开始/构建/许可），完整变更历史移入 docs/update_history.md 并由脚本从更新历史数据自动生成"), QStringLiteral("Rewrote the README into a short newcomer-oriented structure (download, features, quick start, build, license); the full change history moved to docs/update_history.md and is generated from the update-history data by a script") },

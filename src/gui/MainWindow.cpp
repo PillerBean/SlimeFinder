@@ -114,6 +114,7 @@
 #include "gui/MapPreviewWidget.h" // v3.5.2（任务 2）：自检里直接读地图控件状态
 #include "gui/MapDialog.h"       // v3.5.2（任务 2）：地图预览对话框
 #include "gui/HelpDialog.h" // v3.3.3：帮助 / 使用教程对话框
+#include "gui/UpdateDialog.h" // v3.10.12.10：GitHub Releases + 镜像 + 网盘备用的更新检查
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -175,7 +176,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.10.12.9";
+constexpr const char* kAppVersion = "v3.10.12.10";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置 / 3 更新历史）
 constexpr int kNavCount = 4; // v3.5.4：地图移入搜索页，导航回到 4 项
@@ -3816,8 +3817,10 @@ void MainWindow::buildMenus()
     QAction* aHelp = m_menuHelp->addAction(QStringLiteral("使用教程"));
     aHelp->setShortcut(QKeySequence(QStringLiteral("F1")));
     connect(aHelp, &QAction::triggered, this, [this]() { showHelpDialog(this); });
-    QAction* aUpdate = m_menuHelp->addAction(QStringLiteral("检查更新"));
+    QAction* aUpdate = m_menuHelp->addAction(QStringLiteral("检查更新（GitHub/镜像）"));
     connect(aUpdate, &QAction::triggered, this, &MainWindow::openReleasePage);
+    QAction* aPan = m_menuHelp->addAction(QStringLiteral("网盘下载页（国内备用）"));
+    connect(aPan, &QAction::triggered, this, &MainWindow::openPanPage);
     QAction* aHistory = m_menuHelp->addAction(QStringLiteral("更新历史"));
     connect(aHistory, &QAction::triggered, this, &MainWindow::showUpdateHistory);
     QAction* aContact = m_menuHelp->addAction(QStringLiteral("联系我们"));
@@ -3882,19 +3885,35 @@ QString MainWindow::releasePageUrl() const
 
 void MainWindow::openReleasePage()
 {
-    // v3.7.5：下载页已取消访问密码，只需给出链接即可。
-    // 自检模式（m_uiQuiet）下不弹窗、不打开浏览器，仅记录（供自动化断言）。
+    // v3.10.12.10：检查更新改为「GitHub Releases + 镜像加速 + 网盘备用」对话框。
+    // 自检模式（m_uiQuiet）下不联网、不弹窗，仅记录状态供自动化断言。
+    m_updateBrowserOpened = false;
+    if (m_uiQuiet) {
+        addFeedback(2, slime::ui::tr(QStringLiteral(
+            "检查更新（自检模式，不联网）：来源支持 GitHub / 镜像加速 / 网盘备用")));
+        setStatus(slime::ui::tr(QStringLiteral("检查更新：自检模式不联网（GitHub/镜像/网盘）")));
+        return;
+    }
+    UpdateDialog dlg(this);
+    dlg.exec();
+    m_updateBrowserOpened = dlg.browserOpened();
+    addFeedback(2, slime::ui::tr(QStringLiteral("检查更新：已打开更新对话框（GitHub/镜像/网盘）")));
+}
+
+// v3.10.12.10：网盘源保留为国内手动备用入口（不做自动更新适配）
+void MainWindow::openPanPage()
+{
     const QString url = releasePageUrl();
     m_updateBrowserOpened = false;
     if (m_uiQuiet) {
-        addFeedback(2, slime::ui::tr(QStringLiteral("检查更新（自检模式，未打开浏览器）：%1")).arg(url));
-        setStatus(slime::ui::tr(QStringLiteral("检查更新：等待用户点击「打开浏览器」（自检模式跳过）")));
+        addFeedback(2, slime::ui::tr(QStringLiteral("打开网盘下载页（自检模式，未打开浏览器）：%1")).arg(url));
+        setStatus(slime::ui::tr(QStringLiteral("网盘下载页：自检模式跳过打开浏览器")));
         return;
     }
     QMessageBox box(this);
-    box.setWindowTitle(QStringLiteral("检查更新"));
+    box.setWindowTitle(QStringLiteral("网盘下载页（国内备用）"));
     box.setTextFormat(Qt::PlainText);
-    box.setText(QStringLiteral("下载页面：\n%1\n\n"
+    box.setText(QStringLiteral("网盘下载页面：\n%1\n\n"
                               "点击「打开浏览器」后，将在默认浏览器中打开此页面。")
                     .arg(url));
     QPushButton* openBtn = box.addButton(QStringLiteral("打开浏览器"), QMessageBox::AcceptRole);
@@ -3904,19 +3923,19 @@ void MainWindow::openReleasePage()
     box.exec();
     if (box.clickedButton() == copyBtn) {
         QApplication::clipboard()->setText(url);
-        addFeedback(2, slime::ui::tr(QStringLiteral("已复制下载链接到剪贴板")));
-        setStatus(slime::ui::tr(QStringLiteral("已复制下载链接")));
+        addFeedback(2, slime::ui::tr(QStringLiteral("已复制网盘下载链接到剪贴板")));
+        setStatus(slime::ui::tr(QStringLiteral("已复制网盘下载链接")));
         return;
     }
     if (box.clickedButton() != openBtn) {
-        setStatus(slime::ui::tr(QStringLiteral("已取消打开下载页面")));
+        setStatus(slime::ui::tr(QStringLiteral("已取消打开网盘下载页")));
         return;
     }
-    m_updateBrowserOpened = true; // v3.3.5：仅当用户点了「打开浏览器」才置位
+    m_updateBrowserOpened = true;
     QDesktopServices::openUrl(QUrl(url));
-    addFeedback(2, slime::ui::tr(QStringLiteral("已打开下载页面")));
-    setStatus(slime::ui::tr(QStringLiteral("已打开下载页面")));
-    slime::LogBus::info("打开下载页面: " + url.toStdString());
+    addFeedback(2, slime::ui::tr(QStringLiteral("已打开网盘下载页")));
+    setStatus(slime::ui::tr(QStringLiteral("已打开网盘下载页")));
+    slime::LogBus::info("打开网盘下载页: " + url.toStdString());
 }
 
 // ============================================================================
@@ -10235,8 +10254,8 @@ int MainWindow::runSelfTest()
                 if (line.startsWith(QStringLiteral("V3.4.1 "))) hasAlias = true;
             }
             check(!hasAlias, "更新历史不列出 3.4.1（别名包，与 3.4.3 / 3.4.8 同二进制）");
-            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.9 全部版本（一条不漏）");
-            check(slime::updateHistoryEntryCount() == 156, "更新历史条目数 99（1.0.0 → 3.6.22）");
+            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.10 全部版本（一条不漏）");
+            check(slime::updateHistoryEntryCount() == 157, "更新历史条目数 99（1.0.0 → 3.6.22）");
             // v3.5.16：正式版恰好 4 个（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0）；3.5 之后一律测试版（用户要求）
             {
                 int official = 0;
@@ -10695,14 +10714,29 @@ int MainWindow::runSelfTest()
                 }
             }
 
-            // --- Bug 4：检查更新先弹窗、只有用户点击才打开浏览器 ---
+            // --- v3.10.12.10：检查更新支持 GitHub/镜像/网盘（自检模式不联网） ---
             {
                 m_updateBrowserOpened = false;
                 openReleasePage();
-                check(!m_updateBrowserOpened, "自检/未点击时不打开浏览器（先弹窗后跳转）");
-                check(m_feedback && m_feedback->allText().contains(QStringLiteral("lan")) &&
+                check(!m_updateBrowserOpened, "自检模式不打开浏览器（检查更新不联网）");
+                check(m_feedback && m_feedback->allText().contains(QStringLiteral("GitHub")) &&
+                          m_feedback->allText().contains(QStringLiteral("镜像")) &&
+                          m_feedback->allText().contains(QStringLiteral("网盘")) &&
                           !m_feedback->allText().contains(QStringLiteral("密码")),
-                      "检查更新只给下载链接、不再有访问密码");
+                      "检查更新支持 GitHub/镜像/网盘来源（自检模式不联网）");
+            }
+            // v3.10.12.10：更新对话框可创建/显示；网盘页自检不启动浏览器
+            {
+                UpdateDialog dlg;
+                dlg.show();
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
+                check(dlg.isVisible(), "检查更新对话框可正常创建并显示");
+                dlg.close();
+                m_updateBrowserOpened = false;
+                openPanPage();
+                check(!m_updateBrowserOpened, "自检模式打开网盘页不启动浏览器");
+                check(m_feedback && m_feedback->allText().contains(QStringLiteral("网盘")),
+                      "网盘备用入口有反馈记录");
             }
 
             // --- Bug 6：GPU 实测吞吐率基准（有 GPU 时等待后台测量完成） ---
@@ -13118,7 +13152,7 @@ int MainWindow::runSelfTest()
                   "过程面板：底部图标条已移除，保留 4 个页签 + 收起/展开按钮");
             check(m_settingsPage && m_settingsPage->tabs() && m_settingsPage->tabs()->count() == 5,
                   "设置页为五个标签（通用/搜索/缓存/日志/高级）");
-            check(slime::updateHistoryEntryCount() == 156, "更新历史条目数 99（1.0.0 → 3.6.22）");
+            check(slime::updateHistoryEntryCount() == 157, "更新历史条目数 99（1.0.0 → 3.6.22）");
             check(m_historyRows.size() == slime::updateHistoryEntryCount(),
                   "更新历史折叠行数与数据源一致（一个版本不漏）");
             {

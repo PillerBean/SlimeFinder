@@ -32,6 +32,9 @@ struct RawEntry {
 
 // 严格按版本号从新到旧（生成时已排序，此处顺序即展示顺序）
 const RawEntry kRawEntries[] = {
+    { "3.10.12.10", "2026-11-09", false, 1, {
+        { HistoryTag::Added, "新增「检查更新」对话框：支持 GitHub Releases 官方检查、镜像加速（gh-proxy / ghfast / ghproxy 等代理，raw version.json 清单回退）、SHA256 校验更新包；保留蓝奏云网盘手动备用源，网盘源不做自动更新适配" },
+    } },
     { "3.10.12.9", "2026-11-09", false, 3, {
         { HistoryTag::Added, "新增 PolyForm Noncommercial 1.0.0 许可证（含 Required Notice 来源署名要求）与 NOTICE 第三方组件说明：源码公开、非商业使用，再分发/修改版必须注明来源" },
         { HistoryTag::Adjusted, "README 重写为面向新用户的精简结构（获取/功能/快速开始/构建/许可），完整变更历史移入 docs/update_history.md 并由脚本从更新历史数据自动生成" },
@@ -883,7 +886,7 @@ std::string buildText()
     std::string s;
     s += "史莱姆区块查找器 更新历史\n";
     s += "==============================================\n";
-    s += "版本范围：1.0.0 → 3.10.12.9（正式版仅 V2.8.4 / V3.1.1 / V3.3.0 / V3.5.0 / V3.6.19）\n";
+    s += "版本范围：1.0.0 → 3.10.12.10（正式版仅 V2.8.4 / V3.1.1 / V3.3.0 / V3.5.0 / V3.6.19）\n";
     s += "\n";
     for (int i = 0; i < kEntryCount; ++i) {
         const RawEntry& r = kRawEntries[i];

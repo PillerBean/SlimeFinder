@@ -16,7 +16,7 @@ Unicode true
 
 !define APP_NAME "史莱姆区块查找器"
 !define APP_KEY "SlimeFinder"
-!define APP_VERSION "3.10.12.9"
+!define APP_VERSION "3.10.12.10"
 !define APP_EXE "SlimeFinder.exe"
 !define APP_PUBLISHER "SlimeFinder"
 !define SOURCE_DIR "..\dist\SlimeFinder"

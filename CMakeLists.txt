@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(SlimeFinder
-    VERSION 3.10.12.9
+    VERSION 3.10.12.10
     DESCRIPTION "史莱姆区块查找器 - Slime Chunk Finder (C++/Qt)"
     LANGUAGES CXX C)
 
@@ -130,6 +130,7 @@ add_executable(SlimeFinder WIN32
     src/gui/PatternEditor.cpp
     src/gui/PatternEditorPanel.cpp
     src/gui/UpdateHistory.cpp # v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
+    src/gui/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
     src/gui/HelpDialog.cpp
     src/gui/SettingsDialog.cpp # E3.3.5（优化 5）：程序设置（五标签页）
     src/gui/FeedbackPanel.cpp   # E3.3.4（任务书 2.2）：反馈面板（E3.3.6 改版：时间顺序 + 过滤成功）
@@ -157,6 +158,15 @@ target_link_libraries(SlimeFinder PRIVATE
     Qt6::Widgets
     OpenMP::OpenMP_CXX
 )
+
+# 自动化探针：检查更新（GitHub/镜像测速）端到端验证；不随发布包分发
+add_executable(slime_update_probe
+    tools/update_probe.cpp
+    src/gui/UpdateDialog.cpp
+)
+target_include_directories(slime_update_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_update_probe PRIVATE Qt6::Widgets)
+
 if(WIN32)
     target_link_libraries(SlimeFinder PRIVATE dbghelp)
     # E3.3.6（任务书 4.2）：提示音用 waveOut（winmm）；WIN32_LEAN_AND_MEAN 会隐藏 mmsystem.h，

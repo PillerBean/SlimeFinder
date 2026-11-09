@@ -1,7 +1,13 @@
 # SlimeFinder 更新历史
 
 > 本文件由 `scripts/export_update_history.py` 从 `src/gui/UpdateHistory.cpp` 自动生成，请勿手改。
-> 共 156 个版本，版本范围：1.0.0 → 3.10.12.9；★ 表示正式版。
+> 共 157 个版本，版本范围：1.0.0 → 3.10.12.10；★ 表示正式版。
+
+## V3.10.12.10 · 2026-11-09
+
+**【新增】**
+
+- 新增「检查更新」对话框：支持 GitHub Releases 官方检查、镜像加速（gh-proxy / ghfast / ghproxy 等代理，raw version.json 清单回退）、SHA256 校验更新包；保留蓝奏云网盘手动备用源，网盘源不做自动更新适配
 
 ## V3.10.12.9 · 2026-11-09
 

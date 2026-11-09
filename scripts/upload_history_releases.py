@@ -103,9 +103,9 @@ def load_state():
 
 
 def save_state(st):
-    with _lock:
-        io.open(STATE, "w", encoding="utf-8", newline="").write(
-            json.dumps(st, ensure_ascii=False, indent=2) + "\n")
+    # 调用方需已持有 _lock（避免 Lock 重入死锁）
+    io.open(STATE, "w", encoding="utf-8", newline="").write(
+        json.dumps(st, ensure_ascii=False, indent=2) + "\n")
 
 
 def make_assets(ver, zips, setups, sums):

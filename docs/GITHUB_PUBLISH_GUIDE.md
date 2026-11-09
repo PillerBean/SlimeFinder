@@ -250,3 +250,36 @@ py -3 scripts\upload_history_releases.py --workers 6
 
 - 脚本会自动跳过远端已存在的 Release；状态保存在 `release_upload_state.json`；
 - `release_upload_state.json`、`release/` 均已加入 `.gitignore`，不会进仓库。
+
+## 十一、自动更新与镜像源（v3.10.12.10）
+
+程序内「帮助 → 检查更新」提供三种来源（选择会记住，存在 `update_config.json`）：
+
+1. **自动（推荐）**：先试 GitHub 官方；官方不可达时，对内置的 9 个候选镜像**自动测速**
+   （清单响应 + zip 前 256KB 采样），选出最快的镜像继续检查与更新下载，**用户不需要手动切换**；
+2. **GitHub 官方**：`api.github.com` + `raw.githubusercontent.com`（需要能直连 GitHub）；
+3. **网盘（备用）**：蓝奏云页面，仅手动打开，不做自动更新适配。
+
+为什么镜像回退走 `version.json` 清单：`api.github.com` 一般不能被这些加速站代理，而
+`raw.githubusercontent.com` 和 `github.com/.../releases/download/...` 可以被代理。
+
+内置镜像候选（按测速结果自动选择，失效的会自动跳过）：
+`gh-proxy.com` / `ghfast.top` / `gh-proxy.org` / `ghproxy.net` / `ghproxy.cc` / `gh.llkk.cc` / `github.moeyy.xyz` / `gh-proxy.net`。
+
+### 发版后的固定动作
+
+1. 上传 Release（zip / Setup / SHA256SUMS）；
+2. 生成并提交版本清单（检查更新的镜像回退依赖它）：
+
+```bat
+cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+py -3 scripts\gen_version_manifest.py --version 3.10.12.10 --notes-file docs\release_notes\v3.10.12.10.md
+git add version.json && git commit -m "release: version.json 3.10.12.10" && git push
+```
+
+### 更新包下载
+
+- 下载 zip 到 `%USERPROFILE%\Downloads\SlimeFinder-update-v<版本>\`；
+- 下载后用 Release 的 `SHA256SUMS-<版本>.txt` 校验；校验失败自动删除；
+- 目前是「下载后提示用户手动解压覆盖」，不做静默替换。
+

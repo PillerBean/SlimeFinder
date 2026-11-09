@@ -129,7 +129,8 @@ private slots:
     void resetLayout();         // 查看 → 恢复默认布局 Ctrl+0
     void showUpdateHistory();   // 帮助 → 更新历史
     void showAboutDialog();     // 帮助 → 关于
-    void openReleasePage();     // 帮助 → 检查更新 / 徽章点击（打开网盘页面，不联网）
+    void openReleasePage();     // 帮助 → 检查更新（GitHub/镜像/网盘对话框）
+    void openPanPage();         // 帮助 → 网盘下载页（国内备用，手动）
     void highlightSeedField();  // v3.3.4（任务书 4.2）：种子输入框高亮闪烁
     void captureUiScreenshots(const QString& prefix); // v3.3.4（任务书 7）：UI 截图验证
     // ---- v3.3.5：Bug 2/4/5/6 与优化 4/5 ----
