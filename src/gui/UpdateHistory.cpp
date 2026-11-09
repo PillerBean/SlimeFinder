@@ -32,8 +32,10 @@ struct RawEntry {
 
 // 严格按版本号从新到旧（生成时已排序，此处顺序即展示顺序）
 const RawEntry kRawEntries[] = {
-    { "3.10.12.10", "2026-11-09", false, 1, {
+    { "3.10.12.10", "2026-11-09", false, 3, {
         { HistoryTag::Added, "新增「检查更新」对话框：支持 GitHub Releases 官方检查、镜像加速（gh-proxy / ghfast / ghproxy 等代理，raw version.json 清单回退）、SHA256 校验更新包；保留蓝奏云网盘手动备用源，网盘源不做自动更新适配" },
+        { HistoryTag::Fixed, "修复环形「快速」在 Java 整图范围返回 0 个结果：规划器物理上限仍是 4 万亿格，低于整图 1.4e13 格，会静默返回空表；现在放开到整图上限，并按实际抽样点数统计扫描量（不再出现万亿/秒的假速度）" },
+        { HistoryTag::Adjusted, "密度模式的最小密度与「忽略阈值，取最优」移到密度面板常显（此前放在「结果要求」里，选预设后整组隐藏）；修改会自动切到自定义方案" },
     } },
     { "3.10.12.9", "2026-11-09", false, 3, {
         { HistoryTag::Added, "新增 PolyForm Noncommercial 1.0.0 许可证（含 Required Notice 来源署名要求）与 NOTICE 第三方组件说明：源码公开、非商业使用，再分发/修改版必须注明来源" },

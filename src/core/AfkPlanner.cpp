@@ -836,7 +836,9 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
     // v3.5.19：范围跟随输入半径，不再卡 4 亿区块。
     //   快速模式（抽样）成本与面积无关；精确模式（逐区块）才与面积成正比，这里给一个物理上限防止跑飞。
     const long long totalCells = static_cast<long long>(spanX) * static_cast<long long>(spanZ);
-    if (totalCells > 4000000000000LL) {   // 4 万亿区块（≈ 2,000,000 x 2,000,000）物理上限
+    // v3.10.12.11：上限必须覆盖 Java 整图（±1,875,000 ⇒ 3,750,001² ≈ 1.406e13 格）；
+    // 快速/抽样模式成本与面积无关，原先 4e12 会把全图静默变成 0 个候选。
+    if (totalCells > 16000000000000LL) {   // 1.6e13 区块 ≈ Java 整图上限 + 余量
         std::fprintf(stderr, "[环形] 范围超出物理上限（%dx%d 区块）\n", spanX, spanZ);
         return none;
     }

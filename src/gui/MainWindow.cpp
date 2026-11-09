@@ -1917,6 +1917,22 @@ void MainWindow::buildUi()
         "开启后忽略最小密度：按窗口内史莱姆数量从高到低返回目标数量个最优窗口。"
         "结果可能低于你的密度要求；本模式不支持提前停止/智能范围。"));
 
+    // v3.10.12.11：最小密度 / 忽略阈值改为密度面板常显（此前放在「结果要求」分组里，
+    //   选择任意预设方案后就整组隐藏，用户找不到密度设置）。改动会切换为「自定义方案」。
+    {
+        auto* densCfgRow = new QHBoxLayout();
+        densCfgRow->addWidget(new QLabel(QStringLiteral("最小密度:"), m_w->densityPanel));
+        densCfgRow->addWidget(m_w->minDensity);
+        densCfgRow->addWidget(m_w->ignoreThreshold);
+        densCfgRow->addStretch();
+        densityLay->addLayout(densCfgRow);
+        QObject::connect(m_w->minDensity, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                         this, [this](double) {
+                             applyResultConflicts();
+                             markPresetCustom(QStringLiteral("最小密度"));
+                         });
+    }
+
     QObject::connect(m_w->ignoreThreshold, &QCheckBox::toggled, this, [this](bool) {
         applyResultConflicts();
         markPresetCustom(QStringLiteral("忽略阈值"));
@@ -2036,12 +2052,7 @@ void MainWindow::buildUi()
     smartRow->addWidget(m_w->smartRange);
     smartRow->addStretch();
     resultReqLay->addLayout(smartRow);
-    auto* densRow2 = new QHBoxLayout();
-    densRow2->addWidget(new QLabel(QStringLiteral("最小密度:"), gResult));
-    densRow2->addWidget(m_w->minDensity);
-    densRow2->addWidget(m_w->ignoreThreshold);
-    densRow2->addStretch();
-    resultReqLay->addLayout(densRow2);
+    // v3.10.12.11：最小密度/忽略阈值已移到密度面板常显，这里只保留停止方式/智能范围
     groupsLay->addWidget(gResult);
 
     // ---- 分组 4：匹配方式（搜索算法四模式与参数）----
@@ -5160,7 +5171,17 @@ void MainWindow::runRingSearch()
         out.results.push_back(r);
     }
     out.totalFound = static_cast<int>(cands.size());
-    out.stats.scannedChunks = static_cast<int64_t>(spanX) * spanZ;
+    // v3.10.12.11：环形「快速」在超大范围会等距抽样（约 40 万样本）。
+    //   此前把整个范围面积当作已扫描区块，配合毫秒级耗时会出现「1595 万亿/秒」的假速度；
+    //   这里按实际抽样点数报告。
+    int64_t scannedStat = static_cast<int64_t>(spanX) * spanZ;
+    if (o.scanStride != 1 && scannedStat > 20LL * 1000 * 1000) {
+        int ss = 1;
+        while ((static_cast<int64_t>(spanX) / ss) * (static_cast<int64_t>(spanZ) / ss) > 400000)
+            ++ss;
+        scannedStat = (static_cast<int64_t>(spanX) / ss) * (static_cast<int64_t>(spanZ) / ss);
+    }
+    out.stats.scannedChunks = scannedStat;
     out.stats.totalMs = secs * 1000.0;
     out.stats.scanMs = secs * 1000.0;
     RunInfo info;

@@ -23,7 +23,7 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 
 - 平台：Windows 10/11 x64；
 - 便携包 `SlimeFinder-*-win64.zip` 解压即用；安装包 `SlimeFinder-*-Setup.exe` 可选；
-- 具体版本以 Releases 页面为准（README 不固定版本号）。
+- 具体版本以 Releases 页面为准；当前源码版本：**v3.10.12.10**（待发布，发布后再更新下载入口）。
 
 > 📦 **按版本查找全部历史版本**：**[打开版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)**
 > GitHub Releases 页面按发布时间排序（补传历史后会乱序），版本索引按版本号从新到旧排列。

@@ -272,6 +272,10 @@ inline const QHash<QString, QString>& zhToEn()
         { QStringLiteral("优化"), QStringLiteral("Improved") },
         { QStringLiteral("调整"), QStringLiteral("Adjusted") },
         { QStringLiteral("移除"), QStringLiteral("Removed") },
+        // ---- v3.10.12.10 修复补记 ----
+        { QStringLiteral("修复环形「快速」在 Java 整图范围返回 0 个结果：规划器物理上限仍是 4 万亿格，低于整图 1.4e13 格，会静默返回空表；现在放开到整图上限，并按实际抽样点数统计扫描量（不再出现万亿/秒的假速度）"), QStringLiteral("Fixed the ring fast search returning zero results for the whole Java map: the planner limit was still 4e12 cells, below the 1.4e13-cell map, and silently returned an empty list; the limit now covers the whole map, and scan statistics report the real sample count instead of a fake trillion-per-second rate") },
+        { QStringLiteral("密度模式的最小密度与「忽略阈值，取最优」移到密度面板常显（此前放在「结果要求」里，选预设后整组隐藏）；修改会自动切到自定义方案"), QStringLiteral("Moved the minimum density and ignore-threshold controls into the always-visible density panel (they used to live in Result Requirements and were hidden whenever a preset was selected); changing them switches to the Custom scheme") },
+
         // ---- v3.10.12.10 entry ----
         { QStringLiteral("新增「检查更新」对话框：支持 GitHub Releases 官方检查、镜像加速（gh-proxy / ghfast / ghproxy 等代理，raw version.json 清单回退）、SHA256 校验下载更新包；保留蓝奏云网盘手动备用源，网盘源不做自动更新适配"), QStringLiteral("Added an in-app \"Check for updates\" dialog: it checks GitHub Releases directly, supports mirror-accelerated proxies (gh-proxy, ghfast, ghproxy and configured prefixes, with a raw version.json manifest fallback), downloads and verifies the update zip with SHA256, and keeps the Lanzou cloud-drive page as a manual fallback source (no automatic updates through it)") },
 

@@ -24,6 +24,7 @@ int main()
         { "2k² 抽样", 2000, 0 },
         { "10k² 抽样", 10000, 0 },
         { "30k² 抽样", 30000, 0 },
+        { "Java 全图 抽样", 3750001, 0 },
     };
     for (const Case& c : cases) {
         for (int useGpu = 0; useGpu <= (gpu ? 1 : 0); ++useGpu) {
