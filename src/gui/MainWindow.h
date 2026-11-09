@@ -404,7 +404,8 @@ private:
     QWidget* m_mapSpacer = nullptr;      // v3.6.9.1：折叠时才显示，吸收剩余空间
     QWidget* m_resultSpacer = nullptr;   // v3.6.9.1：同上（结果面板）             // v3.6.8：折叠前的地图面板高度，展开时恢复  // v3.6.6：用户拖过分隔条后不再自动改尺寸
     bool m_restartPending = false;
-    int m_lastRingOuter = 0;      // v3.6.18：本次环形搜索的有效外沿（模拟距离可能收窄）       // v3.6.6：有设置待重启生效
+    int m_lastRingOuter = 0;      // v3.6.18：本次环形搜索的有效外沿（模拟距离可能收窄）
+    double m_minDensityBeforeRing = 0.3;  // v3.10.12.10：切回正方形时恢复环形前的阈值
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器
     QPushButton* m_mapIconBtn = nullptr;   // v3.6.1：左栏图标条里的地图开关
     QLabel* m_historyCaption = nullptr;   // v3.6.0：历史页顶部说明

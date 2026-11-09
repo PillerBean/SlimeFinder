@@ -2858,7 +2858,22 @@ void MainWindow::buildUi()
     updateCacheStatusUi();
     // v3.5.6：区域形状切换 → 置灰/恢复
     if (m_w->shapeRingRadio) {
-        connect(m_w->shapeRingRadio, &QRadioButton::toggled, this, [this](bool) { updateSearchShapeEnabled(); });
+        connect(m_w->shapeRingRadio, &QRadioButton::toggled, this, [this](bool on) {
+            // v3.10.12.10：环形覆盖率天然只有 ~20% 左右，最小密度 0.3 会导致永远 0 结果。
+            //   切入环形时先把阈值降为 0（用户仍可手动调高），切回正方形时恢复原值。
+            if (on) {
+                m_minDensityBeforeRing = m_w->minDensity ? m_w->minDensity->value() : 0.3;
+                if (m_w->minDensity && m_w->minDensity->value() > 0.0) {
+                    m_w->minDensity->setValue(0.0);
+                    if (!m_uiQuiet)
+                        addFeedback(2, slime::ui::tr(QStringLiteral(
+                            "环形模式：最小密度已暂降为 0（环带覆盖率通常低于 30%，可手动调高）")));
+                }
+            } else if (m_w->minDensity && m_w->minDensity->value() == 0.0) {
+                m_w->minDensity->setValue((std::max)(0.05, m_minDensityBeforeRing));
+            }
+            updateSearchShapeEnabled();
+        });
     }
     if (m_w->strictRadio) {
         connect(m_w->strictRadio, &QRadioButton::toggled, this, [this](bool) { updateSearchShapeEnabled(); });
