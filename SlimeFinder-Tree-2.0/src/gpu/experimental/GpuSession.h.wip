@@ -1,0 +1,122 @@
+// GpuSession.h - GPU 加速会话（v3.2.1；自 v3.2.0 引入）
+//
+// 职责：
+//   1. 扫描候选 OpenCL 模块，选取含可用 GPU 设备的最优平台/设备
+//      （无可用 GPU 时回退 CPU 设备；全部失败则 available()==false，由调用方回退纯 CPU）
+//   2. 建立 context + command queue，编译并缓存内核（Java LCG / 基岩 MT19937 / 密度匹配）
+//   3. 提供矩形区域扫描接口（结果 1 字节/区块，行主序，与 CPU 判定逐位一致）
+//   4. v3.3.1：提供 GPU 密度匹配（判定 + 窗口统计都在显存内完成，只回传命中窗口）
+//
+// 本类 Qt 无关、无全局状态；线程模型：同一会话的调用由内部互斥量串行化。
+#pragma once
+
+#include <atomic>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace slimegpu {
+
+// 设备信息（用于展示/选优，均为普通类型，便于跨模块使用）
+struct GpuDeviceInfo {
+    bool isGpu = false;        // false = CPU/其他类型设备
+    std::string platformName;  // 平台名（如 "AMD Accelerated Parallel Processing"）
+    std::string platformVendor;
+    std::string platformVersion;
+    std::string name;          // 设备名（如 "AMD Radeon RX 6750 GRE"）
+    std::string vendor;
+    std::string driverVersion; // 驱动版本
+    std::string deviceVersion; // 设备支持的 OpenCL 版本
+    std::string extensions;    // 空格分隔
+    uint64_t maxComputeUnits = 0;  // 计算单元数
+    uint32_t maxClockMhz = 0;      // 最大时钟（MHz）
+    uint64_t globalMemBytes = 0;   // 全局显存
+    uint64_t localMemBytes = 0;    // 工作组本地内存
+    uint64_t maxWorkGroupSize = 0; // 工作组最大规模
+    uint32_t addressBits = 0;
+    uint64_t maxMemAllocBytes = 0; // 单次分配上限（CL_DEVICE_MAX_MEM_ALLOC_SIZE）
+    uint64_t maxWorkItemSizes[3] = { 0, 0, 0 }; // 各维度工作组上限
+};
+
+// v3.3.1：GPU 密度匹配参数（语义与 slime::GpuScan::DensityMatchParams 一致，
+// 本结构体用于不依赖 core 头文件的 GpuSession 接口）
+struct DensityMatchRequest {
+    int version = 0;        // 0 = Java，1 = 基岩
+    int64_t worldSeed = 0;
+    int64_t axMin = 0, axMax = -1; // 锚点范围（区块坐标，含边界）
+    int64_t azMin = 0, azMax = -1;
+    int gridSize = 5;       // 窗口边长 g（1..512）
+    double minDensity = 0.3;
+    int64_t maxResults = 0; // 0 = 不限；>0 时超过即返回 TooManyResults（引擎回退 CPU 全量路径）
+};
+
+// 单条命中（绝对区块坐标 + 整数计数）
+struct DensityHit {
+    int32_t x = 0;
+    int32_t z = 0;
+    uint32_t count = 0;
+};
+
+// 密度匹配结果状态
+enum class DensityMatchStatus {
+    Ok = 0,        // 完成（可能因取消而只覆盖了部分锚点）
+    Cancelled,     // 取消（out 只含已完成部分）
+    TooManyResults,// 命中数超过 maxResults 上限（要求调用方回退，不得截断）
+    BufferFull,    // 结果缓冲已满（内部上限，等价于失败）
+    Failed         // 设备/内核/参数错误
+};
+
+class GpuSession {
+public:
+    GpuSession() = default;
+    ~GpuSession(); // 释放全部 OpenCL 资源
+    GpuSession(const GpuSession&) = delete;
+    GpuSession& operator=(const GpuSession&) = delete;
+
+    // 初始化：选取设备、创建上下文/队列、编译内核。
+    // err 非空时输出错误描述（中文）。返回是否就绪（available()）。
+    // v3.2.1：外层异常兜底——任何 C++ 异常都转换为失败返回，绝不外抛（不崩溃）。
+    bool init(std::string* err = nullptr);
+
+    bool available() const noexcept { return m_ready; }
+    const GpuDeviceInfo& device() const noexcept { return m_device; }
+    const std::string& modulePath() const noexcept { return m_modulePath; }
+    const std::string& lastError() const noexcept { return m_lastError; }
+
+    // 人类可读摘要（含模块来源、设备参数、内核构建日志）
+    std::string describe() const;
+
+    // 扫描矩形区域（区块坐标，含边界），结果写入 out（尺寸恰为 w*h，行主序）。
+    // 与 CPU 判定（SlimeEngine::isSlimeChunk*）逐位一致。
+    bool scanJava(int64_t worldSeed, int minX, int minZ, int w, int h,
+                  std::vector<uint8_t>& out, std::string* err = nullptr);
+    bool scanBedrock(int minX, int minZ, int w, int h,
+                     std::vector<uint8_t>& out, std::string* err = nullptr);
+
+    // v3.3.1：GPU 密度匹配（区块判定 + 窗口密度统计都在显存内完成，只回传命中窗口）。
+    // 语义与 CPU 精确模式逐位一致（命中集合 + 整数计数）；
+    // 取消返回 Cancelled（out 含已完成部分），命中数超过 maxResults 返回 TooManyResults。
+    DensityMatchStatus matchDensity(const DensityMatchRequest& req,
+                                    const std::atomic<bool>& cancel,
+                                    std::vector<DensityHit>& out,
+                                    std::string* err = nullptr,
+                                    std::string* stats = nullptr);
+
+private:
+    struct Impl; // OpenCL 对象（避免本头文件依赖 CL 类型）
+    Impl* m_impl = nullptr;
+    bool m_ready = false;
+    GpuDeviceInfo m_device;
+    std::string m_modulePath;
+    std::string m_lastError;
+    std::string m_kernelBuildLog;
+
+    bool initImpl(std::string* err); // init() 的内部实现（由 init 的异常兜底包裹）
+
+    bool buildProgram(std::string* err);
+    bool ensureOutBuffer(size_t bytes, std::string* err);
+    bool runScan(int version, int64_t seed, int minX, int minZ, int w, int h,
+                 std::vector<uint8_t>& out, std::string* err);
+};
+
+} // namespace slimegpu

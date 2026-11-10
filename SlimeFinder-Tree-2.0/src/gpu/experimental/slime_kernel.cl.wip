@@ -1,0 +1,347 @@
+// slime_kernel.cl - 史莱姆区块判定 + GPU 密度匹配 OpenCL 内核（v3.2.0 scan / v3.3.1 density）
+//
+// 与 CPU 引擎（src/core/SlimeEngine.cpp）逐位一致：
+//   Java 版：LCG 判定（种子合成中的 32 位溢出/符号扩展、48 位 LCG 单步）
+//   基岩版：MT19937 完整 init(624) + twist(624) + 首次加扰输出
+//
+// 全部使用无符号算术/显式位宽（OpenCL C 保证 uint/ulong 模回绕），
+// 整数乘不依赖有符号溢出行为，保证跨品牌 GPU 结果一致。
+//
+// ======================== v3.3.1：GPU 密度匹配 ========================
+// 两段式：
+//   1) scan_<ver>_bitmap   判定并写成「列主序位图」：
+//                          列 xi 的第 j 段 = bitmap[xi*nWords + j]，位 k ⇔ 区块 (x, z0+j*64+k)。
+//                          一个 work-item 固定 x、连续 64 行、一次 64 位写（显存友好）。
+//   2) density_count_emit  一个 work-group 负责一个锚点列：组内线程直接读全局位图，
+//                          先做「g 列 AND + popcount」得到逐行的行窗口计数，再由线程 0
+//                          做长度 g 的竖直滑动窗口 → 锚点窗口计数 → 门限比较 → 写回命中。
+//                          只有「位图 + 结果」两个缓冲，无中间缓冲，参数面最小。
+//
+// 语义与 CPU 精确模式完全一致：命中集合 = { 锚点 | count/g² ≥ minDensity }（整数计数），
+// 门限用整数等价式 count·g² ≥ ⌈minDensity·g²⌉·g²（不依赖 double/cl_khr_fp64）；
+// density 由主机按 CPU 写法 (float)count / (float)(g*g) 计算（整数计数后一次浮点除法）。
+//
+// 【重要实现注记 / 教训】Java 判定**不要**用「uint4 向量化 + 逐分量取用」的写法：
+// 实测 AMD OpenCL 编译器对
+//     uint4 z4 = ...; uint4 zz = z4 * z4; ... (long)(int)zz.s0 ...
+// 这种组合会产生与标量路径不一致的结果（自检中该路径 128 行里 127 行与引擎不符，
+// 而标量路径 0 行不符）。因此 Java 路径一律走已验证的标量 java_is_slime。
+
+// ---------- Java 版辅助 ----------
+
+// int32 符号扩展为 int64（C 语义：保值转换 → 算术右移等价扩展，全平台一致）
+static inline long sext32(int v) { return (long)v; }
+
+// 每行基座：worldSeed + se64(int32Mul(cz,cz))*4392871（64 位回绕）+ se64(int32Mul(cz,389711))
+static inline ulong java_row_base(long worldSeed, int cz)
+{
+    uint czu = (uint)cz;
+    uint t3u = czu * czu;                     // int32Mul(cz,cz) 低 32 位（无符号回绕）
+    long t3s = sext32((int)t3u);              // 符号扩展
+    uint t4u = czu * 389711u;                 // int32Mul(cz,389711)
+    long t4s = sext32((int)t4u);
+    ulong b = (ulong)worldSeed;
+    b += (ulong)((ulong)t3s * 4392871UL);      // 64 位回绕乘法（无符号，位模式与 CPU 一致）
+    b += (ulong)t4s;
+    return b;
+}
+
+// x 尾项：se64(int32Mul(int32Mul(x,x),4987142)) + se64(int32Mul(x,5947611))
+static inline ulong java_x_tail(int x)
+{
+    uint xu = (uint)x;
+    uint t1u = (xu * xu) * 4987142u;          // (x*x) 与 *4987142 均取低 32 位
+    uint t2u = xu * 5947611u;
+    return (ulong)(long)(int)t1u + (ulong)(long)(int)t2u;
+}
+
+// 判定：s ^= 987234911 → JavaRandom.next(31)（单步 LCG，n=10 非 2 次幂但 31 位无符号 → 无拒绝循环）→ %10==0
+static inline int java_is_slime(long worldSeed, int cx, int cz)
+{
+    ulong s = java_row_base(worldSeed, cz) + java_x_tail(cx);
+    s ^= 987234911UL;
+    ulong lcg = (s ^ 0x5DEECE66DUL) & 0xFFFFFFFFFFFFUL; // 48 位掩码
+    lcg = (lcg * 0x5DEECE66DUL + 0xBUL) & 0xFFFFFFFFFFFFUL;
+    uint bits = (uint)(lcg >> 17);
+    return (bits % 10u) == 0u ? 1 : 0;
+}
+
+// ---------- 基岩版辅助 ----------
+
+// MT19937：init(624) + twist(624) + 首次加扰（与 CPU 引擎逐位一致；保留作对照/回退）
+static inline int bedrock_is_slime(int cx, int cz)
+{
+    uint seed = ((uint)cx * 0x1F1F1F1Fu) ^ (uint)cz;
+    uint mt[624];
+    mt[0] = seed;
+    for (int i = 1; i < 624; ++i) {
+        mt[i] = 1812433253u * (mt[i - 1] ^ (mt[i - 1] >> 30u)) + (uint)i;
+    }
+    // twist 三段（无取模版本，与 CPU 相同：i<227 读 mt[i+397]，之后读 mt[i-227]）
+    for (int i = 0; i < 227; ++i) {
+        uint y = (mt[i] & 0x80000000u) | (mt[i + 1] & 0x7FFFFFFFu);
+        mt[i] = mt[i + 397] ^ (y >> 1u) ^ (0x9908B0DFu & (0u - (y & 1u)));
+    }
+    for (int i = 227; i < 623; ++i) {
+        uint y = (mt[i] & 0x80000000u) | (mt[i + 1] & 0x7FFFFFFFu);
+        mt[i] = mt[i - 227] ^ (y >> 1u) ^ (0x9908B0DFu & (0u - (y & 1u)));
+    }
+    {
+        uint y = (mt[623] & 0x80000000u) | (mt[0] & 0x7FFFFFFFu);
+        mt[623] = mt[396] ^ (y >> 1u) ^ (0x9908B0DFu & (0u - (y & 1u)));
+    }
+    uint v = mt[0];
+    v ^= (v >> 11u);
+    v ^= (v << 7u) & 0x9D2C5680u;
+    v ^= (v << 15u) & 0xEFC60000u;
+    v ^= (v >> 18u);
+    return (v % 10u) == 0u ? 1 : 0;
+}
+
+// 基岩版代数等价捷径（证明同 src/core/FastMt.cpp 顶部）：
+//   首次输出只依赖 twist 之后的 mt[0]，而 twist 第 0 次迭代写入的正是 mt[0]，它读取的
+//   三个旧字 mt[0]/mt[1]/mt[397] 此时仍为 init 阶段的原始值，twist 其余迭代不参与首次输出
+//   ⇒ 只需 init 递推到 mt[397] 即可，结果与完整 624+624 步逐位相同。
+static inline int bedrock_is_slime_fast(int cx, int cz)
+{
+    uint m0 = ((uint)cx * 0x1F1F1F1Fu) ^ (uint)cz;
+    uint m1 = 1812433253u * (m0 ^ (m0 >> 30u)) + 1u;
+    uint cur = m1;
+    for (uint i = 2u; i <= 397u; ++i) {
+        cur = 1812433253u * (cur ^ (cur >> 30u)) + i;
+    }
+    uint y = (m0 & 0x80000000u) | (m1 & 0x7FFFFFFFu);
+    uint v = cur ^ (y >> 1u) ^ (0x9908B0DFu & (0u - (y & 1u)));
+    v ^= (v >> 11u);
+    v ^= (v << 7u) & 0x9D2C5680u;
+    v ^= (v << 15u) & 0xEFC60000u;
+    v ^= (v >> 18u);
+    return (v % 10u) == 0u ? 1 : 0;
+}
+
+// ---------- 扫描内核（字节输出，供 GpuSession::scanRect 使用） ----------
+
+// 二维矩形区域扫描（行主序，out 尺寸 w*h）：gid -> (cx,cz)，x 连续方向为行
+__kernel void scan_java_slime(long worldSeed, int minX, int minZ, int w, int h,
+                              __global uchar* out)
+{
+    size_t idx = get_global_id(0);
+    if (idx >= (size_t)w * (size_t)h) return;
+    int cx = minX + (int)(idx % (size_t)w);
+    int cz = minZ + (int)(idx / (size_t)w);
+    out[idx] = (uchar)java_is_slime(worldSeed, cx, cz);
+}
+
+__kernel void scan_bedrock_slime(int minX, int minZ, int w, int h,
+                                 __global uchar* out)
+{
+    size_t idx = get_global_id(0);
+    if (idx >= (size_t)w * (size_t)h) return;
+    int cx = minX + (int)(idx % (size_t)w);
+    int cz = minZ + (int)(idx / (size_t)w);
+    out[idx] = (uchar)bedrock_is_slime(cx, cz);
+}
+
+// ---------- 位图判定内核（列主序，每 64 行一个 ulong） ----------
+
+#define SLIME_ROWS_PER_WI 64   // 一个 work-item = 固定 x 的连续 64 行（一个 ulong 段）
+#define JAVA_ROWS_UNROLL  8    // Java 路径每 work-item 的独立判定链数（隐藏延迟）
+
+// Java 版位图（列主序）。bitmap[xi*nWords + j] 的位 k ⇔ 区块 (regionX0+xi, regionZ0+j*64+k)。
+// 逐行调用已验证的标量 java_is_slime，只把「打包成位图」做成每 work-item 64 行。
+__kernel void scan_java_bitmap(long worldSeed, long regionX0, long regionZ0,
+                               int xCount, int nWords, __global ulong* bitmap)
+{
+    size_t gid = get_global_id(0);
+    if (gid >= (size_t)xCount * (size_t)nWords) return;
+
+    const int xi = (int)(gid % (size_t)xCount);
+    const int si = (int)(gid / (size_t)xCount);
+    const int x = (int)(regionX0 + (long)xi);
+    const int zBase = (int)(regionZ0 + (long)si * SLIME_ROWS_PER_WI);
+
+    ulong bits = 0UL;
+    for (int i = 0; i < SLIME_ROWS_PER_WI; i += JAVA_ROWS_UNROLL) {
+        uint y[JAVA_ROWS_UNROLL];
+        for (int k = 0; k < JAVA_ROWS_UNROLL; ++k) {
+            y[k] = (uint)java_is_slime(worldSeed, x, zBase + i + k);
+        }
+        for (int k = 0; k < JAVA_ROWS_UNROLL; ++k) {
+            if (y[k] != 0u) bits |= (1UL << (uint)(i + k));
+        }
+    }
+
+    bitmap[(ulong)xi * (ulong)nWords + (ulong)si] = bits;
+}
+
+// 基岩版位图（列主序）。每行独立 MT19937（代数捷径：397 步 init，4 行一批填满乘法延迟）。
+__kernel void scan_bedrock_bitmap(long regionX0, long regionZ0,
+                                  int xCount, int nWords, __global ulong* bitmap)
+{
+    size_t gid = get_global_id(0);
+    if (gid >= (size_t)xCount * (size_t)nWords) return;
+
+    const int xi = (int)(gid % (size_t)xCount);
+    const int si = (int)(gid / (size_t)xCount);
+    const int x = (int)(regionX0 + (long)xi);
+    const int zBase = (int)(regionZ0 + (long)si * SLIME_ROWS_PER_WI);
+
+    ulong bits = 0UL;
+    for (int i = 0; i < SLIME_ROWS_PER_WI; i += 4) {
+        const int s0 = bedrock_is_slime_fast(x, zBase + i);
+        const int s1 = bedrock_is_slime_fast(x, zBase + i + 1);
+        const int s2 = bedrock_is_slime_fast(x, zBase + i + 2);
+        const int s3 = bedrock_is_slime_fast(x, zBase + i + 3);
+        if (s0) bits |= (1UL << (uint)(i));
+        if (s1) bits |= (1UL << (uint)(i + 1));
+        if (s2) bits |= (1UL << (uint)(i + 2));
+        if (s3) bits |= (1UL << (uint)(i + 3));
+    }
+
+    bitmap[(ulong)xi * (ulong)nWords + (ulong)si] = bits;
+}
+
+// ---------- 密度统计内核（计数 + 门限 + 命中写回，一步到位） ----------
+
+#define DENS_MAX_WORDS 128   // 单 work-group 覆盖的最大 64 行段数（= 8192 行）
+
+// 一个 work-group 负责一个锚点列 ax（相对本块）；组内线程并行累加窗口内的位。
+//
+// 语义（与 CPU 精确模式完全一致）：锚点 (x,z) 的窗口 = [x, x+g) × [z, z+g)，
+//   count = Σ_{r=0..g-1} Σ_{c=0..g-1} isSlime(x+c, z+r)
+// 位图按列主序存 64 行/ulong，故「同一行的 g 列」= g 个 ulong 的按位 AND；
+// 本内核直接对每个锚点行做：
+//   count(r) = Σ_{w=0..⌈g/64⌉-1} popcount( AND_{c} bitmap[col_c][w] )
+// 竖直方向不做滑动（每行独立求和），实现最直白、最不易出错；
+// 代价是每个锚点读 g 个 ulong×⌈g/64⌉ 次（g=5 时 25 次），位图规模小、命中 L2 缓存。
+//
+// 参数：
+//   bitmap    列主序位图（列 col 的段 w = bitmap[col*nWords + w]，位 k ⇔ 区域内第 w*64+k 行）
+//   nWords    位图每列段数
+//   xFirst    位图首列对应的实际区块 x
+//   xCount    本块锚点列数（= global 尺寸）
+//   az0       本块锚点 z 起点（结果记录返回相对偏移，主机还原绝对值）
+//   ay0/ay1   窗口行域（区域内行号，含边界）
+//   bx0/bx1   窗口列范围（位图列号，含边界；超出位图范围的列按 0 处理）
+//   needScaled ⌈minDensity·g²⌉·g²（整数门限，等价于 count/g² ≥ minDensity）
+//   结果记录 16 字节：{count, 锚点 x（绝对）, 锚点 z 相对 az0 的偏移, 保留}
+__kernel void density_count_emit(__global const ulong* bitmap,
+                                 int nWords,
+                                 int xFirst,
+                                 int xCount,
+                                 int gridSize,
+                                 long az0,
+                                 long ay0,
+                                 long ay1,
+                                 int bx0, int bx1,
+                                 ulong needScaled,
+                                 ulong maxResults, volatile __global uint* overflow,
+                                 volatile __global uint* hitCount,
+                                 __global uint* res, uint resCap)
+{
+    const int g = gridSize;
+    const int ax = (int)get_group_id(0);
+    if (ax >= xCount) return;
+
+    const int t = (int)get_local_id(0);
+    const int ls = (int)get_local_size(0);
+
+    __local uint red[256];
+
+    if (t == 0 && maxResults > 0UL && (ulong)(*hitCount) > maxResults) *overflow = 1u;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    if (*overflow != 0u) return;
+
+    const int a = ax + bx0;                       // 窗口首列（位图列号）
+    // 窗口末列：首列 + g - 1（bx1 由主机传入「首列 + g - 1」）。
+    const int nRows = (int)(ay1 - ay0 + 1);
+    const int b = a + (bx1 - bx0);                // 窗口末列（含）
+    const int nSegWords = (g + 63) / 64;          // 窗口竖直方向覆盖的 ulong 段数
+
+    // 组内线程各自负责若干「锚点行」。注意：count 必须先落到局部内存并 barrier，
+    // 再由线程 0 统一判门限/写回——同一轮内完成，绝不能跨轮复用 red[t]
+    //（跨轮复用会被下一轮覆盖，导致读到未定义的计数）。
+    for (int r = t; r < nRows; r += ls) {
+        uint count = 0u;
+        for (int w = 0; w < nSegWords; ++w) {
+            const int bitRow = r + w * 64;
+            if (bitRow >= g) break;               // 窗口竖直范围只有 g 行
+            ulong p = ~0UL;
+            for (int k = 0; k < g; ++k) {
+                const int col = a + k;
+                if (col < 0 || col > b) continue; // 位图外/块外列按 0
+                p &= bitmap[(ulong)col * (ulong)nWords + (ulong)w];
+            }
+            count += (uint)popcount(p);
+        }
+        red[t] = count;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        if (t == 0 && (ulong)red[0] >= needScaled) {
+            const uint slot = atomic_inc(hitCount);
+            if (slot < resCap) {
+                __global uint* rec = res + (size_t)slot * 4u;
+                rec[0] = red[0];
+                rec[1] = (uint)(xFirst + a);      // 锚点 x（绝对）
+                rec[2] = (uint)r;                 // 锚点 z 相对本块 az0 的偏移
+                rec[3] = 0u;
+            }
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    (void)az0;
+}
+// 排障：与 density_count_emit 同构，额外把「每个锚点每个锚点行」的计数回传
+__kernel void density_count_emit_dbg(__global const ulong* bitmap,
+                                     int nWords, int xFirst, int xCount, int gridSize,
+                                     long az0, long ay0, long ay1, int bx0, int bx1,
+                                     ulong needScaled,
+                                     ulong maxResults, volatile __global uint* overflow,
+                                     volatile __global uint* hitCount,
+                                     __global uint* res, uint resCap,
+                                     __global uint* dump, uint dumpStride)
+{
+    const int g = gridSize;
+    const int ax = (int)get_group_id(0);
+    if (ax >= xCount) return;
+
+    const int t = (int)get_local_id(0);
+    const int ls = (int)get_local_size(0);
+    __local uint red[256];
+
+    if (t == 0 && maxResults > 0UL && (ulong)(*hitCount) > maxResults) *overflow = 1u;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    if (*overflow != 0u) return;
+
+    const int a = ax + bx0;
+    const int b = a + (bx1 - bx0);
+    const int nRows = (int)(ay1 - ay0 + 1);
+    const int nSegWords = (g + 63) / 64;
+
+    for (int r = t; r < nRows; r += ls) {
+        uint count = 0u;
+        for (int w = 0; w < nSegWords; ++w) {
+            const int bitRow = r + w * 64;
+            if (bitRow >= g) break;
+            ulong p = ~0UL;
+            for (int k = 0; k < g; ++k) {
+                const int col = a + k;
+                if (col < 0 || col > b) continue;
+                p &= bitmap[(ulong)col * (ulong)nWords + (ulong)w];
+            }
+            count += (uint)popcount(p);
+        }
+        red[t] = count;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        if (t == 0) {
+            __global uint* d = dump + ((size_t)ax * (size_t)dumpStride + (size_t)r) * 3u;
+            d[0] = count;
+            d[1] = (uint)a;
+            d[2] = (uint)b;
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    (void)az0;
+    (void)needScaled;
+    (void)res;
+    (void)resCap;
+}
