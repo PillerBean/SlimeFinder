@@ -18,10 +18,19 @@
 - 新树自包含参考程序 `tests/reference/SlimeChecker.exe`；
 - windeployqt 打包部署。
 
-## 待完成
+## 已完成
 
-- scripts 进一步分组（build/qa/release/maintenance）；
-- CMake 目标拆分与 presets；
-- MainWindow 进一步拆成独立 TU/组件；
-- CI 工作流；
-- 完整结构与包内容清单校验。
+- scripts 分组：build / qa / release / maintenance；
+- CMake 目标拆分（cmake/Targets.cmake）与 CMakePresets；
+- app.rc 移入 src/platform/windows；
+- MainWindow.cpp 从 13,975 行降到 1,270 行；
+- GUI 自检、构建界面、截图、设置/环形/地图/交互/搜索/结果/服务分别拆入 inc 文件；
+- windeployqt 自包含打包；
+- tests/reference 自包含；
+- GitHub Actions 结构/语言检查；
+- 新树 unit / reference / GUI / Setup 验证通过。
+
+## 后续可选
+
+- 将 inc 文件进一步转为真正的组件类；
+- 完成用户验收后再发布 v3.12.0。
