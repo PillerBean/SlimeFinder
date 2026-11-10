@@ -12,7 +12,7 @@ namespace slime {
 namespace ui {
 namespace {
 const char* const kKeyTextKeys[] = {
-    "ui.key.ModePattern = 0",
+    "ui.key.ModePattern",
     "ui.key.ModeDensity",
     "ui.key.ModePatternTip",
     "ui.key.ModeDensityTip",

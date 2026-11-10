@@ -2692,7 +2692,7 @@ void MainWindow::buildUi()
                 // 全局 QSS 给 QToolButton 留了 0 10px 的左右内边距，2 个汉字在 40px 内会被省略成 …；
                 // 这里只覆盖内边距与字号，颜色/选中态仍由主题 QSS 决定。
                 tab->setStyleSheet(QStringLiteral("QToolButton{padding:0px 2px;font-size:10px;}"));
-                tab->setToolTip(QString::fromUtf8(kTabNames[i]));
+                tab->setToolTip(slime::ui::t(kTabNames[i]));
                 {
                     QFont tabFont = tab->font();
                     tabFont.setPointSizeF(8.0);
@@ -5769,7 +5769,7 @@ void MainWindow::selectBottomCategory(int index)
         it->setBackground(cur ? QBrush(QColor(0, 120, 215, 60)) : QBrush(Qt::NoBrush));
         it->setForeground(cur ? QBrush(QColor(0, 120, 215)) : QBrush(Qt::NoBrush));
     }
-    if (m_dockTitle) m_dockTitle->setText(slime::ui::t("ui.cb45d50a89a3").arg(QString::fromUtf8(kNames[index])));
+    if (m_dockTitle) m_dockTitle->setText(slime::ui::t("ui.cb45d50a89a3").arg(slime::ui::t(kNames[index])));
     for (int i = 0; i < static_cast<int>(m_dockHeadTabs.size()); ++i) {
         if (m_dockHeadTabs[static_cast<size_t>(i)]) m_dockHeadTabs[static_cast<size_t>(i)]->setChecked(i == index);
     }
