@@ -18,6 +18,7 @@ namespace {
 struct Catalog {
     bool loaded = false;
     QHash<QString, QString> zh;
+    QHash<QString, QString> tw;
     QHash<QString, QString> en;
 };
 
@@ -52,6 +53,7 @@ void ensureLoaded()
     const QString dir = catalogDir();
     if (dir.isEmpty()) return;
     loadOne(dir + QStringLiteral("/zh-CN.json"), c.zh);
+    loadOne(dir + QStringLiteral("/zh-TW.json"), c.tw);
     loadOne(dir + QStringLiteral("/en-US.json"), c.en);
     if (c.zh.isEmpty()) {
         std::fprintf(stderr, "[i18n] 未找到语言包：%s/zh-CN.json\n", dir.toUtf8().constData());
@@ -74,6 +76,9 @@ QString t(const char* key)
     if (slime::ui::isEnglish()) {
         const auto it = c.en.constFind(k);
         if (it != c.en.constEnd() && !it.value().isEmpty()) return it.value();
+    } else if (slime::ui::isTraditional()) {
+        const auto it = c.tw.constFind(k);
+        if (it != c.tw.constEnd() && !it.value().isEmpty()) return it.value();
     }
     const auto it = c.zh.constFind(k);
     if (it != c.zh.constEnd()) return it.value();

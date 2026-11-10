@@ -178,7 +178,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.11.0";
+constexpr const char* kAppVersion = "v3.11.1";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置）
 constexpr int kNavCount = 3; // v3.10.12.13：移除更新历史，导航 3 项
@@ -865,7 +865,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     {
         const std::filesystem::path langCfg = appDirPath() / kConfigFileName;
         const std::string lang = cfgString(langCfg, "settings.language", "zh");
-        slime::ui::setLanguage(lang == "en" ? slime::ui::Language::English : slime::ui::Language::Chinese);
+        slime::ui::setLanguage(lang == "en" ? slime::ui::Language::English
+                                  : (lang == "zh-TW" || lang == "tw") ? slime::ui::Language::Traditional
+                                  : slime::ui::Language::Chinese);
     }
     buildUi();
     // v3.4.11：设置页在这里是「默认值」状态，等 loadAppSettings() 之后统一收敛一次（见下）
@@ -3406,6 +3408,7 @@ void MainWindow::buildV340Pages()
         lay->setContentsMargins(0, 0, 0, 0);
         lay->setSpacing(0);
         m_settingsPage = new SettingsDialog(m_settings, page); // 作为普通子控件嵌入（而不是弹窗）
+        connect(m_settingsPage, &SettingsDialog::contactRequested, this, [this]() { showContact(); });
         // v3.4.2：**设置立即生效** —— 设置页内任意输入控件变化后 60ms 自动应用（无需点「应用/确定」）
         m_settingsApplyTimer = new QTimer(this);
         m_settingsApplyTimer->setSingleShot(true);
@@ -3931,7 +3934,9 @@ void MainWindow::applyAppSettings(const AppSettings& s)
     if (!m_uiQuiet && old.language != s.language) {   // v3.5.27：自检里不切语言，保证断言稳定
         const QString lang = s.language.trimmed().toLower();
         slime::ui::setLanguage(lang == QLatin1String("en") ? slime::ui::Language::English
-                                                           : slime::ui::Language::Chinese);
+                                                           : (lang == QLatin1String("zh-tw") || lang == QLatin1String("tw"))
+                                                                 ? slime::ui::Language::Traditional
+                                                                 : slime::ui::Language::Chinese);
         retranslateModeUi();
         applyLanguage();
         setStatus(slime::ui::tr(slime::ui::t("ui.1f9090fec01f")));

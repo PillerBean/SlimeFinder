@@ -76,6 +76,7 @@ Language& currentLanguageRef()
 void setLanguage(Language lang) { currentLanguageRef() = lang; }
 Language language() { return currentLanguageRef(); }
 bool isEnglish() { return currentLanguageRef() == Language::English; }
+bool isTraditional() { return currentLanguageRef() == Language::Traditional; }
 
 QString text(Key k)
 {

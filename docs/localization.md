@@ -5,6 +5,7 @@
 ```text
 assets/i18n/
 ├─ zh-CN.json           # key → 简体中文
+├─ zh-TW.json          # key → 繁體中文
 ├─ en-US.json           # key → English
 └─ legacy-zh-en.json    # 旧 UiStrings 翻译表（运行时兼容用）
 ```
@@ -25,7 +26,7 @@ assets/i18n/
 
 1. 复制 `en-US.json` 为 `assets/i18n/<lang>.json`；
 2. 翻译所有 value（不要改 key）；
-3. 在设置页语言选项中接入该语言（当前版本仍为 zh / en 两个入口）；
+3. 在设置页语言选项中加入该语言（当前已支持 zh / zh-TW / en）；
 4. 重启程序生效。
 
 ## 已知边界

@@ -92,6 +92,8 @@ struct AppSettings {
 
 class SettingsDialog : public QDialog {
     Q_OBJECT
+signals:
+    void contactRequested();
 public:
     explicit SettingsDialog(const AppSettings& current, QWidget* parent = nullptr);
 

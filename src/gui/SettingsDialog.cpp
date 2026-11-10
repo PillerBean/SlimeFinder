@@ -236,6 +236,7 @@ QWidget* SettingsDialog::buildGeneralPage()
         // v3.5.19：界面语言（文案走 UiStrings.h，可扩展更多语言）
     mLanguage = new QComboBox(page);
     mLanguage->addItem(slime::ui::t("ui.93659150d0e5"), QStringLiteral("zh"));
+    mLanguage->addItem(slime::ui::t("ui.lang.zh_tw"), QStringLiteral("zh-TW"));
     mLanguage->addItem(QStringLiteral("English"), QStringLiteral("en"));
     // v3.5.20：全屏方式（无边框全屏 / 窗口最大化）
     mFullscreenMode = new QComboBox(page);
@@ -244,8 +245,24 @@ QWidget* SettingsDialog::buildGeneralPage()
     row = addOptionRow(form, row, slime::ui::t("ui.986948088c99"), mFullscreenMode,
                        slime::ui::t("ui.19aae383f665"));
 
-    row = addOptionRow(form, row, slime::ui::t("ui.5f44341e655a"), mLanguage,
-                       slime::ui::t("ui.3ce5159878c4"));
+    {
+        auto* langBox = new QWidget(page);
+        auto* langLay = new QHBoxLayout(langBox);
+        langLay->setContentsMargins(0, 0, 0, 0);
+        langLay->setSpacing(8);
+        langLay->addWidget(mLanguage);
+        auto* feedback = new QLabel(QStringLiteral("<a href=\"contact\">%1</a>")
+                                        .arg(slime::ui::t("ui.lang.feedback")),
+                                    langBox);
+        feedback->setTextFormat(Qt::RichText);
+        feedback->setOpenExternalLinks(false);
+        feedback->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
+        connect(feedback, &QLabel::linkActivated, this, [this](const QString&) { emit contactRequested(); });
+        langLay->addWidget(feedback);
+        langLay->addStretch(1);
+        row = addOptionRow(form, row, slime::ui::t("ui.5f44341e655a"), langBox,
+                           slime::ui::t("ui.3ce5159878c4"));
+    }
 
     row = addOptionRow(form, row, QString(), m_wheelAdjust,
                            slime::ui::t("ui.2206d559f0ed"));

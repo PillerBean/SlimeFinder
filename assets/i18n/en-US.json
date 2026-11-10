@@ -1194,5 +1194,7 @@
   "ui.tab.feedback": "Feedback",
   "ui.tab.log": "Log",
   "ui.tab.progress": "Progress",
-  "ui.key.ModePattern": "Pattern"
+  "ui.key.ModePattern": "Pattern",
+  "ui.lang.zh_tw": "Traditional Chinese",
+  "ui.lang.feedback": "Translation quality not good? Try contacting us!"
 }

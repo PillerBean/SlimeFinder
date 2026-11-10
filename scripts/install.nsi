@@ -12,11 +12,12 @@
 Unicode true
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
+!include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 
 !define APP_NAME "史莱姆区块查找器"
 !define APP_KEY "SlimeFinder"
-!define APP_VERSION "3.11.0"
+!define APP_VERSION "3.11.1"
 !define APP_EXE "SlimeFinder.exe"
 !define APP_PUBLISHER "SlimeFinder"
 !define SOURCE_DIR "..\dist\SlimeFinder"
@@ -28,6 +29,9 @@ InstallDir "$PROGRAMFILES64\${APP_KEY}"
 InstallDirRegKey HKLM "Software\${APP_KEY}" "InstallDir"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
+
+; v3.11.1：安装语言选择（也会作为程序首次启动语言）
+Page custom LanguageHintPageCreate LanguageHintPageLeave
 
 ; 页面：欢迎 → 选择安装目录 → 组件（桌面快捷方式可选） → 安装 → 完成
 !insertmacro MUI_PAGE_WELCOME
@@ -41,8 +45,38 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_UNPAGE_INSTFILES
 
 !insertmacro MUI_LANGUAGE "SimpChinese"
+!insertmacro MUI_LANGUAGE "TradChinese"
+!insertmacro MUI_LANGUAGE "English"
 
-Section "主程序（必需）" SecMain
+Function .onInit
+    !insertmacro MUI_LANGDLL_DISPLAY
+FunctionEnd
+
+LangString SEC_MAIN 2052 "主程序（必需）"
+LangString SEC_DESKTOP 2052 "桌面快捷方式（可选）"
+LangString SEC_MAIN 1028 "主程式（必要）"
+LangString SEC_DESKTOP 1028 "桌面捷徑（選用）"
+LangString SEC_MAIN 1033 "Main program (required)"
+LangString SEC_DESKTOP 1033 "Desktop shortcut (optional)"
+
+Function LanguageHintPageCreate
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $LANGUAGE == 1028
+        ${NSD_CreateLabel} 0 0 100% 72u "您選擇的安裝語言將作為程式首次啟動語言；之後可在「設定 → 一般 → 介面語言」修改。"
+    ${ElseIf} $LANGUAGE == 1033
+        ${NSD_CreateLabel} 0 0 100% 72u "The setup language will be used as the app's first-start language. You can change it later in Settings → General → Language."
+    ${Else}
+        ${NSD_CreateLabel} 0 0 100% 72u "您选择的安装语言将作为程序首次启动语言；之后可在「设置 → 通用 → 界面语言」修改。"
+    ${EndIf}
+    Pop $1
+    nsDialogs::Show
+FunctionEnd
+
+Function LanguageHintPageLeave
+FunctionEnd
+
+Section "$(SEC_MAIN)" SecMain
     SectionIn RO
     SetOutPath "$INSTDIR"
 
@@ -67,6 +101,20 @@ Section "主程序（必需）" SecMain
 
     ; ---- 程序本体 + 内置依赖（Qt 运行时 / OpenCL 加载器 / VC++ 运行时 / 平台插件）----
     File /r "${SOURCE_DIR}\*.*"
+
+    ; v3.11.1：安装语言 = 程序首次启动语言（仅全新安装，更新时保留用户配置）
+    ${If} $R1 != "1"
+        ${If} $LANGUAGE == 1028
+            CopyFiles /SILENT "$INSTDIR\config.zh-TW.json" "$INSTDIR\config.json"
+        ${ElseIf} $LANGUAGE == 1033
+            CopyFiles /SILENT "$INSTDIR\config.en.json" "$INSTDIR\config.json"
+        ${Else}
+            CopyFiles /SILENT "$INSTDIR\config.zh.json" "$INSTDIR\config.json"
+        ${EndIf}
+    ${EndIf}
+    Delete "$INSTDIR\config.zh.json"
+    Delete "$INSTDIR\config.zh-TW.json"
+    Delete "$INSTDIR\config.en.json"
 
     ; ---- 开始菜单 + 桌面（全机器安装 ⇒ 用「所有用户」的 shell 变量上下文）----
     ;   NSIS 没有 $COMMONPROGRAMS 常量：设置 SetShellVarContext all 后，
@@ -99,7 +147,7 @@ Section "主程序（必需）" SecMain
     WriteRegDWORD HKLM "${UNINST_KEY}" "EstimatedSize" "$0"
 SectionEnd
 
-Section "桌面快捷方式（可选）" SecDesktop
+Section "$(SEC_DESKTOP)" SecDesktop
     CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
 SectionEnd
 

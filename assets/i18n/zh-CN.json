@@ -1194,5 +1194,7 @@
   "ui.tab.feedback": "反馈",
   "ui.tab.log": "日志",
   "ui.tab.progress": "进度",
-  "ui.key.ModePattern": "图案搜索"
+  "ui.key.ModePattern": "图案搜索",
+  "ui.lang.zh_tw": "中文（繁体）",
+  "ui.lang.feedback": "翻译质量不佳？试试联系我们！"
 }

@@ -10,7 +10,7 @@
 namespace slime {
 namespace ui {
 
-enum class Language { Chinese = 0, English = 1 };
+enum class Language { Chinese = 0, English = 1, Traditional = 2 };
 
 enum class Key {
     ModePattern = 0,
@@ -53,6 +53,7 @@ Language& currentLanguageRef();
 void setLanguage(Language lang);
 Language language();
 bool isEnglish();
+bool isTraditional();
 
 } // namespace ui
 } // namespace slime
