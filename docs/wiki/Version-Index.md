@@ -6,6 +6,7 @@
 
 | 版本 | 类型 | 下载页 |
 |---|---|---|
+| SlimeFinder v3.10.12.13（测试版） | 测试版 | [v3.10.12.13](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.13) |
 | SlimeFinder v3.10.12.11（测试版） | 测试版 | [v3.10.12.11](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.11) |
 | SlimeFinder v3.10.12.10（测试版） | 测试版 | [v3.10.12.10](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.10) |
 | SlimeFinder v3.10.12.9 | 测试版 | [v3.10.12.9](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.9) |
@@ -142,4 +143,4 @@
 | SlimeFinder v3.1.1（历史归档） | 正式版 | [v3.1.1-archive](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.1.1-archive) |
 | SlimeFinder v2.8.4（历史归档） | 正式版 | [v2.8.4-archive](https://github.com/PillerBean/SlimeFinder/releases/tag/v2.8.4-archive) |
 
-共 135 个已发布版本。
+共 136 个已发布版本。
