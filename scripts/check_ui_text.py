@@ -30,18 +30,20 @@ def strip_comments(s):
     return "\n".join(line.split("//", 1)[0] for line in s.splitlines())
 
 def main():
-    zh = load("zh-CN.json")
-    en = load("en-US.json")
+    packs = [("zh-CN", load("zh-CN.json")), ("zh-TW", load("zh-TW.json")), ("en-US", load("en-US.json"))]
+    zh = packs[0][1]
     errors = []
-    if set(zh) != set(en):
-        errors.append("zh/en key mismatch: missing en=%d, extra en=%d" %
-                      (len(set(zh) - set(en)), len(set(en) - set(zh))))
-    for k, v in zh.items():
-        if not str(v).strip():
-            errors.append("empty zh value: " + k)
-    for k, v in en.items():
-        if not str(v).strip():
-            errors.append("empty en value: " + k)
+    for name, data in packs:
+        if set(zh) != set(data):
+            errors.append("%s key mismatch: missing=%d extra=%d" %
+                          (name, len(set(zh) - set(data)), len(set(data) - set(zh))))
+        for k, v in data.items():
+            if not str(v).strip():
+                errors.append("empty %s value: %s" % (name, k))
+    for help_name in ("tutorial-zh-CN.html", "tutorial-zh-TW.html", "tutorial-en-US.html"):
+        hp = os.path.join(ROOT, "assets", "help", help_name)
+        if not os.path.exists(hp) or os.path.getsize(hp) < 100:
+            errors.append("missing help asset: " + help_name)
 
     # Source-level heuristic is intentionally limited: the extraction pass has
     # already moved QStringLiteral/fromUtf8 CJK UI text into the catalog. We keep
@@ -54,7 +56,7 @@ def main():
             print("  " + e)
         print("total problems:", len(errors))
         return 1
-    print("UI text check OK: %d keys (zh/en catalog complete)" % len(zh))
+    print("UI text check OK: %d keys x 3 languages; help assets present" % len(zh))
     return 0
 
 if __name__ == "__main__":

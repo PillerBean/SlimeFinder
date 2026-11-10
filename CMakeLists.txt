@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(SlimeFinder
-    VERSION 3.11.1
+    VERSION 3.11.2
     DESCRIPTION "史莱姆区块查找器 - Slime Chunk Finder (C++/Qt)"
     LANGUAGES CXX C)
 
@@ -179,6 +179,10 @@ add_custom_command(TARGET slime_update_probe POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/assets/i18n
             $<TARGET_FILE_DIR:slime_update_probe>/assets/i18n)
+add_custom_command(TARGET SlimeFinder POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/help
+            $<TARGET_FILE_DIR:SlimeFinder>/assets/help)
 target_link_libraries(slime_update_probe PRIVATE Qt6::Widgets)
 
 if(WIN32)
