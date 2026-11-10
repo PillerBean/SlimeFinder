@@ -72,6 +72,10 @@ class MapPreviewWidget;   // v3.5.4：搜索页内嵌地图（全局类，勿在
 
 namespace slime {
 
+namespace gui {
+class TelemetryClient;
+}
+
 class MainWindow : public QMainWindow, public CommandHost {
     Q_OBJECT
 public:
@@ -113,6 +117,8 @@ private slots:
     void updateCacheStatusUi();
     void showContact();
     void showCredits();   // v3.7.5：鸣谢名单
+    void showTelemetryDialog();   // v3.10.12.12：匿名统计说明/开关
+    void updateTelemetryNotice(); // v3.10.12.12：刷新状态栏公告
     void applyPreset(int halfSpan);
     void applyFullscreenMode();                 // v3.5.20：立即套用全屏方式
     void toggleFullscreenMode();                // v3.5.20：F11 切换
@@ -354,6 +360,8 @@ private:
 
     Widgets* m_w = nullptr;
     std::unique_ptr<CacheManager> m_cache;
+    std::unique_ptr<gui::TelemetryClient> m_telemetry; // v3.10.12.12：默认关闭，用户主动开启才发送
+    QLabel* m_telemetryNotice = nullptr;               // v3.10.12.12：状态栏里的开启公告
     // v3.3.9（任务书 5.1）：托盘图标（图标与窗口/任务栏一致；系统无托盘时为 nullptr）
     QSystemTrayIcon* m_tray = nullptr;
     std::filesystem::path m_cacheFile;

@@ -30,6 +30,7 @@
 #include <QHash>
 #include <QImage>
 #include <QJsonDocument>  // v3.4.12：自检用标准解析器校验 config.json
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QGroupBox>
@@ -51,7 +52,8 @@
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QPlainTextEdit>
-#include "gui/UpdateHistory.h" // v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
+#include "gui/UpdateHistory.h"
+#include "gui/TelemetryClient.h" // v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
 #include <QProgressBar>
 #include <QProgressDialog>
 #include <QRegularExpression>
@@ -186,6 +188,74 @@ constexpr int kPageBuild = 1;
 constexpr int kPageSettings = 2;
 constexpr int kPageHistory = 3;
 constexpr const char* kContactEmail = "liguodong1209@163.com";
+// v3.10.12.12：匿名统计的搜索事件（只含用户主动开启后同意的字段）
+QJsonObject buildTelemetrySearch(const QString& seed, bool bedrock, const QString& mode,
+                                 const QString& algorithm, const QString& ringScan,
+                                 const Rect& region, int64_t startX, int64_t startZ,
+                                 const QJsonObject& settings, const SearchOutcome& out, bool gpuUsed)
+{
+    QJsonObject s;
+    s.insert(QStringLiteral("seed"), seed);
+    s.insert(QStringLiteral("edition"), bedrock ? QStringLiteral("bedrock") : QStringLiteral("java"));
+    s.insert(QStringLiteral("mode"), mode);
+    s.insert(QStringLiteral("algorithm"), algorithm);
+    s.insert(QStringLiteral("ring_scan"), ringScan);
+    QJsonObject range;
+    range.insert(QStringLiteral("min_x"), region.minX);
+    range.insert(QStringLiteral("max_x"), region.maxX);
+    range.insert(QStringLiteral("min_z"), region.minZ);
+    range.insert(QStringLiteral("max_z"), region.maxZ);
+    s.insert(QStringLiteral("range"), range);
+    {
+        const int64_t cells = static_cast<int64_t>(region.maxX - region.minX + 1) *
+                              static_cast<int64_t>(region.maxZ - region.minZ + 1);
+        const int lg = cells > 0 ? static_cast<int>(std::floor(std::log10(static_cast<double>(cells)))) : 0;
+        s.insert(QStringLiteral("range_log10"), std::clamp(lg, 0, 30));
+    }
+    QJsonObject start;
+    start.insert(QStringLiteral("x"), static_cast<double>(startX));
+    start.insert(QStringLiteral("z"), static_cast<double>(startZ));
+    s.insert(QStringLiteral("start"), start);
+    s.insert(QStringLiteral("settings"), settings);
+
+    QJsonObject speed;
+    speed.insert(QStringLiteral("total_ms"), out.stats.totalMs);
+    speed.insert(QStringLiteral("scan_ms"), out.stats.scanMs);
+    speed.insert(QStringLiteral("match_ms"), out.stats.matchMs);
+    speed.insert(QStringLiteral("scanned_chunks"), static_cast<double>(out.stats.scannedChunks));
+    const double secs = out.stats.totalMs / 1000.0;
+    speed.insert(QStringLiteral("chunks_per_sec"),
+                 secs > 1e-9 ? static_cast<double>(out.stats.scannedChunks) / secs : 0.0);
+    s.insert(QStringLiteral("speed"), speed);
+
+    QJsonObject results;
+    results.insert(QStringLiteral("count"), static_cast<int>(out.results.size()));
+    results.insert(QStringLiteral("total_found"), static_cast<double>(out.totalFound));
+    results.insert(QStringLiteral("value_kind"), QStringLiteral("percent"));
+    QJsonArray top;
+    double best = 0.0;
+    for (size_t i = 0; i < out.results.size() && i < 5; ++i) {
+        const double v = static_cast<double>(out.results[i].density) * 100.0;
+        if (i == 0) best = v;
+        QJsonObject r;
+        r.insert(QStringLiteral("x"), out.results[i].minX);
+        r.insert(QStringLiteral("z"), out.results[i].minZ);
+        r.insert(QStringLiteral("value"), v);
+        top.append(r);
+    }
+    results.insert(QStringLiteral("best_value"), best);
+    if (!out.results.empty()) {
+        results.insert(QStringLiteral("best_x"), out.results.front().minX);
+        results.insert(QStringLiteral("best_z"), out.results.front().minZ);
+    }
+    results.insert(QStringLiteral("top"), top);
+    s.insert(QStringLiteral("results"), results);
+    s.insert(QStringLiteral("cancelled"), out.cancelled);
+    s.insert(QStringLiteral("stopped_early"), out.stoppedEarly);
+    s.insert(QStringLiteral("gpu_used"), gpuUsed);
+    return s;
+}
+
 // v3.3.8.1（任务书 3.1）：物理核心数（用于「线程数过大」提示；失败返回 0）
 int physicalCoreCount()
 {
@@ -765,6 +835,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
     m_w = new Widgets;
     m_cache = std::make_unique<CacheManager>();
+    m_telemetry = std::make_unique<slime::gui::TelemetryClient>();
 
     // v3.3.9（任务书 5.2）：窗口名称精简 —— 去掉「C++」「Qt」「重构」等技术词
     setWindowTitle(QStringLiteral("史莱姆区块查找器 %1").arg(QLatin1String(kAppVersion)));
@@ -2702,6 +2773,18 @@ void MainWindow::buildUi()
     // v3.3.6（任务书 调整 1）：进度行的补充信息（已用时/预计剩余/阶段说明）放在状态栏，
     // 进度行本身保持「进度条 + 百分比 + 阶段文字」的紧凑形态。
     statusBar()->showMessage(QStringLiteral("就绪"));
+    // v3.10.12.12：匿名统计公告（默认关闭；点此查看说明/自愿开启）
+    m_telemetryNotice = new QLabel(this);
+    m_telemetryNotice->setObjectName(QStringLiteral("telemetryNotice"));
+    m_telemetryNotice->setTextFormat(Qt::RichText);
+    m_telemetryNotice->setOpenExternalLinks(false);
+    m_telemetryNotice->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
+    m_telemetryNotice->setToolTip(QStringLiteral("匿名统计默认关闭；点击查看说明并自愿开启"));
+    connect(m_telemetryNotice, &QLabel::linkActivated, this, [this](const QString&) {
+        showTelemetryDialog();
+    });
+    statusBar()->addPermanentWidget(m_telemetryNotice);
+    updateTelemetryNotice();
     // v3.3.7.2（任务书 1.3）：临时消息（showMessage）与右侧永久控件之间必须**有分隔符** ——
     // 否则「扫描完成，正在匹配图案」+「扫描 11265898000/… 区块（25.6%）」会被读成一句话。
     // 该分隔符只在存在临时消息时显示（messageChanged），消息清空后自动隐藏。
@@ -3865,6 +3948,8 @@ void MainWindow::buildMenus()
     // v3.7.5（用户要求）：鸣谢名单
     QAction* aCredits = m_menuHelp->addAction(QStringLiteral("鸣谢"));
     connect(aCredits, &QAction::triggered, this, &MainWindow::showCredits);
+    QAction* aTelemetry = m_menuHelp->addAction(QStringLiteral("匿名统计（帮助改进）"));
+    connect(aTelemetry, &QAction::triggered, this, &MainWindow::showTelemetryDialog);
     QAction* aAbout = m_menuHelp->addAction(QStringLiteral("关于"));
     connect(aAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
 }
@@ -4328,7 +4413,7 @@ void MainWindow::showAboutDialog()
                  "Slime chunks are derived from the world seed with the same arithmetic as the game "
                  "(Java 48-bit LCG; Bedrock MT19937), verified bit-for-bit against the reference "
                  "implementation. The Bedrock algorithm was reverse-engineered by @protolambda / @jocopa3.\n\n"
-                 "Runs fully offline: no account, no telemetry, nothing uploaded.\n"
+                 "Runs offline by default. Optional anonymous usage statistics are OFF unless you enable them in Help -> Anonymous statistics.\n"
                  "For feedback channels see Help -> Contact; for credits see Help -> Credits.\n\n"
                  "Download page: %3")
                  .arg(QLatin1String(kAppVersion))
@@ -4339,7 +4424,7 @@ void MainWindow::showAboutDialog()
                  "版本：%1\n发布日期文件：build_date.txt\n已发布：%2 天\n\n"
                  "史莱姆区块由世界种子按与游戏一致的算法推导（Java 版 48 位 LCG；基岩版 MT19937），"
                  "并与参考实现逐位比对通过；基岩版算法由 @protolambda / @jocopa3 逆向工程得出。\n\n"
-                 "程序完全离线运行：不需要账号、不上传任何数据、不含统计埋点。\n"
+                 "程序默认离线运行：不需要账号；匿名使用统计默认关闭，可在「帮助 → 匿名统计」自愿开启。\n"
                  "反馈渠道见「帮助 → 联系我们」；致谢名单见「帮助 → 鸣谢」。\n\n"
                  "下载页面：%3")
                  .arg(QLatin1String(kAppVersion))
@@ -5280,6 +5365,27 @@ void MainWindow::runRingSearch()
     m_lastOutcome = out;
     m_lastInfo = info;
     m_hasLastOutcome = true;
+    if (m_telemetry) {
+        const QString ringMode = autoPrescan ? QStringLiteral("auto")
+                                             : ((o.scanStride == 1) ? QStringLiteral("exact")
+                                                                   : QStringLiteral("fast"));
+        QJsonObject st;
+        st.insert(QStringLiteral("radius"), o.radius);
+        st.insert(QStringLiteral("inner_radius"), o.innerRadius);
+        st.insert(QStringLiteral("target"), static_cast<double>(o.topN));
+        st.insert(QStringLiteral("min_density"), o.minDensity);
+        st.insert(QStringLiteral("min_separation"), o.minSeparation);
+        st.insert(QStringLiteral("sim_distance"), m_w->simDistance ? m_w->simDistance->value() : 0);
+        const QString seedStr = bedrock ? QString()
+                                        : QString::number(seed);
+        const QJsonObject search = buildTelemetrySearch(
+            seedStr, bedrock, QStringLiteral("ring"), QStringLiteral("exact"), ringMode, info.region,
+            m_w->startX ? m_w->startX->value() : 0, m_w->startZ ? m_w->startZ->value() : 0,
+            st, out, o.gpuScan != nullptr);
+        m_telemetry->reportSearchDetailed(QString::fromLatin1(kAppVersion), QStringLiteral("test"),
+                                          m_gpuScan ? QString::fromStdString(m_gpuScan->deviceName()) : QString(),
+                                          search);
+    }
     populateResultText(out, info);
     if (m_map) {
         auto layer = m_map->layer();
@@ -6751,6 +6857,7 @@ void MainWindow::saveMapVersionToConfig()
 void MainWindow::showWithMode()
 {
     m_pendingShowMode = false;
+    if (m_telemetry) m_telemetry->reportAppStart(QString::fromLatin1(kAppVersion), QStringLiteral("test"));
     const bool windowed = m_settings.fullscreenMode.trimmed().toLower() == QLatin1String("windowed");
     show();
     if (windowed)
@@ -7566,6 +7673,96 @@ void MainWindow::convertBlockCoords()
 }
 
 // ---------------- 鸣谢（v3.7.5，用户要求） ----------------
+void MainWindow::updateTelemetryNotice()
+{
+    if (!m_telemetryNotice || !m_telemetry) return;
+    const QString text = m_telemetry->enabled()
+                             ? QStringLiteral("匿名统计已开启 · 点此修改")
+                             : QStringLiteral("📣 匿名统计默认关闭 · 点此了解/开启");
+    m_telemetryNotice->setText(QStringLiteral("<a href=\"telemetry\">%1</a>").arg(text));
+}
+
+void MainWindow::showTelemetryDialog()
+{
+    if (!m_telemetry) return;
+    if (m_uiQuiet) {
+        addFeedback(2, QStringLiteral("匿名统计：自检模式不弹出对话框"));
+        return;
+    }
+    QDialog dlg(this);
+    dlg.setWindowTitle(QStringLiteral("匿名统计（帮助改进）"));
+    dlg.setMinimumWidth(560);
+    auto* lay = new QVBoxLayout(&dlg);
+
+    auto* intro = new QLabel(
+        QStringLiteral("匿名统计用于了解常用模式、硬件分布和失败情况，帮助改进 SlimeFinder。<b>默认关闭</b>，"
+                       "只有你主动勾选后才会发送。"), &dlg);
+    intro->setWordWrap(true);
+    lay->addWidget(intro);
+
+    auto* data = new QLabel(
+        QStringLiteral("<b>会发送：</b>程序版本、Windows 平台、CPU 型号/线程/内存档位、GPU 名称、"
+                       "游戏平台、世界种子、搜索设置（范围/模式/算法/阈值等）、结果数量与最佳结果坐标、"
+                       "耗时/扫描速度、取消/早停/GPU 标记。<br>"
+                       "<b>不会发送：</b>存档路径、日志内容、账号或持久 ID；服务端不保存 IP。"), &dlg);
+    data->setWordWrap(true);
+    lay->addWidget(data);
+
+    auto* privacy = new QLabel(
+        QStringLiteral("<a href=\"privacy\">查看完整隐私说明 docs/privacy.md</a>"), &dlg);
+    privacy->setOpenExternalLinks(false);
+    privacy->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
+    connect(privacy, &QLabel::linkActivated, this, [](const QString&) {
+        QDesktopServices::openUrl(QUrl(QStringLiteral(
+            "https://github.com/PillerBean/SlimeFinder/blob/main/docs/privacy.md")));
+    });
+    lay->addWidget(privacy);
+
+    auto* enabled = new QCheckBox(QStringLiteral("我自愿开启匿名统计（帮助改进 SlimeFinder）"), &dlg);
+    enabled->setChecked(m_telemetry->enabled());
+    lay->addWidget(enabled);
+
+    auto* epRow = new QHBoxLayout();
+    epRow->addWidget(new QLabel(QStringLiteral("服务端地址:"), &dlg));
+    auto* endpoint = new QLineEdit(&dlg);
+    endpoint->setPlaceholderText(QStringLiteral("https://<你的 Worker>.workers.dev/v1/event"));
+    endpoint->setText(m_telemetry->endpoint());
+    epRow->addWidget(endpoint, 1);
+    lay->addLayout(epRow);
+    auto* epNote = new QLabel(QStringLiteral("一般用户无需填写；由发布者部署 Worker 后配置。留空时即使勾选也不会发送。"), &dlg);
+    epNote->setStyleSheet(QStringLiteral("color:#808080;font-size:11px;"));
+    epNote->setWordWrap(true);
+    lay->addWidget(epNote);
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dlg);
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(buttons);
+
+    if (dlg.exec() != QDialog::Accepted) return;
+    const QString ep = endpoint->text().trimmed();
+    if (enabled->isChecked() && ep.isEmpty()) {
+        QMessageBox::warning(this, QStringLiteral("匿名统计"),
+                             QStringLiteral("已勾选开启，但还没有配置服务端地址；本次保存后不会发送。\n"
+                                            "请让发布者部署 Worker，或先取消勾选。"));
+    }
+    if (!ep.isEmpty()) {
+        const QUrl u(ep);
+        const bool local = (u.scheme() == QLatin1String("http") && u.host() == QLatin1String("127.0.0.1"));
+        if (!u.isValid() || (u.scheme() != QLatin1String("https") && !local)) {
+            QMessageBox::warning(this, QStringLiteral("匿名统计"),
+                                 QStringLiteral("服务端地址必须是 https:// 或本机 http://127.0.0.1/ 调试地址。"));
+            return;
+        }
+    }
+    m_telemetry->setSettings(enabled->isChecked(), ep);
+    updateTelemetryNotice();
+    addFeedback(2, enabled->isChecked() ? QStringLiteral("匿名统计已开启（仅发送匿名档位数据）")
+                                        : QStringLiteral("匿名统计已关闭"));
+    setStatus(enabled->isChecked() ? QStringLiteral("匿名统计已开启，感谢帮助改进")
+                                   : QStringLiteral("匿名统计已关闭"));
+}
+
 void MainWindow::showCredits()
 {
     QDialog dlg(this);
@@ -8868,6 +9065,36 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
                  "s/匹配 " + std::to_string(out.stats.matchMs / 1000.0) + "s) 速度=" + std::to_string(cps) +
                  " 区块/s 线程=" + std::to_string(out.stats.threadsUsed) +
                  (out.stoppedEarly ? " [提前停止]" : ""));
+    if (m_telemetry && !info.options.buildMode) {
+        const QString mode = (info.mode == Mode::Strict) ? QStringLiteral("pattern") : QStringLiteral("density");
+        const QString alg = (info.algorithm == Algorithm::Layered) ? QStringLiteral("layered")
+                            : (info.algorithm == Algorithm::Sample) ? QStringLiteral("sample")
+                            : (info.algorithm == Algorithm::Brute) ? QStringLiteral("brute")
+                                                                   : QStringLiteral("exact");
+        QJsonObject st;
+        st.insert(QStringLiteral("grid_size"), info.gridSizeUsed);
+        st.insert(QStringLiteral("min_density"), info.minDensityUsed);
+        st.insert(QStringLiteral("target"), static_cast<double>(info.targetCount));
+        st.insert(QStringLiteral("stop_at_target"), info.options.stopAtTarget);
+        st.insert(QStringLiteral("smart_range"), info.options.smartRange);
+        st.insert(QStringLiteral("ignore_threshold"), info.options.ignoreThreshold);
+        st.insert(QStringLiteral("threads"), info.options.threads);
+        st.insert(QStringLiteral("layer_block"), info.options.layerBlock);
+        st.insert(QStringLiteral("layer_ratio"), info.options.layerRatio);
+        st.insert(QStringLiteral("sample_step"), info.options.sampleStep);
+        st.insert(QStringLiteral("sample_exact"), info.options.sampleExact);
+        st.insert(QStringLiteral("gpu_requested"), info.options.gpuScan != nullptr);
+        const QString seedStr = (info.version == Version::Bedrock)
+                                    ? QString()
+                                    : QString::number(info.options.worldSeed);
+        const QJsonObject search = buildTelemetrySearch(
+            seedStr, info.version == Version::Bedrock, mode, alg, QString(), info.region,
+            info.options.startX, info.options.startZ, st, out,
+            out.gpuScanUsed || out.gpuMatchUsed);
+        m_telemetry->reportSearchDetailed(QString::fromLatin1(kAppVersion), QStringLiteral("test"),
+                                          m_gpuScan ? QString::fromStdString(m_gpuScan->deviceName()) : QString(),
+                                          search);
+    }
     m_task.wait();
 }
 

@@ -131,6 +131,7 @@ add_executable(SlimeFinder WIN32
     src/gui/PatternEditorPanel.cpp
     src/gui/UpdateHistory.cpp # v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
     src/gui/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
+    src/gui/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
     src/gui/HelpDialog.cpp
     src/gui/SettingsDialog.cpp # E3.3.5（优化 5）：程序设置（五标签页）
     src/gui/FeedbackPanel.cpp   # E3.3.4（任务书 2.2）：反馈面板（E3.3.6 改版：时间顺序 + 过滤成功）
