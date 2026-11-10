@@ -29,6 +29,7 @@ namespace slime::gui {
 
 namespace {
 constexpr const char* kConfigFile = "telemetry.json";
+constexpr const char* kDefaultEndpoint = "https://slimefinder-telemetry.pages.dev/v1/event";
 constexpr const char* kSchema = "schema";
 constexpr int kSchemaVersion = 1;
 
@@ -77,10 +78,15 @@ void TelemetryClient::load()
     m_enabled = false;
     m_endpoint.clear();
     QFile f(configPath());
-    if (!f.open(QIODevice::ReadOnly)) return;
+    if (!f.open(QIODevice::ReadOnly)) {
+        m_endpoint = QString::fromLatin1(kDefaultEndpoint);
+        return;
+    }
     const QJsonObject o = QJsonDocument::fromJson(f.readAll()).object();
     m_enabled = o.value(QStringLiteral("enabled")).toBool(false);
     m_endpoint = o.value(QStringLiteral("endpoint")).toString().trimmed();
+    // 没有本地配置时使用已部署的 Pages 端点；默认仍然关闭
+    if (m_endpoint.isEmpty()) m_endpoint = QString::fromLatin1(kDefaultEndpoint);
 }
 
 void TelemetryClient::setSettings(bool enabled, const QString& endpoint)
