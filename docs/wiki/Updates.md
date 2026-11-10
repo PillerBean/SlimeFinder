@@ -17,7 +17,7 @@
 
 1. **更新通道**：
    - **稳定版（默认）**：只提示正式版（`version.json`）；
-   - **测试版**：还会提示 Pre-release（`version-beta.json`），当前测试版为 v3.10.12.13；
+   - **测试版**：还会提示 Pre-release（`version-beta.json`），当前测试版为 v3.11.1；
 2. **来源**：
    - 自动（推荐）：先试 GitHub 官方；官方不可达时对内置镜像测速，选最快的继续检查与下载；
    - GitHub 官方：`api.github.com` + `raw.githubusercontent.com`；
