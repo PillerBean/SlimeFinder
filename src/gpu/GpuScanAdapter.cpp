@@ -6,6 +6,9 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
+#include <cstdint>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -126,6 +129,125 @@ public:
             for (const auto& pr : order) emit(hits[static_cast<size_t>(pr.second)]);
         } else {
             for (const auto& h2 : hits) emit(h2);
+        }
+        return true;
+    }
+
+    // v3.10.12.11：全图正方形密度预筛（按窗口密度取种子，供环形精修）
+    bool prescanDensitySeeds(const slime::DensityPrescanParams& p, const std::atomic<bool>& cancel,
+                             std::vector<slime::DensitySeed>& out, std::string* err) const override
+    {
+        out.clear();
+        if (!m_session || !m_session->available()) {
+            if (err) *err = "GPU 会话不可用";
+            return false;
+        }
+        if (p.gridSize < 1 || p.gridSize > 15) {
+            if (err) *err = "正方形预筛窗口只支持 1..15 区块";
+            return false;
+        }
+        const int g = p.gridSize;
+        const int64_t axMin = p.minX;
+        const int64_t axMax = static_cast<int64_t>(p.maxX) - g + 1;
+        const int64_t azMin = p.minZ;
+        const int64_t azMax = static_cast<int64_t>(p.maxZ) - g + 1;
+        if (axMax < axMin || azMax < azMin) return false;
+        const int w = static_cast<int>(axMax - axMin + g);
+        if (w <= 0) return false;
+
+        struct Cand {
+            int count = 0;
+            int cx = 0;
+            int cz = 0;
+        };
+        std::vector<Cand> cands;
+        cands.reserve(static_cast<size_t>((std::max)(1, p.topPerBand)) *
+                      static_cast<size_t>((std::max)(1, (int)((azMax - azMin) / std::max(1, p.bandRows) + 1))));
+        double thr = std::clamp(p.minDensity, 0.0, 1.0);
+        const uint32_t maxHits = 8000000u;
+        const int bandRows = (std::max)(64, p.bandRows);
+        for (int64_t az0 = azMin; az0 <= azMax; az0 += bandRows) {
+            if (cancel.load(std::memory_order_relaxed)) {
+                if (err) *err = "已取消";
+                return false;
+            }
+            const int64_t az1 = (std::min)(azMax, az0 + bandRows - 1);
+            const int h = static_cast<int>(az1 - az0 + g);
+            std::vector<slimegpu::GpuSession::StreamDensityHit> hits;
+            bool ok = false;
+            for (int attempt = 0; attempt < 4 && !ok; ++attempt) {
+                const int thrCount = static_cast<int>(std::ceil(thr * static_cast<double>(g) * g - 1e-9));
+                std::string bandErr;
+                uint32_t total = 0;
+                ok = m_session->matchDensityStream(p.worldSeed, p.version == slime::Version::Bedrock, g,
+                                                   (std::max)(1, thrCount), w, h,
+                                                   static_cast<int>(axMin), static_cast<int>(axMax),
+                                                   static_cast<int>(az0), static_cast<int>(az1), maxHits,
+                                                   0, 0, cancel, hits, &bandErr, &total,
+                                                   false, 0, 0);
+                if (!ok && bandErr.find("上限") != std::string::npos) {
+                    thr = (std::min)(0.60, thr + 0.02);
+                    continue;
+                }
+                if (!ok) {
+                    if (err) *err = bandErr.empty() ? "GPU 密度预筛失败" : bandErr;
+                    return false;
+                }
+            }
+            if (!ok) {
+                if (err) *err = "GPU 密度预筛命中过多，已跳过该带";
+                continue;
+            }
+            if (hits.empty()) continue;
+            const size_t keep = (std::min)(hits.size(), static_cast<size_t>((std::max)(1, p.topPerBand)));
+            std::partial_sort(hits.begin(), hits.begin() + static_cast<long>(keep), hits.end(),
+                              [](const auto& a, const auto& b) { return a.count > b.count; });
+            for (size_t i = 0; i < keep; ++i) {
+                cands.push_back(Cand{ static_cast<int>(hits[i].count),
+                                      static_cast<int>(hits[i].x + g / 2),
+                                      static_cast<int>(hits[i].z + g / 2) });
+            }
+        }
+        if (cands.empty()) {
+            if (err) *err = "正方形预筛没有候选";
+            return false;
+        }
+        std::sort(cands.begin(), cands.end(), [](const Cand& a, const Cand& b) {
+            if (a.count != b.count) return a.count > b.count;
+            if (a.cx != b.cx) return a.cx < b.cx;
+            return a.cz < b.cz;
+        });
+        const int sep = (std::max)(1, p.minSeparation);
+        const int maxSeeds = (std::max)(1, p.maxSeeds);
+        const long long cellSize = sep;
+        std::unordered_map<int64_t, std::vector<int>> occupied;
+        out.reserve(static_cast<size_t>(maxSeeds));
+        for (const Cand& c : cands) {
+            if (static_cast<int>(out.size()) >= maxSeeds) break;
+            const int gx = static_cast<int>(std::floor(static_cast<double>(c.cx) / cellSize));
+            const int gz = static_cast<int>(std::floor(static_cast<double>(c.cz) / cellSize));
+            bool far = true;
+            for (int dz = -1; dz <= 1 && far; ++dz) {
+                for (int dx = -1; dx <= 1 && far; ++dx) {
+                    const int64_t key = (static_cast<int64_t>(gx + dx) << 32) ^
+                                        static_cast<uint32_t>(gz + dz);
+                    auto it = occupied.find(key);
+                    if (it == occupied.end()) continue;
+                    for (int idx : it->second) {
+                        const int ddx = out[static_cast<size_t>(idx)].cx - c.cx;
+                        const int ddz = out[static_cast<size_t>(idx)].cz - c.cz;
+                        if (ddx * ddx + ddz * ddz < sep * sep) { far = false; break; }
+                    }
+                }
+            }
+            if (!far) continue;
+            out.push_back(slime::DensitySeed{ c.cx, c.cz, c.count });
+            const int64_t key = (static_cast<int64_t>(gx) << 32) ^ static_cast<uint32_t>(gz);
+            occupied[key].push_back(static_cast<int>(out.size() - 1));
+        }
+        if (out.empty()) {
+            if (err) *err = "正方形预筛没有分散种子";
+            return false;
         }
         return true;
     }

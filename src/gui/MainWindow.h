@@ -406,6 +406,9 @@ private:
     bool m_restartPending = false;
     int m_lastRingOuter = 0;      // v3.6.18：本次环形搜索的有效外沿（模拟距离可能收窄）
     double m_minDensityBeforeRing = 0.3;  // v3.10.12.10：切回正方形时恢复环形前的阈值
+    double m_minDensityCommitted = 0.3;   // v3.10.12.11：焦点离开后才判断“最小密度被改”
+    std::atomic<bool> m_ringCancel{ false };  // v3.10.12.11：环形自动预筛的取消标志
+    bool m_ringSearching = false;             // v3.10.12.11：环形搜索（含预筛）进行中
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器
     QPushButton* m_mapIconBtn = nullptr;   // v3.6.1：左栏图标条里的地图开关
     QLabel* m_historyCaption = nullptr;   // v3.6.0：历史页顶部说明

@@ -22,7 +22,7 @@
 
 param(
     [string]$Repo = "",
-    [string]$Version = "3.10.12.10",
+    [string]$Version = "3.10.12.11",
     [string]$QtDir = "C:\Qt\6.11.2\msvc2022_64",
     [switch]$SkipSelfTest
 )

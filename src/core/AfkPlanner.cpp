@@ -861,7 +861,7 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
         const long long wB = static_cast<long long>(spanX) * 16 + 2LL * padB;
         const long long hB = static_cast<long long>(spanZ) * 16 + 2LL * padB;
         const long long exactLimit = static_cast<bool>(opt.weightAt) ? 0 : 2048;
-        if (!opt.forceCoarse && wB <= exactLimit && hB <= exactLimit) {
+        if (!opt.forceCoarse && opt.seedCandidates.empty() && wB <= exactLimit && hB <= exactLimit) {
             AfkPlanOptions bigger = opt;
             bigger.maxWindowBlocks = static_cast<int>(exactLimit);
             return planExactBlockLevel(bigger, isSlime);
@@ -921,7 +921,23 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
             kernRev[static_cast<size_t>(dj) * kk + di] = kernSum[static_cast<size_t>(dj) * kk + (kk - 1 - di)];
 
     // 2) 粗扫：按 z 带流式（内存与范围无关）
-    int stride = coarseChunkStride((std::max)(spanX, spanZ));
+    struct Hit {
+        int64_t score;
+        int cx, cz;
+    };
+    std::vector<Hit> hits;
+    int stride = 1;
+    const int nThreads = plannerThreads();
+    auto stageT0 = std::chrono::steady_clock::now();
+    if (!opt.seedCandidates.empty()) {
+        // 正方形密度预筛模式：不做随机抽样/粗扫，直接精修这些种子区域
+        hits.reserve(opt.seedCandidates.size());
+        for (const auto& sc : opt.seedCandidates) {
+            if (sc.first < ax0 || sc.first > ax1 || sc.second < az0 || sc.second > az1) continue;
+            hits.push_back(Hit{ 1, sc.first, sc.second });
+        }
+    } else {
+    stride = coarseChunkStride((std::max)(spanX, spanZ));
     // v3.5.20：快速模式（scanStride = 0）再套一层「候选点数预算」——大范围自动加步长，
     //   把粗扫候选压到 ~40 万以内（1 格核精修 + 3x3 抛光仍会把这些区域挖出来）。
     //   精确模式（scanStride = 1）不受影响，逐区块全扫。
@@ -945,11 +961,6 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
     bandRows = (std::max)(stride, (std::min)(8192, bandRows));
     bandRows = ((bandRows + stride - 1) / stride) * stride;
 
-    struct Hit {
-        int64_t score;
-        int cx, cz;
-    };
-    std::vector<Hit> hits;
     // 列带：每带 sc ≤ 65536 ints（L2 内），同时吃满线程
     const int rowsPerBandCand = bandRows / stride + 1;
     int colBands = (std::max)(1, (std::min)(nX, plannerThreads()));
@@ -960,10 +971,8 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
     }
     const int colW = (nX + colBands - 1) / colBands;
     const int colCount = (nX + colW - 1) / colW;
-    const int nThreads = plannerThreads();
     const bool haveRowSlime = static_cast<bool>(opt.rowSlime);
 
-    auto stageT0 = std::chrono::steady_clock::now();
     // v3.5.17：超大范围（>2 亿区块）走「等距抽样」—— 每个样本直接算 (2k+1)^2 区块窗口的核分，
     //   不铺占用图 ⇒ 内存与耗时都有界；随后仍走同一套 1 格核精修 + 抛光。精确模式（scanStride=1）不抽样。
     // v3.5.29：抽样阈值降到 2000 万区块 —— 再大时命中表会到 GB 级（内存有界优先）
@@ -1120,6 +1129,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
         }
         for (const auto& bh : bandHits) hits.insert(hits.end(), bh.begin(), bh.end());
     }
+    }   // end seedCandidates empty branch
     if (hits.empty()) return none;
     std::fprintf(stderr, "[环形] 粗扫阶段：候选 %zu（%.1f ms）\n", hits.size(),
                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - stageT0).count());
@@ -1130,6 +1140,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
     //   否则 topN 再大也只能从 48 个粗点里挑，看起来像「最多 4 个」。
     size_t M = (static_cast<long long>(spanX) * spanZ <= 40000LL) ? 200 : 48;
     M = (std::max)(M, static_cast<size_t>((std::min)(4000, opt.topN * 8)));
+    if (!opt.seedCandidates.empty()) M = hits.size();   // 种子模式：全部精修
     // v3.6.1（用户反馈：环形最多只出 4 个）：最小密度会把大部分候选筛掉，
     //   阈值 >0 时多精修一批，保证「目标数量」还有得挑。
     if (opt.minDensity > 0.0) M = (std::max)(M, static_cast<size_t>(256));

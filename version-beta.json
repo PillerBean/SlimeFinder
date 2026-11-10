@@ -1,16 +1,16 @@
 {
-  "version": "3.10.12.10",
-  "tag": "v3.10.12.10",
-  "notes": "# SlimeFinder v3.10.12.10 更新说明\n\n本版本新增**检查更新**功能（未改动搜索/性能逻辑）。\n\n## 新增\n\n- **检查更新对话框**（帮助菜单）：\n  - 支持 **GitHub Releases 官方检查**；\n  - **自动镜像测速**：官方不可达时，自动对内置的 9 个候选镜像测速（清单响应 + zip 256KB 采样），\n    选最快的一个继续检查/下载，用户不需要手动切换；镜像通过仓库内的 `version.json` 清单回退\n    （raw 与 release 资产可被这些代理加速）；\n  - 下载更新 zip 后用 Release 的 `SHA256SUMS` 校验；下载位置在系统「下载」目录；\n  - 支持镜像/官方地址自动回退，失败时给出可读原因；\n- **保留蓝奏云网盘源**作为国内手动备用入口（帮助 → 网盘下载页），不对它做自动更新适配。\n\n## 兼容性\n\n- 检查更新使用 Windows 自带的 `curl.exe`，不额外依赖 Qt Network DLL 或 OpenSSL；\n- 旧版本升级后默认来源为「自动（官方优先，失败后自动测速镜像）」，可在对话框中切换并记住选择；\n- 程序功能、搜索结果与性能相对 3.10.12.9 无变化。\n\n## 发版后需要同步\n\n- 上传 GitHub Release 后运行 `py -3 scripts/gen_version_manifest.py --version 3.10.12.10 --notes-file docs/release_notes/v3.10.12.10.md`，\n  并把生成的 `version.json` 提交到 `main`（镜像回退检查依赖它）。\n\n## 修复（本版补记）\n\n- **环形「快速」Java 整图返回 0 结果**：规划器物理上限仍是 4 万亿格，低于 Java 整图 1.4e13 格，\n  会静默返回空表；现在放开到整图上限，并按实际抽样点数统计扫描量（不再出现万亿/秒的假速度）。\n- **密度模式的最小密度 / 忽略阈值控件**：移到密度面板常显（此前选预设后整组隐藏）；\n  修改会自动切到「自定义方案」。\n\n## 发布方式变化（自动更新）\n\n- Releases **只提供 Setup 安装包**（不再发便携 zip）；自动更新只支持安装版。\n- 检查到新版本后：下载 Setup → SHA256 校验 → 关闭程序 → 打开安装向导，**用户点下一步完成覆盖**；\n  安装器带「/UPDATE=1」参数，会保留 config.json 与缓存。\n- 更新通道：稳定版只提示正式版；测试版还会提示 Pre-release。\n- 检查更新优先读取 raw 清单（不消耗 GitHub API 限额），结果缓存 6 小时，镜像测速结果缓存 24 小时。",
+  "version": "3.10.12.11",
+  "tag": "v3.10.12.11",
+  "notes": "# SlimeFinder v3.10.12.11（测试版）\n\n## 环形搜索：新增「自动正方形预筛」\n\n环形原来只有「快速抽样」和「精确逐区块」两种：\n\n- 快速：全图等距抽样，有随机抽卡性，可能漏掉孤岛优解；\n- 精确：结果可靠，但全图逐区块当前算法约 99 小时，不现实。\n\n本版新增第三种：\n\n### 自动正方形预筛（更稳，较慢）\n\n1. GPU 全图扫描正方形密度（g=15，阈值 0.18）；\n2. 按区块间距把高密度窗口分散成种子；\n3. 只在种子周围做环形精确精修；\n4. 按目标数量和最小间距输出结果。\n\n实测（Java 全图 3,750,001²，RX 6750 GRE）：\n\n- 正方形预筛：**219.6 秒（约 3.7 分钟）**\n- 4000 个种子的环形精修：**7 ms**\n- 最佳环形覆盖率：**28.58%**\n- 当前快速抽样全图最佳：22.2%\n\n2k² 对照：预筛 + 精修得到 21.41%，与环形精确最优完全一致。\n\n说明：\n\n- 该模式需要 GPU；GPU 不可用或预筛失败会自动回退「快速」抽样并提示；\n- 预筛期间可以取消；\n- 目前全图自动预筛约 3.7 分钟，低于半小时目标，后续还能继续优化。\n\n## 修复\n\n- **最小密度输入为 0 时误切自定义方案**：\n  以前输入框还在编辑、焦点没离开时就会触发“已修改”，把方案切到自定义；\n  现在只在**焦点离开或回车**后判断修改并切换。\n- 环形扫描下拉改为三档：**快速 / 自动正方形预筛（更稳，较慢）/ 精确**。\n\n## 更新说明\n\n- 继续只提供 Setup 安装包；检查更新优先读取 raw 清单，测试通道会收到本 Pre-release；\n- 安装器仍使用 /UPDATE 保留设置与缓存。",
   "assets": [
     {
-      "name": "SlimeFinder-3.10.12.10-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.10/SlimeFinder-3.10.12.10-Setup.exe",
-      "size": 11068203
+      "name": "SlimeFinder-3.10.12.11-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.11/SlimeFinder-3.10.12.11-Setup.exe",
+      "size": 11080008
     },
     {
-      "name": "SHA256SUMS-3.10.12.10.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.10/SHA256SUMS-3.10.12.10.txt",
+      "name": "SHA256SUMS-3.10.12.11.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.11/SHA256SUMS-3.10.12.11.txt",
       "size": 210
     }
   ]

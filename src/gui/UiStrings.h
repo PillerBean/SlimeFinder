@@ -272,6 +272,11 @@ inline const QHash<QString, QString>& zhToEn()
         { QStringLiteral("优化"), QStringLiteral("Improved") },
         { QStringLiteral("调整"), QStringLiteral("Adjusted") },
         { QStringLiteral("移除"), QStringLiteral("Removed") },
+        // ---- v3.10.12.11 自动正方形预筛 ----
+        { QStringLiteral("环形新增「自动正方形预筛」扫描模式：GPU 全图正方形密度扫描（g=15）→ 按区块间距分散种子 → 环形精修；本机 Java 全图实测约 3.7 分钟，最佳覆盖率 28.58%（快速抽样的 22.2%），不再依赖随机抽样；GPU 不可用时自动回退快速抽样"), QStringLiteral("Added the ring \"automatic square pre-scan\" mode: a GPU full-map square-density scan (g=15), spatially spread seeds, then ring refinement; measured about 3.7 minutes on the whole Java map, with a best coverage of 28.58% versus 22.2% for fast sampling, without relying on random sampling; falls back to fast sampling when the GPU is unavailable") },
+        { QStringLiteral("修复最小密度输入为 0 时焦点还没离开就切换成「自定义方案」的问题：现在只在焦点离开或回车后才判断修改并切换"), QStringLiteral("Fixed the scheme switching to Custom while the minimum-density field still had focus and was being changed to 0; it now switches only after focus leaves or Enter is pressed") },
+        { QStringLiteral("「环形扫描」下拉改为 快速 / 自动正方形预筛（更稳，较慢）/ 精确 三档；自动预筛期间可取消，失败会自动回退"), QStringLiteral("The ring scan dropdown now has three modes: Fast, Automatic square pre-scan (steadier, slower) and Exact; the pre-scan can be cancelled and falls back automatically on failure") },
+
         // ---- v3.10.12.10 Setup-only/通道 ----
         { QStringLiteral("发布改为只提供 Setup 安装包：检查到新版本后获取 Setup、SHA256 校验通过则提示退出程序并打开安装向导（用户点下一步完成覆盖；安装器 /UPDATE 保留设置与缓存）；便携版提示改为安装版"), QStringLiteral("Releases now provide only the Setup installer: after an update is found, the app downloads the Setup, verifies SHA256, then closes and opens the installer for the user to click through (the installer runs with /UPDATE to keep settings and caches); portable copies are told to install the setup version") },
         { QStringLiteral("新增更新通道：稳定版只提示正式版，测试版还会提示 Pre-release；检查更新优先读取 raw 清单（不消耗 GitHub API 限额），结果缓存 6 小时、镜像测速结果缓存 24 小时，重复检查不会反复访问"), QStringLiteral("Added update channels: Stable only offers official releases, Test also offers pre-releases; checks read the raw manifest first (no GitHub API quota), cache results for 6 hours and mirror speed-test results for 24 hours so repeated checks do not keep hitting the network") },

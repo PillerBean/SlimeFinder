@@ -25,7 +25,7 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 - **只提供安装包** `SlimeFinder-*-Setup.exe`（默认安装到 Program Files，需管理员权限）；
 - 自动更新只支持安装版：检查到新版本后会下载 Setup、校验 SHA256，然后退出程序并打开安装向导（用户点下一步完成覆盖，保留设置与缓存）；
 - 便携 zip 已停发；旧版本 zip 仍可从历史 Release 获取；
-- 具体版本以 Releases 页面为准；当前测试版：**v3.10.12.10（Pre-release）**，在“检查更新”里切换到测试通道即可收到。
+- 具体版本以 Releases 页面为准；当前测试版：**v3.10.12.11（Pre-release）**，在“检查更新”里切换到测试通道即可收到。
 
 > 📦 **按版本查找全部历史版本**：**[打开版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)**
 > GitHub Releases 页面按发布时间排序（补传历史后会乱序），版本索引按版本号从新到旧排列。

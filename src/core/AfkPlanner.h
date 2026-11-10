@@ -57,6 +57,8 @@ struct AfkPlanOptions {
     int statBands = 4;
     // v3.7.6：可选 GPU 覆盖计算（为空 / 不可用 / 区域太小 / 加权模式 ⇒ 走 CPU）
     const class GpuScan* gpuScan = nullptr;
+    // v3.10.12.11：正方形密度预筛得到的种子（区块坐标）。非空时跳过粗扫/抽样，直接精修这些种子。
+    std::vector<std::pair<int, int>> seedCandidates;
 
     // v3.5.2（任务 3）：群系权重回调（方块坐标 → 权重，0 = 该群系不刷史莱姆）。
     // 为空 = 纯面积模式；非空 = 按加权覆盖排序，且计算窗口收窄到 1024 方块。

@@ -176,7 +176,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.10.12.10";
+constexpr const char* kAppVersion = "v3.10.12.11";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置 / 3 更新历史）
 constexpr int kNavCount = 4; // v3.5.4：地图移入搜索页，导航回到 4 项
@@ -1926,11 +1926,17 @@ void MainWindow::buildUi()
         densCfgRow->addWidget(m_w->ignoreThreshold);
         densCfgRow->addStretch();
         densityLay->addLayout(densCfgRow);
+        m_minDensityCommitted = m_w->minDensity->value();
         QObject::connect(m_w->minDensity, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                         this, [this](double) {
-                             applyResultConflicts();
-                             markPresetCustom(QStringLiteral("最小密度"));
-                         });
+                         this, [this](double) { applyResultConflicts(); });
+        // v3.10.12.11：输入“0”过程中 valueChanged 会连续触发；只在焦点离开/回车后才切自定义方案
+        QObject::connect(m_w->minDensity, &QDoubleSpinBox::editingFinished, this, [this]() {
+            if (!m_w || !m_w->minDensity || m_presetApplying) return;
+            const double v = m_w->minDensity->value();
+            if (v == m_minDensityCommitted) return;
+            m_minDensityCommitted = v;
+            markPresetCustom(QStringLiteral("最小密度"));
+        });
     }
 
     QObject::connect(m_w->ignoreThreshold, &QCheckBox::toggled, this, [this](bool) {
@@ -1965,9 +1971,12 @@ void MainWindow::buildUi()
     ringModeRow->addWidget(new QLabel(QStringLiteral("环形扫描:"), m_w->ringOpts));
     m_w->ringScanCombo = new QComboBox(m_w->ringOpts);
     m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanFast), 0);
+    m_w->ringScanCombo->addItem(QStringLiteral("自动正方形预筛（更稳，较慢）"), 2);
     m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanExact), 1);
-    m_w->ringScanCombo->setToolTip(QStringLiteral("快速：大范围自动放大粗扫步长，再对前几十名逐格精修；\n"
-                                                 "精确：每个区块都算（超大范围会很慢）。"));
+    m_w->ringScanCombo->setToolTip(QStringLiteral(
+        "快速：大范围等距抽样，再对少量候选精修（有随机性）；\n"
+        "自动正方形预筛：先用 GPU 全图扫描正方形密度，取分散种子后再做环形精修（慢，但基本不抽卡）；\n"
+        "精确：每个区块都算（超大范围会很慢，且 2000×2000 以上受限）。"));
     ringModeRow->addWidget(m_w->ringScanCombo);
     ringModeRow->addStretch();
     ringLay->addLayout(ringModeRow);
@@ -2865,12 +2874,14 @@ void MainWindow::buildUi()
                 m_minDensityBeforeRing = m_w->minDensity ? m_w->minDensity->value() : 0.3;
                 if (m_w->minDensity && m_w->minDensity->value() > 0.0) {
                     m_w->minDensity->setValue(0.0);
+                    m_minDensityCommitted = 0.0;
                     if (!m_uiQuiet)
                         addFeedback(2, slime::ui::tr(QStringLiteral(
                             "环形模式：最小密度已暂降为 0（环带覆盖率通常低于 30%，可手动调高）")));
                 }
             } else if (m_w->minDensity && m_w->minDensity->value() == 0.0) {
                 m_w->minDensity->setValue((std::max)(0.05, m_minDensityBeforeRing));
+                m_minDensityCommitted = m_w->minDensity->value();
             }
             updateSearchShapeEnabled();
         });
@@ -4945,7 +4956,10 @@ void MainWindow::runRingSearch()
     // v3.7.6：环形覆盖可交给 GPU（失败/太小/加权会自动走 CPU）
     o.gpuScan = (m_gpuScan && m_gpuAvailable) ? m_gpuScan.get() : nullptr;
     // v3.5.17：0 = 快速（粗扫+精修），1 = 精确（逐区块）
-    o.scanStride = (m_w->ringScanCombo && m_w->ringScanCombo->currentData().toInt() == 1) ? 1 : 0;
+    // v3.10.12.11：2 = 自动正方形预筛 + 环形精修
+    const int ringScanMode = m_w->ringScanCombo ? m_w->ringScanCombo->currentData().toInt() : 0;
+    const bool autoPrescan = (ringScanMode == 2);
+    o.scanStride = (ringScanMode == 1) ? 1 : 0;
     // v3.5.29：精确模式（逐区块）有内存/耗时上限，超了直接提示而不是跑崩
     if (o.scanStride == 1 && static_cast<long long>(spanX) * spanZ > 4000000LL) {
         setStatus(slime::ui::tr(QStringLiteral("精确模式范围过大（%1×%2 = %3 万区块，上限 400 万）——请改用「快速」或缩小半径"))
@@ -5046,9 +5060,15 @@ void MainWindow::runRingSearch()
     std::atomic<bool> ringDone{ false };
     bool ringEmptyAfterFilter = false;
     std::atomic<bool> ringOutOfMemory{ false };
+    bool prescanUsed = false;
+    bool prescanFallback = false;
+    bool ringCancelled = false;
+    m_ringCancel.store(false, std::memory_order_relaxed);
+    m_ringSearching = true;
     {
-        const QString scanText = (o.scanStride == 1) ? QStringLiteral("\u7cbe\u786e\u9010\u533a\u5757")
-                                                     : QStringLiteral("\u5feb\u901f\u7c97\u626b");
+        const QString scanText = autoPrescan ? QStringLiteral("自动正方形预筛 + 环形精修")
+                                             : ((o.scanStride == 1) ? QStringLiteral("\u7cbe\u786e\u9010\u533a\u5757")
+                                                                    : QStringLiteral("\u5feb\u901f\u7c97\u626b"));
         setStatus(slime::ui::tr(QStringLiteral("\u73af\u5f62\u641c\u7d22\u8ba1\u7b97\u4e2d\u2026 %1\u00d7%2 \u533a\u5757\uff08%3\uff09"))
                       .arg(spanX).arg(spanZ).arg(scanText));
         QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
@@ -5072,7 +5092,47 @@ void MainWindow::runRingSearch()
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
 #endif
         try {
-            cands = slime::AfkPlanner::plan(o, pred);
+            if (autoPrescan) {
+                if (m_gpuScan && m_gpuAvailable) {
+                    slime::DensityPrescanParams pp;
+                    pp.version = v;
+                    pp.worldSeed = seed;
+                    pp.minX = minX;
+                    pp.maxX = maxX;
+                    pp.minZ = minZ;
+                    pp.maxZ = maxZ;
+                    pp.gridSize = 15;
+                    pp.minDensity = 0.18;
+                    pp.bandRows = 4096;
+                    pp.topPerBand = 512;
+                    pp.maxSeeds = 4000;
+                    pp.minSeparation = 16;
+                    std::vector<slime::DensitySeed> seeds;
+                    std::string perr;
+                    if (m_gpuScan->prescanDensitySeeds(pp, m_ringCancel, seeds, &perr) &&
+                        !seeds.empty() && !m_ringCancel.load(std::memory_order_relaxed)) {
+                        o.seedCandidates.reserve(seeds.size());
+                        for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
+                        prescanUsed = true;
+                        std::fprintf(stderr, "[环形] 正方形预筛：%zu 个分散种子（阈值 %.2f）\n",
+                                     seeds.size(), pp.minDensity);
+                    } else {
+                        prescanFallback = true;
+                        o.seedCandidates.clear();
+                        o.scanStride = 0;
+                        std::fprintf(stderr, "[环形] 正方形预筛不可用，回退快速抽样：%s\n", perr.c_str());
+                    }
+                } else {
+                    prescanFallback = true;
+                    o.scanStride = 0;
+                    std::fprintf(stderr, "[环形] GPU 不可用，正方形预筛回退快速抽样\n");
+                }
+            }
+            if (m_ringCancel.load(std::memory_order_relaxed)) {
+                ringCancelled = true;
+            } else {
+                cands = slime::AfkPlanner::plan(o, pred);
+            }
         } catch (const std::bad_alloc&) {
             ringOutOfMemory = true;
         } catch (...) {
@@ -5142,7 +5202,15 @@ void MainWindow::runRingSearch()
         waitLoop.exec();
     }
     ringWorker.join();
+    m_ringSearching = false;
     updateStartEnabled();
+    if (ringCancelled) {
+        setStatus(slime::ui::tr(QStringLiteral("环形搜索已取消")));
+    } else if (autoPrescan && prescanUsed) {
+        addFeedback(2, slime::ui::tr(QStringLiteral("自动正方形预筛完成：已用全图正方形密度种子做环形精修")));
+    } else if (autoPrescan && prescanFallback) {
+        addFeedback(2, slime::ui::tr(QStringLiteral("自动正方形预筛不可用，已回退「快速抽样」；可检查 GPU 设置")));
+    }
     if (m_resultsNotice) {
         const int got = static_cast<int>(cands.size());
         const int want = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
@@ -8500,7 +8568,14 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
 }
 
 void MainWindow::cancelSearch()
-{    if (!m_running) return;
+{
+    if (m_ringSearching) {
+        m_ringCancel.store(true, std::memory_order_relaxed);
+        if (m_w && m_w->cancel) m_w->cancel->setEnabled(false);
+        setStatus(slime::ui::tr(QStringLiteral("正在取消环形搜索…")));
+        return;
+    }
+    if (!m_running) return;
     m_task.cancel();
     m_w->cancel->setEnabled(false);
     setStatus(slime::ui::tr(QStringLiteral("正在取消…")));
@@ -10290,8 +10365,8 @@ int MainWindow::runSelfTest()
                 if (line.startsWith(QStringLiteral("V3.4.1 "))) hasAlias = true;
             }
             check(!hasAlias, "更新历史不列出 3.4.1（别名包，与 3.4.3 / 3.4.8 同二进制）");
-            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.10 全部版本（一条不漏）");
-            check(slime::updateHistoryEntryCount() == 157, "更新历史条目数 99（1.0.0 → 3.6.22）");
+            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.11 全部版本（一条不漏）");
+            check(slime::updateHistoryEntryCount() == 158, "更新历史条目数 99（1.0.0 → 3.6.22）");
             // v3.5.16：正式版恰好 4 个（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0）；3.5 之后一律测试版（用户要求）
             {
                 int official = 0;
@@ -13188,7 +13263,7 @@ int MainWindow::runSelfTest()
                   "过程面板：底部图标条已移除，保留 4 个页签 + 收起/展开按钮");
             check(m_settingsPage && m_settingsPage->tabs() && m_settingsPage->tabs()->count() == 5,
                   "设置页为五个标签（通用/搜索/缓存/日志/高级）");
-            check(slime::updateHistoryEntryCount() == 157, "更新历史条目数 99（1.0.0 → 3.6.22）");
+            check(slime::updateHistoryEntryCount() == 158, "更新历史条目数 99（1.0.0 → 3.6.22）");
             check(m_historyRows.size() == slime::updateHistoryEntryCount(),
                   "更新历史折叠行数与数据源一致（一个版本不漏）");
             {

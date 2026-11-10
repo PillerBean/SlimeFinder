@@ -51,6 +51,12 @@ struct AnnulusCoverageRequest {
     int innerRadius = 0, outerRadius = 128;
 };
 
+struct DensitySeed {
+    int cx = 0;       // 正方形窗口中心（区块坐标）
+    int cz = 0;
+    int count = 0;    // 窗口内史莱姆区块数
+};
+
 class GpuScan {
 public:
     virtual ~GpuScan() = default;
@@ -94,6 +100,15 @@ public:
     // v3.8.4：严格图案流式匹配（默认不支持 ⇒ 引擎回退 CPU 位图路径）
     virtual bool matchPattern(const struct PatternMatchParams& p, const std::atomic<bool>& cancel,
                               std::vector<struct MatchResult>& out, std::string* err) const
+    {
+        (void)p; (void)cancel; (void)out; (void)err;
+        return false;
+    }
+
+    // v3.10.12.11：正方形密度预筛（按窗口密度取种子，而不是按距离取最近 N 个）。
+    //   默认不支持；GPU 实现按 z 带流式扫描，返回全图分散的种子。
+    virtual bool prescanDensitySeeds(const struct DensityPrescanParams& p, const std::atomic<bool>& cancel,
+                                     std::vector<DensitySeed>& out, std::string* err) const
     {
         (void)p; (void)cancel; (void)out; (void)err;
         return false;
@@ -202,6 +217,19 @@ struct DensityMatchParams {
 };
 
 // v3.8.4：严格图案的 GPU 流式匹配参数（每个变体一次调用；行掩码长度 = cols）
+// v3.10.12.11：正方形密度预筛参数
+struct DensityPrescanParams {
+    Version version = Version::Java;
+    int64_t worldSeed = 0;
+    int minX = 0, maxX = 0, minZ = 0, maxZ = 0;   // 区块范围
+    int gridSize = 15;           // 正方形窗口边长（区块）
+    double minDensity = 0.18;    // 窗口密度阈值
+    int bandRows = 4096;         // 每批 z 行数
+    int topPerBand = 512;        // 每带最多保留多少条（用于分散到全图）
+    int maxSeeds = 4000;         // 最终种子数
+    int minSeparation = 16;      // 种子最小间距（区块）
+};
+
 struct PatternMatchParams {
     Version version = Version::Java;
     int64_t worldSeed = 0;
