@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "gui/PatternEditor.h"
+#include "gui/widgets/PatternEditor.h"
 
 class QSpinBox;
 class QPushButton;

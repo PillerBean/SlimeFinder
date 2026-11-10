@@ -8,8 +8,8 @@
 //   3. 刷新策略：环形缓冲没有丢条目时只 append 新增行（避免每 500ms 重建上万行导致卡顿），
 //      一旦发生丢弃 / 过滤级别变化 / 清空，就整体重建；
 //   4. 提示文字与启用对话框的选项文案均与任务书逐字一致（UTF-8 源码 + QString::fromUtf8）。
-#include "gui/UiText.h"
-#include "gui/LogPanel.h"
+#include "i18n/UiText.h"
+#include "gui/panels/LogPanel.h"
 
 #include <QApplication>
 #include <QCheckBox>

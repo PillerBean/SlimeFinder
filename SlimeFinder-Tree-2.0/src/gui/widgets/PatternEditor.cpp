@@ -1,6 +1,6 @@
 // PatternEditor.cpp - 图案编辑器实现
-#include "gui/UiText.h"
-#include "gui/PatternEditor.h"
+#include "i18n/UiText.h"
+#include "gui/widgets/PatternEditor.h"
 
 #include <QHBoxLayout>
 #include <QLabel>

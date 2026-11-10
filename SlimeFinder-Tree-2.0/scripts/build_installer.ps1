@@ -18,7 +18,7 @@ if ([string]::IsNullOrWhiteSpace($Repo)) {
     $Repo = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 }
 $payload = Join-Path $Repo "dist\SlimeFinder"
-$nsi = Join-Path $Repo "scripts\install.nsi"
+$nsi = Join-Path $Repo "packaging\windows\install.nsi"
 $out = Join-Path $Repo ("dist\SlimeFinder-{0}-Setup.exe" -f $Version)
 
 if (-not (Test-Path (Join-Path $payload "SlimeFinder.exe"))) {

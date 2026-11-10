@@ -3,8 +3,8 @@
 // 关键约束（任务书 2.4）：命令必须「立即执行、可插队」。
 // 本控件不创建线程、不加锁、不做任何等待：它在 GUI 线程里同步调用
 // CommandHost::runCommand()，把「怎么插队到正在运行的搜索任务」完全交给宿主。
-#include "gui/UiText.h"
-#include "gui/CommandTerminal.h"
+#include "i18n/UiText.h"
+#include "gui/panels/CommandTerminal.h"
 
 #include <QAbstractItemView>
 #include <QFont>

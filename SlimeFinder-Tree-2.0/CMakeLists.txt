@@ -121,36 +121,36 @@ endif()
 
 # ---------------------------------------------------------------- GUI 主程序
 add_executable(SlimeFinder WIN32
-    src/main.cpp
+    src/app/main.cpp
     assets/appicon.qrc    # v3.3.9（任务书 5.1）：程序图标（窗口/任务栏/托盘）
-    src/gui/AfkDialog.cpp   # v3.5.2（任务 1）：挂机点（环形覆盖）对话框
-    src/gui/MapPreviewWidget.cpp # v3.5.2（任务 2）：地图预览控件（缩放/平移/图层）
-    src/gui/MapDialog.cpp       # v3.5.2（任务 2）：地图预览对话框
-    src/gui/MainWindow.cpp
-    src/gui/PatternEditor.cpp
-    src/gui/PatternEditorPanel.cpp
-    src/gui/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
-    src/gui/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
-    src/gui/UiText.cpp # v3.11.0：外部 JSON 语言包
-    src/gui/UiStrings.cpp # v3.11.0：兼容语言 API（数据在 JSON）
-    src/gui/HelpDialog.cpp
-    src/gui/SettingsDialog.cpp # E3.3.5（优化 5）：程序设置（五标签页）
-    src/gui/FeedbackPanel.cpp   # E3.3.4（任务书 2.2）：反馈面板（E3.3.6 改版：时间顺序 + 过滤成功）
-    src/gui/LogPanel.cpp        # E3.3.4（任务书 2.3）：日志面板（默认关闭 + 两级选项）
-    src/gui/CommandTerminal.cpp # E3.3.4（任务书 2.4）：命令终端（命令可插队）
-    src/gui/ProgressStreamPanel.cpp # E3.3.6（任务书 调整 3）：进度分类（累积式纯文字流水）
+    src/gui/dialogs/AfkDialog.cpp   # v3.5.2（任务 1）：挂机点（环形覆盖）对话框
+    src/gui/widgets/MapPreviewWidget.cpp # v3.5.2（任务 2）：地图预览控件（缩放/平移/图层）
+    src/gui/dialogs/MapDialog.cpp       # v3.5.2（任务 2）：地图预览对话框
+    src/gui/mainwindow/MainWindow.cpp
+    src/gui/widgets/PatternEditor.cpp
+    src/gui/widgets/PatternEditorPanel.cpp
+    src/gui/dialogs/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
+    src/gui/services/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
+    src/i18n/UiText.cpp # v3.11.0：外部 JSON 语言包
+    src/i18n/UiStrings.cpp # v3.11.0：兼容语言 API（数据在 JSON）
+    src/gui/dialogs/HelpDialog.cpp
+    src/gui/dialogs/SettingsDialog.cpp # E3.3.5（优化 5）：程序设置（五标签页）
+    src/gui/panels/FeedbackPanel.cpp   # E3.3.4（任务书 2.2）：反馈面板（E3.3.6 改版：时间顺序 + 过滤成功）
+    src/gui/panels/LogPanel.cpp        # E3.3.4（任务书 2.3）：日志面板（默认关闭 + 两级选项）
+    src/gui/panels/CommandTerminal.cpp # E3.3.4（任务书 2.4）：命令终端（命令可插队）
+    src/gui/panels/ProgressStreamPanel.cpp # E3.3.6（任务书 调整 3）：进度分类（累积式纯文字流水）
     src/utils/Logger.cpp
     src/utils/LogBus.cpp        # E3.3.4（任务书 2.3）：日志总线（按日期分文件 + 两级模式）
     src/utils/CrashDump.cpp
     # E3.3.7.2：IncidentLog.cpp 已移入 slime_core（引擎侧性能事件也要写关键信息日志）
     src/utils/ThemeManager.cpp  # E3.3.6（任务书 4.7）：夜间模式三档（QSS + 注册表检测）
     src/utils/SoundPlayer.cpp   # E3.3.6（任务书 4.2）：搜索完成提示音（winmm，带音量）
-    src/app.rc            # E3.3.3（任务书 2.1）：VERSIONINFO（属性→详细信息→文件版本）
+    src/app/app.rc            # E3.3.3（任务书 2.1）：VERSIONINFO（属性→详细信息→文件版本）
                           # v3.3.9（任务书 5.1）：IDI_APPICON 程序图标（assets/appicon.ico）
 )
 # v3.3.9（任务书 5.1）：让 rc.exe 能在 assets/ 下找到 appicon.ico（rc 的相对路径基准不可依赖）
 if(WIN32)
-    set_source_files_properties(src/app.rc PROPERTIES COMPILE_FLAGS
+    set_source_files_properties(src/app/app.rc PROPERTIES COMPILE_FLAGS
         "/I\"${CMAKE_CURRENT_SOURCE_DIR}/assets\"")
 endif()
 target_include_directories(SlimeFinder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -163,10 +163,10 @@ target_link_libraries(SlimeFinder PRIVATE
 
 # 自动化探针：检查更新（GitHub/镜像测速）端到端验证；不随发布包分发
 add_executable(slime_update_probe
-    tools/update_probe.cpp
-    src/gui/UpdateDialog.cpp
-    src/gui/UiText.cpp
-    src/gui/UiStrings.cpp
+    tools/probes/update_probe.cpp
+    src/gui/dialogs/UpdateDialog.cpp
+    src/i18n/UiText.cpp
+    src/i18n/UiStrings.cpp
 )
 target_include_directories(slime_update_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -194,7 +194,7 @@ endif()
 
 # ---------------------------------------------------------------- 测试/命令行工具（纯引擎）
 add_executable(slime_tests
-    tests/test_slime.cpp
+    tests/unit/test_slime.cpp
     src/utils/Logger.cpp
 )
 target_include_directories(slime_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -209,7 +209,7 @@ endif()
 
 # ---------------------------------------------------------------- OpenCL 探测工具（E3.2.0 阶段一）
 add_executable(slime_ocl_probe
-    tools/ocl_probe.cpp
+    tools/gpu/ocl_probe.cpp
 )
 target_include_directories(slime_ocl_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_ocl_probe PRIVATE slime_core slime_gpu)
@@ -220,7 +220,7 @@ endif()
 # ---------------------------------------------------------------- E3.3.1：SIMD 内核独立自检（不依赖引擎/OpenCL）
 # 覆盖：基岩种子查表、跨步采样扫描、密度 g×g 窗口计数（均与独立教科书参考逐位比对）
 add_executable(slime_kernel_tests
-    tests/kernel_selftest.cpp
+    tests/integration/kernel_selftest.cpp
 )
 target_include_directories(slime_kernel_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

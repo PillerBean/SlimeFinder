@@ -1,6 +1,6 @@
 // v3.5.18：内嵌图案编辑器实现（与弹窗版同一套画布：左键循环 灰→白→绿，右键=灰）
-#include "gui/UiText.h"
-#include "gui/PatternEditorPanel.h"
+#include "i18n/UiText.h"
+#include "gui/widgets/PatternEditorPanel.h"
 
 #include <QHBoxLayout>
 #include <QLabel>

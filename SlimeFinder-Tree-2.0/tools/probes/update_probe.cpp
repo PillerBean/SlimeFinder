@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "gui/UpdateDialog.h"
+#include "gui/dialogs/UpdateDialog.h"
 
 int main(int argc, char** argv)
 {

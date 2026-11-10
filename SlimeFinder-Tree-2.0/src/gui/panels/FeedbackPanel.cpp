@@ -14,8 +14,8 @@
 //   * 无过滤按钮、无级别显隐 UI：工具行仅有「清空」「复制全部」；
 //   * 内存保护：最多保留 2000 条，超出时丢弃最旧（第一条）并同步修正计数。
 
-#include "gui/UiText.h"
-#include "gui/FeedbackPanel.h"
+#include "i18n/UiText.h"
+#include "gui/panels/FeedbackPanel.h"
 
 #include <QAbstractItemView>
 #include <QBrush>

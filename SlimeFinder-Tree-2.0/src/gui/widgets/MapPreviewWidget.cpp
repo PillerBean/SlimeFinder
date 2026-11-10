@@ -1,6 +1,6 @@
 // v3.5.3（地图优化）：地图预览控件 —— 实现
-#include "gui/UiText.h"
-#include "gui/MapPreviewWidget.h"
+#include "i18n/UiText.h"
+#include "gui/widgets/MapPreviewWidget.h"
 
 #include <QElapsedTimer>
 #include <QMouseEvent>

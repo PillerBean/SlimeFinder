@@ -39,8 +39,8 @@ class QToolButton;     // v3.4.1：左导航（上图案下文字）
 #include "core/CacheManager.h"
 #include "core/SearchTask.h"
 #include "core/SlimeEngine.h"
-#include "gui/CommandTerminal.h" // v3.3.4：命令宿主接口（CommandHost）
-#include "gui/SettingsDialog.h"  // v3.3.5：程序设置（AppSettings + 五标签页对话框）
+#include "gui/panels/CommandTerminal.h" // v3.3.4：命令宿主接口（CommandHost）
+#include "gui/dialogs/SettingsDialog.h"  // v3.3.5：程序设置（AppSettings + 五标签页对话框）
 
 class QCheckBox;
 class QComboBox;

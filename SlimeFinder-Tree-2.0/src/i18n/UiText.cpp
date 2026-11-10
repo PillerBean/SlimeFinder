@@ -1,4 +1,4 @@
-#include "gui/UiText.h"
+#include "i18n/UiText.h"
 
 #include <QCoreApplication>
 #include <QFile>
@@ -9,7 +9,7 @@
 
 #include <cstdio>
 
-#include "gui/UiStrings.h"
+#include "i18n/UiStrings.h"
 
 namespace slime {
 namespace ui {

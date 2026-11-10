@@ -12,9 +12,9 @@
 //      「恢复默认」与高级页「重置所有设置」也只把控件填成 factoryDefaults()，
 //      不写 m_settings、不置 applied()、不关闭窗口，用户仍需点「应用」。
 //   4. 带 Q_OBJECT 的类由 CMake AUTOMOC 处理，本文件不 include "SettingsDialog.moc"。
-#include "gui/UiText.h"
-#include "gui/SettingsDialog.h"
-#include "gui/UiStrings.h"
+#include "i18n/UiText.h"
+#include "gui/dialogs/SettingsDialog.h"
+#include "i18n/UiStrings.h"
 
 #include <QButtonGroup>
 #include <QCheckBox>

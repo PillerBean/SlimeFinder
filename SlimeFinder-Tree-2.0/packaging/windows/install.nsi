@@ -20,11 +20,11 @@ Unicode true
 !define APP_VERSION "3.11.2"
 !define APP_EXE "SlimeFinder.exe"
 !define APP_PUBLISHER "SlimeFinder"
-!define SOURCE_DIR "..\dist\SlimeFinder"
+!define SOURCE_DIR "..\..\dist\SlimeFinder"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_KEY}"
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "..\dist\SlimeFinder-${APP_VERSION}-Setup.exe"
+OutFile "..\..\dist\SlimeFinder-${APP_VERSION}-Setup.exe"
 InstallDir "$PROGRAMFILES64\${APP_KEY}"
 InstallDirRegKey HKLM "Software\${APP_KEY}" "InstallDir"
 RequestExecutionLevel admin

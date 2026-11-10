@@ -1,6 +1,6 @@
 // MainWindow.cpp - 主窗口实现（v3.2.1）
-#include "gui/UiText.h"
-#include "gui/MainWindow.h"
+#include "i18n/UiText.h"
+#include "gui/mainwindow/MainWindow.h"
 
 #include <QApplication>
 #include <QStyledItemDelegate>   // v3.5.5：结果列表数值显示
@@ -53,7 +53,7 @@
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QPlainTextEdit>
-#include "gui/TelemetryClient.h" // v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
+#include "gui/services/TelemetryClient.h" // v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
 #include <QProgressBar>
 #include <QProgressDialog>
 #include <QRegularExpression>
@@ -98,12 +98,12 @@
 #include <sstream>
 #include <thread>
 
-#include "gui/FeedbackPanel.h"    // v3.3.4：底部「反馈」分类（v3.3.6：时间顺序 + 过滤成功）
-#include "gui/LogPanel.h"         // v3.3.4：底部「日志」分类（默认关闭 + 两级选项）
-#include "gui/PatternEditor.h"
-#include "gui/PatternEditorPanel.h"
-#include "gui/UiStrings.h"
-#include "gui/ProgressStreamPanel.h" // v3.3.6：底部「进度」分类（累积式纯文字流水）
+#include "gui/panels/FeedbackPanel.h"    // v3.3.4：底部「反馈」分类（v3.3.6：时间顺序 + 过滤成功）
+#include "gui/panels/LogPanel.h"         // v3.3.4：底部「日志」分类（默认关闭 + 两级选项）
+#include "gui/widgets/PatternEditor.h"
+#include "gui/widgets/PatternEditorPanel.h"
+#include "i18n/UiStrings.h"
+#include "gui/panels/ProgressStreamPanel.h" // v3.3.6：底部「进度」分类（累积式纯文字流水）
 #include "gpu/GpuScanAdapter.h" // v3.2.1：GPU 加速（默认关闭；用户勾选+可用才注入，自动回退）
 #include "utils/CrashDump.h"     // v3.3.7：崩溃转储开关（设置接线）
 #include "utils/IncidentLog.h"   // v3.3.7：关键信息日志（常开，崩溃/取消取证）
@@ -112,11 +112,11 @@
 #include "utils/SoundPlayer.h"   // v3.3.6（任务书 4.2）：搜索完成提示音（winmm，带音量）
 #include "utils/ThemeManager.h"  // v3.3.6（任务书 4.7）：夜间模式三档（浅色/深色/跟随系统）
 
-#include "gui/AfkDialog.h"   // v3.5.2（任务 1）：挂机点（环形覆盖）对话框
-#include "gui/MapPreviewWidget.h" // v3.5.2（任务 2）：自检里直接读地图控件状态
-#include "gui/MapDialog.h"       // v3.5.2（任务 2）：地图预览对话框
-#include "gui/HelpDialog.h" // v3.3.3：帮助 / 使用教程对话框
-#include "gui/UpdateDialog.h" // v3.10.12.10：GitHub Releases + 镜像 + 网盘备用的更新检查
+#include "gui/dialogs/AfkDialog.h"   // v3.5.2（任务 1）：挂机点（环形覆盖）对话框
+#include "gui/widgets/MapPreviewWidget.h" // v3.5.2（任务 2）：自检里直接读地图控件状态
+#include "gui/dialogs/MapDialog.h"       // v3.5.2（任务 2）：地图预览对话框
+#include "gui/dialogs/HelpDialog.h" // v3.3.3：帮助 / 使用教程对话框
+#include "gui/dialogs/UpdateDialog.h" // v3.10.12.10：GitHub Releases + 镜像 + 网盘备用的更新检查
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

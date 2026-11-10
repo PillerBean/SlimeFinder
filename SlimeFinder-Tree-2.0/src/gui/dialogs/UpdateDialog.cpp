@@ -1,6 +1,6 @@
 // UpdateDialog.cpp — v3.10.12.10
-#include "gui/UiText.h"
-#include "gui/UpdateDialog.h"
+#include "i18n/UiText.h"
+#include "gui/dialogs/UpdateDialog.h"
 
 #include <algorithm>
 

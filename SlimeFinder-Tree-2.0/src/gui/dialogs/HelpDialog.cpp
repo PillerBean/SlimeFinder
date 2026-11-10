@@ -6,9 +6,9 @@
 //   3. 「复制全部文字」只改写对话框内一个小标签做反馈，不弹任何模态框，
 //      以免阻塞自动化自检（自检会调用 showHelpDialog 并直接关掉对话框）；
 //   4. 本文件不定义 Q_OBJECT 类，故无需 include "HelpDialog.moc"。
-#include "gui/UiText.h"
-#include "gui/HelpDialog.h"
-#include "gui/UiStrings.h"
+#include "i18n/UiText.h"
+#include "gui/dialogs/HelpDialog.h"
+#include "i18n/UiStrings.h"
 
 #include <QCoreApplication>
 #include <QFile>

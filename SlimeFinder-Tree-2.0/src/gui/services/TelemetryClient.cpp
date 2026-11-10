@@ -1,6 +1,6 @@
-#include "gui/TelemetryClient.h"
+#include "gui/services/TelemetryClient.h"
 
-#include "gui/UiText.h"
+#include "i18n/UiText.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>

@@ -28,8 +28,8 @@
 #include <windows.h>
 #endif
 
-#include "gui/MainWindow.h"
-#include "gui/UiText.h"
+#include "gui/mainwindow/MainWindow.h"
+#include "i18n/UiText.h"
 #include "utils/CrashDump.h"
 #include "utils/IncidentLog.h"
 #include "utils/Logger.h"

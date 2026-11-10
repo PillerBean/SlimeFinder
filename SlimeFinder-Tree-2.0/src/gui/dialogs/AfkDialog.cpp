@@ -1,6 +1,6 @@
 // v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
-#include "gui/UiText.h"
-#include "gui/AfkDialog.h"
+#include "i18n/UiText.h"
+#include "gui/dialogs/AfkDialog.h"
 
 #include <QApplication>
 #include <QClipboard>

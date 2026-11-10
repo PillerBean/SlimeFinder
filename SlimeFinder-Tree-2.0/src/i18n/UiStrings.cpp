@@ -1,5 +1,5 @@
-#include "gui/UiStrings.h"
-#include "gui/UiText.h"
+#include "i18n/UiStrings.h"
+#include "i18n/UiText.h"
 
 #include <QCoreApplication>
 #include <QFile>

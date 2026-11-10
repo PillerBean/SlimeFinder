@@ -29,21 +29,18 @@ try:
 except (AttributeError, ValueError):
     pass
 
-TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "模板：原始文件")
 HERE = os.path.dirname(os.path.abspath(__file__))
-PROJECT = os.path.join(os.path.dirname(HERE), "SlimeFinder") if os.path.basename(os.path.dirname(HERE)) == "SlimeFinder" else os.path.dirname(HERE)
+PROJECT = os.path.abspath(os.path.join(HERE, "..", ".."))
 
 def default_ref():
     # v3.12.0：新树自包含参考实现；旧树外的模板仅作为后备。
-    local = os.path.join(HERE, "reference", "SlimeChecker.exe")
+    local = os.path.join(HERE, "SlimeChecker.exe")
     if os.path.exists(local):
         return local
-    p = os.path.join(TEMPLATE_DIR, "SlimeChecker.exe")
-    return p if os.path.exists(p) else None
+    return None
 
 def default_ours():
-    for cand in (os.path.join(PROJECT, "build", "slime_tests.exe"),
-                 os.path.join(HERE, "..", "build", "slime_tests.exe")):
+    for cand in (os.path.join(PROJECT, "build", "slime_tests.exe"),):
         if os.path.exists(cand):
             return cand
     return None

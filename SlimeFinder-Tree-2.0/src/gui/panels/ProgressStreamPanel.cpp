@@ -12,8 +12,8 @@
 //   * 视图为只读 QPlainTextEdit：等宽字体、不换行、最多 20 万块（超出自动丢弃最旧的行），
 //     每次追加后把垂直滚动条固定在最大值（保持最底部）；
 //   * [清空] → clearAll()（清空 + 复位行计数）；[复制全部] → 把 allText() 写入剪贴板。
-#include "gui/UiText.h"
-#include "gui/ProgressStreamPanel.h"
+#include "i18n/UiText.h"
+#include "gui/panels/ProgressStreamPanel.h"
 
 #include <QClipboard>
 #include <QFontDatabase>

@@ -1,8 +1,8 @@
 // v3.5.2（任务 2）：地图预览对话框 —— 实现（含群系彩色底图与版本选择）
-#include "gui/UiText.h"
-#include "gui/MapDialog.h"
+#include "i18n/UiText.h"
+#include "gui/dialogs/MapDialog.h"
 
-#include "gui/MapPreviewWidget.h"
+#include "gui/widgets/MapPreviewWidget.h"
 
 #include <QCheckBox>
 #include <QComboBox>
