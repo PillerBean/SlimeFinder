@@ -197,11 +197,11 @@ powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Ver
 ```bat
 cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
 :: 1) 改版本号（CMakeLists / main.cpp / app.rc / MainWindow / 脚本）；不再有内置更新历史
-cmd /c scripts\build_repo.cmd
+cmd /c scripts\build\build_repo.cmd
 build\slime_tests.exe --unit
 py -3 tests\verify_against_reference.py
 py -3 scripts\audit_corruption.py
-powershell -NoProfile -Command "& .\scripts\gui_selftest.ps1 -LogDir build\final -GpuOn"
+powershell -NoProfile -Command "& .\scripts\qa\gui_selftest.ps1 -LogDir build\final -GpuOn"
 :: 2) 提交并打 tag
 git add -A
 git commit -m "release: v3.10.12.9"
@@ -209,8 +209,8 @@ git tag -a v3.10.12.9 -m "SlimeFinder v3.10.12.9"
 git push origin main
 git push origin v3.10.12.9
 :: 3) 打包并汇总资产
-powershell -NoProfile -Command "& .\scripts\package_release.ps1 -Version 3.10.12.9 -SkipSelfTest"
-powershell -NoProfile -Command "& .\scripts\build_installer.ps1 -Version 3.10.12.9"
+powershell -NoProfile -Command "& .\scripts\release\package_release.ps1 -Version 3.10.12.9 -SkipSelfTest"
+powershell -NoProfile -Command "& .\scripts\release\build_installer.ps1 -Version 3.10.12.9"
 powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Version 3.10.12.9
 :: 4) 发布（正式版：不带 --prerelease；测试版：加 --prerelease）
 github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" --title "SlimeFinder v3.10.12.9" --notes-file docs\release_notes\v3.10.12.9.md
@@ -260,7 +260,7 @@ github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" -
 
 ```bat
 cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
-py -3 scripts\gen_version_manifest.py --version 3.10.12.10 --notes-file docs\release_notes\v3.10.12.10.md
+py -3 scripts\release\gen_version_manifest.py --version 3.10.12.10 --notes-file docs\release_notes\v3.10.12.10.md
 git add version.json && git commit -m "release: version.json 3.10.12.10" && git push
 ```
 

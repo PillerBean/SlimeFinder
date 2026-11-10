@@ -1,5 +1,5 @@
 ﻿; SlimeFinder 安装脚本（NSIS 3.x）—— v3.5.0 首个正式版
-; 用法：makensis install.nsi   （或用 scripts\build_installer.ps1 一步完成）
+; 用法：makensis install.nsi   （或用 scripts\release\build_installer.ps1 一步完成）
 ;
 ; 任务书要点（v3.5.0）：
 ;   * 全机器安装：默认 $PROGRAMFILES64\SlimeFinder，安装时可自选路径；需要 UAC（RequestExecutionLevel admin）

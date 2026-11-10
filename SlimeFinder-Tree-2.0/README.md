@@ -71,7 +71,7 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 
 ```bat
 :: 需要 VS2022、CMake 3.20+、Qt 6.11 msvc2022_64
-cmd /c scripts\build_repo.cmd
+cmd /c scripts\build\build_repo.cmd
 build\slime_tests.exe --unit
 ```
 

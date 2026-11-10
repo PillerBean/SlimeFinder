@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EXE = os.path.join(REPO, "build", "slime_tests.exe")
 BASELINE = os.path.join(REPO, "build", "perf_baseline.json")
 

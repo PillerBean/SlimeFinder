@@ -68,7 +68,7 @@ Step "完整性审计" { py -3 scripts\audit_corruption.py 2>&1 | Tee-Object -Ap
 if (-not $SkipGui) {
     Step "GUI 自检（GPU 开）" {
         Get-Process SlimeFinder -ErrorAction SilentlyContinue | Stop-Process -Force
-        & .\scripts\gui_selftest.ps1 -LogDir (Join-Path $LogDir "gui-gpu") -GpuOn 2>&1 | Tee-Object -Append $log | Out-Null
+        & .\scripts\qa\gui_selftest.ps1 -LogDir (Join-Path $LogDir "gui-gpu") -GpuOn 2>&1 | Tee-Object -Append $log | Out-Null
     }
 }
 

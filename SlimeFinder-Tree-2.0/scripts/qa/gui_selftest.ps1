@@ -1,4 +1,4 @@
-# gui_selftest.ps1 -- run the GUI self-test with explicit QPA/font settings (ASCII only).
+﻿# gui_selftest.ps1 -- run the GUI self-test with explicit QPA/font settings (ASCII only).
 # Moved here from the workspace root in the v3.3.8 tidy-up; paths derive from this file's location
 # (scripts\ -> repo root -> build\).  Parameters carry non-ASCII paths; the script file itself stays
 # ASCII because Windows PowerShell 5.1 reads .ps1 as ANSI unless a BOM is present.
@@ -10,7 +10,7 @@ param(
     [string]$LogDir = ""
 )
 $ErrorActionPreference = "Continue"
-$repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
 $exe  = Join-Path $repo "build\SlimeFinder.exe"
 $cfg  = Join-Path $repo "build\config.json"
 if (-not $LogDir) { $LogDir = Join-Path $repo "build\selftest_logs" }

@@ -608,7 +608,7 @@ v3.3.2 起导入对话框**定位到程序目录并预选当前缓存文件**，
   逐块与 `SlimeEngine::isSlimeChunkBedrockMT` 比对，**不一致 0**。
 * 启动迁移：仅保留 `slime_cache.cache` 启动一次 → 日志「启动加载旧版缓存成功 + 旧版缓存已迁移为
   新格式」，磁盘上旧文件保留、新文件生成（证据 `docs/v332_cache_evidence.txt`）。
-* 全量回归：`scripts\verify_release.ps1`（clean 重建 + 单元 18 组 + 111/111 + OpenCL 探测 +
+* 全量回归：`scripts\release\verify_release.ps1`（clean 重建 + 单元 18 组 + 111/111 + OpenCL 探测 +
   内核自检 + GUI 自检 GPU 开/关 + 基准 + dist/zip 哈希），详见 `docs/verification_report_v332.md`。
 
 ## 13. v3.3.3 升级说明（版本号统一 + 交互修复 + UI 重构，相对 v3.3.2）
@@ -760,7 +760,7 @@ v3.3.2 起导入对话框**定位到程序目录并预选当前缓存文件**，
   右栏信息栏+QTextEdit、4 标签页名称与顺序、尺寸规范）、四种布局状态无横向滚动条、
   命令终端 15 条命令与插队、反馈分级、日志默认关闭与两级切换、更新提醒徽章条件、
   种子空/非法/`0`/空格四种情形。
-* 完整回归：`scripts\verify_release.ps1`（clean 重建 + 单元 18 组 + 111/111 + OpenCL 探测 +
+* 完整回归：`scripts\release\verify_release.ps1`（clean 重建 + 单元 18 组 + 111/111 + OpenCL 探测 +
   内核自检 + GUI 自检 GPU 开/关 + 基准 + dist/zip 哈希），见 `docs/verification_report_v334.md`。
 
 
