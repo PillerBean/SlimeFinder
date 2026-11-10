@@ -26,8 +26,8 @@ API 提交不会出现在本地历史里，一旦本地继续提交就会分叉�
   - `CMakeLists.txt`
   - `src/main.cpp`（`kVersion` / `applicationVersion`）
   - `src/app.rc`
-  - `scripts/install.nsi`
-  - `scripts/build_installer.ps1`
+  - `packaging/windows/install.nsi`
+  - `scripts/release/build_installer.ps1`
   - 更新历史、Release Notes、README
 - 跑检查：单元测试、参考对拍、GUI 自检；
 - 打包前确认只出 Setup（不再出便携 zip）。
@@ -83,8 +83,8 @@ gh release create vX.Y.Z dist/SlimeFinder-X.Y.Z-Setup.exe dist/SHA256SUMS-X.Y.Z.
 ### 5. 发布后生成更新清单
 
 ```bat
-py -3 scripts/gen_version_manifest.py --channel beta  --version X.Y.Z --notes-file ...
-py -3 scripts/gen_version_manifest.py --channel stable --version X.Y.Z --notes-file ...
+py -3 scripts/release/gen_version_manifest.py --channel beta  --version X.Y.Z --notes-file ...
+py -3 scripts/release/gen_version_manifest.py --channel stable --version X.Y.Z --notes-file ...
 ```
 
 - **先有 Release 资产，再推送清单**（避免清单指向 404 资产）；
@@ -96,8 +96,8 @@ py -3 scripts/gen_version_manifest.py --channel stable --version X.Y.Z --notes-f
 ### 6. 更新 Wiki
 
 ```bat
-py -3 scripts/gen_version_index.py
-powershell -ExecutionPolicy Bypass -File scripts/publish_wiki.ps1
+py -3 scripts/release/gen_version_index.py
+powershell -ExecutionPolicy Bypass -File scripts/release/publish_wiki.ps1
 ```
 
 - Wiki 失败不影响 Release，但必须记录为待补；

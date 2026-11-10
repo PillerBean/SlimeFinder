@@ -123,12 +123,12 @@ add_executable(SlimeFinder WIN32
     # E3.3.7.2：IncidentLog.cpp 已移入 slime_core（引擎侧性能事件也要写关键信息日志）
     src/utils/ThemeManager.cpp  # E3.3.6（任务书 4.7）：夜间模式三档（QSS + 注册表检测）
     src/utils/SoundPlayer.cpp   # E3.3.6（任务书 4.2）：搜索完成提示音（winmm，带音量）
-    src/app/app.rc            # E3.3.3（任务书 2.1）：VERSIONINFO（属性→详细信息→文件版本）
+    src/platform/windows/app.rc            # E3.3.3（任务书 2.1）：VERSIONINFO（属性→详细信息→文件版本）
                           # v3.3.9（任务书 5.1）：IDI_APPICON 程序图标（assets/appicon.ico）
 )
 # v3.3.9（任务书 5.1）：让 rc.exe 能在 assets/ 下找到 appicon.ico（rc 的相对路径基准不可依赖）
 if(WIN32)
-    set_source_files_properties(src/app/app.rc PROPERTIES COMPILE_FLAGS
+    set_source_files_properties(src/platform/windows/app.rc PROPERTIES COMPILE_FLAGS
         "/I\"${CMAKE_CURRENT_SOURCE_DIR}/assets\"")
 endif()
 target_include_directories(SlimeFinder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

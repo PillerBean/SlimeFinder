@@ -20,7 +20,7 @@ assets/i18n/
   ```
 - 代码里不再直接写中文 UI 文案；
 - 新增文案必须同时加入 `zh-CN.json` 和 `en-US.json`；
-- 运行 `py -3 scripts/check_ui_text.py` 检查 key 完整性（发布前必跑）。
+- 运行 `py -3 scripts/qa/check_ui_text.py` 检查 key 完整性（发布前必跑）。
 
 ## 增加新语言
 

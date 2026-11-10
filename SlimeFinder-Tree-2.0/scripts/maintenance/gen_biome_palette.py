@@ -1,5 +1,5 @@
 """把 cubiomes 的群系枚举转成 C++ 调色板表（按名字推定颜色，接近 chunkbase 观感）。
-输出：SlimeFinder/src/core/BiomePalette.inc —— 形如
+输出：<新树>/src/core/BiomePalette.inc —— 形如
     { 0, "ocean", 0x4F7FD0 },
 可被 BiomeMap.cpp 直接 #include。
 """
@@ -8,7 +8,8 @@ import os
 import re
 
 SRC = r'C:\Tools\cubiomes\cubiomes-master\biomes.h'
-OUT = r'D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder\src\core\BiomePalette.inc'
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+OUT = os.path.join(ROOT, 'src', 'core', 'BiomePalette.inc')
 
 txt = io.open(SRC, encoding='utf-8').read()
 start = txt.index('enum BiomeID')

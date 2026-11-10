@@ -201,14 +201,14 @@ LONG WINAPI crashVeH(PEXCEPTION_POINTERS ep)
 
 namespace {
 // v3.3.3（任务书 2.1）：版本号单一来源 —— 界面显示名、日志文件头、窗口标题均取此常量。
-// 同时由 src/app.rc 写入 exe 的 VERSIONINFO（属性 → 详细信息 → 文件版本 3.3.3）。
+// 同时由 src/platform/windows/app.rc 写入 exe 的 VERSIONINFO（属性 → 详细信息 → 文件版本 3.3.3）。
 constexpr const char* kVersion = "v3.12.0";
 } // namespace
 
 namespace {
 
 // v3.3.9（任务书 5.1）：程序图标改为**资源文件**（素材：模板：原始文件/程序图标.png，
-// 透明底史莱姆方块；assets/appicon.png 由 assets/appicon.qrc 编进 exe，exe 文件图标见 src/app.rc）。
+// 透明底史莱姆方块；assets/appicon.png 由 assets/appicon.qrc 编进 exe，exe 文件图标见 src/platform/windows/app.rc）。
 // 资源缺失时回退到下面「运行时绘制」的旧图标，保证任何构建方式下都有图标。
 QIcon makeAppIcon()
 {

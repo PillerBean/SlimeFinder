@@ -2,7 +2,7 @@
 
 > GitHub Releases 页面默认按**发布时间**排序（补传历史版本会打乱顺序），
 > 本页按版本号从新到旧排列，便于查找和下载。
-> 本页由 `scripts/gen_version_index.py` 自动生成。
+> 本页由 `scripts/release/gen_version_index.py` 自动生成。
 
 | 版本 | 类型 | 下载页 |
 |---|---|---|

@@ -741,7 +741,7 @@ v3.3.2 起导入对话框**定位到程序目录并预选当前缓存文件**，
 
 ### 14.3 更新提醒（任务书 3）
 
-* `build_date.txt`（与 exe 同目录，ISO 日期；`scripts/package_release.ps1` 打包时写入，
+* `build_date.txt`（与 exe 同目录，ISO 日期；`scripts/release/package_release.ps1` 打包时写入，
   缺失/非法时退回内置默认日期）。
 * `QDate::daysTo(QDate::currentDate()) > 30` → 工具栏徽章
   `🔔 本版本已发布 N 天，可能有新版本`；点击（或帮助 → 检查更新）打开下载页
