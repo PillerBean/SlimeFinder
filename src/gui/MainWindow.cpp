@@ -5343,7 +5343,8 @@ void MainWindow::runRingSearch()
     //   此前把整个范围面积当作已扫描区块，配合毫秒级耗时会出现「1595 万亿/秒」的假速度；
     //   这里按实际抽样点数报告。
     int64_t scannedStat = static_cast<int64_t>(spanX) * spanZ;
-    if (o.scanStride != 1 && scannedStat > 20LL * 1000 * 1000) {
+    // 自动正方形预筛成功时，实际扫的是整张正方形密度图；不能再按快速抽样的 40 万点报速度。
+    if (!(autoPrescan && prescanUsed) && o.scanStride != 1 && scannedStat > 20LL * 1000 * 1000) {
         int ss = 1;
         while ((static_cast<int64_t>(spanX) / ss) * (static_cast<int64_t>(spanZ) / ss) > 400000)
             ++ss;
