@@ -22,7 +22,7 @@
 
 param(
     [string]$Repo = "",
-    [string]$Version = "3.11.2",
+    [string]$Version = "3.12.0",
     [string]$QtDir = "C:\Qt\6.11.2\msvc2022_64",
     [switch]$SkipSelfTest
 )
@@ -77,7 +77,7 @@ foreach ($pl in @("qoffscreen.dll", "qminimal.dll")) {
 }
 
 # ---------------------------------------------------------------- 2) docs
-# v3.11.2：程序内更新历史已移除，更新日志只到 GitHub 查看，安装包不再附带 docs/。
+# v3.12.0：程序内更新历史已移除，更新日志只到 GitHub 查看，安装包不再附带 docs/。
 Write-Host "== 2) refresh bundled docs ==" -ForegroundColor Cyan
 $distDocs = Join-Path $distDir "docs"
 if (Test-Path $distDocs) { Remove-Item $distDocs -Recurse -Force -ErrorAction SilentlyContinue }
@@ -135,7 +135,7 @@ $cfgText = @"
 # v3.4.12: UTF-8 without BOM (Set-Content -Encoding UTF8 adds one under Windows PowerShell 5.1)
 [System.IO.File]::WriteAllText($cfg, $cfgText, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "  + config.json (defaults, version field)"
-# v3.11.2：安装器可选择安装语言，并把它写成程序首次启动语言
+# v3.12.0：安装器可选择安装语言，并把它写成程序首次启动语言
 foreach ($lang in @("zh", "zh-TW", "en")) {
     $langText = $cfgText -replace '"language": "zh"', ('"language": "' + $lang + '"')
     $langCfg = Join-Path $distDir ("config." + $lang + ".json")

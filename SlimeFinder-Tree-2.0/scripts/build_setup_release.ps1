@@ -1,7 +1,7 @@
-﻿# build_setup_release.ps1 - v3.11.2：只产出 Setup 安装包 + Setup 校验文件。
-# 用法: powershell -ExecutionPolicy Bypass -File scripts\build_setup_release.ps1 -Version 3.11.2
+﻿# build_setup_release.ps1 - v3.12.0：只产出 Setup 安装包 + Setup 校验文件。
+# 用法: powershell -ExecutionPolicy Bypass -File scripts\build_setup_release.ps1 -Version 3.12.0
 param(
-    [string]$Version = "3.11.2",
+    [string]$Version = "3.12.0",
     [switch]$SkipSelfTest
 )
 $ErrorActionPreference = "Stop"
