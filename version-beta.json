@@ -1,16 +1,16 @@
 {
-  "version": "3.10.12.11",
-  "tag": "v3.10.12.11",
-  "notes": "# SlimeFinder v3.10.12.11（测试版）\n\n## 环形搜索：新增「自动正方形预筛」\n\n环形原来只有「快速抽样」和「精确逐区块」两种：\n\n- 快速：全图等距抽样，有随机抽卡性，可能漏掉孤岛优解；\n- 精确：结果可靠，但全图逐区块当前算法约 99 小时，不现实。\n\n本版新增第三种：\n\n### 自动正方形预筛（更稳，较慢）\n\n1. GPU 全图扫描正方形密度（g=15，阈值 0.18）；\n2. 按区块间距把高密度窗口分散成种子；\n3. 只在种子周围做环形精确精修；\n4. 按目标数量和最小间距输出结果。\n\n实测（Java 全图 3,750,001²，RX 6750 GRE）：\n\n- 正方形预筛：**219.6 秒（约 3.7 分钟）**\n- 4000 个种子的环形精修：**7 ms**\n- 最佳环形覆盖率：**28.58%**\n- 当前快速抽样全图最佳：22.2%\n\n2k² 对照：预筛 + 精修得到 21.41%，与环形精确最优完全一致。\n\n说明：\n\n- 该模式需要 GPU；GPU 不可用或预筛失败会自动回退「快速」抽样并提示；\n- 预筛期间可以取消；\n- 目前全图自动预筛约 3.7 分钟，低于半小时目标，后续还能继续优化。\n\n## 修复\n\n- **最小密度输入为 0 时误切自定义方案**：\n  以前输入框还在编辑、焦点没离开时就会触发“已修改”，把方案切到自定义；\n  现在只在**焦点离开或回车**后判断修改并切换。\n- 环形扫描下拉改为三档：**快速 / 自动正方形预筛（更稳，较慢）/ 精确**。\n\n## 更新说明\n\n- 继续只提供 Setup 安装包；检查更新优先读取 raw 清单，测试通道会收到本 Pre-release；\n- 安装器仍使用 /UPDATE 保留设置与缓存。",
+  "version": "3.10.12.13",
+  "tag": "v3.10.12.13",
+  "notes": "# SlimeFinder v3.10.12.13\n\n## 界面调整\n\n- 顶部种子输入框缩短到窗口横向中线，右侧新增匿名统计公告（浅黄底，点击可打开设置）。\n- 匿名统计弹窗不再显示/允许修改服务端地址，地址由程序内置。\n- 移除状态栏右下角的匿名统计入口；帮助菜单入口保留。\n- 联系我们补充：开启匿名上传后可自动上报部分问题信息（不含存档路径/日志）。\n\n## 设置推荐\n\n- 设置页给以下 GPU 项加 ⭐ 推荐标记：\n  - 默认启用 GPU 加速\n  - GPU 图案流式匹配\n  - 结果自优化\n- 增加图例：⭐ = 推荐开启（不改变结果，通常更快）。\n\n## 移除内置更新历史\n\n- 左侧导航移除「更新历史」页，导航变为：搜索 / 缓存构建 / 设置。\n- 删除程序内更新历史数据/页面/对话框。\n- 帮助菜单改为「更新历史（GitHub）」，打开 Wiki 版本索引。\n- 安装包不再附带 `docs/update_history.md`。\n\n## 其他\n\n- 修复：从环形切到图案模式后仍执行隐藏的环形搜索；新增 GUI 回归自检。\n- 环形自动预筛的速度统计改为按整图面积计算。\n\n> 版本历史查询：https://github.com/PillerBean/SlimeFinder/wiki/Version-Index",
   "assets": [
     {
-      "name": "SlimeFinder-3.10.12.11-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.11/SlimeFinder-3.10.12.11-Setup.exe",
-      "size": 11080008
+      "name": "SlimeFinder-3.10.12.13-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.13/SlimeFinder-3.10.12.13-Setup.exe",
+      "size": 11052570
     },
     {
-      "name": "SHA256SUMS-3.10.12.11.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.11/SHA256SUMS-3.10.12.11.txt",
+      "name": "SHA256SUMS-3.10.12.13.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.13/SHA256SUMS-3.10.12.13.txt",
       "size": 210
     }
   ]
