@@ -1,16 +1,16 @@
 {
-  "version": "3.11.0",
-  "tag": "v3.11.0",
-  "notes": "# SlimeFinder v3.11.0\n\n## 多语言与 UI 文本隔离\n\n- 全部用户可见文案移到外部语言包：\n  - `assets/i18n/zh-CN.json`\n  - `assets/i18n/en-US.json`\n- 代码只保留 key，通过 `slime::ui::t(\"ui.<hash>\")` 取文案；\n- 旧的 `UiStrings` 翻译表也迁移到 `assets/i18n/legacy-zh-en.json`；\n- 语言包随安装包发布，可在不重新编译的情况下替换/新增语言；\n- 新增 `scripts/check_ui_text.py` 做 key 完整性与硬编码检查。\n\n## 说明\n\n- 界面语言目前仍为简体中文 / English 两种，切换后重启生效；\n- 新增语种只需增加 `assets/i18n/<lang>.json` 并接入语言选择（后续小版本）。",
+  "version": "3.11.1",
+  "tag": "v3.11.1",
+  "notes": "# SlimeFinder v3.11.1\n\n## 中文（繁体）\n\n- 新增 `assets/i18n/zh-TW.json`，覆盖 1198 个 key；\n- 设置页「界面语言」新增「中文（繁体）」；\n- 语言切换后重启生效。\n\n## 翻译反馈\n\n- 语言选择旁新增提示：\n  「翻译质量不佳？试试联系我们！」\n- 点击直接打开「联系我们」。\n\n## 安装器首次启动语言\n\n- 安装程序启动时先选择安装语言（简体中文 / 繁体中文 / English）；\n- 安装语言会作为程序首次启动语言写入 `config.json`；\n- 安装完成后会显示提示页说明这一点；\n- 覆盖更新（`/UPDATE=1`）不会修改已有语言设置。\n\n## 说明\n\n- 英文与繁体中文均使用外部 JSON 语言包；\n- 安装包携带 `assets/i18n` 四种文件（zh-CN / zh-TW / en-US / legacy）。",
   "assets": [
     {
-      "name": "SlimeFinder-3.11.0-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.0/SlimeFinder-3.11.0-Setup.exe",
-      "size": 10915880
+      "name": "SlimeFinder-3.11.1-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.1/SlimeFinder-3.11.1-Setup.exe",
+      "size": 10939328
     },
     {
-      "name": "SHA256SUMS-3.11.0.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.0/SHA256SUMS-3.11.0.txt",
+      "name": "SHA256SUMS-3.11.1.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.1/SHA256SUMS-3.11.1.txt",
       "size": 202
     }
   ]
