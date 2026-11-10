@@ -4973,6 +4973,12 @@ void MainWindow::updateSearchShapeEnabled()
 void MainWindow::runRingSearch()
 {
     if (!m_w) return;
+    // v3.10.12.12：图案模式下「区域形状」面板被隐藏，但环形单选按钮可能仍是 checked。
+    //   这里必须优先按当前模式判断，否则会继续跑环形搜索并显示环形结果。
+    if (m_w->strictRadio && m_w->strictRadio->isChecked()) {
+        setStatus(slime::ui::tr(QStringLiteral("当前是图案模式，不能执行环形搜索")));
+        return;
+    }
     const bool bedrock = m_w->bedrockRadio->isChecked();
     bool ok = false;
     const int64_t seed = m_w->seedEdit ? m_w->seedEdit->text().trimmed().toLongLong(&ok) : 0;
@@ -7913,8 +7919,11 @@ void MainWindow::startSearch()
         return;
     }
 
-    // v3.5.6：区域形状 = 环形覆盖 ⇒ 走环形搜索（半径固定，范围可很大）
-    if (m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
+    // v3.10.12.12：只有密度模式下的「环形覆盖」形状才走环形搜索。
+    //   修复：从环形切到图案后，shapeRingRadio 仍保持 checked（面板只是隐藏），
+    //   旧逻辑会继续调用 runRingSearch，导致图案模式搜出环形结果。
+    const bool patternModeNow = m_w && m_w->strictRadio && m_w->strictRadio->isChecked();
+    if (!patternModeNow && m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
         runRingSearch();
         return;
     }
@@ -13303,6 +13312,17 @@ int MainWindow::runSelfTest()
                          m_lastAfk.empty() ? 0 : m_lastAfk.front().z,
                          m_lastAfk.empty() ? 0LL : static_cast<long long>(m_lastAfk.front().coveredBlocks));
             check(!m_lastAfk.empty(), "环形覆盖能算出挂机点候选");
+            // v3.10.12.12 回归：环形形状仍 checked 时切到图案模式，直接调用环形入口也不能产出环形结果
+            {
+                m_w->strictRadio->setChecked(true);
+                m_w->shapeRingRadio->setChecked(true);
+                m_lastAfk.clear();
+                runRingSearch();
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                check(m_lastAfk.empty(), "图案模式下不会执行环形搜索");
+                m_w->densityRadio->setChecked(true); // 恢复后续环形测试的环境
+                m_w->shapeRingRadio->setChecked(true);
+            }
             // v3.6.19：环形搜索无果时必须清掉上一次的结果（此前只有引擎路径清场）
             {
                 const double keepDens = m_w->minDensity ? m_w->minDensity->value() : 0.0;
