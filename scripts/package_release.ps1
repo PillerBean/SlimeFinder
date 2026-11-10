@@ -22,7 +22,7 @@
 
 param(
     [string]$Repo = "",
-    [string]$Version = "3.10.12.11",
+    [string]$Version = "3.10.12.13",
     [string]$QtDir = "C:\Qt\6.11.2\msvc2022_64",
     [switch]$SkipSelfTest
 )
@@ -67,19 +67,10 @@ foreach ($pl in @("qoffscreen.dll", "qminimal.dll")) {
 }
 
 # ---------------------------------------------------------------- 2) docs
+# v3.10.12.13：程序内更新历史已移除，更新日志只到 GitHub 查看，安装包不再附带 docs/。
 Write-Host "== 2) refresh bundled docs ==" -ForegroundColor Cyan
 $distDocs = Join-Path $distDir "docs"
-New-Item -ItemType Directory -Force -Path $distDocs | Out-Null
-# remove stale docs first so removed/renamed files cannot linger in the package
-# v3.5.0 (light compression): drop old screenshots/evidence folders entirely
-Get-ChildItem $distDocs -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-Get-ChildItem $distDocs -Recurse -Directory -ErrorAction SilentlyContinue |
-    Sort-Object { $_.FullName.Length } -Descending | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-# v3.5.0 (task 3): the shipped package carries ONLY the update history (release notes).
-# Development documents (verification reports, progress notes) and all screenshots stay in the repo.
-Copy-Item (Join-Path $Repo "docs\update_history.md") $distDocs -Force
-Copy-Item (Join-Path $Repo "README.md") (Join-Path $distDir "README.md") -Force
-Write-Host ("  docs: {0} files (update_history.md + README.md only)" -f (Get-ChildItem $distDocs -Recurse -File).Count)
+if (Test-Path $distDocs) { Remove-Item $distDocs -Recurse -Force -ErrorAction SilentlyContinue }
 
 # ---------------------------------------------------------------- 2b) build_date.txt
 # v3.3.4 (task 3.1): release date used by the in-app update reminder (local, offline).

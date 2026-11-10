@@ -196,7 +196,7 @@ powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Ver
 
 ```bat
 cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
-:: 1) 改版本号 + 更新历史（CMakeLists / main.cpp / app.rc / MainWindow / UpdateHistory / 脚本）
+:: 1) 改版本号（CMakeLists / main.cpp / app.rc / MainWindow / 脚本）；不再有内置更新历史
 cmd /c scripts\build_repo.cmd
 build\slime_tests.exe --unit
 py -3 tests\verify_against_reference.py
@@ -223,7 +223,7 @@ github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" -
   `SlimeFinder — https://github.com/PillerBean/SlimeFinder`；商业使用需作者书面授权；
 - `NOTICE` 列出第三方组件（cubiomes MIT / OpenCL-Headers Apache-2.0 / Qt 6）；
 - README 已重写为新人向结构（截图 + 下载 + 功能 + 快速开始 + 构建 + 许可），
-  完整历史移到 `docs/update_history.md`（由 `scripts/export_update_history.py` 自动生成）；
+  完整历史只在 GitHub（Wiki 版本索引 / Releases）查询，程序与安装包不再内置；
 - 仓库 About：一句话简介；Homepage 指向 Releases 页。
 
 ### 当前状态
@@ -232,28 +232,9 @@ github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" -
 - 旧 Release `v3.10.12.8` 已按用户要求删除（含 tag）；
 - **`v3.10.12.9` 已发布，但按最新决定作为测试版**（Pre-release，不占 Latest）：
   https://github.com/PillerBean/SlimeFinder/releases/tag/v3.10.12.9
-- 历史版本正在批量归档到 Releases（见下一节）；全部完成后 Latest 指向最新的正式版 **v3.6.19**
+- 历史版本只在 GitHub Releases / Wiki 版本索引查询；程序内不再提供历史页面。
 - 仓库 About 已精简为：`Minecraft 史莱姆区块查找器 | C++20/Qt6 | GPU 加速 | 源码公开（非商业）`，
   Homepage 指向 Releases 页。
-
-## 十、历史版本批量归档（2026-11-09）
-
-- 脚本：`scripts/upload_history_releases.py`
-  - 每个版本 **一个 Release**，zip 与 Setup 放在同一页；
-  - **正式版**（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0 / 3.6.19）：不勾 Pre-release；
-  - **测试版**（其余版本，含当前 3.10.12.9）：勾 Pre-release；
-  - 历史版本源码未保留，tag 统一用 `v<版本>-archive`（指向归档提交），不冒充历史源码 tag；
-  - 官方版本最后上传，保证 Latest 落在最新正式版（v3.6.19）；
-- 运行方式（后台，可随时中断后重跑）：
-
-```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
-set PATH=%PATH%;..\github_tools\gh_dir\bin
-py -3 scripts\upload_history_releases.py --workers 6
-```
-
-- 脚本会自动跳过远端已存在的 Release；状态保存在 `release_upload_state.json`；
-- `release_upload_state.json`、`release/` 均已加入 `.gitignore`，不会进仓库。
 
 ## 十一、自动更新与镜像源（v3.10.12.10）
 

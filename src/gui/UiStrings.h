@@ -291,7 +291,7 @@ inline const QHash<QString, QString>& zhToEn()
 
         // ---- v3.10.12.9 entry ----
         { QStringLiteral("新增 PolyForm Noncommercial 1.0.0 许可证（含 Required Notice 来源署名要求）与 NOTICE 第三方组件说明：源码公开、非商业使用，再分发/修改版必须注明来源"), QStringLiteral("Added the PolyForm Noncommercial 1.0.0 license with a Required Notice attribution line, plus a NOTICE for third-party components: the source is public for noncommercial use, and redistributions or modified versions must credit the origin") },
-        { QStringLiteral("README 重写为面向新用户的精简结构（下载/功能/快速开始/构建/许可），完整变更历史移入 docs/update_history.md 并由脚本从更新历史数据自动生成"), QStringLiteral("Rewrote the README into a short newcomer-oriented structure (download, features, quick start, build, license); the full change history moved to docs/update_history.md and is generated from the update-history data by a script") },
+        { QStringLiteral("README 重写为面向新用户的精简结构（下载/功能/快速开始/构建/许可），完整变更历史只在 GitHub Wiki / Releases 查询"), QStringLiteral("Rewrote the README into a short newcomer-oriented structure (download, features, quick start, build, license); the full change history is now available only on GitHub (Wiki / Releases)") },
         { QStringLiteral("正式/测试版规则统一：版本号保持四段，GitHub Release 通过「Pre-release」标记手动区分，Latest 由手动控制的 Release 决定（详见发布指南）"), QStringLiteral("Unified the release rules: version numbers stay four-part, GitHub Releases use the manual Pre-release flag to mark test builds, and Latest is controlled by which release is marked as such (see the publishing guide)") },
 
         // ---- v3.10.12.8 entry ----

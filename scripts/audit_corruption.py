@@ -275,7 +275,6 @@ def main():
     const_checks = [
         ("release URL", "https://wwben.lanzoul.com/b01d77eebe", "src/gui/MainWindow.cpp"),
         # v3.7.5：发布页已取消访问密码，不再作为关键常量校验
-        ("credits entry", "鸣谢", "src/gui/UpdateHistory.cpp"),
         ("cache file name", "slime_cache.slimecache", "src/gui/MainWindow.cpp"),
         ("legacy cache name", "slime_cache.cache", "src/gui/MainWindow.cpp"),
         ("config file name", "config.json", "src/gui/MainWindow.cpp"),

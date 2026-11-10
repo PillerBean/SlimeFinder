@@ -10,7 +10,7 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 
 > 英文简介：A slime chunk finder for Minecraft Java/Bedrock, native C++20/Qt6 with optional GPU acceleration.
 
-[下载](#下载) · **[📦 版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)** · [Wiki](https://github.com/PillerBean/SlimeFinder/wiki) · [功能](#功能) · [常见问题](#常见问题) · [更新历史](docs/update_history.md) · [问题反馈](https://github.com/PillerBean/SlimeFinder/issues)
+[下载](#下载) · **[📦 版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)** · [Wiki](https://github.com/PillerBean/SlimeFinder/wiki) · [功能](#功能) · [常见问题](#常见问题) · [更新历史（GitHub）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index) · [问题反馈](https://github.com/PillerBean/SlimeFinder/issues)
 
 ![SlimeFinder 界面](docs/images/screenshot.png)
 
@@ -25,7 +25,7 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 - **只提供安装包** `SlimeFinder-*-Setup.exe`（默认安装到 Program Files，需管理员权限）；
 - 自动更新只支持安装版：检查到新版本后会下载 Setup、校验 SHA256，然后退出程序并打开安装向导（用户点下一步完成覆盖，保留设置与缓存）；
 - 便携 zip 已停发；旧版本 zip 仍可从历史 Release 获取；
-- 具体版本以 Releases 页面为准；当前测试版：**v3.10.12.11（Pre-release）**，在“检查更新”里切换到测试通道即可收到。
+- 具体版本以 Releases 页面为准；当前本地测试版：**v3.10.12.13（尚未发布）**，在“检查更新”里切换到测试通道即可收到。
 
 > 📦 **按版本查找全部历史版本**：**[打开版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)**
 > GitHub Releases 页面按发布时间排序（补传历史后会乱序），版本索引按版本号从新到旧排列。
@@ -101,7 +101,7 @@ build\slime_tests.exe --unit
 - [版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)
 - [用户手册](docs/user_manual.md)
 - [构建与打包](docs/build_instructions.md)
-- [更新历史](docs/update_history.md)
+- [更新历史（GitHub）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)
 - [GitHub 发布指南](docs/GITHUB_PUBLISH_GUIDE.md)
 - [社区性能对照](docs/community_benchmark_reference.md)
 

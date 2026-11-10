@@ -52,7 +52,6 @@
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QPlainTextEdit>
-#include "gui/UpdateHistory.h"
 #include "gui/TelemetryClient.h" // v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
 #include <QProgressBar>
 #include <QProgressDialog>
@@ -178,15 +177,14 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.10.12.11";
+constexpr const char* kAppVersion = "v3.10.12.13";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
-//   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置 / 3 更新历史）
-constexpr int kNavCount = 4; // v3.5.4：地图移入搜索页，导航回到 4 项
-constexpr int kNavIconKind[kNavCount] = { 0, 1, 2, 3 };
+//   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置）
+constexpr int kNavCount = 3; // v3.10.12.13：移除更新历史，导航 3 项
+constexpr int kNavIconKind[kNavCount] = { 0, 1, 2 };
 constexpr int kPageSearch = 0;
 constexpr int kPageBuild = 1;
 constexpr int kPageSettings = 2;
-constexpr int kPageHistory = 3;
 constexpr const char* kContactEmail = "liguodong1209@163.com";
 // v3.10.12.12：匿名统计的搜索事件（只含用户主动开启后同意的字段）
 QJsonObject buildTelemetrySearch(const QString& seed, bool bedrock, const QString& mode,
@@ -937,7 +935,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     if (m_hSplit && m_hSplit->count() > 1 && m_hSplit->handle(1)) m_hSplit->handle(1)->installEventFilter(this);
     if (m_rightSplit && m_rightSplit->count() > 1 && m_rightSplit->handle(1))
         m_rightSplit->handle(1)->installEventFilter(this);   // v3.10.1：右列（结果/过程）双击恢复
-    // v3.5.1（交互手感）：Ctrl+1..4 直达 搜索 / 缓存构建 / 设置 / 更新历史（不新增任何控件）
+    // v3.5.1（交互手感）：Ctrl+1..3 直达 搜索 / 缓存构建 / 设置（不新增任何控件）
     for (int i = 0; i < kNavCount; ++i) {
         auto* sc = new QShortcut(QKeySequence(QStringLiteral("Ctrl+%1").arg(i + 1)), this);
         connect(sc, &QShortcut::activated, this, [this, i]() { showPage(i); });
@@ -1672,9 +1670,9 @@ void MainWindow::buildUi()
     auto* navLay = new QVBoxLayout(m_navColumn);
     navLay->setContentsMargins(0, 4, 0, 0);
     navLay->setSpacing(0);
-    // v3.4.8（用户要求）：导航四项 —— 搜索 / 缓存构建 / 设置 / 更新历史
+    // v3.4.8（用户要求）：导航项 —— 搜索 / 缓存构建 / 设置（更新历史已移除）
     //   「缓存构建」独立成一项后，构建页只放构建相关内容：不再要求选游戏版本、填种子。
-    static_assert(kNavCount == 4, "导航项数需与图标表一致");
+    static_assert(kNavCount == 3, "导航项数需与图标表一致");
     for (int i = 0; i < kNavCount; ++i) {
         // v3.4.1：导航项改为「上图案下文字」，图标放大到 24
         auto* b = new QToolButton(midRow);
@@ -1687,7 +1685,7 @@ void MainWindow::buildUi()
         b->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
         b->setFixedWidth(56);                       // v3.9.15：导航收窄（原 96）
         b->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        static const char* const kNavText[kNavCount] = { "搜索", "缓存构建", "设置", "更新历史" };
+        static const char* const kNavText[kNavCount] = { "搜索", "缓存构建", "设置" };
         b->setText(QString::fromUtf8(kNavText[i]));
         {
             QFont navFont = b->font();   // v3.9.15：56px 宽需更小字号才能放下 4 个字
@@ -1758,33 +1756,59 @@ void MainWindow::buildUi()
 
     // ---- v3.9.15：原「游戏设置」分组已上移到顶部全局设置栏（平台 / 游戏版本 / 世界种子）----
     if (m_topBarLay) {
+        // v3.10.12.13：顶栏切成左右两半：左半放平台/版本/种子，种子框右端正好到窗口中线；
+        //   右半放匿名统计公告（样式与普通标签区分）。
+        auto* topLeft = new QWidget(m_topBar);
+        auto* topLeftLay = new QHBoxLayout(topLeft);
+        topLeftLay->setContentsMargins(0, 0, 0, 0);
+        topLeftLay->setSpacing(8);
+        auto* topRight = new QWidget(m_topBar);
+        auto* topRightLay = new QHBoxLayout(topRight);
+        topRightLay->setContentsMargins(0, 0, 0, 0);
+        topRightLay->setSpacing(0);
+        m_topBarLay->addWidget(topLeft, 1);
+        m_topBarLay->addWidget(topRight, 1);
+
         m_w->javaRadio = new QRadioButton(QStringLiteral("Java 版"), m_topBar);
         m_w->bedrockRadio = new QRadioButton(QStringLiteral("基岩版"), m_topBar);
         m_w->javaRadio->setChecked(true);
-        m_topBarLay->addWidget(new QLabel(QStringLiteral("平台:"), m_topBar));
-        m_topBarLay->addWidget(m_w->javaRadio);
-        m_topBarLay->addWidget(m_w->bedrockRadio);
+        topLeftLay->addWidget(new QLabel(QStringLiteral("平台:"), m_topBar));
+        topLeftLay->addWidget(m_w->javaRadio);
+        topLeftLay->addWidget(m_w->bedrockRadio);
 
-        m_topBarLay->addSpacing(10);
-        m_topBarLay->addWidget(new QLabel(QStringLiteral("游戏版本:"), m_topBar));
+        topLeftLay->addSpacing(10);
+        topLeftLay->addWidget(new QLabel(QStringLiteral("游戏版本:"), m_topBar));
         m_w->mapVersionCombo = new QComboBox(m_topBar);
         for (const auto& v : slime::javaVersionOptions())
             m_w->mapVersionCombo->addItem(QString::fromUtf8(v.label), v.id);
         m_w->mapVersionCombo->setCurrentIndex(0);
         m_w->mapVersionCombo->setToolTip(QStringLiteral("地图群系按这个版本生成（1.18 起群系算法换过一次）。\n"
                                                         "基岩版：1.18+ 才与 Java 同种子一致，选更早版本会自动回落到最新。"));
-        m_topBarLay->addWidget(m_w->mapVersionCombo);
+        topLeftLay->addWidget(m_w->mapVersionCombo);
 
-        m_topBarLay->addSpacing(10);
+        topLeftLay->addSpacing(10);
         m_w->seedLabel = new QLabel(QStringLiteral("世界种子:"), m_topBar);
-        m_topBarLay->addWidget(m_w->seedLabel);
+        topLeftLay->addWidget(m_w->seedLabel);
         m_w->seedEdit = new QLineEdit(m_topBar);
         m_w->seedEdit->setClearButtonEnabled(true);
         m_w->seedEdit->setText(QString());
         m_w->seedEdit->setPlaceholderText(QStringLiteral("例如 0 或 -4172144997902289642"));
         m_w->seedEdit->setToolTip(QStringLiteral("仅 Java 版使用，可为负数（64 位整数）；留空则无法搜索（会提示去填写）。\n"
                                                  "基岩版判定与种子无关。"));
-        m_topBarLay->addWidget(m_w->seedEdit, 1);
+        topLeftLay->addWidget(m_w->seedEdit, 1);
+        m_telemetryNotice = new QLabel(topRight);
+        m_telemetryNotice->setObjectName(QStringLiteral("telemetryNotice"));
+        m_telemetryNotice->setTextFormat(Qt::RichText);
+        m_telemetryNotice->setOpenExternalLinks(false);
+        m_telemetryNotice->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
+        m_telemetryNotice->setStyleSheet(QStringLiteral(
+            "QLabel{background:#FFF4D6;color:#7A5A00;border:1px solid #E0B85C;"
+            "border-radius:4px;padding:2px 8px;}"
+            "QLabel a{color:#7A5A00;text-decoration:none;}"));
+        connect(m_telemetryNotice, &QLabel::linkActivated, this, [this](const QString&) { showTelemetryDialog(); });
+        topRightLay->addWidget(m_telemetryNotice, 0, Qt::AlignLeft | Qt::AlignVCenter);
+        topRightLay->addStretch(1);
+        updateTelemetryNotice();
     }
 
 
@@ -2752,7 +2776,7 @@ void MainWindow::buildUi()
 
     // ================= v3.4.0：把既有面板装配进「搜索页」，并构建其余四页 =================
     //   page0 搜索：40% 参数栏（既有 6 张卡片） + 60% 结果栏（既有 QTextEdit 结果视图）
-    //   page1 构建范围 / page2 设置 / page3 更新历史 / page4 控件状态（见 buildV340Pages）
+    //   page1 构建范围 / page2 设置（见 buildV340Pages）
     {
         auto* page0 = new QWidget(m_pageStack);
         auto* page0Lay = new QVBoxLayout(page0);
@@ -2773,18 +2797,6 @@ void MainWindow::buildUi()
     // v3.3.6（任务书 调整 1）：进度行的补充信息（已用时/预计剩余/阶段说明）放在状态栏，
     // 进度行本身保持「进度条 + 百分比 + 阶段文字」的紧凑形态。
     statusBar()->showMessage(QStringLiteral("就绪"));
-    // v3.10.12.12：匿名统计公告（默认关闭；点此查看说明/自愿开启）
-    m_telemetryNotice = new QLabel(this);
-    m_telemetryNotice->setObjectName(QStringLiteral("telemetryNotice"));
-    m_telemetryNotice->setTextFormat(Qt::RichText);
-    m_telemetryNotice->setOpenExternalLinks(false);
-    m_telemetryNotice->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
-    m_telemetryNotice->setToolTip(QStringLiteral("匿名统计默认关闭；点击查看说明并自愿开启"));
-    connect(m_telemetryNotice, &QLabel::linkActivated, this, [this](const QString&) {
-        showTelemetryDialog();
-    });
-    statusBar()->addPermanentWidget(m_telemetryNotice);
-    updateTelemetryNotice();
     // v3.3.7.2（任务书 1.3）：临时消息（showMessage）与右侧永久控件之间必须**有分隔符** ——
     // 否则「扫描完成，正在匹配图案」+「扫描 11265898000/… 区块（25.6%）」会被读成一句话。
     // 该分隔符只在存在临时消息时显示（messageChanged），消息清空后自动隐藏。
@@ -3580,225 +3592,10 @@ void MainWindow::buildV340Pages()
         m_pageStack->addWidget(page);
     }
 
-    // ---------------- 页 4：更新历史（v3.4.10 按任务书重做：折叠行 + 分类标签 + 类型底色） ----------------
-    {
-        auto* page = new QWidget(m_pageStack);
-        page->setObjectName(QStringLiteral("historyPage"));
-        auto* lay = new QVBoxLayout(page);
-        lay->setContentsMargins(8, 8, 8, 8);
-        lay->setSpacing(6);
-        {
-            auto* head = new QWidget(page);
-            auto* headLay = new QHBoxLayout(head);
-            headLay->setContentsMargins(2, 0, 2, 0);
-            headLay->setSpacing(6);
-            // v3.6.0：说明动态生成（正式版列表由数据算，不再手写一堆过期版本号）
-            auto* cap = new QLabel(head);
-            cap->setObjectName(QStringLiteral("resultCaption"));
-            m_historyCaption = cap;
-            headLay->addWidget(cap);
-            headLay->addStretch(1);
-            // v3.6.0（用户要求）：只看正式版 / 只看测试版
-            auto* filter = new QComboBox(head);
-            filter->addItem(QStringLiteral("全部版本"), 0);
-            filter->addItem(QStringLiteral("只看正式版"), 1);
-            filter->addItem(QStringLiteral("只看测试版"), 2);
-            connect(filter, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, filter](int) {
-                m_historyFilter = filter->currentData().toInt();
-                buildUpdateHistoryList();
-            });
-            headLay->addWidget(filter);
-            lay->addWidget(head);
-        }
-        m_historyScroll = new QScrollArea(page);
-        m_historyScroll->setObjectName(QStringLiteral("histScroll"));
-        m_historyScroll->setWidgetResizable(true);
-        m_historyScroll->setFrameShape(QFrame::NoFrame);
-        m_historyHost = new QWidget(m_historyScroll);
-        m_historyHost->setObjectName(QStringLiteral("histList"));
-        m_historyLay = new QVBoxLayout(m_historyHost);
-        m_historyLay->setContentsMargins(0, 0, 0, 0);
-        m_historyLay->setSpacing(0);
-        m_historyScroll->setWidget(m_historyHost);
-        lay->addWidget(m_historyScroll, 1);
-        m_pageStack->addWidget(page);
-        buildUpdateHistoryList();
-    }
-    if (false) {
-        auto* page = new QWidget(m_pageStack);
-        auto* lay = new QHBoxLayout(page);
-        lay->setContentsMargins(0, 0, 0, 0);
-        lay->setSpacing(0);
-        // 旧实现（保留在 if (false) 内仅为对照，不参与编译分支）
-    }
-
     // v3.4.1：原「控件状态」页已按需求移除（设计样张不在应用内展示）
 }
 
 
-// v3.4.10（任务书《更新历史重写》）：按结构化数据生成折叠行
-//   行 = [标题行：箭头 + V版本号 + 日期 + 类型标签] + [明细：分类标签 + 文本]
-//   正式版浅绿底 / 测试版浅橙底 + 3px 橙左线；点击标题行展开或收起；最新版默认展开。
-QPixmap MainWindow::v3410ArrowPixmap(bool expanded)
-{
-    constexpr int kLogical = 10; // 逻辑尺寸（与 QLabel 的 10×10 一致）
-    constexpr int kScale = 2;    // 2× 物理像素：高 DPI 下依然清晰
-    QPixmap pm(kLogical * kScale, kLogical * kScale);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing, true);
-    p.scale(kScale, kScale);
-    QPolygonF tri;
-    if (expanded) {
-        tri << QPointF(1.5, 3.0) << QPointF(8.5, 3.0) << QPointF(5.0, 8.0); // ▼
-    } else {
-        tri << QPointF(3.0, 1.5) << QPointF(3.0, 8.5) << QPointF(8.0, 5.0); // ▶
-    }
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0x8A, 0x8A, 0x8A)); // 与样式规范的 --fg3 一致
-    p.drawPolygon(tri);
-    p.end();
-    // v3.4.10 修：必须标 devicePixelRatio，否则 QLabel(10×10) 会按 20×20 逻辑尺寸绘制再裁剪
-    // ⇒ 只看到左上角一小块（用户看到的「小黑块」/箭头消失）。
-    pm.setDevicePixelRatio(kScale);
-    return pm;
-}
-
-void MainWindow::setHistoryRowExpanded(QWidget* row, bool expanded)
-{
-    if (!row) return;
-    // histBody / histArrowObj 记在**标题行**上（点击事件用得到）⇒ 这里先定位标题行再取属性。
-    // （v3.4.10 修：原来从 row 上取，取不到 ⇒ 箭头 pixmap 从未设置过，界面上看不到箭头。）
-    QWidget* src = (row->objectName() == QLatin1String("histHeader"))
-                       ? row
-                       : row->findChild<QWidget*>(QStringLiteral("histHeader"));
-    if (!src) src = row;
-    QWidget* body = qobject_cast<QWidget*>(src->property("histBody").value<QObject*>());
-    QLabel* arrow = qobject_cast<QLabel*>(src->property("histArrowObj").value<QObject*>());
-    if (body) body->setVisible(expanded);
-    if (arrow) arrow->setPixmap(v3410ArrowPixmap(expanded));
-}
-
-void MainWindow::setAllHistoryRowsExpanded(int expandedCount)
-{
-    for (int i = 0; i < m_historyRows.size(); ++i) {
-        setHistoryRowExpanded(m_historyRows[i], i < expandedCount);
-    }
-}
-
-void MainWindow::buildUpdateHistoryList()
-{
-    if (!m_historyLay) return;
-    while (QLayoutItem* it = m_historyLay->takeAt(0)) {
-        if (QWidget* w = it->widget()) w->deleteLater();
-        delete it;
-    }
-    m_historyRows.clear();
-    const std::vector<slime::HistoryEntry>& allEntries = slime::updateHistoryEntries();
-    if (m_historyCaption) {
-        int officialCount = 0;
-        for (const auto& e : allEntries)
-            if (e.official) ++officialCount;
-        m_historyCaption->setText(QStringLiteral("共 %1 个版本（1.0.0 → %2）｜正式版 %3 个｜当前显示 %4 个")
-                                      .arg(slime::updateHistoryEntryCount())
-                                      .arg(QString::fromLatin1(kAppVersion).mid(1))
-                                      .arg(officialCount)
-                                      .arg(m_historyFilter == 0 ? slime::updateHistoryEntryCount() : 0));
-    }
-    // v3.6.0（用户要求）：更新历史支持「只看正式版 / 只看测试版 / 全部」
-    std::vector<slime::HistoryEntry> entries;
-    entries.reserve(allEntries.size());
-    for (const auto& e : allEntries) {
-        if (m_historyFilter == 1 && !e.official) continue;
-        if (m_historyFilter == 2 && e.official) continue;
-        entries.push_back(e);
-    }
-    const auto tagKey = [](slime::HistoryTag tg) -> const char* {
-        switch (tg) {
-        case slime::HistoryTag::Added: return "n";
-        case slime::HistoryTag::Fixed: return "f";
-        case slime::HistoryTag::Improved: return "o";
-        case slime::HistoryTag::Adjusted: return "a";
-        case slime::HistoryTag::Removed: return "r";
-        }
-        return "n";
-    };
-    for (size_t i = 0; i < entries.size(); ++i) {
-        const slime::HistoryEntry& e = entries[i];
-        auto* row = new QWidget(m_historyHost);
-        row->setObjectName(slime::ui::tr(QStringLiteral("histRow")));
-        row->setProperty("histType", e.official ? "official" : "beta");
-        auto* rowLay = new QVBoxLayout(row);
-        rowLay->setContentsMargins(0, 0, 0, 0);
-        rowLay->setSpacing(0);
-
-        auto* header = new QWidget(row);
-        header->setObjectName(QStringLiteral("histHeader"));
-        header->setProperty("histHeader", true);
-        header->setCursor(Qt::PointingHandCursor);
-        header->setFixedHeight(30);
-        header->setToolTip(QStringLiteral("点击展开 / 收起该版本的更新内容"));
-        auto* hLay = new QHBoxLayout(header);
-        hLay->setContentsMargins(10, 0, 10, 0);
-        hLay->setSpacing(8);
-        auto* arrow = new QLabel(header);
-        arrow->setObjectName(QStringLiteral("histArrow"));
-        arrow->setFixedSize(10, 10);
-        hLay->addWidget(arrow);
-        auto* ver = new QLabel(QStringLiteral("V%1").arg(e.version), header);
-        ver->setObjectName(QStringLiteral("histVersion"));
-        ver->setProperty("histType", e.official ? "official" : "beta");
-        ver->setMinimumWidth(64);
-        hLay->addWidget(ver);
-        auto* date = new QLabel(e.date, header);
-        date->setObjectName(QStringLiteral("histDate"));
-        hLay->addWidget(date);
-        hLay->addStretch(1);
-        auto* badge = new QLabel(e.official ? QStringLiteral("正式版") : QStringLiteral("测试版"), header);
-        badge->setObjectName(QStringLiteral("histBadge"));
-        badge->setProperty("histType", e.official ? "official" : "beta");
-        hLay->addWidget(badge);
-        rowLay->addWidget(header);
-
-        auto* body = new QWidget(row);
-        body->setObjectName(QStringLiteral("histBody"));
-        auto* bLay = new QVBoxLayout(body);
-        bLay->setContentsMargins(27, 2, 10, 8);
-        bLay->setSpacing(2);
-        for (const slime::HistoryItem& item : e.items) {
-            auto* line = new QWidget(body);
-            line->setObjectName(QStringLiteral("histItem"));
-            auto* lineLay = new QHBoxLayout(line);
-            lineLay->setContentsMargins(0, 0, 0, 0);
-            lineLay->setSpacing(6);
-            auto* tag = new QLabel(
-                QStringLiteral("【%1】").arg(QString::fromUtf8(slime::updateHistoryTagName(item.tag))), line);
-            tag->setObjectName(QStringLiteral("histTag"));
-            tag->setProperty("histTag", QString::fromLatin1(tagKey(item.tag)));
-            lineLay->addWidget(tag, 0, Qt::AlignTop);
-            auto* txt = new QLabel(item.text, line);
-            txt->setObjectName(QStringLiteral("histItemText"));
-            txt->setWordWrap(true);
-            lineLay->addWidget(txt, 1);
-            bLay->addWidget(line);
-        }
-        rowLay->addWidget(body);
-        m_historyLay->addWidget(row);
-
-        header->setProperty("histBody", QVariant::fromValue<QObject*>(body));
-        header->setProperty("histArrowObj", QVariant::fromValue<QObject*>(arrow));
-        header->installEventFilter(this);
-        setHistoryRowExpanded(row, false); // v3.4.11（用户要求）：默认**折叠**（点标题行展开）
-        m_historyRows.push_back(row);
-    }
-    if (m_historyLay) m_historyLay->addStretch(1);
-    std::fprintf(stderr, "[UI自检] 更新历史列表：%d 个版本行（默认折叠）\n",
-                 static_cast<int>(m_historyRows.size()));    applyLanguage();   // v3.6.2：历史条目也按当前语言改写
-
-}
-
-// v3.4.12（用户黄框要求）：构建预估实时显示 —— 直接读**控件**当前值（范围 / 预算），
-// 不再读 config.json（写盘已改为合并写，文件值会滞后 ⇒ 这就是「预估与参数不同步」的根因）。
 void MainWindow::updateBuildEstimateLive()
 {
     if (!m_w || !m_w->bSummaryLive) return;
@@ -3941,8 +3738,11 @@ void MainWindow::buildMenus()
     connect(aUpdate, &QAction::triggered, this, &MainWindow::openReleasePage);
     QAction* aPan = m_menuHelp->addAction(QStringLiteral("网盘下载页（国内备用）"));
     connect(aPan, &QAction::triggered, this, &MainWindow::openPanPage);
-    QAction* aHistory = m_menuHelp->addAction(QStringLiteral("更新历史"));
-    connect(aHistory, &QAction::triggered, this, &MainWindow::showUpdateHistory);
+    QAction* aHistory = m_menuHelp->addAction(QStringLiteral("更新历史（GitHub）"));
+    connect(aHistory, &QAction::triggered, this, []() {
+        QDesktopServices::openUrl(QUrl(QStringLiteral(
+            "https://github.com/PillerBean/SlimeFinder/wiki/Version-Index")));
+    });
     QAction* aContact = m_menuHelp->addAction(QStringLiteral("联系我们"));
     connect(aContact, &QAction::triggered, this, &MainWindow::showContact);
     // v3.7.5（用户要求）：鸣谢名单
@@ -4366,41 +4166,6 @@ void MainWindow::initUpdateReminder()
                         (m_updateBadgeVisible ? "（显示更新提醒徽章）" : ""));
 }
 
-void MainWindow::showUpdateHistory()
-{
-    // v3.3.9（任务书 3.4/3.5/四）：更新历史改为**完整版本表 + 可滚动只读文本视图**。
-    // 文本由 src/gui/UpdateHistory.cpp 提供（1.0.0 → 3.3.9 全部版本，含日期、正式版/测试版、更新内容）。
-    addFeedback(2, slime::ui::tr(QStringLiteral("已打开更新历史")));
-    if (m_uiQuiet) return;
-    QDialog* dlg = buildUpdateHistoryDialog();
-    dlg->exec();
-    dlg->deleteLater();
-}
-
-// v3.3.9（任务书 3.5）：独立成函数，便于 GUI 自检直接检查「内容完整 + 确实可滚动」。
-QDialog* MainWindow::buildUpdateHistoryDialog()
-{
-    auto* dlg = new QDialog(this);
-    dlg->setWindowTitle(QStringLiteral("更新历史"));
-    dlg->resize(780, 640);
-    auto* lay = new QVBoxLayout(dlg);
-    auto* view = new QPlainTextEdit(dlg);
-    view->setObjectName(QStringLiteral("updateHistoryView"));
-    view->setReadOnly(true);
-    view->setPlainText(QString::fromUtf8(slime::updateHistoryTextUtf8()));
-    view->setLineWrapMode(QPlainTextEdit::NoWrap); // 版本表按列对齐，不折行
-    view->moveCursor(QTextCursor::Start);
-    lay->addWidget(view, 1);
-    auto* row = new QHBoxLayout();
-    row->addStretch(1);
-    auto* closeBtn = new QPushButton(QStringLiteral("关闭"), dlg);
-    closeBtn->setObjectName(QStringLiteral("updateHistoryClose"));
-    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::accept);
-    row->addWidget(closeBtn);
-    lay->addLayout(row);
-    return dlg;
-}
-
 void MainWindow::showAboutDialog()
 {
     // v3.7.5：与「联系我们」做差异化 —— 这里只讲「这是什么、怎么算的、什么版本」；
@@ -4525,34 +4290,13 @@ void MainWindow::captureUiScreenshots(const QString& prefix)
         selectBottomCategory(0);
     }
 
-    // 7b) v3.4.8：左侧导航四页各一张（搜索 / 缓存构建 / 设置 / 更新历史）—— 交付证据
+    // 7b) v3.4.8：左侧导航各页截图（搜索 / 缓存构建 / 设置）
     if (m_pageStack && m_navButtons.size() == kNavCount) {
-        static const char* const kPageTags[kNavCount] = { "search", "build", "settings", "history" };
+        static const char* const kPageTags[kNavCount] = { "search", "build", "settings" };
         for (int i = 0; i < kNavCount; ++i) {
             showPage(i);
             shoot(QStringLiteral("page-%1-%2").arg(i).arg(QString::fromUtf8(kPageTags[i])));
         }
-        showPage(kPageSearch);
-    }
-
-    // 7c) v3.4.10：更新历史折叠 / 展开 / 正式版样式（浅色）—— 任务书要求的交付截图
-    if (m_historyRows.size() > 0) {
-        showPage(kPageHistory);
-        setAllHistoryRowsExpanded(0);
-        shoot(QStringLiteral("history-collapsed"));
-        setAllHistoryRowsExpanded(3);
-        shoot(QStringLiteral("history-expanded"));
-        // 滚到第一个正式版行并展开（验收要看正式版浅绿底）
-        for (int i = 0; i < m_historyRows.size(); ++i) {
-            if (m_historyRows[i] && m_historyRows[i]->property("histType").toString() == QLatin1String("official")) {
-                setAllHistoryRowsExpanded(0);
-                setHistoryRowExpanded(m_historyRows[i], true);
-                if (m_historyScroll) m_historyScroll->ensureWidgetVisible(m_historyRows[i], 0, 0);
-                shoot(QStringLiteral("history-official"));
-                break;
-            }
-        }
-        setAllHistoryRowsExpanded(0); // 还原为「默认折叠」
         showPage(kPageSearch);
     }
 
@@ -4615,26 +4359,6 @@ void MainWindow::captureUiScreenshots(const QString& prefix)
                 }
             }
             dlg.hide();
-        }
-        // v3.4.10：更新历史折叠 / 展开 / 正式版样式（深色）
-        if (m_historyRows.size() > 0) {
-            showPage(kPageHistory);
-            setAllHistoryRowsExpanded(0);
-            shoot(QStringLiteral("dark-history-collapsed"));
-            setAllHistoryRowsExpanded(3);
-            shoot(QStringLiteral("dark-history-expanded"));
-            for (int i = 0; i < m_historyRows.size(); ++i) {
-                if (m_historyRows[i] &&
-                    m_historyRows[i]->property("histType").toString() == QLatin1String("official")) {
-                    setAllHistoryRowsExpanded(0);
-                    setHistoryRowExpanded(m_historyRows[i], true);
-                    if (m_historyScroll) m_historyScroll->ensureWidgetVisible(m_historyRows[i], 0, 0);
-                    shoot(QStringLiteral("dark-history-official"));
-                    break;
-                }
-            }
-            setAllHistoryRowsExpanded(0); // 还原为「默认折叠」
-            showPage(kPageSearch);
         }
         m_settings.theme = keepTheme;
         applyThemeFromSettings();
@@ -5914,20 +5638,6 @@ void MainWindow::installWheelFilter()
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* ev)
 {
-    // v3.4.10：更新历史的折叠行 —— 点击标题行（箭头 / 版本号 / 日期 / 类型标签任意处）展开或收起
-    if (ev->type() == QEvent::MouseButtonRelease && watched && watched->property("histHeader").toBool()) {
-        QWidget* header = qobject_cast<QWidget*>(watched);
-        if (header) {
-            QWidget* body = qobject_cast<QWidget*>(header->property("histBody").value<QObject*>());
-            const bool show = body ? !body->isVisible() : false;
-            if (body) {
-                body->setVisible(show);
-                QLabel* arrow = qobject_cast<QLabel*>(header->property("histArrowObj").value<QObject*>());
-                if (arrow) arrow->setPixmap(v3410ArrowPixmap(show));
-            }
-        }
-        return true;
-    }
     // v3.5.4：点击结果行 → 地图定位到该结果所在的区块（拖动选择文本时不触发）
     if (m_w && m_w->resultView && watched == m_w->resultView) {
         if (ev->type() == QEvent::MouseButtonPress) {
@@ -7684,8 +7394,8 @@ void MainWindow::updateTelemetryNotice()
 {
     if (!m_telemetryNotice || !m_telemetry) return;
     const QString text = m_telemetry->enabled()
-                             ? QStringLiteral("匿名统计已开启 · 点此修改")
-                             : QStringLiteral("📣 匿名统计默认关闭 · 点此了解/开启");
+                             ? QStringLiteral("匿名统计已开启 · 感谢帮助改进")
+                             : QStringLiteral("📣 匿名统计默认关闭 · 点此开启，帮助改进");
     m_telemetryNotice->setText(QStringLiteral("<a href=\"telemetry\">%1</a>").arg(text));
 }
 
@@ -7729,16 +7439,8 @@ void MainWindow::showTelemetryDialog()
     enabled->setChecked(m_telemetry->enabled());
     lay->addWidget(enabled);
 
-    auto* epRow = new QHBoxLayout();
-    epRow->addWidget(new QLabel(QStringLiteral("服务端地址:"), &dlg));
-    auto* endpoint = new QLineEdit(&dlg);
-    endpoint->setPlaceholderText(QStringLiteral("https://<你的 Worker>.workers.dev/v1/event"));
-    endpoint->setText(m_telemetry->endpoint());
-    epRow->addWidget(endpoint, 1);
-    lay->addLayout(epRow);
-    auto* epNote = new QLabel(QStringLiteral("一般用户无需填写；由发布者部署 Worker 后配置。留空时即使勾选也不会发送。"), &dlg);
+    auto* epNote = new QLabel(QStringLiteral("服务端地址由程序内置，不可修改。"), &dlg);
     epNote->setStyleSheet(QStringLiteral("color:#808080;font-size:11px;"));
-    epNote->setWordWrap(true);
     lay->addWidget(epNote);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel, &dlg);
@@ -7747,22 +7449,7 @@ void MainWindow::showTelemetryDialog()
     lay->addWidget(buttons);
 
     if (dlg.exec() != QDialog::Accepted) return;
-    const QString ep = endpoint->text().trimmed();
-    if (enabled->isChecked() && ep.isEmpty()) {
-        QMessageBox::warning(this, QStringLiteral("匿名统计"),
-                             QStringLiteral("已勾选开启，但还没有配置服务端地址；本次保存后不会发送。\n"
-                                            "请让发布者部署 Worker，或先取消勾选。"));
-    }
-    if (!ep.isEmpty()) {
-        const QUrl u(ep);
-        const bool local = (u.scheme() == QLatin1String("http") && u.host() == QLatin1String("127.0.0.1"));
-        if (!u.isValid() || (u.scheme() != QLatin1String("https") && !local)) {
-            QMessageBox::warning(this, QStringLiteral("匿名统计"),
-                                 QStringLiteral("服务端地址必须是 https:// 或本机 http://127.0.0.1/ 调试地址。"));
-            return;
-        }
-    }
-    m_telemetry->setSettings(enabled->isChecked(), ep);
+    m_telemetry->setSettings(enabled->isChecked(), m_telemetry->endpoint());
     updateTelemetryNotice();
     addFeedback(2, enabled->isChecked() ? QStringLiteral("匿名统计已开启（仅发送匿名档位数据）")
                                         : QStringLiteral("匿名统计已关闭"));
@@ -7821,7 +7508,10 @@ void MainWindow::showContact()
         "  3) logs/ 目录里的日志文件；\n"
         "  4) 复现步骤（点哪些按钮、期望结果与实际结果）。\n"
         "\n"
-        "（以上均为纯文本展示，不会自动打开链接。）")
+        "（以上均为纯文本展示，不会自动打开链接。）\n"
+        "\n"
+        "开启「匿名信息上传」后，程序可在一定程度上自动上报问题相关信息"
+        "（版本、硬件、搜索设置、结果与耗时；默认关闭，不含存档路径或日志内容），有助于定位问题。")
                                 .arg(QLatin1String(kContactEmail)));
     info->setTextInteractionFlags(Qt::TextSelectableByMouse);
     info->setWordWrap(true);
@@ -10548,143 +10238,6 @@ int MainWindow::runSelfTest()
                   "帮助教程包含图案三色说明");
         }
 
-        // 13.4b v3.3.9（任务书 3.4/3.5/四）：更新历史完整性 + 正式版标注 + 无下载链接 + 可滚动
-        {
-            const QString hist = QString::fromUtf8(slime::updateHistoryTextUtf8());
-            const QStringList required = {
-                QStringLiteral("1.0.0"), QStringLiteral("1.1.0"), QStringLiteral("1.2.0"),
-                QStringLiteral("1.3.0"), QStringLiteral("2.0.0"), QStringLiteral("2.1.0"),
-                QStringLiteral("2.2.0"), QStringLiteral("2.3.0"), QStringLiteral("2.4.0"),
-                QStringLiteral("2.5.0"), QStringLiteral("2.6.0"), QStringLiteral("2.7.0"),
-                QStringLiteral("2.8.0"), QStringLiteral("2.8.1"), QStringLiteral("2.8.2"),
-                QStringLiteral("2.8.3"), QStringLiteral("2.8.4"), QStringLiteral("2.9.0"),
-                QStringLiteral("3.0.0"), QStringLiteral("3.1.0"), QStringLiteral("3.1.1"),
-                QStringLiteral("3.1.2"), QStringLiteral("3.2.0"), QStringLiteral("3.2.1"),
-                QStringLiteral("3.3.0"), QStringLiteral("3.3.1"), QStringLiteral("3.3.2"),
-                QStringLiteral("3.3.3"), QStringLiteral("3.3.4"), QStringLiteral("3.3.5"),
-                QStringLiteral("3.3.6"), QStringLiteral("3.3.7"), QStringLiteral("3.3.7.1"),
-                QStringLiteral("3.3.7.2"), QStringLiteral("3.3.8"), QStringLiteral("3.3.8.1"),
-                QStringLiteral("3.3.9"), QStringLiteral("3.3.9.1"), QStringLiteral("3.4.0"),
-                QStringLiteral("3.4.2"), QStringLiteral("3.4.3"), QStringLiteral("3.4.8"),
-                QStringLiteral("3.4.9"),
-                QStringLiteral("3.4.10"),
-                QStringLiteral("3.4.10"),
-                QStringLiteral("3.4.11"),
-                QStringLiteral("3.4.12"),
-                QStringLiteral("3.4.13"),
-                QStringLiteral("3.5.0"),
-                QStringLiteral("3.5.2"),
-                QStringLiteral("3.5.3"),
-                QStringLiteral("3.5.4"),
-                QStringLiteral("3.5.5"),
-                QStringLiteral("3.5.6"),
-                QStringLiteral("3.5.7"),
-                QStringLiteral("3.5.8")
-            };
-            int missing = 0;
-            for (const QString& v : required) {
-                // v3.4.10：文本格式为「V<版本号> · <日期>」，按行首匹配
-                bool found = false;
-                for (const QString& line : hist.split(QLatin1Char('\n'))) {
-                    if (line.startsWith(QStringLiteral("V") + v + QLatin1Char(' '))) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    ++missing;
-                    std::fprintf(stderr, "[UI自检] 更新历史缺少版本: %s\n", v.toUtf8().constData());
-                }
-            }
-            // 3.4.1 是别名包，不得出现在更新历史里
-            bool hasAlias = false;
-            for (const QString& line : hist.split(QLatin1Char('\n'))) {
-                if (line.startsWith(QStringLiteral("V3.4.1 "))) hasAlias = true;
-            }
-            check(!hasAlias, "更新历史不列出 3.4.1（别名包，与 3.4.3 / 3.4.8 同二进制）");
-            check(missing == 0, "更新历史含 1.0.0 → 3.10.12.11 全部版本（一条不漏）");
-            check(slime::updateHistoryEntryCount() == 158, "更新历史条目数 99（1.0.0 → 3.6.22）");
-            // v3.5.16：正式版恰好 4 个（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0）；3.5 之后一律测试版（用户要求）
-            {
-                int official = 0;
-                QStringList officialList;
-                for (const slime::HistoryEntry& e : slime::updateHistoryEntries()) {
-                    if (e.official) { ++official; officialList << e.version; }
-                }
-                std::fprintf(stderr, "[UI自检] 更新历史正式版：%s（共 %d 个）\n",
-                             officialList.join(QStringLiteral(" / ")).toUtf8().constData(), official);
-                // v3.5.16（用户要求）：3.5 之后的所有版本一律测试版 ⇒ 正式版只有 2.8.4 / 3.1.1 / 3.3.0 / 3.5.0
-                check(official == 5 &&
-                      officialList.contains(QStringLiteral("2.8.4")) &&
-                          officialList.contains(QStringLiteral("3.1.1")) &&
-                          officialList.contains(QStringLiteral("3.3.0")) &&
-                          officialList.contains(QStringLiteral("3.5.0")) &&
-                          officialList.contains(QStringLiteral("3.6.19")) &&
-                          !officialList.contains(QStringLiteral("3.5.1")) &&
-                          !officialList.contains(QStringLiteral("3.5.13")),
-                      "正式版为 5 个（2.8.4 / 3.1.1 / 3.3.0 / 3.5.0 / 3.6.19）；3.6.9 已撤销正式版资格");
-            }
-            // 文本规则：日期行格式、无下载链接/密码、分类标签只在五类之内
-            {
-                const QRegularExpression headRe(QStringLiteral("^V([0-9]+(?:\\.[0-9]+)*) · (\\S+)$"));
-                int entries2 = 0, badHead = 0, badTag = 0, banned = 0;
-                const QStringList allowed = { QStringLiteral("【新增】"), QStringLiteral("【修复】"),
-                                              QStringLiteral("【优化】"), QStringLiteral("【调整】"),
-                                              QStringLiteral("【移除】") };
-                for (const QString& line : hist.split(QLatin1Char('\n'))) {
-                    if (line.startsWith(QLatin1Char('V'))) {
-                        ++entries2;
-                        if (!headRe.match(line).hasMatch()) {
-                            ++badHead;
-                            std::fprintf(stderr, "[UI自检] 版本行格式不符: %s\n", line.toUtf8().constData());
-                        }
-                        continue;
-                    }
-                    if (line.startsWith(QStringLiteral("【"))) {
-                        bool ok = false;
-                        for (const QString& a : allowed) {
-                            if (line.startsWith(a)) ok = true;
-                        }
-                        if (!ok) ++badTag;
-                    }
-                    if (line.contains(QStringLiteral("http")) || line.contains(QStringLiteral("下载")) ||
-                        line.contains(QStringLiteral("密码"))) {
-                        ++banned;
-                    }
-                }
-                std::fprintf(stderr, "[UI自检] 更新历史文本：%d 条版本行（格式异常 %d）、越界分类 %d、链接/密码 %d\n",
-                             entries2, badHead, badTag, banned);
-                check(entries2 == slime::updateHistoryEntryCount(), "文本里的版本行数与数据源一致");
-                check(badHead == 0, "版本行格式为「V<版本号> · <日期>」");
-                check(badTag == 0, "条目分类只用【新增】【修复】【优化】【调整】【移除】");
-                check(banned == 0, "更新历史不含下载链接与访问密码");
-            }
-
-            // 可滚动（3.5）：长文本 + 滚动条可用
-            QDialog* histDlg = buildUpdateHistoryDialog();
-            auto* histView = histDlg->findChild<QPlainTextEdit*>(QStringLiteral("updateHistoryView"));
-            check(histView != nullptr && histView->isReadOnly(), "更新历史使用只读文本视图（可选中复制）");
-            if (histView) {
-                check(histView->toPlainText() == hist, "对话框内容与更新历史文本一致");
-                histDlg->resize(780, 360);
-                histDlg->show();
-                QApplication::processEvents(QEventLoop::AllEvents, 120);
-                const int lineCount = histView->document()->blockCount();
-                const int lineSpacing = (std::max)(1, histView->fontMetrics().lineSpacing());
-                const int visibleLines = (std::max)(1, histView->viewport()->height() / lineSpacing);
-                // 判据：内容行数 > 视口可显示行数，且垂直滚动条确实可用
-                // （document()->size() 在 show() 之后未必立刻更新，故用行数×行高估算）
-                check(lineCount > visibleLines && histView->verticalScrollBar()->maximum() > 0,
-                      "更新历史长文本需要并可滚动（任务书 3.5：35+ 行加滚动条）");
-                std::fprintf(stderr,
-                             "[UI自检] 更新历史：%d 行（视口可显示 %d 行，行高 %d px）/ 滚动最大值 %d\n",
-                             lineCount, visibleLines, lineSpacing,
-                             histView->verticalScrollBar()->maximum());
-                histDlg->hide();
-            }
-            delete histDlg;
-        }
-
         // 13.4c v3.3.9（任务书 1.1/1.2）：缓存构建模式端到端（分段构建 + 落盘 + 四项进度 + 只读校验）
         {
             m_w->bedrockRadio->setChecked(true);
@@ -12028,10 +11581,10 @@ int MainWindow::runSelfTest()
                 bool topBarOk = m_topBar && m_w->javaRadio && m_w->bedrockRadio && m_w->mapVersionCombo &&
                                 m_w->seedEdit;
                 if (topBarOk) {
-                    topBarOk = (m_w->javaRadio->parentWidget() == m_topBar) &&
-                               (m_w->bedrockRadio->parentWidget() == m_topBar) &&
-                               (m_w->mapVersionCombo->parentWidget() == m_topBar) &&
-                               (m_w->seedEdit->parentWidget() == m_topBar);
+                    topBarOk = m_topBar->isAncestorOf(m_w->javaRadio) &&
+                               m_topBar->isAncestorOf(m_w->bedrockRadio) &&
+                               m_topBar->isAncestorOf(m_w->mapVersionCombo) &&
+                               m_topBar->isAncestorOf(m_w->seedEdit);
                 }
                 check(topBarOk, "顶部全局设置栏包含 平台/游戏版本/世界种子");
                 for (QGroupBox* g : groups) {
@@ -13107,8 +12660,8 @@ int MainWindow::runSelfTest()
             showPage(kPageSearch);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
             check(m_mapPanel != nullptr && m_map != nullptr, "搜索页内嵌地图面板（含地图控件）");
-            check(m_navButtons.size() == 4 && m_pageStack && m_pageStack->count() == 4,
-                  "导航与页面回到 4 项（地图不再占导航位）");
+            check(m_navButtons.size() == 3 && m_pageStack && m_pageStack->count() == 3,
+                  "导航与页面为 3 项（更新历史已移除）");
             if (m_map && m_mapPanel) {
                 updateMapFromForm();
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
@@ -13496,106 +13049,20 @@ int MainWindow::runSelfTest()
             check(menuOk == 5, "五个菜单齐备（文件/编辑/查看/工具/帮助）");
             check(actionTotal >= 15 && actionBad == 0, "菜单项全部有标题且数量合理（实测见日志）");
 
-            check(m_navButtons.size() == kNavCount, "左侧导航为 5 项（搜索/缓存构建/设置/更新历史/地图）");
+            check(m_navButtons.size() == kNavCount, "左侧导航为 3 项（搜索/缓存构建/设置）");
             const QStringList wantNav = { QStringLiteral("搜索"), QStringLiteral("缓存构建"),
-                                          QStringLiteral("设置"), QStringLiteral("更新历史"),
-                                          QStringLiteral("地图") };
+                                          QStringLiteral("设置") };
             int navTextOk = 0;
             for (int i = 0; i < m_navButtons.size() && i < wantNav.size(); ++i) {
                 if (m_navButtons[i] && m_navButtons[i]->text() == wantNav[i]) ++navTextOk;
             }
             check(navTextOk == kNavCount, "导航项文字与顺序正确");
-            check(m_pageStack && m_pageStack->count() == kNavCount, "页面栈与导航一一对应（5 页）");
+            check(m_pageStack && m_pageStack->count() == kNavCount, "页面栈与导航一一对应（3 页）");
             // v3.10.2（用户要求）：底部图标条已移除，过程面板改用标题栏页签 + 收起/展开
             check(m_dockIcons.isEmpty() && m_dockHeadTabs.size() == 4 && m_dockToggleBtn != nullptr,
                   "过程面板：底部图标条已移除，保留 4 个页签 + 收起/展开按钮");
             check(m_settingsPage && m_settingsPage->tabs() && m_settingsPage->tabs()->count() == 5,
                   "设置页为五个标签（通用/搜索/缓存/日志/高级）");
-            check(slime::updateHistoryEntryCount() == 158, "更新历史条目数 99（1.0.0 → 3.6.22）");
-            check(m_historyRows.size() == slime::updateHistoryEntryCount(),
-                  "更新历史折叠行数与数据源一致（一个版本不漏）");
-            {
-                // v3.4.10 修：折叠箭头必须真的画出三角（防「小黑块」/画丢回归）
-                int ok = 0, bad = 0;
-                for (QWidget* row : m_historyRows) {
-                    QWidget* header = row ? row->findChild<QWidget*>(QStringLiteral("histHeader")) : nullptr;
-                    QLabel* arrow =
-                        header ? qobject_cast<QLabel*>(header->property("histArrowObj").value<QObject*>())
-                               : nullptr;
-                    if (!arrow) {
-                        ++bad;
-                        continue;
-                    }
-                    const QImage img = arrow->pixmap(Qt::ReturnByValue).toImage();
-                    int dark = 0, minX = 9999, maxX = -1, minY = 9999, maxY = -1;
-                    for (int y = 0; y < img.height(); ++y) {
-                        for (int x = 0; x < img.width(); ++x) {
-                            const QColor c = img.pixelColor(x, y);
-                            if (c.alpha() > 128 && c.red() < 160 && c.green() < 160 && c.blue() < 160) {
-                                ++dark;
-                                minX = (std::min)(minX, x); maxX = (std::max)(maxX, x);
-                                minY = (std::min)(minY, y); maxY = (std::max)(maxY, y);
-                            }
-                        }
-                    }
-                    const int w = (maxX >= minX) ? (maxX - minX + 1) : 0;
-                    const int h = (maxY >= minY) ? (maxY - minY + 1) : 0;
-                    if (dark >= 8 && dark <= 90 && w >= 4 && w <= 14 && h >= 4 && h <= 14) ++ok;
-                    else {
-                        ++bad;
-                        std::fprintf(stderr, "[UI自检]   箭头异常：暗像素=%d 包围盒=%dx%d\n", dark, w, h);
-                    }
-                }
-                std::fprintf(stderr, "[UI自检]   折叠箭头：正常 %d 个 / 异常 %d 个\n", ok, bad);
-                check(ok > 0 && bad == 0, "更新历史折叠箭头绘制为三角（不是黑块、不是空白）");
-                QWidget* firstHeader = m_historyRows.isEmpty()
-                                           ? nullptr
-                                           : m_historyRows.first()->findChild<QWidget*>(QStringLiteral("histHeader"));
-                QLabel* firstArrow =
-                    firstHeader
-                        ? qobject_cast<QLabel*>(firstHeader->property("histArrowObj").value<QObject*>())
-                        : nullptr;
-                check(firstArrow && firstArrow->size() == QSize(10, 10),
-                      "折叠箭头控件尺寸为 10×10 逻辑像素（不再被 2× 位图裁成黑块）");
-            }
-            {
-                // v3.4.10 修（用户要求）：默认全部展开
-                int expanded = 0;
-                for (QWidget* row : m_historyRows) {
-                    QWidget* header = row ? row->findChild<QWidget*>(QStringLiteral("histHeader")) : nullptr;
-                    QWidget* body =
-                        header ? qobject_cast<QWidget*>(header->property("histBody").value<QObject*>()) : nullptr;
-                    // 自检时更新历史页不是当前页 ⇒ isVisible() 恒为假，这里看的是「是否被显式隐藏」
-                    if (body && !body->isHidden()) ++expanded;
-                }
-                std::fprintf(stderr, "[UI自检]   默认展开的版本行 = %d / %d\n", expanded,
-                             static_cast<int>(m_historyRows.size()));
-                check(expanded == 0, "更新历史默认折叠（用户要求：点标题行再展开）");
-            }
-            check(m_historyScroll != nullptr && m_historyLay != nullptr, "更新历史为可滚动的折叠列表");
-            {
-                // v3.4.10：严格按版本号从新到旧；不再提供排序切换
-                const std::vector<slime::HistoryEntry>& es = slime::updateHistoryEntries();
-                const auto key = [](const QString& v) {
-                    std::vector<long long> parts;
-                    for (const QString& p : v.split(QLatin1Char('.'))) parts.push_back(p.toLongLong());
-                    return parts;
-                };
-                bool ordered = true;
-                for (size_t i = 1; i < es.size(); ++i) {
-                    const std::vector<long long> a = key(es[i - 1].version), b = key(es[i].version);
-                    const size_t n = (std::min)(a.size(), b.size());
-                    bool less = false;
-                    for (size_t k = 0; k < n; ++k) {
-                        if (a[k] != b[k]) { less = a[k] > b[k]; break; }
-                    }
-                    if (a.size() != b.size() && std::equal(a.begin(), a.begin() + static_cast<long>(n), b.begin())) {
-                        less = a.size() > b.size();
-                    }
-                    if (!less) ordered = false;
-                }
-                check(ordered, "更新历史严格按版本号从新到旧排列（用户要求的排序）");
-            }
             check(m_w->start && m_w->cancel, "工具栏按钮齐备（开始搜索 / 取消）");
             {
                 int helpEntries = 0;
@@ -13902,7 +13369,7 @@ int MainWindow::runSelfTest()
 
         // ⑥ 动画：只缩放图案，绝不改变布局（文字、图标尺寸、按钮几何全程不变）
         {
-            const QToolButton* b = m_navButtons.value(kPageHistory, nullptr);
+            const QToolButton* b = m_navButtons.value(kPageSettings, nullptr);
             check(b != nullptr, "导航按钮存在（动画检查）");
             if (b) {
                 const QString text0 = b->text();
@@ -13911,7 +13378,7 @@ int MainWindow::runSelfTest()
                 const QFont font0 = b->font();
                 showPage(kPageSearch);
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
-                showPage(kPageHistory);
+                showPage(kPageSettings);
                 for (int i = 0; i < 12; ++i) { // 覆盖 280ms 动画全过程
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 40);
                     QThread::msleep(20);

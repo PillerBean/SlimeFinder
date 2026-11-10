@@ -56,7 +56,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 ## 相关链接
 
 - 源码与 Releases：<https://github.com/PillerBean/SlimeFinder>
-- 更新历史：<https://github.com/PillerBean/SlimeFinder/blob/main/docs/update_history.md>
+- 更新历史：<https://github.com/PillerBean/SlimeFinder/wiki/Version-Index>
 - 构建说明：<https://github.com/PillerBean/SlimeFinder/blob/main/docs/build_instructions.md>
 - 问题反馈：<https://github.com/PillerBean/SlimeFinder/issues>
 - 作者 B 站：<https://space.bilibili.com/1413251461>

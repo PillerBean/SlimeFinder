@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(SlimeFinder
-    VERSION 3.10.12.11
+    VERSION 3.10.12.13
     DESCRIPTION "史莱姆区块查找器 - Slime Chunk Finder (C++/Qt)"
     LANGUAGES CXX C)
 
@@ -129,7 +129,6 @@ add_executable(SlimeFinder WIN32
     src/gui/MainWindow.cpp
     src/gui/PatternEditor.cpp
     src/gui/PatternEditorPanel.cpp
-    src/gui/UpdateHistory.cpp # v3.3.9（任务书 四）：完整更新历史文本（1.0.0 → 3.3.9）
     src/gui/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
     src/gui/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
     src/gui/HelpDialog.cpp

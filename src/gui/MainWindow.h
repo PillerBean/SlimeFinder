@@ -133,7 +133,6 @@ private slots:
     void copyAllCommands();     // 编辑 → 复制全部命令
     void clearResults();        // 编辑 → 清空结果 Ctrl+L
     void resetLayout();         // 查看 → 恢复默认布局 Ctrl+0
-    void showUpdateHistory();   // 帮助 → 更新历史
     void showAboutDialog();     // 帮助 → 关于
     void openReleasePage();     // 帮助 → 检查更新（GitHub/镜像/网盘对话框）
     void openPanPage();         // 帮助 → 网盘下载页（国内备用，手动）
@@ -269,15 +268,12 @@ private:
     // v3.3.4（任务书 3）：更新提醒（本地、不联网）
     void initUpdateReminder();      // 读取 build_date.txt，必要时显示徽章
     QString releasePageUrl() const; // 网盘/发布页地址
-    // v3.3.9（任务书 3.5/四）：更新历史对话框（可滚动只读视图；独立成函数便于自检检查内容与滚动）
-    QDialog* buildUpdateHistoryDialog();
 
     // v3.4.0（ui_prototype/SlimeFinder-UI.html）：左导航 + 标签页 + 页面栈 + 底部停靠面板
     void showPage(int page);            // 切换页面（标签页与左导航同源）
     void showDock(int index);           // 展开底部停靠面板并切到第 index 类
     void hideDock();                    // 收起停靠面板（高度归 0）
     void buildV340Pages();              // 构建范围 / 设置 / 更新历史 / 控件状态 四页
-    void buildUpdateHistoryTree();      // 更新历史：版本索引 + 可展开列表
     void showBuildEstimate();           // 构建预估（构建范围页「预估」按钮）
     QColor themedIconColor() const;                  // v3.4.8：自绘图案的当前主题取色（切主题立即重绘）
     void refreshThemedIcons();                       // v3.4.8：按当前主题重建导航/停靠图案
@@ -287,10 +283,6 @@ private:
     void flushPendingConfigWrite();                  // v3.4.11：立即落盘（滑块释放/退出前）
     void syncSettingsPageFromState();                // v3.4.11：真实状态 → 设置页（单向收敛）
     void pushSearchRangeToBuild();                   // v3.4.9：搜索页范围 → 构建页（同一份数据）
-    QPixmap v3410ArrowPixmap(bool expanded);         // v3.4.10：更新历史折叠箭头（▶ / ▼）
-    void buildUpdateHistoryList();                   // v3.4.10：按结构化数据生成折叠行
-    void setHistoryRowExpanded(QWidget* row, bool expanded);
-    void setAllHistoryRowsExpanded(int expandedCount); // 自检/截图用：控制展开数量
     void updateBuildEstimateLive();                  // v3.4.12：构建预估实时刷新（读控件）
     QIcon v340NavIcon(int kind, double scale = 1.0); // v3.4.6：scale 供选中动画        // 左导航线性图标（QPainter 绘制，20×20）
     QPushButton* m_dockCollapse = nullptr;            // v3.4.8：停靠面板收起按钮（主题切换需重绘图案）
@@ -317,11 +309,6 @@ private:
     QWidget* m_buildExtra = nullptr;          // v3.4.3：缓存构建额外选项（勾选构建模式才显示）
     SettingsDialog* m_settingsPage = nullptr; // 设置页（嵌入 SettingsDialog 内容）
     QTimer* m_settingsApplyTimer = nullptr;   // v3.4.2：设置立即生效（250ms 去抖）
-    // v3.4.10：更新历史改为折叠列表（成员见 m_historyScroll / m_historyRows）
-    QScrollArea* m_historyScroll = nullptr;   // v3.4.10：更新历史滚动区
-    QWidget* m_historyHost = nullptr;         // 行容器（#histList）
-    QVBoxLayout* m_historyLay = nullptr;
-    QList<QWidget*> m_historyRows;            // 折叠行（标题行 + 明细）      // 更新历史可展开列表
     // v3.4.10：排序按钮已移除（任务书要求严格按版本号排序）
 
     // ---- v3.3.9（任务书 1.1）：缓存构建模式（唯一可写缓存的模式；分段构建 + 落盘 + 中断续传）----
@@ -419,8 +406,6 @@ private:
     bool m_ringSearching = false;             // v3.10.12.11：环形搜索（含预筛）进行中
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器
     QPushButton* m_mapIconBtn = nullptr;   // v3.6.1：左栏图标条里的地图开关
-    QLabel* m_historyCaption = nullptr;   // v3.6.0：历史页顶部说明
-    int m_historyFilter = 0;   // v3.6.0：0=全部 1=只正式版 2=只测试版   // v3.5.28：状态面板插在它前面   // v3.5.16：地图视图只在首次显示时按范围定位，之后不随范围跳动
     void updateMapFromForm();
     void toggleMapPanel();
     void focusMapOnChunk(int chunkX, int chunkZ);

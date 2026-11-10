@@ -348,17 +348,17 @@ QWidget* SettingsDialog::buildSearchPage()
                            QStringLiteral("启动时自动填入的搜索范围"));
 
         // 默认启用 GPU 加速
-        m_defaultGpu = new QCheckBox(QStringLiteral("默认启用 GPU 加速（现代 GPU 通常显著更快；驱动异常时可关闭）"), page);
+        m_defaultGpu = new QCheckBox(QStringLiteral("默认启用 GPU 加速 ⭐（现代 GPU 通常显著更快；驱动异常时可关闭）"), page);
     // v3.8.11：图案流式开关（实验转正；仅 AMD 显卡验证过）
     m_gpuPatternStream = new QCheckBox(
-        QStringLiteral("启用 GPU 图案流式匹配（默认关闭；AMD 实测约 2~18 倍提速，NVIDIA / Intel 未验证）"),
+        QStringLiteral("启用 GPU 图案流式匹配 ⭐（AMD 实测约 2~18 倍提速，NVIDIA / Intel 未验证）"),
         page);
     m_gpuPatternStream->setToolTip(QStringLiteral(
         "图案判定与匹配全部在显卡内完成，只回传命中。区域越大收益越明显；\n"
         "如遇异常或结果不符请关闭此项（会自动回到 CPU 路径）。"));
     // v3.10.11.1：结果自优化（默认关；只影响速度与"已保留数量"统计，结果内容不变）
     m_gpuResultSelfOptimize = new QCheckBox(
-        QStringLiteral("结果自优化（命中过多时提前停止，默认关闭）"), page);
+        QStringLiteral("结果自优化 ⭐（命中过多时提前停止；不改变结果内容）"), page);
     m_gpuResultSelfOptimize->setToolTip(QStringLiteral(
         "只保留离起点最近的 N 个结果；命中很多时自动跳过远处区域，大范围搜索更快。\n"
         "只影响「已保留数量」统计，不改变结果内容。适合：找最近 N 个、阈值偏低、大范围、命中密集、想尽快出结果。"));
@@ -368,6 +368,12 @@ QWidget* SettingsDialog::buildSearchPage()
                            QStringLiteral("图案判定与匹配全部在显卡内完成，只回传命中。"));
         row = addOptionRow(form, row, QString(), m_defaultGpu,
                            QStringLiteral("启动时自动开启 GPU（需显卡支持 OpenCL）"));
+        {
+            auto* starNote = new QLabel(QStringLiteral("⭐ = 推荐开启（不改变结果，通常更快）"), page);
+            starNote->setStyleSheet(QStringLiteral("color:#666;font-size:8pt;"));
+            form->addWidget(starNote, row, 0, 1, 3);
+            ++row;
+        }
 
         // 默认开启及时反馈
         m_defaultStopAtTarget = new QCheckBox(QStringLiteral("默认开启及时反馈"), page);
