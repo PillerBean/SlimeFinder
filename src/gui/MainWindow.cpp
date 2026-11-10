@@ -864,7 +864,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     // v3.5.20：界面语言必须在建界面之前定下来（文案在建控件时就要取）
     {
         const std::filesystem::path langCfg = appDirPath() / kConfigFileName;
-        const std::string lang = cfgString(langCfg, "settings.language", "zh");
+        // v3.11.2：GUI 自检固定用中文构建界面，避免用户配置英文时结构断言假失败；
+        //   三种语言包由 scripts/check_ui_text.py 与人工截图回归覆盖。
+        const bool selftestMode = qEnvironmentVariableIsSet("SLIME_SELFTEST");
+        const std::string lang = selftestMode ? std::string("zh") : cfgString(langCfg, "settings.language", "zh");
         slime::ui::setLanguage(lang == "en" ? slime::ui::Language::English
                                   : (lang == "zh-TW" || lang == "tw") ? slime::ui::Language::Traditional
                                   : slime::ui::Language::Chinese);
@@ -1717,7 +1720,9 @@ void MainWindow::buildUi()
 
     // ================= 左：设置面板（QScrollArea + 6 分组） =================
     auto* leftPanel = new QWidget(m_hSplit);
-    leftPanel->setMinimumWidth(360);   // v3.10.0：三纵列后左栏最小 360（窄窗下标签不被挤掉）
+    // v3.11.2：英文/繁体文案更长；窄窗下左栏加宽，避免 QScrollArea 横向滚动截断文字。
+    const bool wideText = slime::ui::isEnglish() || slime::ui::isTraditional();
+    leftPanel->setMinimumWidth(wideText ? 480 : 360);
     auto* leftLay = new QVBoxLayout(leftPanel);
     leftLay->setContentsMargins(0, 0, 0, 0);
     leftLay->setSpacing(0);
@@ -1741,7 +1746,7 @@ void MainWindow::buildUi()
     //   地图从右列拆出来独立成列后，结果列表高度不再挤压地图。
     m_mapColumn = new QWidget(m_hSplit);
     m_mapColumn->setObjectName(QStringLiteral("mapColumn"));
-    m_mapColumn->setMinimumWidth(260);
+    m_mapColumn->setMinimumWidth(wideText ? 220 : 260);
     m_mapColLay = new QVBoxLayout(m_mapColumn);
     m_mapColLay->setContentsMargins(0, 0, 0, 0);
     m_mapColLay->setSpacing(0);
@@ -2408,7 +2413,7 @@ void MainWindow::buildUi()
 
     // ================= 右：信息栏 + QTextEdit（结果文本） =================
     auto* rightPanel = new QWidget(m_hSplit);
-    rightPanel->setMinimumWidth(300); // v3.4.4（R1/P0）：结果栏最小宽 380，窄窗下自动出滚动条而非叠字
+    rightPanel->setMinimumWidth(wideText ? 280 : 300); // v3.4.4（R1/P0）：结果栏最小宽 380，窄窗下自动出滚动条而非叠字
     auto* rightLay = new QVBoxLayout(rightPanel);
     rightLay->setContentsMargins(4, 0, 0, 0);
     rightLay->setSpacing(4);
