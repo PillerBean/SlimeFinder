@@ -1,17 +1,17 @@
 {
-  "version": "3.10.12.13",
-  "tag": "v3.10.12.13",
-  "notes": "# SlimeFinder v3.10.12.13\n\n## 界面调整\n\n- 顶部种子输入框缩短到窗口横向中线，右侧新增匿名统计公告（浅黄底，点击可打开设置）。\n- 匿名统计弹窗不再显示/允许修改服务端地址，地址由程序内置。\n- 移除状态栏右下角的匿名统计入口；帮助菜单入口保留。\n- 联系我们补充：开启匿名上传后可自动上报部分问题信息（不含存档路径/日志）。\n\n## 设置推荐\n\n- 设置页给以下 GPU 项加 ⭐ 推荐标记：\n  - 默认启用 GPU 加速\n  - GPU 图案流式匹配\n  - 结果自优化\n- 增加图例：⭐ = 推荐开启（不改变结果，通常更快）。\n\n## 移除内置更新历史\n\n- 左侧导航移除「更新历史」页，导航变为：搜索 / 缓存构建 / 设置。\n- 删除程序内更新历史数据/页面/对话框。\n- 帮助菜单改为「更新历史（GitHub）」，打开 Wiki 版本索引。\n- 安装包不再附带 `docs/update_history.md`。\n\n## 其他\n\n- 修复：从环形切到图案模式后仍执行隐藏的环形搜索；新增 GUI 回归自检。\n- 环形自动预筛的速度统计改为按整图面积计算。\n\n> 版本历史查询：https://github.com/PillerBean/SlimeFinder/wiki/Version-Index",
+  "version": "3.11.0",
+  "tag": "v3.11.0",
+  "notes": "# SlimeFinder v3.11.0\n\n## 多语言与 UI 文本隔离\n\n- 全部用户可见文案移到外部语言包：\n  - `assets/i18n/zh-CN.json`\n  - `assets/i18n/en-US.json`\n- 代码只保留 key，通过 `slime::ui::t(\"ui.<hash>\")` 取文案；\n- 旧的 `UiStrings` 翻译表也迁移到 `assets/i18n/legacy-zh-en.json`；\n- 语言包随安装包发布，可在不重新编译的情况下替换/新增语言；\n- 新增 `scripts/check_ui_text.py` 做 key 完整性与硬编码检查。\n\n## 说明\n\n- 界面语言目前仍为简体中文 / English 两种，切换后重启生效；\n- 新增语种只需增加 `assets/i18n/<lang>.json` 并接入语言选择（后续小版本）。",
   "assets": [
     {
-      "name": "SlimeFinder-3.10.12.13-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.13/SlimeFinder-3.10.12.13-Setup.exe",
-      "size": 11052570
+      "name": "SlimeFinder-3.11.0-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.0/SlimeFinder-3.11.0-Setup.exe",
+      "size": 10915880
     },
     {
-      "name": "SHA256SUMS-3.10.12.13.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.10.12.13/SHA256SUMS-3.10.12.13.txt",
-      "size": 210
+      "name": "SHA256SUMS-3.11.0.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.0/SHA256SUMS-3.11.0.txt",
+      "size": 202
     }
   ]
 }
