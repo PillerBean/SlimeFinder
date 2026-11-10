@@ -12,6 +12,7 @@
 //      「恢复默认」与高级页「重置所有设置」也只把控件填成 factoryDefaults()，
 //      不写 m_settings、不置 applied()、不关闭窗口，用户仍需点「应用」。
 //   4. 带 Q_OBJECT 的类由 CMake AUTOMOC 处理，本文件不 include "SettingsDialog.moc"。
+#include "gui/UiText.h"
 #include "gui/SettingsDialog.h"
 #include "gui/UiStrings.h"
 
@@ -181,7 +182,7 @@ SettingsDialog::SettingsDialog(const AppSettings& current, QWidget* parent)
     : QDialog(parent)
     , m_settings(current)
 {
-    setWindowTitle(QStringLiteral("程序设置"));
+    setWindowTitle(slime::ui::t("ui.4424d94f070e"));
     setMinimumSize(640, 560); // 约 620×520：5 个标签页都能完整显示且不拥挤
     buildUi();
     connectSignals();
@@ -206,11 +207,11 @@ void SettingsDialog::buildUi()
         return sa;
     };
     // 标签页顺序固定：通用 / 搜索 / 缓存 / 日志 / 高级（自检会断言数量与顺序）
-    m_tabs->addTab(wrapScroll(buildGeneralPage()), QStringLiteral("通用"));
-    m_tabs->addTab(wrapScroll(buildSearchPage()), QStringLiteral("搜索"));
-    m_tabs->addTab(wrapScroll(buildCachePage()), QStringLiteral("缓存"));
-    m_tabs->addTab(wrapScroll(buildLogPage()), QStringLiteral("日志"));
-    m_tabs->addTab(wrapScroll(buildAdvancedPage()), QStringLiteral("高级"));
+    m_tabs->addTab(wrapScroll(buildGeneralPage()), slime::ui::t("ui.1a0fdce8f88f"));
+    m_tabs->addTab(wrapScroll(buildSearchPage()), slime::ui::t("ui.f04090805c6e"));
+    m_tabs->addTab(wrapScroll(buildCachePage()), slime::ui::t("ui.6cdba4aad0c1"));
+    m_tabs->addTab(wrapScroll(buildLogPage()), slime::ui::t("ui.4de50894b8c1"));
+    m_tabs->addTab(wrapScroll(buildAdvancedPage()), slime::ui::t("ui.c009d0ab82f9"));
     m_tabs->setCurrentIndex(0); // 默认停在「通用」
     root->addWidget(m_tabs, 1);
 
@@ -227,61 +228,60 @@ QWidget* SettingsDialog::buildGeneralPage()
 
     // ---- 界面行为 ----
     {
-        QGridLayout* form = addGroup(lay, page, QStringLiteral("界面行为"), 0);
+        QGridLayout* form = addGroup(lay, page, slime::ui::t("ui.11dc46ad2968"), 0);
         int row = 0;
 
         // 允许鼠标滚轮调整输入框数值
-        m_wheelAdjust = new QCheckBox(QStringLiteral("允许鼠标滚轮调整输入框数值"), page);
+        m_wheelAdjust = new QCheckBox(slime::ui::t("ui.09e31f95953e"), page);
         // v3.5.19：界面语言（文案走 UiStrings.h，可扩展更多语言）
     mLanguage = new QComboBox(page);
-    mLanguage->addItem(QStringLiteral("简体中文"), QStringLiteral("zh"));
+    mLanguage->addItem(slime::ui::t("ui.93659150d0e5"), QStringLiteral("zh"));
     mLanguage->addItem(QStringLiteral("English"), QStringLiteral("en"));
     // v3.5.20：全屏方式（无边框全屏 / 窗口最大化）
     mFullscreenMode = new QComboBox(page);
-    mFullscreenMode->addItem(QStringLiteral("无边框全屏"), QStringLiteral("borderless"));
-    mFullscreenMode->addItem(QStringLiteral("窗口最大化（有边框）"), QStringLiteral("windowed"));
-    row = addOptionRow(form, row, QStringLiteral("全屏方式:"), mFullscreenMode,
-                       QStringLiteral("无边框全屏 = 铺满屏幕无标题栏；窗口最大化 = 保留标题栏与边框。F11 随时切换"));
+    mFullscreenMode->addItem(slime::ui::t("ui.2a0936486d4a"), QStringLiteral("borderless"));
+    mFullscreenMode->addItem(slime::ui::t("ui.cd795bf4ebc9"), QStringLiteral("windowed"));
+    row = addOptionRow(form, row, slime::ui::t("ui.986948088c99"), mFullscreenMode,
+                       slime::ui::t("ui.19aae383f665"));
 
-    row = addOptionRow(form, row, QStringLiteral("界面语言（重启后生效）:"), mLanguage,
-                       QStringLiteral("切换后立即套用（已迁移的界面文案生效；其余文案逐步迁移）"));
+    row = addOptionRow(form, row, slime::ui::t("ui.5f44341e655a"), mLanguage,
+                       slime::ui::t("ui.3ce5159878c4"));
 
     row = addOptionRow(form, row, QString(), m_wheelAdjust,
-                           QStringLiteral("关闭后，滚轮划过输入框不会改变数值"));
+                           slime::ui::t("ui.2206d559f0ed"));
 
         // 窗口大小记忆
-        m_rememberWindow = new QCheckBox(QStringLiteral("窗口大小记忆（下次启动）"), page);
+        m_rememberWindow = new QCheckBox(slime::ui::t("ui.0ae76927ddb2"), page);
         row = addOptionRow(form, row, QString(), m_rememberWindow,
-                           QStringLiteral("下次启动时恢复上次的窗口大小和位置"));
+                           slime::ui::t("ui.de897868b958"));
 
         // v3.6.6（用户要求）：有些设置必须重启才生效 —— 可以设置成改完自动重启
-        m_autoRestart = new QCheckBox(QStringLiteral("修改需要重启的设置后自动重启"), page);
+        m_autoRestart = new QCheckBox(slime::ui::t("ui.0c8480b64be2"), page);
         row = addOptionRow(form, row, QString(), m_autoRestart,
-                           QStringLiteral("日志目录、日志保留天数、窗口记忆等改动需要重开程序；"
-                                          "开启后保存设置时若检测到这类改动，会自动重启一次"));
+                           slime::ui::t("ui.80ec3930cc1f"));
     }
 
     // ---- 外观：主题三档（itemData 即 AppSettings::theme 的取值）----
     {
-        QGridLayout* form = addGroup(lay, page, QStringLiteral("外观"), 60);
+        QGridLayout* form = addGroup(lay, page, slime::ui::t("ui.09b58aa3422c"), 60);
         int row = 0;
 
         m_theme = new QComboBox(page);
-        m_theme->addItem(QStringLiteral("浅色"), QStringLiteral("light"));
-        m_theme->addItem(QStringLiteral("深色"), QStringLiteral("dark"));
-        m_theme->addItem(QStringLiteral("跟随系统"), QStringLiteral("system"));
-        row = addOptionRow(form, row, QStringLiteral("主题:"), m_theme,
-                           QStringLiteral("跟随系统时，会自动同步系统主题"));
+        m_theme->addItem(slime::ui::t("ui.80ec9e2b1bc4"), QStringLiteral("light"));
+        m_theme->addItem(slime::ui::t("ui.30b2c979ac87"), QStringLiteral("dark"));
+        m_theme->addItem(slime::ui::t("ui.f4bbd91f79ba"), QStringLiteral("system"));
+        row = addOptionRow(form, row, slime::ui::t("ui.2f68fa962c0c"), m_theme,
+                           slime::ui::t("ui.88eaa31025dc"));
     }
 
     // ---- 声音：完成提示音开关 + 音量滑块（百分比实时显示）----
     {
-        QGridLayout* form = addGroup(lay, page, QStringLiteral("声音"), 60);
+        QGridLayout* form = addGroup(lay, page, slime::ui::t("ui.ab9ff81dac9b"), 60);
         int row = 0;
 
-        m_soundOnComplete = new QCheckBox(QStringLiteral("搜索完成时播放提示音"), page);
+        m_soundOnComplete = new QCheckBox(slime::ui::t("ui.d25b02c5d1ee"), page);
         row = addOptionRow(form, row, QString(), m_soundOnComplete,
-                           QStringLiteral("搜索结束时发出声音提醒"));
+                           slime::ui::t("ui.4eff1d92a979"));
 
         m_soundVolume = new QSlider(Qt::Horizontal, page);
         m_soundVolume->setRange(0, 100);
@@ -291,9 +291,9 @@ QWidget* SettingsDialog::buildGeneralPage()
         m_soundVolumeText = new QLabel(page);
         m_soundVolumeText->setMinimumWidth(40); // 固定最小宽度：百分比变化时布局不跳动
         onVolumeChanged(m_soundVolume->value()); // 先填一次文字；之后由 valueChanged 更新
-        row = addOptionRow(form, row, QStringLiteral("音量:"),
+        row = addOptionRow(form, row, slime::ui::t("ui.856527075c85"),
                            pairWidget(m_soundVolume, m_soundVolumeText, page),
-                           QStringLiteral("提示音的音量大小（0 ~ 100%）"));
+                           slime::ui::t("ui.448b72e4377e"));
     }
 
 return page;
@@ -309,94 +309,90 @@ QWidget* SettingsDialog::buildSearchPage()
 
     // ---- 默认值（新搜索的初始默认值）----
     {
-        QGridLayout* form = addGroup(lay, page, QStringLiteral("默认值"), 96);
+        QGridLayout* form = addGroup(lay, page, slime::ui::t("ui.d93919c37b61"), 96);
         int row = 0;
 
         // 默认搜索模式
         m_defaultAlgorithm = new QComboBox(page);
-        m_defaultAlgorithm->addItem(QStringLiteral("精确模式"), QStringLiteral("exact"));
-        m_defaultAlgorithm->addItem(QStringLiteral("分层模式"), QStringLiteral("layered"));
-        m_defaultAlgorithm->addItem(QStringLiteral("快速估算模式"), QStringLiteral("sample"));
-        m_defaultAlgorithm->addItem(QStringLiteral("保守模式"), QStringLiteral("brute"));
-        row = addOptionRow(form, row, QStringLiteral("默认搜索模式:"), m_defaultAlgorithm,
-                           QStringLiteral("启动时的默认搜索算法"));
+        m_defaultAlgorithm->addItem(slime::ui::t("ui.73b75d28b4b7"), QStringLiteral("exact"));
+        m_defaultAlgorithm->addItem(slime::ui::t("ui.f18c79796e88"), QStringLiteral("layered"));
+        m_defaultAlgorithm->addItem(slime::ui::t("ui.dcee497c44dd"), QStringLiteral("sample"));
+        m_defaultAlgorithm->addItem(slime::ui::t("ui.9e6092059b8f"), QStringLiteral("brute"));
+        row = addOptionRow(form, row, slime::ui::t("ui.f554286784b2"), m_defaultAlgorithm,
+                           slime::ui::t("ui.f78a372beebf"));
 
         // 默认线程数（值 0 = 自动：全部逻辑核心；其后为 1..64 的具体数值）
         m_defaultThreads = new QComboBox(page);
-        m_defaultThreads->addItem(QStringLiteral("自动（全部核心）"), 0);
+        m_defaultThreads->addItem(slime::ui::t("ui.429bd0d9ada1"), 0);
         for (int n = 1; n <= 64; ++n) {
             m_defaultThreads->addItem(QString::number(n), n);
         }
-        row = addOptionRow(form, row, QStringLiteral("默认线程数:"), m_defaultThreads,
-                           QStringLiteral("搜索时使用的并行线程数"));
+        row = addOptionRow(form, row, slime::ui::t("ui.459b3f1d55cd"), m_defaultThreads,
+                           slime::ui::t("ui.efad005368bf"));
 
         // 默认目标数量
         m_defaultTargetCount = new QSpinBox(page);
         m_defaultTargetCount->setRange(1, 1000000);
-        row = addOptionRow(form, row, QStringLiteral("默认目标数量:"), m_defaultTargetCount,
-                           QStringLiteral("只显示最近的 N 个结果"));
+        row = addOptionRow(form, row, slime::ui::t("ui.c2488e6e8425"), m_defaultTargetCount,
+                           slime::ui::t("ui.84266b3227dc"));
 
         // 默认范围预设
         m_defaultPreset = new QComboBox(page);
-        m_defaultPreset->addItem(QStringLiteral("不预设"), QStringLiteral("none"));
-        m_defaultPreset->addItem(QStringLiteral("附近"), QStringLiteral("near"));
-        m_defaultPreset->addItem(QStringLiteral("局部"), QStringLiteral("local"));
-        m_defaultPreset->addItem(QStringLiteral("全局"), QStringLiteral("global"));
-        m_defaultPreset->addItem(QStringLiteral("Java 边界"), QStringLiteral("world"));
-        m_defaultPreset->addItem(QStringLiteral("基岩边界"), QStringLiteral("bedrock"));
-        row = addOptionRow(form, row, QStringLiteral("默认范围预设:"), m_defaultPreset,
-                           QStringLiteral("启动时自动填入的搜索范围"));
+        m_defaultPreset->addItem(slime::ui::t("ui.0c4c3bfaba10"), QStringLiteral("none"));
+        m_defaultPreset->addItem(slime::ui::t("ui.08c2940d3842"), QStringLiteral("near"));
+        m_defaultPreset->addItem(slime::ui::t("ui.d4548049015d"), QStringLiteral("local"));
+        m_defaultPreset->addItem(slime::ui::t("ui.a5644f4bbfef"), QStringLiteral("global"));
+        m_defaultPreset->addItem(slime::ui::t("ui.3a7839501e82"), QStringLiteral("world"));
+        m_defaultPreset->addItem(slime::ui::t("ui.c2fa11e4787c"), QStringLiteral("bedrock"));
+        row = addOptionRow(form, row, slime::ui::t("ui.865bb17ab029"), m_defaultPreset,
+                           slime::ui::t("ui.4dcedae6e410"));
 
         // 默认启用 GPU 加速
-        m_defaultGpu = new QCheckBox(QStringLiteral("默认启用 GPU 加速 ⭐（现代 GPU 通常显著更快；驱动异常时可关闭）"), page);
+        m_defaultGpu = new QCheckBox(slime::ui::t("ui.a2c3a0944d01"), page);
     // v3.8.11：图案流式开关（实验转正；仅 AMD 显卡验证过）
     m_gpuPatternStream = new QCheckBox(
-        QStringLiteral("启用 GPU 图案流式匹配 ⭐（AMD 实测约 2~18 倍提速，NVIDIA / Intel 未验证）"),
+        slime::ui::t("ui.d1712c9a5036"),
         page);
-    m_gpuPatternStream->setToolTip(QStringLiteral(
-        "图案判定与匹配全部在显卡内完成，只回传命中。区域越大收益越明显；\n"
-        "如遇异常或结果不符请关闭此项（会自动回到 CPU 路径）。"));
+    m_gpuPatternStream->setToolTip(slime::ui::t("ui.dfb54fcfc94b"));
     // v3.10.11.1：结果自优化（默认关；只影响速度与"已保留数量"统计，结果内容不变）
     m_gpuResultSelfOptimize = new QCheckBox(
-        QStringLiteral("结果自优化 ⭐（命中过多时提前停止；不改变结果内容）"), page);
-    m_gpuResultSelfOptimize->setToolTip(QStringLiteral(
-        "只保留离起点最近的 N 个结果；命中很多时自动跳过远处区域，大范围搜索更快。\n"
-        "只影响「已保留数量」统计，不改变结果内容。适合：找最近 N 个、阈值偏低、大范围、命中密集、想尽快出结果。"));
+        slime::ui::t("ui.a62e0463529b"), page);
+    m_gpuResultSelfOptimize->setToolTip(slime::ui::t("ui.17d74c302717"));
         row = addOptionRow(form, row, QString(), m_gpuResultSelfOptimize,
-                           QStringLiteral("命中过多时提前停止；只保留最近的 N 个结果。"));
+                           slime::ui::t("ui.d46582642f1b"));
         row = addOptionRow(form, row, QString(), m_gpuPatternStream,
-                           QStringLiteral("图案判定与匹配全部在显卡内完成，只回传命中。"));
+                           slime::ui::t("ui.bf4c59f8fc39"));
         row = addOptionRow(form, row, QString(), m_defaultGpu,
-                           QStringLiteral("启动时自动开启 GPU（需显卡支持 OpenCL）"));
+                           slime::ui::t("ui.764cc3ac458f"));
         {
-            auto* starNote = new QLabel(QStringLiteral("⭐ = 推荐开启（不改变结果，通常更快）"), page);
+            auto* starNote = new QLabel(slime::ui::t("ui.e31ae720ef3f"), page);
             starNote->setStyleSheet(QStringLiteral("color:#666;font-size:8pt;"));
             form->addWidget(starNote, row, 0, 1, 3);
             ++row;
         }
 
         // 默认开启及时反馈
-        m_defaultStopAtTarget = new QCheckBox(QStringLiteral("默认开启及时反馈"), page);
+        m_defaultStopAtTarget = new QCheckBox(slime::ui::t("ui.b6500cee58cb"), page);
         row = addOptionRow(form, row, QString(), m_defaultStopAtTarget,
-                           QStringLiteral("找到 N 个目标后立即停止搜索"));
+                           slime::ui::t("ui.324dce9760ed"));
     }
 
     // ---- 提醒：GPU 提醒开关 + 大范围搜索警告阈值 ----
     {
-        QGridLayout* form = addGroup(lay, page, QStringLiteral("提醒"), 96);
+        QGridLayout* form = addGroup(lay, page, slime::ui::t("ui.81944e48a3b4"), 96);
         int row = 0;
 
         // 显示 GPU 加速提醒
-        m_showGpuReminder = new QCheckBox(QStringLiteral("显示 GPU 加速提醒"), page);
+        m_showGpuReminder = new QCheckBox(slime::ui::t("ui.1d9409096661"), page);
         row = addOptionRow(form, row, QString(), m_showGpuReminder,
-                           QStringLiteral("开启后，启用 GPU 时显示“不一定更快”提醒"));
+                           slime::ui::t("ui.9df2bbd65acb"));
 
         // 大范围搜索警告阈值（默认 1 亿区块）
         m_largeRangeWarn = new QSpinBox(page);
         m_largeRangeWarn->setRange(1000000, 2000000000);
         m_largeRangeWarn->setSingleStep(10000000);
-        row = addOptionRow(form, row, QStringLiteral("大范围搜索警告阈值:"), withUnit(m_largeRangeWarn, QStringLiteral("区块")),
-                           QStringLiteral("范围超过此值时弹窗确认"));
+        row = addOptionRow(form, row, slime::ui::t("ui.3b049db3f45a"), withUnit(m_largeRangeWarn, slime::ui::t("ui.3da82d85c5de")),
+                           slime::ui::t("ui.f475d975dce0"));
     }
 
     lay->addStretch(1);
@@ -415,31 +411,31 @@ QWidget* SettingsDialog::buildCachePage()
     int row = 0;
 
     // 启动时自动加载缓存
-    m_autoLoadCache = new QCheckBox(QStringLiteral("启动时自动加载缓存"), page);
+    m_autoLoadCache = new QCheckBox(slime::ui::t("ui.479f490966ed"), page);
     row = addOptionRow(form, row, QString(), m_autoLoadCache,
-                       QStringLiteral("启动后自动读取磁盘上的缓存文件，加快首次搜索"));
+                       slime::ui::t("ui.dbc7674fcc55"));
 
     // 缓存目录（留空 = 程序目录）
     m_cacheDir = new QLineEdit(page);
-    m_cacheDir->setPlaceholderText(QStringLiteral("留空 = 程序目录"));
+    m_cacheDir->setPlaceholderText(slime::ui::t("ui.bd1e0668f5f7"));
     m_cacheDir->setClearButtonEnabled(true);
-    m_browseCacheDir = new QPushButton(QStringLiteral("浏览…"), page);
-    row = addOptionRow(form, row, QStringLiteral("缓存目录:"), pairWidget(m_cacheDir, m_browseCacheDir, page),
-                       QStringLiteral("缓存文件的存放位置，留空表示程序目录"));
+    m_browseCacheDir = new QPushButton(slime::ui::t("ui.01463dd05cfd"), page);
+    row = addOptionRow(form, row, slime::ui::t("ui.46bc75565583"), pairWidget(m_cacheDir, m_browseCacheDir, page),
+                       slime::ui::t("ui.da60e8f2becf"));
 
     // 缓存容量上限
     m_cacheMaxMB = new QSpinBox(page);
     m_cacheMaxMB->setRange(1, 1048576);
     m_cacheMaxMB->setSingleStep(64);
-    row = addOptionRow(form, row, QStringLiteral("缓存容量上限:"), withUnit(m_cacheMaxMB, QStringLiteral("MB")),
-                       QStringLiteral("超过此大小后自动清理最旧的数据"));
+    row = addOptionRow(form, row, slime::ui::t("ui.404d4b7b93cd"), withUnit(m_cacheMaxMB, QStringLiteral("MB")),
+                       slime::ui::t("ui.7ef39cf15415"));
 
     lay->addLayout(form);
 
     // 清空所有缓存：只置位标记，真正的删除由调用方在「应用」时执行
-    m_clearCacheBtn = new QPushButton(QStringLiteral("清空所有缓存"), page);
+    m_clearCacheBtn = new QPushButton(slime::ui::t("ui.eb678d4ebb45"), page);
     lay->addWidget(buttonRow(m_clearCacheBtn, page));
-    lay->addWidget(grayNote(QStringLiteral("点击应用后删除磁盘上的缓存文件"), page));
+    lay->addWidget(grayNote(slime::ui::t("ui.a1ddb350e1c0"), page));
 
     lay->addStretch(1);
     return page;
@@ -457,13 +453,13 @@ QWidget* SettingsDialog::buildLogPage()
     int row = 0;
 
     // 启动时启用日志
-    m_logAtStartup = new QCheckBox(QStringLiteral("启动时启用日志"), page);
+    m_logAtStartup = new QCheckBox(slime::ui::t("ui.2e2fcc576b60"), page);
     row = addOptionRow(form, row, QString(), m_logAtStartup,
-                       QStringLiteral("程序启动后自动开始记录日志"));
+                       slime::ui::t("ui.ee65030387a8"));
 
     // 日志级别：简要 / 详细（互斥）
-    m_logLevelBrief = new QRadioButton(QStringLiteral("简要"), page);
-    m_logLevelDetail = new QRadioButton(QStringLiteral("详细"), page);
+    m_logLevelBrief = new QRadioButton(slime::ui::t("ui.f6bd95650e81"), page);
+    m_logLevelDetail = new QRadioButton(slime::ui::t("ui.613f7a44e2d7"), page);
     auto* levelRow = new QWidget(page);
     auto* levelLay = new QHBoxLayout(levelRow);
     levelLay->setContentsMargins(0, 0, 0, 0);
@@ -475,42 +471,42 @@ QWidget* SettingsDialog::buildLogPage()
     levelGroup->addButton(m_logLevelBrief, 0);
     levelGroup->addButton(m_logLevelDetail, 1);
     levelGroup->setExclusive(true);
-    addRow(form, row++, QStringLiteral("日志级别:"), levelRow);
-    form->addWidget(grayNote(QStringLiteral("简要：只记录关键事件；详细：记录所有事件"), page), row++, 1);
-    form->addWidget(grayNote(QStringLiteral("详细会降低 10~30% 速度"), page), row++, 1);
+    addRow(form, row++, slime::ui::t("ui.c792234b89ab"), levelRow);
+    form->addWidget(grayNote(slime::ui::t("ui.9bce7908813e"), page), row++, 1);
+    form->addWidget(grayNote(slime::ui::t("ui.45564edd2d0f"), page), row++, 1);
 
     // 日志路径（相对程序目录的子目录名）
     m_logSubDir = new QLineEdit(page);
     m_logSubDir->setPlaceholderText(QStringLiteral("logs"));
     m_logSubDir->setClearButtonEnabled(true);
-    m_browseLogDir = new QPushButton(QStringLiteral("浏览…"), page);
-    row = addOptionRow(form, row, QStringLiteral("日志路径:"), pairWidget(m_logSubDir, m_browseLogDir, page),
-                       QStringLiteral("日志文件的存放位置（相对程序目录的子目录名）"));
+    m_browseLogDir = new QPushButton(slime::ui::t("ui.01463dd05cfd"), page);
+    row = addOptionRow(form, row, slime::ui::t("ui.992ebf7cb1eb"), pairWidget(m_logSubDir, m_browseLogDir, page),
+                       slime::ui::t("ui.835d79e59522"));
 
     // 保留天数
     m_logKeepDays = new QSpinBox(page);
     m_logKeepDays->setRange(1, 3650);
-    row = addOptionRow(form, row, QStringLiteral("保留天数:"), withUnit(m_logKeepDays, QStringLiteral("天")),
-                       QStringLiteral("超过天数后自动删除旧日志"));
+    row = addOptionRow(form, row, slime::ui::t("ui.ee97f1297396"), withUnit(m_logKeepDays, slime::ui::t("ui.c3304d1e49e3")),
+                       slime::ui::t("ui.62f20091f5a7"));
 
     // 日志自动滚动（v3.3.6 新增）
-    m_logAutoScroll = new QCheckBox(QStringLiteral("日志自动滚动"), page);
+    m_logAutoScroll = new QCheckBox(slime::ui::t("ui.1519e985fa7e"), page);
     row = addOptionRow(form, row, QString(), m_logAutoScroll,
-                       QStringLiteral("新日志出现时自动滚动到底部"));
+                       slime::ui::t("ui.13e3fceedcf3"));
 
     // 界面最大行数（v3.3.6 新增）
     m_logMaxLines = new QSpinBox(page);
     m_logMaxLines->setRange(1000, 200000);
     m_logMaxLines->setSingleStep(1000);
-    row = addOptionRow(form, row, QStringLiteral("界面最大行数:"), m_logMaxLines,
-                       QStringLiteral("超过此数量后丢弃最旧的日志"));
+    row = addOptionRow(form, row, slime::ui::t("ui.ca3b6ed0e43c"), m_logMaxLines,
+                       slime::ui::t("ui.8444c537834e"));
 
     lay->addLayout(form);
 
     // 打开日志目录：同样只置位标记，交由调用方在「应用」时执行
-    m_openLogDirBtn = new QPushButton(QStringLiteral("打开日志目录"), page);
+    m_openLogDirBtn = new QPushButton(slime::ui::t("ui.e153b1be0e3e"), page);
     lay->addWidget(buttonRow(m_openLogDirBtn, page));
-    lay->addWidget(grayNote(QStringLiteral("点击应用后打开上面设置目录中的日志文件夹"), page));
+    lay->addWidget(grayNote(slime::ui::t("ui.02266b68bf12"), page));
 
     lay->addStretch(1);
     return page;
@@ -530,15 +526,15 @@ QWidget* SettingsDialog::buildAdvancedPage()
     // v3.3.9（任务书 2.2）：CPU 占用率上限
     m_cpuLimit = new QSpinBox(page);
     m_cpuLimit->setRange(10, 100);
-    row = addOptionRow(form, row, QStringLiteral("CPU 占用率上限（下次搜索）:"), withUnit(m_cpuLimit, QStringLiteral("%")),
-                       QStringLiteral("按逻辑核心数折算生效线程数（设 50% 时实测占用约 50%）"));
+    row = addOptionRow(form, row, slime::ui::t("ui.9be6e602e6c1"), withUnit(m_cpuLimit, QStringLiteral("%")),
+                       slime::ui::t("ui.24db52705831"));
 
     // v3.7.1：GPU 占用率上限（瓦片之间按占空比休眠）
     m_gpuLimit = new QSpinBox(page);
     m_gpuLimit->setRange(10, 100);
-    row = addOptionRow(form, row, QStringLiteral("GPU 占用率上限（下次搜索）:"),
+    row = addOptionRow(form, row, slime::ui::t("ui.c4351eb2a3bc"),
                        withUnit(m_gpuLimit, QStringLiteral("%")),
-                       QStringLiteral("GPU 启用时按占空比限速：设 50% 时 GPU 忙约一半时间，留给其他程序"));
+                       slime::ui::t("ui.14cf5323f865"));
     m_gpuLimit->setEnabled(m_defaultGpu->isChecked());
     QObject::connect(m_defaultGpu, &QCheckBox::toggled, m_gpuLimit,
                      [this](bool on) { if (m_gpuLimit) m_gpuLimit->setEnabled(on); });
@@ -546,32 +542,31 @@ QWidget* SettingsDialog::buildAdvancedPage()
     // v3.3.9（任务书 2.1）：内存上限
     m_memLimit = new QSpinBox(page);
     m_memLimit->setRange(0, 32768);
-    m_memLimit->setSpecialValueText(QStringLiteral("自动"));
-    row = addOptionRow(form, row, QStringLiteral("内存上限（下次搜索）:"), withUnit(m_memLimit, QStringLiteral("MB")),
-                       QStringLiteral("分块位图预算：超出时自动降低并发（0 = 自动）"));
+    m_memLimit->setSpecialValueText(slime::ui::t("ui.4afad877551a"));
+    row = addOptionRow(form, row, slime::ui::t("ui.17f9c0ba9737"), withUnit(m_memLimit, QStringLiteral("MB")),
+                       slime::ui::t("ui.558c9c678bd5"));
 
     // v3.3.9.1（任务书 2.1）：启动时自动检查 GPU 状态
-    m_autoCheckGpu = new QCheckBox(QStringLiteral("启动时自动检查 GPU 状态"), page);
-    row = addOptionRow(form, row, QStringLiteral("启动时检测（下次启动）:"), m_autoCheckGpu,
-                       slime::ui::tr(QStringLiteral("开启后：启动时探测一次 OpenCL 并在「性能设置」里显示状态；"
-                                      "关闭则不检测（勾选「启用 GPU 加速」时仍会即时检测）")));
+    m_autoCheckGpu = new QCheckBox(slime::ui::t("ui.52da0772de3c"), page);
+    row = addOptionRow(form, row, slime::ui::t("ui.be04dbe3dfd8"), m_autoCheckGpu,
+                       slime::ui::tr(slime::ui::t("ui.32eda8324001")));
     m_autoCheckGpu->setChecked(false); // 默认关闭：无/异常 OpenCL 驱动下探测有原生崩溃风险
 
     // 更新提醒天数
     m_updateReminderDays = new QSpinBox(page);
     m_updateReminderDays->setRange(1, 3650);
-    row = addOptionRow(form, row, QStringLiteral("更新提醒天数:"), withUnit(m_updateReminderDays, QStringLiteral("天")),
-                       QStringLiteral("程序发布日期超过此天数后显示更新提醒"));
+    row = addOptionRow(form, row, slime::ui::t("ui.77f9ed9298f7"), withUnit(m_updateReminderDays, slime::ui::t("ui.c3304d1e49e3")),
+                       slime::ui::t("ui.a118d9b38ff3"));
 
     // 崩溃时生成转储文件（v3.3.6 新增）
-    m_crashDump = new QCheckBox(QStringLiteral("崩溃时生成转储文件"), page);
+    m_crashDump = new QCheckBox(slime::ui::t("ui.1153d028fe6d"), page);
     row = addOptionRow(form, row, QString(), m_crashDump,
-                       QStringLiteral("程序崩溃时生成 .dmp 文件，便于排查"));
+                       slime::ui::t("ui.aee38865f067"));
 
     // 调试模式（v3.3.6 新增）
-    m_debugMode = new QCheckBox(QStringLiteral("调试模式"), page);
+    m_debugMode = new QCheckBox(slime::ui::t("ui.0ee208982779"), page);
     row = addOptionRow(form, row, QString(), m_debugMode,
-                       QStringLiteral("开启后显示额外调试信息"));
+                       slime::ui::t("ui.8af4829cde61"));
 
     // v3.5.18（用户要求）：高级调试参数 —— 精细化调整各个数据的关键数字
     lay->addSpacing(6);
@@ -583,17 +578,17 @@ QWidget* SettingsDialog::buildAdvancedPage()
     m_ringInner = new QSpinBox(page);
     m_ringInner->setRange(0, 64);
     arow = addOptionRow(advForm, arow, slime::ui::text(slime::ui::Key::RingInner),
-                        withUnit(m_ringInner, QStringLiteral("格")),
+                        withUnit(m_ringInner, slime::ui::t("ui.452463f58021")),
                         slime::ui::text(slime::ui::Key::RingInnerTip));
     m_ringOuter = new QSpinBox(page);
     m_ringOuter->setRange(16, 1024);
     arow = addOptionRow(advForm, arow, slime::ui::text(slime::ui::Key::RingOuter),
-                        withUnit(m_ringOuter, QStringLiteral("格")),
+                        withUnit(m_ringOuter, slime::ui::t("ui.452463f58021")),
                         slime::ui::text(slime::ui::Key::RingOuterTip));
     m_ringCoarseStep = new QSpinBox(page);
     m_ringCoarseStep->setRange(1, 64);
     arow = addOptionRow(advForm, arow, slime::ui::text(slime::ui::Key::RingCoarseStep),
-                        withUnit(m_ringCoarseStep, QStringLiteral("格")),
+                        withUnit(m_ringCoarseStep, slime::ui::t("ui.452463f58021")),
                         slime::ui::text(slime::ui::Key::RingCoarseStepTip));
     m_ringStatBands = new QSpinBox(page);
     m_ringStatBands->setRange(1, 16);
@@ -604,7 +599,7 @@ QWidget* SettingsDialog::buildAdvancedPage()
     lay->addLayout(form);
 
     // 重置所有设置：把五个页面全部填回出厂默认值，但不应用、不关闭（用户仍需点「应用」）
-    m_resetAllBtn = new QPushButton(QStringLiteral("重置所有设置"), page);
+    m_resetAllBtn = new QPushButton(slime::ui::t("ui.ad5d566fb4a3"), page);
     lay->addWidget(buttonRow(m_resetAllBtn, page));
     // v3.4.12（用户要求）：删掉这行灰字「恢复所有设置到出厂默认值」——
     // 设置页底部已经有「恢复所有设置」按钮（本页的「重置所有设置」按钮在设置页里被隐藏）。
@@ -617,8 +612,7 @@ QWidget* SettingsDialog::buildAdvancedPage()
 //   对话框底部统一说明一次，避免用户在「按了应用却没变化」里困惑。
 static QLabel* makeRestartHint(QWidget* parent)
 {
-    auto* lb = new QLabel(QStringLiteral("提示：标注「下次启动 / 重启后生效」的设置不会立即生效；"
-                                         "其余设置点「应用」后马上生效。"),
+    auto* lb = new QLabel(slime::ui::t("ui.03515a932d6b"),
                           parent);
     lb->setWordWrap(true);
     lb->setObjectName(QStringLiteral("restartHint"));
@@ -632,20 +626,20 @@ void SettingsDialog::buildButtonRow(QVBoxLayout* root)
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(8);
 
-    m_restoreBtn = new QPushButton(QStringLiteral("恢复默认"), this);
-    m_restoreBtn->setToolTip(QStringLiteral("把下面所有选项恢复为出厂默认值（还需点「应用」才会生效）"));
+    m_restoreBtn = new QPushButton(slime::ui::t("ui.a191935bc678"), this);
+    m_restoreBtn->setToolTip(slime::ui::t("ui.1edc26c00ab0"));
     row->addWidget(m_restoreBtn);
 
     row->addStretch(1);
 
-    m_cancelBtn = new QPushButton(QStringLiteral("取消"), this);
-    m_cancelBtn->setToolTip(QStringLiteral("放弃本次修改，不保存、不生效"));
+    m_cancelBtn = new QPushButton(slime::ui::t("ui.4d0b4688c787"), this);
+    m_cancelBtn->setToolTip(slime::ui::t("ui.f1bf6149fc7c"));
     row->addWidget(m_cancelBtn);
 
-    m_applyBtn = new QPushButton(QStringLiteral("应用"), this);
+    m_applyBtn = new QPushButton(slime::ui::t("ui.4562024ddec7"), this);
     m_applyBtn->setDefault(true); // 「应用」为默认按钮（回车即应用）
     m_applyBtn->setAutoDefault(true);
-    m_applyBtn->setToolTip(QStringLiteral("保存当前设置并立即生效（对话框保持打开，可继续修改）"));
+    m_applyBtn->setToolTip(slime::ui::t("ui.4d6f927eb818"));
     row->addWidget(m_applyBtn);
 
     root->addLayout(row);
@@ -721,7 +715,7 @@ void SettingsDialog::onVolumeChanged(int value)
 void SettingsDialog::onBrowseCacheDir()
 {
     const QString dir = QFileDialog::getExistingDirectory(
-        this, QStringLiteral("选择缓存目录"),
+        this, slime::ui::t("ui.986887674e43"),
         m_cacheDir->text().isEmpty() ? QDir::currentPath() : m_cacheDir->text());
     if (!dir.isEmpty()) {
         m_cacheDir->setText(QDir::toNativeSeparators(dir));
@@ -731,7 +725,7 @@ void SettingsDialog::onBrowseCacheDir()
 void SettingsDialog::onBrowseLogDir()
 {
     const QString dir = QFileDialog::getExistingDirectory(
-        this, QStringLiteral("选择日志目录"),
+        this, slime::ui::t("ui.bbb695ee7b6d"),
         m_logSubDir->text().isEmpty() ? QDir::currentPath() : m_logSubDir->text());
     if (!dir.isEmpty()) {
         m_logSubDir->setText(QDir::toNativeSeparators(dir));

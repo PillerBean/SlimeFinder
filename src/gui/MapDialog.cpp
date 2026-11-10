@@ -1,4 +1,5 @@
 // v3.5.2（任务 2）：地图预览对话框 —— 实现（含群系彩色底图与版本选择）
+#include "gui/UiText.h"
 #include "gui/MapDialog.h"
 
 #include "gui/MapPreviewWidget.h"
@@ -14,23 +15,23 @@
 
 MapDialog::MapDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_ctx(ctx)
 {
-    setWindowTitle(QStringLiteral("地图预览（群系 / 史莱姆区块 / 搜索结果 / 挂机点）"));
+    setWindowTitle(slime::ui::t("ui.5392e685cc44"));
     setMinimumSize(1040, 700);
 
     auto* lay = new QVBoxLayout(this);
 
     auto* bar = new QHBoxLayout();
-    auto* btnIn = new QPushButton(QStringLiteral("放大"), this);
-    auto* btnOut = new QPushButton(QStringLiteral("缩小"), this);
-    auto* btnFit = new QPushButton(QStringLiteral("适应内容"), this);
-    auto* btnReset = new QPushButton(QStringLiteral("复位"), this);
-    m_cbBiome = new QCheckBox(QStringLiteral("群系颜色"), this);
+    auto* btnIn = new QPushButton(slime::ui::t("ui.d7f48a059cf3"), this);
+    auto* btnOut = new QPushButton(slime::ui::t("ui.11f8516f82b1"), this);
+    auto* btnFit = new QPushButton(slime::ui::t("ui.e9562f6fa7af"), this);
+    auto* btnReset = new QPushButton(slime::ui::t("ui.52a5c38f0efc"), this);
+    m_cbBiome = new QCheckBox(slime::ui::t("ui.af0edd97079c"), this);
     m_cbBiome->setChecked(true);
-    m_cbSlime = new QCheckBox(QStringLiteral("史莱姆区块"), this);
+    m_cbSlime = new QCheckBox(slime::ui::t("ui.836b19da6804"), this);
     m_cbSlime->setChecked(true);
-    m_cbResults = new QCheckBox(QStringLiteral("搜索结果"), this);
+    m_cbResults = new QCheckBox(slime::ui::t("ui.2f17ec14763f"), this);
     m_cbResults->setChecked(true);
-    m_cbAfk = new QCheckBox(QStringLiteral("挂机点"), this);
+    m_cbAfk = new QCheckBox(slime::ui::t("ui.469105ed1a86"), this);
     m_cbAfk->setChecked(true);
     bar->addWidget(btnIn);
     bar->addWidget(btnOut);
@@ -44,30 +45,30 @@ MapDialog::MapDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     lay->addLayout(bar);
 
     auto* bar2 = new QHBoxLayout();
-    bar2->addWidget(new QLabel(QStringLiteral("群系版本（Java）："), this));
+    bar2->addWidget(new QLabel(slime::ui::t("ui.82879877a77e"), this));
     m_versionCombo = new QComboBox(this);
     for (const auto& v : slime::javaVersionOptions())
         m_versionCombo->addItem(QString::fromUtf8(v.label), v.id);
     m_versionCombo->setCurrentIndex(0);
     bar2->addWidget(m_versionCombo);
     bar2->addSpacing(12);
-    bar2->addWidget(new QLabel(QStringLiteral("群系精度："), this));
+    bar2->addWidget(new QLabel(slime::ui::t("ui.42668c3e0788"), this));
     m_scaleCombo = new QComboBox(this);
-    m_scaleCombo->addItem(QStringLiteral("1:1（最细，慢）"), 1);
-    m_scaleCombo->addItem(QStringLiteral("1:4（推荐）"), 4);
-    m_scaleCombo->addItem(QStringLiteral("1:16（快）"), 16);
-    m_scaleCombo->addItem(QStringLiteral("1:64（最粗）"), 64);
+    m_scaleCombo->addItem(slime::ui::t("ui.451a3a0adaef"), 1);
+    m_scaleCombo->addItem(slime::ui::t("ui.8ca46f1229b0"), 4);
+    m_scaleCombo->addItem(slime::ui::t("ui.8eb7f59f4e6b"), 16);
+    m_scaleCombo->addItem(slime::ui::t("ui.92fe3e55916c"), 64);
     m_scaleCombo->setCurrentIndex(1);
     bar2->addWidget(m_scaleCombo);
     bar2->addSpacing(12);
-    bar2->addWidget(new QLabel(QStringLiteral("半径 R："), this));
+    bar2->addWidget(new QLabel(slime::ui::t("ui.54636b347288"), this));
     m_radius = new QSpinBox(this);
     m_radius->setRange(16, 512);
     m_radius->setSingleStep(16);
     m_radius->setValue(128);
     bar2->addWidget(m_radius);
-    auto* btnAfk = new QPushButton(QStringLiteral("计算挂机点"), this);
-    btnAfk->setToolTip(QStringLiteral("按 1/16 区块精度算挂机点并画到地图上（同「挂机点」对话框）"));
+    auto* btnAfk = new QPushButton(slime::ui::t("ui.edf45feb592e"), this);
+    btnAfk->setToolTip(slime::ui::t("ui.8eae02fe83a9"));
     bar2->addWidget(btnAfk);
     bar2->addStretch();
     lay->addLayout(bar2);
@@ -89,7 +90,7 @@ MapDialog::MapDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
 
     auto* bottom = new QHBoxLayout();
     bottom->addStretch();
-    auto* btnClose = new QPushButton(QStringLiteral("关闭"), this);
+    auto* btnClose = new QPushButton(slime::ui::t("ui.6c14bd7f6f9e"), this);
     bottom->addWidget(btnClose);
     lay->addLayout(bottom);
 
@@ -194,27 +195,27 @@ void MapDialog::refreshStatus()
 {
     if (!m_status || !m_map) return;
     const QRectF vis = m_map->visibleBlockRect();
-    QString s = QStringLiteral("来源：%1｜可见 %2×%3 区块｜缩放 %4 px/格")
+    QString s = slime::ui::t("ui.ced733299632")
                     .arg(m_ctx.source)
                     .arg((std::max)(1, static_cast<int>(vis.width() / 16.0)))
                     .arg((std::max)(1, static_cast<int>(vis.height() / 16.0)))
                     .arg(QString::number(m_map->pxPerBlock(), 'f', 2));
     if (m_map->layer().biomeAvailable) {
-        s += QStringLiteral("｜群系 Java %1（1:%2）")
+        s += slime::ui::t("ui.b53afcd34b22")
                  .arg(QString::fromUtf8(slime::BiomeMap::labelForVersionId(m_versionCombo->currentData().toInt())))
                  .arg(m_scaleCombo->currentData().toInt());
     } else {
-        s += QStringLiteral("｜群系：不可用（%1）").arg(m_ctx.version == 1 ? QStringLiteral("基岩版") : QStringLiteral("该版本"));
+        s += slime::ui::t("ui.4a55f14a024d").arg(m_ctx.version == 1 ? slime::ui::t("ui.618fd37c0c01") : slime::ui::t("ui.4b33c0ba63ba"));
     }
     if (!m_afk.empty()) {
         const auto& b = m_afk.front();
-        s += QStringLiteral("｜最优挂机点 (%1, %2)：覆盖 %3 格 / %4 区块")
+        s += slime::ui::t("ui.237f2fa41a80")
                  .arg(b.x)
                  .arg(b.z)
                  .arg(static_cast<long long>(b.coveredBlocks))
                  .arg(b.coveredChunks);
     }
-    s += QStringLiteral("｜滚轮缩放 · 拖拽平移 · 双击复位");
+    s += slime::ui::t("ui.8f25595b3b1f");
     m_status->setText(s);
 }
 

@@ -10,7 +10,7 @@
 param(
     [string]$Repo = "",
     [string]$NsisDir = "",
-    [string]$Version = "3.10.12.13"
+    [string]$Version = "3.11.0"
 )
 $ErrorActionPreference = "Stop"
 

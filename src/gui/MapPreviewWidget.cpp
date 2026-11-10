@@ -1,4 +1,5 @@
 // v3.5.3（地图优化）：地图预览控件 —— 实现
+#include "gui/UiText.h"
 #include "gui/MapPreviewWidget.h"
 
 #include <QElapsedTimer>
@@ -34,8 +35,7 @@ MapPreviewWidget::MapPreviewWidget(QWidget* parent) : QWidget(parent)
     setMinimumSize(480, 320);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true); // v3.5.5：悬停显示群系
-    setToolTip(QStringLiteral("滚轮缩放（以光标为中心）｜左键拖拽平移｜双击复位\n"
-                              "群系精度自动随缩放变化（放大更精细），可在工具栏关闭自动精度"));
+    setToolTip(slime::ui::t("ui.41322a26b66a"));
     m_resampleTimer = new QTimer(this);
     m_resampleTimer->setSingleShot(true);
     m_resampleTimer->setInterval(120);
@@ -432,11 +432,11 @@ QString MapPreviewWidget::hoverBiomeName()
         m_hoverCellKey = key;
         m_hoverBiome = m_biome->biomeAt(m_hoverBlockX, m_hoverBlockZ, scale);
     }
-    if (m_hoverBiome < 0) return QStringLiteral("未知");
+    if (m_hoverBiome < 0) return slime::ui::t("ui.d9c32a4c3dda");
     const QString name = QString::fromUtf8(slime::BiomeMap::nameFor(m_hoverBiome));
     // v3.6.7：表里没有的 ID 不再显示裸 "unknown"
     if (name.isEmpty() || name == QLatin1String("unknown"))
-        return QStringLiteral("未知群系（ID %1）").arg(m_hoverBiome);
+        return slime::ui::t("ui.640ed42a696e").arg(m_hoverBiome);
     return name;
 }
 
@@ -701,7 +701,7 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
             // 标签 + 环带内史莱姆区块描边高亮
             p.setPen(QPen(ringCol, 1));
             const QString tag = m_layer.afkInnerRadius > 0
-                                    ? QStringLiteral("%1~%2 环带").arg(m_layer.afkInnerRadius).arg(m_layer.afkRadius)
+                                    ? slime::ui::t("ui.38461719f80b").arg(m_layer.afkInnerRadius).arg(m_layer.afkRadius)
                                     : QStringLiteral("R%1").arg(m_layer.afkRadius);
             p.drawText(ctr + QPointF(11, -11), tag);
                 if (m_layer.afkInnerRadius > 0 && m_layer.showSlime) {
@@ -739,22 +739,22 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
     // 6) 顶部信息条
     {
         const int nSlime = m_layer.showSlime ? visibleSlimeChunkCount() : 0;
-        QString info = QStringLiteral("中心 (%1, %2) · 缩放 %3 px/格 · 可见 %4×%5 区块")
+        QString info = slime::ui::t("ui.7e44bfef8822")
                            .arg(static_cast<int>(m_center.x()))
                            .arg(static_cast<int>(m_center.y()))
                            .arg(QString::number(m_scale, 'f', 2))
                            .arg((std::max)(1, static_cast<int>(vis.width() / kChunk)))
                            .arg((std::max)(1, static_cast<int>(vis.height() / kChunk)));
-        if (m_layer.showSlime) info += QStringLiteral(" · 史莱姆区块 %1 个").arg(nSlime);
+        if (m_layer.showSlime) info += slime::ui::t("ui.e5c043489a23").arg(nSlime);
         if (m_hoverValid) {
             info += m_layer.biomeAvailable
-                        ? QStringLiteral(" · 鼠标(%1,%2) 群系 %3").arg(m_hoverBlockX).arg(m_hoverBlockZ).arg(hoverBiomeName())
-                        : QStringLiteral(" · 鼠标(%1,%2)").arg(m_hoverBlockX).arg(m_hoverBlockZ);
+                        ? slime::ui::t("ui.4a91204ff743").arg(m_hoverBlockX).arg(m_hoverBlockZ).arg(hoverBiomeName())
+                        : slime::ui::t("ui.9d9295cec6de").arg(m_hoverBlockX).arg(m_hoverBlockZ);
         }
         const int eff = effectiveBiomeScale();
-        if (eff > 0) info += QStringLiteral(" · 群系 1:%1%2").arg(eff).arg(m_layer.autoDetail ? QStringLiteral(" 自动") : QString());
+        if (eff > 0) info += slime::ui::t("ui.ae31190413fc").arg(eff).arg(m_layer.autoDetail ? slime::ui::t("ui.f08b84225ba0") : QString());
         // v3.6.11（用户要求：基岩版群系按社区方案近似，但要标清楚）
-        if (eff > 0 && m_biomeParity) info += QStringLiteral(" · 基岩版≈Java 同种子");
+        if (eff > 0 && m_biomeParity) info += slime::ui::t("ui.8dd8df68d584");
         const QRectF box(8, 8, p.fontMetrics().horizontalAdvance(info) + 18, 24);
         p.setPen(Qt::NoPen);
         p.setBrush(QColor(0, 0, 0, dark ? 130 : 110));
@@ -776,7 +776,7 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
         p.drawLine(a, a + QPointF(0, -5));
         p.drawLine(b, b + QPointF(0, -5));
         p.setPen(QColor(255, 255, 255));
-        p.drawText(QPointF(14, height() - 28), QStringLiteral("%1 格").arg(static_cast<long long>(blocks)));
+        p.drawText(QPointF(14, height() - 28), slime::ui::t("ui.24e51c8eb8e0").arg(static_cast<long long>(blocks)));
     }
 }
 

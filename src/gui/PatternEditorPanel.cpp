@@ -1,4 +1,5 @@
 // v3.5.18：内嵌图案编辑器实现（与弹窗版同一套画布：左键循环 灰→白→绿，右键=灰）
+#include "gui/UiText.h"
 #include "gui/PatternEditorPanel.h"
 
 #include <QHBoxLayout>
@@ -23,21 +24,21 @@ PatternEditorPanel::PatternEditorPanel(QWidget* parent) : QWidget(parent)
 
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(4);
-    sizeRow->addWidget(new QLabel(QStringLiteral("行"), this));
+    sizeRow->addWidget(new QLabel(slime::ui::t("ui.2a2b777ae485"), this));
     m_rowsSpin = new QSpinBox(this);
     m_rowsSpin->setRange(1, 32);
     m_rowsSpin->setValue(5);
     sizeRow->addWidget(m_rowsSpin);
-    sizeRow->addWidget(new QLabel(QStringLiteral("列"), this));
+    sizeRow->addWidget(new QLabel(slime::ui::t("ui.ad3ee64830f4"), this));
     m_colsSpin = new QSpinBox(this);
     m_colsSpin->setRange(1, 32);
     m_colsSpin->setValue(5);
     sizeRow->addWidget(m_colsSpin);
-    auto* btnSize = new QPushButton(QStringLiteral("应用行列"), this);
+    auto* btnSize = new QPushButton(slime::ui::t("ui.dcae881d9eb7"), this);
     btnSize->setProperty("mini", true);
     connect(btnSize, &QPushButton::clicked, this, &PatternEditorPanel::applySize);
     sizeRow->addWidget(btnSize);
-    auto* btnReset = new QPushButton(QStringLiteral("全部忽略"), this);
+    auto* btnReset = new QPushButton(slime::ui::t("ui.5bbb7157be5f"), this);
     btnReset->setProperty("mini", true);
     connect(btnReset, &QPushButton::clicked, this, &PatternEditorPanel::resetAll);
     sizeRow->addWidget(btnReset);

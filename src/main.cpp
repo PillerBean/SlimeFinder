@@ -29,6 +29,7 @@
 #endif
 
 #include "gui/MainWindow.h"
+#include "gui/UiText.h"
 #include "utils/CrashDump.h"
 #include "utils/IncidentLog.h"
 #include "utils/Logger.h"
@@ -201,7 +202,7 @@ LONG WINAPI crashVeH(PEXCEPTION_POINTERS ep)
 namespace {
 // v3.3.3（任务书 2.1）：版本号单一来源 —— 界面显示名、日志文件头、窗口标题均取此常量。
 // 同时由 src/app.rc 写入 exe 的 VERSIONINFO（属性 → 详细信息 → 文件版本 3.3.3）。
-constexpr const char* kVersion = "v3.10.12.13";
+constexpr const char* kVersion = "v3.11.0";
 } // namespace
 
 namespace {
@@ -262,8 +263,9 @@ int main(int argc, char* argv[])
         }
     }
     QApplication app(argc, argv);
+    slime::ui::initTextCatalog();
     QApplication::setApplicationName(QStringLiteral("史莱姆区块查找器"));
-    QApplication::setApplicationVersion(QStringLiteral("3.10.12.13")); // v3.4.0
+    QApplication::setApplicationVersion(QStringLiteral("3.11.0")); // v3.4.0
     QApplication::setApplicationDisplayName(QStringLiteral("史莱姆区块查找器 %1").arg(QLatin1String(kVersion)));
     QApplication::setOrganizationName(QStringLiteral("SlimeFinder"));
     app.setWindowIcon(makeAppIcon());

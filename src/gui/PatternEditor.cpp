@@ -1,4 +1,5 @@
 // PatternEditor.cpp - 图案编辑器实现
+#include "gui/UiText.h"
 #include "gui/PatternEditor.h"
 
 #include <QHBoxLayout>
@@ -86,12 +87,12 @@ void PatternGridWidget::mousePressEvent(QMouseEvent* ev)
 
 PatternEditor::PatternEditor(QWidget* parent) : QDialog(parent)
 {
-    setWindowTitle(QStringLiteral("绘制图案 — 左键循环：灰(忽略)→白(非史莱姆)→绿(史莱姆)；右键=忽略"));
+    setWindowTitle(slime::ui::t("ui.63f3c72a3e27"));
     setModal(true);
 
     auto* root = new QVBoxLayout(this);
 
-    auto* hint = new QLabel(QStringLiteral("左键点击循环切换状态；右键点击直接设为忽略（灰色）。绿色=史莱姆区块，白色=非史莱姆区块。"));
+    auto* hint = new QLabel(slime::ui::t("ui.d95ba6dcb401"));
     hint->setWordWrap(true);
     root->addWidget(hint);
 
@@ -100,38 +101,38 @@ PatternEditor::PatternEditor(QWidget* parent) : QDialog(parent)
     root->addWidget(m_grid, 0, Qt::AlignHCenter);
 
     auto* sizeRow = new QHBoxLayout();
-    sizeRow->addWidget(new QLabel(QStringLiteral("行数:"), this));
+    sizeRow->addWidget(new QLabel(slime::ui::t("ui.87da6d7e5a41"), this));
     m_rowsSpin = new QSpinBox(this);
     m_rowsSpin->setRange(1, 64);
     m_rowsSpin->setValue(5);
     sizeRow->addWidget(m_rowsSpin);
     sizeRow->addSpacing(8);
-    sizeRow->addWidget(new QLabel(QStringLiteral("列数:"), this));
+    sizeRow->addWidget(new QLabel(slime::ui::t("ui.d182dd65d780"), this));
     m_colsSpin = new QSpinBox(this);
     m_colsSpin->setRange(1, 64);
     m_colsSpin->setValue(5);
     sizeRow->addWidget(m_colsSpin);
     sizeRow->addSpacing(8);
-    auto* btnSize = new QPushButton(QStringLiteral("调整大小"), this);
+    auto* btnSize = new QPushButton(slime::ui::t("ui.25c40917798e"), this);
     connect(btnSize, &QPushButton::clicked, this, &PatternEditor::applySize);
     sizeRow->addWidget(btnSize);
     sizeRow->addStretch();
     root->addLayout(sizeRow);
 
     auto* actionRow = new QHBoxLayout();
-    auto* btnReset = new QPushButton(QStringLiteral("全部重置为忽略"), this);
+    auto* btnReset = new QPushButton(slime::ui::t("ui.b416ae3be7d7"), this);
     connect(btnReset, &QPushButton::clicked, this, &PatternEditor::resetAll);
     actionRow->addWidget(btnReset);
     actionRow->addStretch();
     root->addLayout(actionRow);
 
-    m_status = new QLabel(QStringLiteral("0 个有效格子"), this);
+    m_status = new QLabel(slime::ui::t("ui.a35f3209b1d8"), this);
     root->addWidget(m_status);
 
     auto* btnRow = new QHBoxLayout();
-    auto* btnCancel = new QPushButton(QStringLiteral("取消"), this);
+    auto* btnCancel = new QPushButton(slime::ui::t("ui.4d0b4688c787"), this);
     connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
-    m_ok = new QPushButton(QStringLiteral("确定"), this);
+    m_ok = new QPushButton(slime::ui::t("ui.f526c89937e1"), this);
     m_ok->setDefault(true);
     connect(m_ok, &QPushButton::clicked, this, [this]() { accept(); });
     btnRow->addStretch();
@@ -168,7 +169,7 @@ void PatternEditor::rebuildGrid()
     m_grid->setPattern(np);
     m_grid->resize(m_grid->sizeHint());
     const int active = np.activeCount();
-    m_status->setText(QStringLiteral("%1 个有效格子（共 %2×%3）").arg(active).arg(rows).arg(cols));
+    m_status->setText(slime::ui::t("ui.e67003f842f9").arg(active).arg(rows).arg(cols));
     adjustSize();
 }
 
@@ -186,7 +187,7 @@ void PatternEditor::resetAll()
     const int cols = m_editPat.cols();
     m_editPat = Pattern(rows, cols);
     m_grid->setPattern(m_editPat);
-    m_status->setText(QStringLiteral("0 个有效格子（共 %1×%2）").arg(rows).arg(cols));
+    m_status->setText(slime::ui::t("ui.166aae0ef992").arg(rows).arg(cols));
     update();
 }
 
@@ -206,7 +207,7 @@ void PatternEditor::onCellClicked(int row, int col, Qt::MouseButton button)
     }
     m_editPat = p;
     m_grid->setPattern(p);
-    m_status->setText(QStringLiteral("%1 个有效格子（共 %2×%3）").arg(p.activeCount()).arg(p.rows()).arg(p.cols()));
+    m_status->setText(slime::ui::t("ui.e67003f842f9").arg(p.activeCount()).arg(p.rows()).arg(p.cols()));
 }
 
 } // namespace slime

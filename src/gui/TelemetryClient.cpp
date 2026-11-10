@@ -1,5 +1,6 @@
 #include "gui/TelemetryClient.h"
 
+#include "gui/UiText.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -103,7 +104,7 @@ void TelemetryClient::save() const
     QJsonObject o;
     o.insert(QStringLiteral("enabled"), m_enabled);
     o.insert(QStringLiteral("endpoint"), m_endpoint);
-    o.insert(QStringLiteral("note"), QStringLiteral("默认关闭；开启后仅发送匿名档位数据，不含种子/坐标/路径"));
+    o.insert(QStringLiteral("note"), slime::ui::t("ui.3bbaf75b8117"));
     f.write(QJsonDocument(o).toJson(QJsonDocument::Indented));
 }
 

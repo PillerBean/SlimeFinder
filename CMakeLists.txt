@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(SlimeFinder
-    VERSION 3.10.12.13
+    VERSION 3.11.0
     DESCRIPTION "史莱姆区块查找器 - Slime Chunk Finder (C++/Qt)"
     LANGUAGES CXX C)
 
@@ -131,6 +131,8 @@ add_executable(SlimeFinder WIN32
     src/gui/PatternEditorPanel.cpp
     src/gui/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
     src/gui/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
+    src/gui/UiText.cpp # v3.11.0：外部 JSON 语言包
+    src/gui/UiStrings.cpp # v3.11.0：兼容语言 API（数据在 JSON）
     src/gui/HelpDialog.cpp
     src/gui/SettingsDialog.cpp # E3.3.5（优化 5）：程序设置（五标签页）
     src/gui/FeedbackPanel.cpp   # E3.3.4（任务书 2.2）：反馈面板（E3.3.6 改版：时间顺序 + 过滤成功）
@@ -163,8 +165,20 @@ target_link_libraries(SlimeFinder PRIVATE
 add_executable(slime_update_probe
     tools/update_probe.cpp
     src/gui/UpdateDialog.cpp
+    src/gui/UiText.cpp
+    src/gui/UiStrings.cpp
 )
 target_include_directories(slime_update_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# v3.11.0：外部 JSON 语言包（程序目录/assets/i18n）
+add_custom_command(TARGET SlimeFinder POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/i18n
+            $<TARGET_FILE_DIR:SlimeFinder>/assets/i18n)
+add_custom_command(TARGET slime_update_probe POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets/i18n
+            $<TARGET_FILE_DIR:slime_update_probe>/assets/i18n)
 target_link_libraries(slime_update_probe PRIVATE Qt6::Widgets)
 
 if(WIN32)

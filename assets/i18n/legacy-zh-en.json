@@ -1,0 +1,1439 @@
+{
+  "æ¸¸æè®¾ç½®": "Game",
+  "æç´¢èå´": "Search area",
+  "æç´¢æ¨¡å¼": "Search mode",
+  "å¹éè®¾ç½®": "Matching",
+  "æ§è½ä¸çº¿ç¨": "Performance",
+  "ç¨åºè®¾ç½®": "Settings",
+  "æ´æ°åå²": "History",
+  "å¸®å©": "Help",
+  "éç¨": "General",
+  "æç´¢": "Search",
+  "ç¼å­": "Cache",
+  "æ¥å¿": "Log",
+  "é«çº§": "Advanced",
+  "Java ç": "Java",
+  "åºå²©ç": "Bedrock",
+  "ç¾¤ç³»çæ¬:": "Biome version:",
+  "ä¸çç§å­ï¼Javaï¼:": "World seed (Java):",
+  "ä¾å¦ 0 æ -4172144997902289642": "e.g. 0 or -4172144997902289642",
+  "åå¾ï¼åºåï¼:": "Radius (chunks):",
+  "æ¥è¯¢èµ·ç¹ X:": "Origin X:",
+  "æ¥è¯¢èµ·ç¹ Z:": "Origin Z:",
+  "åâåºå X:": "BlockâChunk X:",
+  "åâåºå Z:": "BlockâChunk Z:",
+  "è½¬æ¢": "Convert",
+  "éè¿": "Near",
+  "å±é¨": "Local",
+  "å¨å±": "Global",
+  "ä¸çè¾¹ç": "World border",
+  "åºå²©è¾¹ç": "Bedrock border",
+  "åºåå½¢ç¶:": "Shape:",
+  "æå°å¯åº¦:": "Min density:",
+  "ç½æ ¼å¤§å°:": "Grid size:",
+  "ç®æ æ°é:": "Result count:",
+  "æ¾å¤ç®æ æ°éå°±åæ­¢": "Stop once enough",
+  "ç±è¿åè¿ï¼ä»æ¥è¯¢èµ·ç¹åå¤æ©ï¼": "Expand from origin",
+  "æ¹åéå®ï¼ä¸æè½¬/ç¿»è½¬ï¼": "Lock orientation",
+  "ç¯å½¢æ«æ:": "Ring scan:",
+  "å¼å§æç´¢": "Start",
+  "åæ¶": "Cancel",
+  "åºç¨": "Apply",
+  "ç¡®å®": "OK",
+  "æ¢å¤é»è®¤": "Restore defaults",
+  "å¤å¶ç»æ": "Copy results",
+  "ééåå®¹": "Fit view",
+  "å¨é¨å¿½ç¥": "Clear all",
+  "åºç¨è¡å": "Apply size",
+  "çé¢è¯­è¨ï¼éå¯åçæï¼:": "Language:",
+  "å¨å±æ¹å¼:": "Fullscreen mode:",
+  "æ è¾¹æ¡å¨å±": "Borderless fullscreen",
+  "çªå£æå¤§åï¼æè¾¹æ¡ï¼": "Maximized window",
+  "æ´æ°æéå¤©æ°:": "Update reminder (days):",
+  "å´©æºæ¶çæè½¬å¨æä»¶": "Write crash dumps",
+  "è°è¯æ¨¡å¼": "Debug mode",
+  "éç½®ææè®¾ç½®": "Reset all settings",
+  "CPU å ç¨çä¸éï¼ä¸æ¬¡æç´¢ï¼:": "CPU limit (next search):",
+  "åå­ä¸éï¼ä¸æ¬¡æç´¢ï¼:": "Memory limit (next search):",
+  "å¯å¨æ¶æ£æµï¼ä¸æ¬¡å¯å¨ï¼:": "Check GPU at startup:",
+  "çªå£å¤§å°è®°å¿ï¼ä¸æ¬¡å¯å¨ï¼:": "Remember window size:",
+  "æ¥å¿ç®å½ï¼ä¸æ¬¡å¯å¨ï¼:": "Log folder:",
+  "è¿åº¦:": "Progress:",
+  "å°±ç»ª": "Ready",
+  "å·²åæ¶": "Cancelled",
+  "æç´¢å®æ": "Search finished",
+  "æä»¶": "File",
+  "è§å¾": "View",
+  "å·¥å·": "Tools",
+  "è®¾ç½®": "Settings",
+  "æä»¶(&F)": "&File",
+  "ç¼è¾(&E)": "&Edit",
+  "æ¥ç(&V)": "&View",
+  "å·¥å·(&T)": "&Tools",
+  "å¸®å©(&H)": "&Help",
+  "å¯¼å¥ç¼å­â¦": "Import cacheâ¦",
+  "å¯¼åºç»æâ¦": "Export resultsâ¦",
+  "æ¸é¤ç¼å­": "Clear cache",
+  "éåº": "Quit",
+  "å¤å¶å¨é¨å½ä»¤": "Copy all commands",
+  "æ¸ç©ºç»æ": "Clear results",
+  "æ¢å¤é»è®¤å¸å±": "Reset layout",
+  "GPU ç¶æ": "GPU status",
+  "æå¼ç¼å­ç®å½": "Open cache folder",
+  "æå¼æ¥å¿ç®å½": "Open log folder",
+  "ææºç¹ï¼ç¯å½¢è¦çï¼â¦": "Farm spot (ring)â¦",
+  "æ¾ç¤º/éèå°å¾é¢æ¿": "Show/hide map",
+  "å°å¾çªå£ï¼ç¬ç«ï¼â¦": "Map window (separate)â¦",
+  "ç¼å­æå»º": "Cache build",
+  "æ¾ç¤ºä¸»çªå£": "Show window",
+  "è¿åº¦æµæ°´": "Progress log",
+  "åé¦": "Feedback",
+  "å½ä»¤ç»ç«¯": "Command",
+  "æ¶èµ·é¢æ¿": "Collapse panel",
+  "å°å¾": "Map",
+  "éåºåå®¹": "Fit view",
+  "èç³»æä»¬": "Contact us",
+  "é¶æ®µï¼ç©ºé²": "Stage: idle",
+  "é¶æ®µï¼æç´¢ä¸­": "Stage: scanning",
+  "é¶æ®µï¼å¹éä¸­": "Stage: matching",
+  "ç»æ 0": "Results 0",
+  "å·²ç¨æ¶ 0.0s": "Elapsed 0.0s",
+  "å©ä½ --:--": "ETA --:--",
+  "æ­£å¨æç´¢â¦": "Searchingâ¦",
+  "ç»æ": "Results",
+  "æå": "Rank",
+  "è·ç¦»(åºå)": "Distance (chunks)",
+  "å¯åº¦/è¦ç": "Density/cover",
+  "è·³è½¬": "Go to",
+  "æªç»å¶": "Not drawn",
+  "æªç»å¶å¾æ¡": "No pattern",
+  "æåå¾æ¡": "Pick pattern",
+  "æ¸ç©º": "Clear",
+  "éèå°å¾": "Hide map",
+  "å¹éæ¹å¼": "Matching",
+  "æ§è½è®¾ç½®": "Performance",
+  "ç¼å­ç®¡ç": "Cache",
+  "æå»ºèå´ä¸é¢ç®": "Build range & budget",
+  "æå»ºé¢ä¼°ï¼éèå´ä¸é¢ç®å®æ¶æ´æ°ï¼": "Estimate (live)",
+  "æå»ºè¿åº¦": "Build progress",
+  "å®ææ±æ»": "Summary",
+  "æ¬é¡µåªåä¸ä»¶äºï¼å¤å® + åç¼å­": "This page only: evaluate + write cache",
+  "çé¢è¡ä¸º": "Behavior",
+  "å¤è§": "Appearance",
+  "å£°é³": "Sound",
+  "ä¸»é¢: è·éç³»ç»": "Theme: follow system",
+  "ä¸»é¢:": "Theme:",
+  "é³é:": "Volume:",
+  "æç´¢å®ææ¶æ­æ¾æç¤ºé³": "Play sound when done",
+  "åè®¸é¼ æ æ»è½®è°æ´è¾å¥æ¡æ°å¼": "Mouse wheel adjusts values",
+  "çªå£å¤§å°è®°å¿ï¼ä¸æ¬¡å¯å¨ï¼": "Remember window size (next start)",
+  "çº¿ç¨æ°:": "Threads:",
+  "åå±çº§å«:": "Layering:",
+  "éå¼æ¯ä¾:": "Threshold ratio:",
+  "éæ ·é´é:": "Sample step:",
+  "ç¨çéæ ·ï¼å¯åº¦ç²¾ç¡®ï¼": "Sparse sampling",
+  "å¯ç¨ GPU å éï¼å®éªæ§ï¼é»è®¤å³é­ï¼": "Enable GPU (experimental)",
+  "å¯¼å¥ç¼å­": "Import cache",
+  "ä½¿ç¨ç¼å­ï¼è¦çä¸è¶³èªå¨è¡¥æ«ï¼": "Use cache (auto fill gaps)",
+  "ç¼å­è·¯å¾å°å¨å¯å¨åæ¾ç¤º": "Cache path shown after start",
+  "èå´/é¢ç®åèªæ¬é¡µ; æå»ºåªåå¤å®å¹¶åç¼å­ï¼ä¸äº§çå¹éç»æã": "Range/budget from this page; build only evaluates and writes cache.",
+  "é¢ç®": "Budget",
+  "èå´ åå¾ï¼åºåï¼:": "Radius (chunks):",
+  "ä¸ãæç´¢ãé¡µåä¸èå´": "Same as Search page",
+  "æå¼ç®å½": "Open folder",
+  "æªå¼å§": "Not started",
+  "å°æªæå»ºãèå´ä¸é¢ç®åèªæ¬é¡µï¼æå»ºåªåå¤å®å¹¶åç¼å­ï¼ä¸äº§çå¹éç»æã": "Not built yet. Build only evaluates and writes cache.",
+  "æç´¢ç®æ³:": "Algorithm:",
+  "ç²¾ç¡®æ¨¡å¼ï¼é»è®¤ï¼ç»æ 100%% å®æ´ï¼": "Exact (default, 100%% complete)",
+  "åå±æ¨¡å¼ï¼æ´å¿«ï¼æ¯ä¾ â¤1.00 æ¶æ æï¼": "Layered (faster)",
+  "å¿«éä¼°ç®æ¨¡å¼ï¼ä¼°ç®å¼ï¼éç²¾ç¡®ï¼": "Fast estimate (approximate)",
+  "ä¿å®æ¨¡å¼ï¼çº¯æ´åï¼ææ¢ï¼å¯¹ç§ç¨ï¼": "Brute force (slowest)",
+  "ä¸¥æ ¼å¾æ¡å¹éä¸ä½¿ç¨æç´¢ç®æ³ï¼å¾æ¡å¹éæ¬èº«å³ç²¾ç¡®å¤å®ï¼ã": "Strict pattern match does not use the algorithm list.",
+  "å¾å½¢:": "Shape:",
+  "ä¸¢å¼": "Discard",
+  "èªå¨ç²¾åº¦": "Auto detail",
+  "æ¾ç¤ºç¾¤ç³»": "Show biomes",
+  "æ¾ç¤ºå²è±å§åºå": "Show slime chunks",
+  "æ¾ç¤ºç½æ ¼": "Show grid",
+  "æ¾ç¤ºç¯": "Show rings",
+  "æ¾ç¤ºç»æ": "Show results",
+  "ç¼©æ¾": "Zoom",
+  "å®ä½": "Locate",
+  "å³äº": "About",
+  "ä½¿ç¨æç¨": "Tutorial",
+  "çæ¬": "Version",
+  "å³é­": "Close",
+  "ä¿å­": "Save",
+  "å è½½": "Load",
+  "è¯­è¨": "Language",
+  "å¨é¨çæ¬": "All versions",
+  "åªçæ­£å¼ç": "Stable only",
+  "åªçæµè¯ç": "Beta only",
+  "æ­£å¼ç": "Stable",
+  "æµè¯ç": "Beta",
+  "æ°å¢": "Added",
+  "ä¿®å¤": "Fixed",
+  "ä¼å": "Improved",
+  "è°æ´": "Adjusted",
+  "ç§»é¤": "Removed",
+  "ç¯å½¢æ°å¢ãèªå¨æ­£æ¹å½¢é¢ç­ãæ«ææ¨¡å¼ï¼GPU å¨å¾æ­£æ¹å½¢å¯åº¦æ«æï¼g=15ï¼â æåºåé´è·åæ£ç§å­ â ç¯å½¢ç²¾ä¿®ï¼æ¬æº Java å¨å¾å®æµçº¦ 3.7 åéï¼æä½³è¦çç 28.58%ï¼å¿«éæ½æ ·ç 22.2%ï¼ï¼ä¸åä¾èµéæºæ½æ ·ï¼GPU ä¸å¯ç¨æ¶èªå¨åéå¿«éæ½æ ·": "Added the ring \"automatic square pre-scan\" mode: a GPU full-map square-density scan (g=15), spatially spread seeds, then ring refinement; measured about 3.7 minutes on the whole Java map, with a best coverage of 28.58% versus 22.2% for fast sampling, without relying on random sampling; falls back to fast sampling when the GPU is unavailable",
+  "ä¿®å¤æå°å¯åº¦è¾å¥ä¸º 0 æ¶ç¦ç¹è¿æ²¡ç¦»å¼å°±åæ¢æãèªå®ä¹æ¹æ¡ãçé®é¢ï¼ç°å¨åªå¨ç¦ç¹ç¦»å¼æåè½¦åæå¤æ­ä¿®æ¹å¹¶åæ¢": "Fixed the scheme switching to Custom while the minimum-density field still had focus and was being changed to 0; it now switches only after focus leaves or Enter is pressed",
+  "ãç¯å½¢æ«æãä¸ææ¹ä¸º å¿«é / èªå¨æ­£æ¹å½¢é¢ç­ï¼æ´ç¨³ï¼è¾æ¢ï¼/ ç²¾ç¡® ä¸æ¡£ï¼èªå¨é¢ç­æé´å¯åæ¶ï¼å¤±è´¥ä¼èªå¨åé": "The ring scan dropdown now has three modes: Fast, Automatic square pre-scan (steadier, slower) and Exact; the pre-scan can be cancelled and falls back automatically on failure",
+  "åå¸æ¹ä¸ºåªæä¾ Setup å®è£åï¼æ£æ¥å°æ°çæ¬åè·å SetupãSHA256 æ ¡éªéè¿åæç¤ºéåºç¨åºå¹¶æå¼å®è£åå¯¼ï¼ç¨æ·ç¹ä¸ä¸æ­¥å®æè¦çï¼å®è£å¨ /UPDATE ä¿çè®¾ç½®ä¸ç¼å­ï¼ï¼ä¾¿æºçæç¤ºæ¹ä¸ºå®è£ç": "Releases now provide only the Setup installer: after an update is found, the app downloads the Setup, verifies SHA256, then closes and opens the installer for the user to click through (the installer runs with /UPDATE to keep settings and caches); portable copies are told to install the setup version",
+  "æ°å¢æ´æ°ééï¼ç¨³å®çåªæç¤ºæ­£å¼çï¼æµè¯çè¿ä¼æç¤º Pre-releaseï¼æ£æ¥æ´æ°ä¼åè¯»å raw æ¸åï¼ä¸æ¶è GitHub API éé¢ï¼ï¼ç»æç¼å­ 6 å°æ¶ãéåæµéç»æç¼å­ 24 å°æ¶ï¼éå¤æ£æ¥ä¸ä¼åå¤è®¿é®": "Added update channels: Stable only offers official releases, Test also offers pre-releases; checks read the raw manifest first (no GitHub API quota), cache results for 6 hours and mirror speed-test results for 24 hours so repeated checks do not keep hitting the network",
+  "ä¸ååå¸ä¾¿æº zipï¼Release èµäº§åªä¿ç Setup ä¸ SHA256SUMSï¼åå²çæ¬ zip ä»å¯ä»æ§ Release è·åï¼": "No more portable zip assets: releases now contain only the Setup and SHA256SUMS (older zips remain downloadable from historical releases)",
+  "ä¿®å¤ç¯å½¢ãå¿«éãå¨ Java æ´å¾èå´è¿å 0 ä¸ªç»æï¼è§åå¨ç©çä¸éä»æ¯ 4 ä¸äº¿æ ¼ï¼ä½äºæ´å¾ 1.4e13 æ ¼ï¼ä¼éé»è¿åç©ºè¡¨ï¼ç°å¨æ¾å¼å°æ´å¾ä¸éï¼å¹¶æå®éæ½æ ·ç¹æ°ç»è®¡æ«æéï¼ä¸ååºç°ä¸äº¿/ç§çåéåº¦ï¼": "Fixed the ring fast search returning zero results for the whole Java map: the planner limit was still 4e12 cells, below the 1.4e13-cell map, and silently returned an empty list; the limit now covers the whole map, and scan statistics report the real sample count instead of a fake trillion-per-second rate",
+  "å¯åº¦æ¨¡å¼çæå°å¯åº¦ä¸ãå¿½ç¥éå¼ï¼åæä¼ãç§»å°å¯åº¦é¢æ¿å¸¸æ¾ï¼æ­¤åæ¾å¨ãç»æè¦æ±ãéï¼éé¢è®¾åæ´ç»éèï¼ï¼ä¿®æ¹ä¼èªå¨åå°èªå®ä¹æ¹æ¡": "Moved the minimum density and ignore-threshold controls into the always-visible density panel (they used to live in Result Requirements and were hidden whenever a preset was selected); changing them switches to the Custom scheme",
+  "æ°å¢ãæ£æ¥æ´æ°ãå¯¹è¯æ¡ï¼æ¯æ GitHub Releases å®æ¹æ£æ¥ãéåå éï¼gh-proxy / ghfast / ghproxy ç­ä»£çï¼raw version.json æ¸ååéï¼ãSHA256 æ ¡éªä¸è½½æ´æ°åï¼ä¿çèå¥äºç½çæå¨å¤ç¨æºï¼ç½çæºä¸åèªå¨æ´æ°éé": "Added an in-app \"Check for updates\" dialog: it checks GitHub Releases directly, supports mirror-accelerated proxies (gh-proxy, ghfast, ghproxy and configured prefixes, with a raw version.json manifest fallback), downloads and verifies the update zip with SHA256, and keeps the Lanzou cloud-drive page as a manual fallback source (no automatic updates through it)",
+  "æ°å¢ PolyForm Noncommercial 1.0.0 è®¸å¯è¯ï¼å« Required Notice æ¥æºç½²åè¦æ±ï¼ä¸ NOTICE ç¬¬ä¸æ¹ç»ä»¶è¯´æï¼æºç å¬å¼ãéåä¸ä½¿ç¨ï¼ååå/ä¿®æ¹çå¿é¡»æ³¨ææ¥æº": "Added the PolyForm Noncommercial 1.0.0 license with a Required Notice attribution line, plus a NOTICE for third-party components: the source is public for noncommercial use, and redistributions or modified versions must credit the origin",
+  "README éåä¸ºé¢åæ°ç¨æ·çç²¾ç®ç»æï¼ä¸è½½/åè½/å¿«éå¼å§/æå»º/è®¸å¯ï¼ï¼å®æ´åæ´åå²åªå¨ GitHub Wiki / Releases æ¥è¯¢": "Rewrote the README into a short newcomer-oriented structure (download, features, quick start, build, license); the full change history is now available only on GitHub (Wiki / Releases)",
+  "æ­£å¼/æµè¯çè§åç»ä¸ï¼çæ¬å·ä¿æåæ®µï¼GitHub Release éè¿ãPre-releaseãæ è®°æå¨åºåï¼Latest ç±æå¨æ§å¶ç Release å³å®ï¼è¯¦è§åå¸æåï¼": "Unified the release rules: version numbers stay four-part, GitHub Releases use the manual Pre-release flag to mark test builds, and Latest is controlled by which release is marked as such (see the publishing guide)",
+  "ãå¿«éæ¾æè¿ N ä¸ªãæ¹æ¡æ¹ä¸ºä»æååæ­¢ï¼ä¸åå¼ºå¶ãç±è¿åè¿ãï¼ï¼å®æµ CPU 114.5 vs 123.1 msãGPU ä¹æ´å¿«ï¼å¾æ¡æ¹æ¡æ­¤åå·²æ¯ä»åæ­¢": "The quick fix \"find nearest N\" scheme now only enables early stop and no longer forces near-to-far ordering: measured 114.5 versus 123.1 ms on the CPU and faster on the GPU; the pattern scheme already used early stop only",
+  "å¿«æ·èå´åä¸è°ä¸æ¡£ï¼GPU å¤§å¹æéåæ§å¼åä¿å®ï¼ï¼éè¿ Â±20000ãå±é¨ Â±200000ãå¨å± Â±1000000 åºåï¼GPU ä¸çº¦ <1 ç§/æ°ç§/1 åéå": "Quick range presets were raised another step now that the GPU is much faster: Nearby Â±20000, Local Â±200000 and Global Â±1000000 chunks, roughly under a second, a few seconds and about a minute on the GPU",
+  "æ´æ°è¿æ¶çæçæéï¼GPU å¼å³è¯´ææ¹ä¸ºãç°ä»£ GPU éå¸¸æ¾èæ´å¿«ããå¾æ¡ GPU æµå¼åæ AMD å®æµçº¦ 2~18Ããå»æèªå®ä¹å£°æéãæå°å¯åº¦ 0 å¾æ¢ãçæ§ç»è®º": "Outdated efficiency advice was refreshed: the GPU switch now says a modern GPU is usually much faster, pattern GPU streaming states the measured 2-18x speedup on AMD, and the custom-scheme notice no longer claims that a minimum density of zero is slow",
+  "éè¿ï¼ä»¥åç¹ä¸ºä¸­å¿ Â±20000 åºåï¼çº¦ 40000Ã40000ï¼GPU éå¸¸ <1 ç§ï¼": "Near: Â±20000 chunks around the origin (about 40000x40000; usually under 1 s on GPU)",
+  "å±é¨ï¼ä»¥åç¹ä¸ºä¸­å¿ Â±200000 åºåï¼çº¦ 400000Ã400000ï¼GPU çº¦æ°ç§ï¼": "Local: Â±200000 chunks around the origin (about 400000x400000; a few seconds on GPU)",
+  "å¨å±ï¼ä»¥åç¹ä¸ºä¸­å¿ Â±1000000 åºåï¼çº¦ 2000000Ã2000000ï¼GPU çº¦ä¸åéåï¼CPU ä¼å¾ä¹ï¼": "Global: Â±1000000 chunks around the origin (about 2000000x2000000; about a minute on GPU, much longer on CPU)",
+  "å¯ç¨ GPU å éï¼é»è®¤å³é­ï¼ç°ä»£ GPU éå¸¸æ¾èæ´å¿«ï¼": "Enable GPU acceleration (off by default; a modern GPU is usually much faster)",
+  "GPU å¤å®ä¸ CPU éä½ä¸è´ï¼æ¬è½®ä¼åå GPU å¨å¸¸è§æç´¢ä¸éå¸¸å¿«æ°åå°æ°ååã\næ¾å¡å¾å¼±æ OpenCL é©±å¨å¼å¸¸æ¶å¯å³é­ï¼ä¼èªå¨åé CPUï¼ãå¯å¨ãè®¾ç½® â æ§è½ãéè®¾ä¸ºé»è®¤å¯ç¨ã": "GPU results match the CPU exactly and are usually several to tens of times faster after this round of optimisation. Turn it off if the GPU is weak or the OpenCL driver misbehaves (it falls back to CPU automatically). Can be enabled by default in Settings, Performance.",
+  "å¾æ¡ GPU æµå¼ï¼AMD å®æµçº¦ 2~18Ãï¼é»è®¤å³ï¼": "Pattern GPU streaming (about 2-18x measured on AMD; off by default)",
+  "å¾æ¡æç´¢ä½¿ç¨ GPU æµå¼å¹éï¼AMD æ¾å¡å®æµçº¦ 2~18 åæéï¼100kÂ² å¾æ¡çº¦ 2.8 sâ0.16 sï¼ï¼NVIDIA/Intel æªéªè¯ï¼å¯åè¯è·ä¸ä¸ªå°èå´ï¼å¼å¸¸æ¶å³é­ï¼èªå¨åé CPUï¼ã\næ¹å¨ç«å³åå¥ config.jsonï¼ä¸ãè®¾ç½® â é«çº§ãä¸­çååå¼å³åæ­¥ã": "Pattern searches use GPU streaming: about 2-18 times faster on AMD (a 100k squared pattern goes from about 2.8 s to 0.16 s). Not yet verified on NVIDIA/Intel; try a small area first and turn it off if anything looks wrong (it falls back to CPU automatically). Changes are written to config.json immediately and stay in sync with the same switch under Settings, Advanced.",
+  "å¾æ¡ GPU æµå¼å¹éæ¹ä¸ºã32 éç¹ä½å¹¶è¡ãï¼çº¯ 32 ä½è¿ç®ãè¡Ãç»å±å¹³ä»»å¡ï¼é¿å 64 ä½æ¨¡æä¸å¹¶è¡åº¦ä¸è¶³ï¼ï¼ç¯å½¢å¾æ¡ 20kÂ² 16.3â11.3 msï¼354 äº¿åºå/ç§ï¼ï¼100kÂ² 274â127 msï¼785 äº¿åºå/ç§ï¼çº¦ 2.2 åï¼ï¼2x2 å¾æ¡ä¹å°å¹åå¿«": "Pattern GPU streaming now uses 32-anchor bit-parallel matching with pure 32-bit arithmetic and a flattened row-by-group task layout, avoiding 64-bit emulation and the earlier parallelism drop: a 20k squared ring pattern went from 16.3 to 11.3 ms (354 hundred million chunks per second) and a 100k squared one from 274 to 127 ms (785 hundred million chunks per second, about 2.2 times faster), with small gains for 2x2 patterns too",
+  "æä¼ N ä¸ªï¼å¿½ç¥éå¼ï¼ç Java ä½å¾å¡«åæ¹ç¨ fastjava ç 64 åºåä½æ©ç åæ ¸ï¼ä¸æ­£å¸¸æ«æåä¸è·¯å¾ï¼ï¼ä¸åèµ°ãæ´è¡å­èæµ + éå­èæåãï¼20kÂ² å¡«å 245â71 msï¼æ´ä½ 515â286 msï¼çº¦ 1.8 åï¼": "Best-candidates (ignore threshold) Java bitmap filling now uses the fastjava 64-chunk bit-mask kernel, the same path as normal scanning, instead of an entire byte row plus per-byte packing: 20k squared filling dropped from 245 to 71 ms and the whole search from 515 to 286 ms (about 1.8 times faster)",
+  "GPU æµå¼åæ ¸ï¼å¯åº¦/å¾æ¡ï¼tile é«åº¦ 32â64ï¼ä½å¾å¡«åæ¹ä¸ºå¾ªç¯è¦çï¼tile éå ååãworkgroup æ´¾åæ°ååãå¯åº¦ 8kÂ² g5 4.4~5.2â4.0 msï¼æ å½ä¸­æ¡£ 2.2â1.2 msï¼å¾æ¡/ç¯å½¢åºæ¬æå¹³æç¥å¥½": "GPU streaming kernels (density and pattern) now use a tile height of 64 with a looping bitmap fill, halving tile overlap and workgroup count: density 8k squared g5 went from 4.4-5.2 to 4.0 ms and the no-hit case from 2.2 to 1.2 ms, while pattern and ring searches stayed equal or slightly better",
+  "å¾æ¡å¹éç»´æãééç¹ + éè¡æ©éãæ éè·¯å¾ï¼GPU ä¸è¯éªç 64 éç¹ä½å¹¶è¡å æ¯è¡åªæ 4 ä¸ªåç»ãå¹¶è¡åº¦ä¸è¶³ï¼ç¯å¾æ¡ 20kÂ² åè 18â55 msï¼å®æµååéï¼ä¿çç»è®ºå¨æ¥å¿ï¼": "Pattern matching keeps the scalar per-anchor early-exit path: the 64-anchor bit-parallel variant tested on the GPU had only four groups per row and too little parallelism, making the 20k squared ring pattern slower (18 to 55 ms), so it was rolled back",
+  "å¾æ¡ GPU æµå¼çä½å¾å¡«åæ¹ç¨ 32 åºåæ¹éåæ ¸ï¼ä¸å¯åº¦æµå¼ä¸è´ï¼ï¼å¹¶æå½ä¸­ååæ¹ä¸ºæ¯ workgroup ä¸æ¬¡åé¢çè¿ç»­åï¼40kÂ² 2x2 å¾æ¡çº¦ 32â27 msï¼ç¯å½¢å¾æ¡ 20kÂ² çº¦ 18 msï¼222~453 äº¿åºå/ç§ï¼": "Pattern GPU streaming now fills the bitmap with the same 32-chunk batched kernel as density streaming, and hit writeback uses one block reservation per workgroup with a contiguous write: a 40k squared 2x2 pattern dropped from about 32 to 27 ms, and a 20k squared ring pattern runs in about 18 ms (222 to 453 hundred million chunks per second)",
+  "å¾æ¡ GPU æµå¼çå½ä¸­ä¸éæ¹ä¸ºåºå® 400 ä¸ï¼100kÂ² å¾æ¡å®éçº¦ 103 ä¸å½ä¸­ï¼æ§å¬å¼å¯¹ target=50 åªæ 100 ä¸ï¼åå¥½æº¢åºåé CPUï¼ï¼100kÂ² å¾æ¡æç´¢ 2850â182 msï¼çº¦ 15.6 åï¼": "The pattern GPU streaming hit limit is now a fixed four million (a 100k squared pattern produces about 1.03 million hits, while the old formula allowed only one million at target 50 and fell back to the CPU): a 100k squared pattern search went from 2850 to 182 ms, about 15.6 times faster",
+  "å¾æ¡ GPU æµå¼åªå¯¹ãæ¹åéå®ï¼ååä½ï¼ãå¯ç¨ï¼æè½¬æ¨¡å¼å®æµ GPU æµå¼ï¼2260 msï¼åèæ¢äº CPUï¼1043 msï¼ï¼æ¹ä¸ºèªå¨åé CPU": "Pattern GPU streaming is now used only for direction-locked single-variant searches; with rotation enabled the GPU stream measured 2260 ms versus 1043 ms on the CPU, so it now falls back to the CPU automatically",
+  "å¾æ¡ãç±è¿åè¿ / æååæ­¢ãå¯ç¨å­çº§ä½å¹¶è¡å¿«è·¯å¾ï¼è¯¥è·¯å¾éè¡è¯ä¼°ãä¸è¡åºæ å³ï¼æ§éå¶è¯¯æå®å³æï¼ï¼å¾æ¡+æºè½èå´ 557â100 msï¼å¾æ¡+æååæ­¢+æºè½èå´ 865â98 ms": "Pattern searches with near-to-far ordering or early stop now use the word-level bit-parallel fast path. That path evaluates each row independently and does not depend on row order, so the old restriction was unnecessary: pattern plus smart range went from 557 to 100 ms, and pattern plus early stop plus smart range from 865 to 98 ms",
+  "å¾æ¡ GPU æµå¼çå½ä¸­ä¸éæé«å° 400 ä¸ï¼æ§ä¸é 20 ä¸ä¼è®© 100kÂ² å¾æ¡æç´¢ç´æ¥åé CPUï¼ï¼40kÂ² å¾æ¡ GPU æµå¼å®æµçº¦ 10 åäº CPU": "Pattern GPU streaming now allows up to four million hits (the old 200k limit forced 100k squared pattern searches back to the CPU); 40k squared pattern streaming measured about ten times faster than the CPU path",
+  "GPU æµå¼å¯åº¦å¹éçå½ä¸­ååæ¹ä¸ºãæ¯ workgroup ä¸æ¬¡åé¢ç + è¿ç»­æ´åååºãï¼15 ä¸å½ä¸­ä¸åéæ¡äºæ¢å¨å±åå­ï¼å½ä¸­è¶è¿ 256 æ¡/ç»èªå¨éåéæ¡åï¼ï¼8kÂ² g5 ç«¯å°ç«¯çº¦ 6.2â4.4~5.2 ms": "GPU density-match hit writeback now uses one block reservation per workgroup with a contiguous bulk write, so hundreds of thousands of hits no longer serialize on a single global atomic counter (groups exceeding 256 hits fall back to per-hit writes): 8k squared g5 end-to-end about 6.2 to 4.4-5.2 ms",
+  "GPU éç¹çªå£ç»è®¡æ¹ä¸ºæåæ»çªï¼æ¯çº¿ç¨è´è´£ä¸åï¼åªå¯¹è¿å¥/ç¦»å¼çä¸¤è¡å popcountï¼ï¼g è¶å¤§æ¶çè¶å¤§ï¼20kÂ² g8 çº¦ 16.5â10.5 msã16kÂ² g5 çº¦ 19â10.5 ms": "GPU anchor window counting now slides by column: each thread owns one column and only popcounts the entering and leaving bitmap rows, with larger grids benefiting most (20k squared g8 about 16.5 to 10.5 ms; 16k squared g5 about 19 to 10.5 ms)",
+  "GPU å½ä¸­åä¼ å¨ä¼è¯ååæã(è·ç¦»,rank)ãç­åºæè¿ 256 ä¸ªï¼1024 æ¡¶ç´æ¹å¾ + è¿ç»­æ¶éï¼æ¿ä»£éæ¡å»ºå /nth_elementï¼ï¼å®¿ä¸»å½ä¸­å¤çç± ~2.4 ms éå° ~1 ms çº§ï¼åè¯»æ¹ä¸ºä¸¤æ¬¡å¼æ­¥å¥éåä¸æ¬¡ Finish": "GPU hit upload now keeps only the nearest 256 candidates in the session using a 1024-bucket distance histogram plus contiguous collection instead of per-hit heap or nth_element, cutting host hit processing from about 2.4 ms to about 1 ms; hit readback now enqueues both buffers asynchronously and finishes once",
+  "æ°å¢ãç»æèªä¼åï¼æååæ­¢ï¼ãå¼å³ï¼é»è®¤å³ï¼ï¼GPU å¯åº¦å¹éæå°èµ·ç¹çè·ç¦»ç±è¿å°è¿æ´¾åï¼å½ä¸­å¾å¤æ¶åå¤ç®æ æ°ä¸åç»­åºåä¸å¯è½æ´è¿å³æååæ­¢ï¼ç»æä¸å®æ´æ«æéæ¡ä¸è´ï¼åªå°ç»è®¡æ»å½ä¸­æ°": "Added a Result Self-Optimization (early stop) switch, off by default: the GPU density match dispatches bands from nearest to farthest, and stops early once enough results are collected and no remaining area can be closer. Results are identical to a full scan; only the total-hit statistic is reduced",
+  "å¼å¯ãç»æèªä¼åãæ¶ï¼å¾æ/è§è½èµ·ç¹ãçªåºåãå½ä¸­å¯éåºæ¯ææ¾æ´å¿«ï¼å®æµ 8kÂ² è§è½ 5.2â1.9 msã6kÂ² 8.0â1.1 msï¼ï¼å±ä¸­å®½åºåå æè¿ N ä¸ªå¤©ç¶æ¨ªè·¨å¨å®½æ¶çæéï¼è®¾ç½®é¡¹åæéç¨åºæ¯ï¼é»è®¤å³é­å¯éæ¶åéæ§è¡ä¸º": "With the switch on, corner or edge starts, narrow regions and hit-dense searches are much faster (measured 8k squared corner: 5.2 to 1.9 ms; 6k squared: 8.0 to 1.1 ms); wide centered regions gain little because the nearest N results naturally span the whole width. The setting lists its use cases and defaults off so the old behavior can always be restored",
+  "æä¼ N ä¸ªéæ©é¶æ®µåä¼åï¼æ 2048 åååï¼ååªç®è®¡æ°ï¼ä¸ç¢°å ï¼ï¼æ´åæå¤§å¼é½è¿ä¸äºæ¦å°±è·³è¿ï¼åéåéå¤å®ï¼20000Â²ï¼519 â 470 msï¼70000Â² ååï¼8.1 â 7.5 sï¼": "Best-candidates selection was further optimised with 2048-column blocks: counts are computed first without touching the heap, whole blocks that cannot enter the top list are skipped, and only candidates are evaluated (20000 squared: 519 to 470 ms; 70000 squared chunked: 8.1 to 7.5 s)",
+  "å¾æ¡æ¨¡å¼ GPU æ«ææåºåè§æ¨¡å¯ç¨ï¼20kÂ² å®æµ GPU æ«æåèæ¢ï¼110 vs 89 msï¼ã40kÂ² æå¹³ã100kÂ² èµ·å ä¼ï¼2125 vs 2711 msï¼â å¾æ¡æ¨¡å¼æ¹ä¸ºä» â¥3e9 åºåå¯ç¨ GPU æ«æ": "GPU scan for pattern mode is now gated by region size: at 20000 squared GPU scan was actually slower (110 versus 89 ms), at 40000 squared it was neutral, and from 100000 squared it paid off (2125 versus 2711 ms), so pattern mode only uses GPU scanning from 3e9 chunks upward",
+  "æå°å¯åº¦=0 æ¶å¯ç¨ãæè¿ N å¿«éè·¯å¾ãï¼ææçªå£é½æ»¡è¶³éå¼ï¼ç´æ¥è§£ææ±åºæè¿ç N ä¸ªçªå£å¹¶åªç»è®¡è¿ N ä¸ªçªå£çå¯åº¦ï¼20000Â²ï¼950 ms â 0.1 msï¼åºå²© 20000Â²ï¼1526 ms â 0.1 msï¼ä¸åè§¦å GPU å½ä¸­ä¸éåéï¼": "When minimum density is zero every window qualifies, so a nearest-N fast path now computes the closest N windows analytically and only measures density for those N (20000 squared: 950 ms to 0.1 ms; Bedrock 20000 squared: 1526 ms to 0.1 ms; the GPU hit-limit fallback no longer triggers)",
+  "åºå²©çãæä¼ N ä¸ªãä½å¾å¡«åæ¹ç¨ AVX2 æ¹é MT19937 è¡åæ ¸ï¼2000Â²ï¼982 ms â 19 msï¼çº¦ 50Ãï¼": "Bedrock best-candidates bitmap filling now uses the AVX2 batched MT19937 row kernel (2000 squared: 982 ms to 19 ms, about 50 times faster)",
+  "æä¼ N ä¸ªç Java éæ©é¶æ®µä¼åï¼åæè®¡æ°åå»ä»·è¿æ»¤ãåªå¯¹å¯è½è¿æ¦ççªå£è®¡ç®è·ç¦»/åºå·ï¼åç´åæ¹ä¸ºæå­åä½ï¼20000Â²ï¼712 â 519 msï¼70000Â² ååï¼11.0 â 8.1 sï¼": "Java best-candidates selection was optimised: a cheap count filter runs before distance and rank computation, and vertical sums read bitmap words instead of single chunks (20000 squared: 712 to 519 ms; 70000 squared chunked: 11.0 to 8.1 s)",
+  "å¾æ¡æ¨¡å¼æååæ­¢çå¹¶è¡æ¹æ¬¡æ¹ä¸º 64 è¡/ååï¼æ­¤å blockRows=1 äº§çæ°åæ¬¡å»ºå /åå¹¶ï¼ï¼20000Â² å¾æ¡ãæ¾æè¿ N ä¸ªã785 ms â 96 msï¼å¾æ¡é¢è®¾ä¸åå¼ºå¶ãç±è¿åè¿ãï¼ä¼ç¦ç¨ AVX2 å¿«è·¯å¾ï¼ï¼æ¹ä¸ºä»åæ­¢": "Pattern-mode early-stop parallel batches now cover 64 rows per unit instead of one row, removing thousands of heap merges (20000 squared pattern nearest-N: 785 ms to 96 ms); the pattern preset no longer forces near-to-far scanning, which had disabled the AVX2 fast path, and now only enables early stop",
+  "æ æåå±ï¼éå¼æ¯ä¾ â¤1.00ï¼ç»æä¸ç²¾ç¡®ä¸è´ï¼åè®¸ä½¿ç¨ GPU ç²¾ç¡®å¹éï¼20000Â² åå±+GPU 195 ms â 15 msï¼ææåå±ï¼æ¯ä¾>1.00ï¼ä»èµ° CPU ä»¥ä¿æè¯­ä¹": "Lossless layered mode (ratio at most 1.00, identical results to exact) may now use GPU exact matching: 20000 squared layered plus GPU went from 195 ms to 15 ms; lossy layered (ratio above 1.00) stays on CPU to preserve semantics",
+  "æå°å¯åº¦=0 å¿«éè·¯å¾è¡¥é½ä¸å®æ´æ«æä¸è´çï¼d2/rankï¼å¹³å±å£å¾ï¼æ°å¢ååæµè¯ 37 è¦ç Java/åºå²©ãèµ·ç¹å¨åºååå¤ãç®æ è¶è¿çªå£æ°ç­åºæ¯": "The zero-threshold fast path now matches the full scan tie-breaking rules for distance and rank, with a new unit test 37 covering Java and Bedrock, start points inside and outside the region, and target counts larger than the window count",
+  "æ¹æ¡=èªå®ä¹ æ¶ï¼æ¹æ¡ä¸æä¸æ¹æ¾ç¤ºç¥çè²å£°æãèªå®ä¹æ¹æ¡ç±ä½ èªå·±ç»åå¼å³ï¼æäºç»åå¯è½ææ¾éä½æç´¢éåº¦â¦ãï¼éé¢è®¾æ¶éèï¼æ¬æ¬¡è¿è¡åé¦æ¬¡åå°èªå®ä¹ä¼å¨åé¦æ åæç¤ºä¸æ¬¡": "When the scheme is Custom, an amber notice appears under the preset dropdown warning that some switch combinations can be much slower; it hides when a preset is selected, and the first switch to Custom in a session also logs one feedback line",
+  "é«çº§å¼å³åçº§ï¼éé¢è®¾æ¹æ¡æ¶ãç»æè¦æ±ï¼æ¾å¤å³å/ç±è¿åè¿/æå°å¯åº¦/å¿½ç¥éå¼ï¼ãä¸ãå¹éæ¹å¼ï¼ç®æ³/åå±/éæ ·ï¼ãèªå¨æ¶èµ·ï¼åªæåå°èªå®ä¹ï¼æç¯å½¢æ¨¡å¼ï¼æå±å¼ï¼é¿åè¯¯è°å¯¼è´éåº¦éª¤éï¼æå·¥æ¹å¨ä»»ä¸é«çº§å¼å³ä»ä¼èªå¨åå°èªå®ä¹": "Advanced switches are now tiered: with a preset selected, Result Requirements (early stop, near-to-far, minimum density, ignore threshold) and Matching Method (algorithm, layered, sampling) collapse, expanding only for Custom or ring mode to avoid accidental slowdowns; manually changing any advanced switch still switches the scheme to Custom",
+  "GPU å¼å³ææ°å¢ãè®¾ç½® â¸ãå¥å£ï¼å±å¼æ¾ç¤º å¾æ¡ GPU æµå¼ / GPU å ç¨çä¸é / å¯å¨æ¶èªå¨æ£æµ GPUï¼é»è®¤æ¶èµ·ï¼æ¹å¨ç«å³åå¥ config.json å¹¶ä¸ãè®¾ç½® â é«çº§ãåååæ­¥": "A GPU Settings gear button next to the GPU switch expands Pattern GPU streaming, GPU usage limit and auto-detect-on-startup; it starts collapsed, writes changes to config.json immediately and stays in sync with Settings, Advanced",
+  "æ¯æ¬¡æç´¢å¯å¨æ¶æå¼æå®éæ¶å°ç**å¨é¨ææåæ°**åæä¸è¡ãåæ°æçº¹ãåå¥æ¥å¿ï¼çæ¬/æ¨¡å¼/ç®æ³/ç½æ ¼/éå¼/ç®æ /æ©å/æºè½èå´/å¿½ç¥éå¼/æ¹åé/åå±/éæ ·/çº¿ç¨/CPUä¸é/åå­/ç¼å­/GPU/æµå¼/èµ·ç¹/èå´ï¼ââé¢è®¾ä¸èªå®ä¹å¯ä»¥ç´æ¥éå­æ¯å¯¹": "Every search now writes a one-line fingerprint of all effective options (version, mode, algorithm, grid, threshold, target, early stop, smart range, ignore threshold, direction lock, layered and sample parameters, threads, CPU limit, memory, cache, GPU, streaming, start point and range) to the log so presets and custom setups can be compared character by character",
+  "GUI èªæ£æ°å¢æ­è¨ï¼æ¹æ¡é¢è®¾åªä¿®æ¹æé¢ä¸çç»æå¼å³ï¼æ¾å¤å³å/ç±è¿åè¿/ç²¾ç¡®ç®æ³/å¿½ç¥éå¼ï¼ï¼çº¿ç¨ãç®æ æ°éãç½æ ¼ãæå°å¯åº¦ãæ¥è¯¢èµ·ç¹ãç¼å­ãGPU å¨ç¨ä¿æä¸å": "The GUI self-test now asserts that presets only change the visible result switches (early stop, near-to-far, exact algorithm, ignore threshold) while threads, target count, grid, minimum density, start point, cache and GPU stay untouched",
+  "ãå¹³å°è«åå¶å¦èªå·±åæåºå²©çãçæ ¹å ï¼è¿å¥ãç¼å­æå»ºãé¡µæ¶ä¼ä¸´æ¶å¼ºå¶åå°åºå²©çï¼ç¼å­è¯­ä¹ï¼ï¼ä½éåºæå»ºå**æ²¡ææ¢å¤**åæ¥çå¹³å° â ä¹åå¨æç´¢é¡µçèµ·æ¥æ¯ Javaï¼å®éæç´¢å´æåºå²©çç®æ³è·ï¼æä»¥ CPU åªæçº¦ 8 äº¿/ç§ãGPU çº¦ 16 äº¿/ç§çåºå²©ç©çéçï¼ãç°å¨éåºæå»ºä¼èªå¨æ¢å¤ç¨æ·åæ¬çå¹³å°": "Root cause of the platform silently switching to Bedrock: entering the Cache Build page temporarily forces Bedrock (cache semantics) but exiting build mode never restored the previous platform, so later searches on the search page appeared to be Java while actually running the Bedrock algorithm (hence the Bedrock-level 0.8 billion/s CPU and 1.6 billion/s GPU rates). Exiting build mode now restores the users previous platform",
+  "æ¯æ¬¡æç´¢å¯å¨æ¶å¨åé¦/æ¥å¿éæç¡®è®°å½ãæ¬æ¬¡æç´¢çæ¬ï¼Java ç/åºå²©çãï¼å¹¶å¨ GUI èªæ£æ°å¢æ­è¨ï¼æå»ºæ¨¡å¼ä¸´æ¶ååºå²©ãéåºåæ¢å¤ Java": "Every search now logs which version it actually uses, and the GUI self-test asserts that build mode temporarily switches to Bedrock and restores Java on exit",
+  "æ§è½åéä¿®å¤ï¼ç¨æ·åé¦ï¼ä¸å¦ 3.10.1 å¿«ï¼ï¼â  æååæ­¢çå¹¶è¡æ¹æ¬¡æ¢å¤ãæ¯æ¹ = çº¿ç¨æ° ä¸ªè¡åãï¼v3.10.5 ç â¤2 è¡åæ CPU æ©åæç´¢åå° 1~2 çº¿ç¨ï¼ææ¾ééï¼â¡ GPU è¡å¸¦æ´¾åæ¢å¤ v3.10.1 æ¡ä»¶ï¼ä»ãæååæ­¢ä¸æªå¼æºè½èå´ãï¼ï¼æºè½èå´+æååæ­¢åå°åæ¬¡å¨éæ´¾åï¼é¿åå¤æ¬¡æ´¾åå¼é": "Performance regression fix (user reported slower than 3.10.1): the early-stop parallel batch is back to threads times block size (the v3.10.5 two-block batch limited CPU stop searches to one or two threads, a major slowdown), and GPU row-band dispatch is restored to the 3.10.1 condition (only early stop without smart range); smart range plus early stop uses a single full dispatch again to avoid repeated dispatch overhead",
+  "åºåå¤æ ¸ï¼å¯åº¦ g=5 2000Â² åè®¡ 4.8 msãä¸¥æ ¼ 2Ã2 å¨ç»¿ 2000Â² åè®¡ 2.3 msï¼åå° 3.10.1 æ°´å¹³ï¼ï¼CPU æ§è½åºçº¿ 30% å®¹å·®åéè¿ãåèå¯¹æ 117/117ï¼æååæ­¢å¨ä¿çãç±è¿åè¿ãæåºçåæä¸ä»è½æ©åï¼4000Ã4000 33 ms åå®æï¼ç»æ=ç®æ æ°éï¼": "Benchmark re-check: density 5x5 at 2000 squared totals 4.8 ms and strict 2x2 at 2000 squared totals 2.3 ms, back to 3.10.1 levels; the CPU baseline passes within 30 percent and the reference comparison passes 117 of 117; early stop still works while keeping near-to-far ordering (4000 squared finishes in 33 ms with the target count)",
+  "ãæ°éå¤å°±åãæ²¡çæï¼å¤å ï¼ï¼â  æªå¾ãç±è¿åè¿ãæ¶åæ æ«æä»å°å¾è¾¹ç¼å¼å§ï¼è¦æ«è¿èµ·ç¹éè¿æå¯è½æ»¡è¶³æ æå¤å â å®éæ«æåå¼ å¾ï¼ç°å¨æååæ­¢ä¼èªå¨æè·ç¦»ç±è¿åè¿æ«æï¼ç»æä»æ¯æè¿ N ä¸ªï¼â¡ å¹¶è¡æ©åæ¹æ¬¡åä¸ºãçº¿ç¨æ°Ãè¡åãï¼8 çº¿ç¨â2048 è¡ï¼ï¼å°åºåä¸æ¹å°±æ«å®å¨é¨ â å¤åæ°¸ä¸è§¦åï¼ç°å¨æ¯æ¹ â¤2 è¡åï¼â512 è¡ï¼å¤åä¸æ¬¡ â¢ GPU å¤§åºåå¨æºè½èå´ä¸ä¸èµ°è¡å¸¦ â æ æ³æ©åï¼ç°å¨æååæ­¢æ¶æè·ç¦»è¡å¸¦æ´¾åï¼åå¤å³å": "Stop-at-target not working had multiple causes: raster scanning from the map edge could only satisfy the lossless stop bound after passing the start area, effectively scanning half the map; early stop now scans near-to-far automatically (results are still the nearest N). The parallel stop batch was threads times block size (about 2048 rows), so small areas finished in one batch and never stopped; batches are now at most 2 row-blocks (about 512 rows). Large GPU areas with smart range skipped row bands and could not stop; early stop now dispatches distance-ordered bands and stops once enough results are collected",
+  "æååæ­¢å®æµï¼æ¢é opt_probe45ï¼ï¼2000Ã2000 ç±ãæ«å® 400 ä¸çªå£ãåä¸º 10 ms æ©åï¼4000Ã4000 ç± 54 ms éå° 21 msï¼ãå·²æ¾å°ãè®¡æ°ä¸åæ¾ç¤ºå åä¸/å ç¾ä¸ï¼èæ¯ç®æ æ°éï¼æååæ­¢æ¶ï¼": "Early-stop measurements: 2000x2000 went from full 4M windows down to a 10 ms early stop; 4000x4000 dropped from 54 ms to 21 ms; the found counter now reports the target count instead of hundreds of thousands or millions",
+  "å¿½ç¥éå¼ï¼æä¼åéï¼è·¯å¾å¤æ ¸ï¼ç»å¸è·¯å¾ä¸ååè·¯å¾ç»æä¸è´ï¼ååæµè¯ 36 + æ¢éï¼éå¼ 0.99 ä»è¿å N æ¡ä¸å¯åº¦éåºï¼ï¼Java ä½å¾å¡«åæ¹ç¨æ´è¡å¤å®åæ ¸ï¼æ¯éåºåå¿«ï¼ãæ³¨æï¼è¯¥æ¨¡å¼ä»æ¯ CPU å®ç°ï¼å¤§èå´ï¼å¦ 70000Â² â 11 ç§ï¼ææ¾æ¢äºæ®é GPU æç´¢ï¼å»ºè®®éåè¾å°èå´ä½¿ç¨": "Best-candidates mode re-checked with ignore threshold: classic and chunked results match (unit test 36 plus probe, 0.99 threshold still returns N density-descending results); Java bitmap filling now uses the whole-row kernel. Note this mode is still CPU-only and noticeably slower on very large areas (about 11 seconds at 70000 squared), so a smaller range is recommended",
+  "éåº¦å¤æ ¸ï¼æ®é GPU æç´¢ä¿æåæ¬¡å¨éæ´¾åï¼ä¸å è¿åº¦èåæ¹ï¼ï¼CPU æ§è½åºçº¿ 30% å®¹å·®åéè¿ãåèå¯¹æ 117/117ï¼æ©åè·¯å¾çé¢å¤æ¶çå·²åè¡¥æ«æé¡ºåºå¸¦æ¥çæµªè´¹": "Speed re-check: ordinary GPU searches keep a single full dispatch and are not split for progress; the CPU performance baseline passes within 30 percent and the reference comparison passes 117 of 117; early-stop scans now recover the waste caused by scan order",
+  "ä¿®å¤ GPU æç´¢çééå¯ä½ç¨ï¼æ®é GPU æç´¢æ¢å¤ä¸ºãåæ¬¡å¨éæ´¾åãï¼è¡å¸¦åæ¹åªä¿çç»ãæ¾æè¿ N ä¸ªï¼æååæ­¢ï¼ãä½¿ç¨ï¼æ¯å¸¦æåº/åå¹¶ä¸æ´¾åå¼éæ­¤åä¼ææ¾ææ¢æ®éæç´¢ï¼": "Fixed the GPU slowdown side effect: normal GPU searches use a single full dispatch again, and row-band batching is kept only for the nearest-N early-stop preset (per-band sorting, merging and dispatch overhead were noticeably slowing ordinary searches)",
+  "æç¨æ·è¦æ±ç²¾ç® GPU ç¶ææ¾ç¤ºï¼ä¸åæ¾ç¤ºãGPU æ«æ/å¹éãæ æ³¨ï¼GPU è®¡ç®æé´è¿åº¦æ¡æ¹ä¸ºå¿ç¢å¨ç»ï¼ä¸ä¼ªé ç¾åæ¯ï¼ï¼è®¡ç®ç»æåå¨ç»æç»è®¡ä¸­æ¾ç¤ºãæ«æåºåæ° / ç¨æ¶ / å¹³åéåº¦ï¼ä¸æäº¿æ¯ç§ï¼ã": "GPU status simplified as requested: the GPU scan/match annotations are gone; during GPU computation the progress bar shows a busy animation instead of a fake percentage, and when the search finishes the result summary shows scanned chunks, elapsed time and average speed in the selected unit",
+  "GPU åæ¬¡æ´¾åå®ææ¶ç»è®¡æ¾ç¤ºãæ«æ 0 åºåãçè¯¯å¯¼ï¼å®ææ¶è¡¥è®°å®éæ«æéï¼ï¼å¹³åéåº¦æçå®æ«æéè®¡ç®": "Fixed the misleading zero-scanned reading when a single GPU dispatch finishes: the actual scanned amount is recorded on completion and the average speed is derived from it",
+  "å¯å¨è¶å¤§èå´æç´¢æ¶çé¢å¡ä½/åæ­»ï¼é¦æ¬¡å¯ç¨ GPU æ¶æ¾ç¤ºç­å¾åæ ä¸ãæ­£å¨åå§å GPUãç¶æï¼ç¯å½¢æç´¢çç¾¤ç³»æéç½æ ¼ä¼èªå¨æ¾å¤§æ ¼å­ï¼â¤200 ä¸æ ¼ï¼é¿åè¶å¤§åå­åéï¼è¶å¤§ç¯å½¢èå´èªå¨å å¤§ç²æ«æ­¥é¿ï¼ä¿æå¯è¿è¡": "Hang fix when starting very large searches: the first GPU initialization now shows a wait cursor and an explicit status line; ring-search biome weight grids automatically coarsen to at most 2 million cells to avoid huge allocations, and very large ring ranges automatically increase the coarse step so they stay runnable",
+  "å¿½ç¥éå¼ï¼æä¼åéï¼ä¸ååç»å¸è·¯å¾èå´éå¶ï¼å¤§åºåèªå¨èµ°ååï¼æ¯ååååæä¼ N åæãå¯åº¦éåº â è·ç¦» â åæ åºãåå¹¶ï¼ç»æä¸è®¾å®èå´ä¸è´ï¼æ°å¢ååæµè¯éªè¯ç»å¸/ååä¸¤æ¡è·¯å¾ç»æéé¡¹ä¸è´": "Ignore-threshold best-candidates mode no longer limited to the classic path: large areas run chunked, each chunk keeps its best N and results are merged by density descending, then distance, then raster order, so results match the configured range; a new unit test verifies classic and chunked paths return identical results",
+  "GPU å·¥ä½ç¶æå¯è§ï¼è¿åº¦è¡çé¶æ®µæå­ä¼æ æ³¨ãï¼GPU æ«æï¼ããï¼GPU å¹éï¼ãï¼å·²æ«æåºå/éåº¦/é¢è®¡å©ä½æç»­å·æ°ï¼GUI èªæ£æ°å¢ GPU å¤§åºåæç´¢çè¿åº¦ä¸æ æ³¨æ­è¨": "GPU activity is now visible: the progress stage text is annotated with GPU scan or GPU match, and scanned chunks, speed and ETA keep updating; the GUI self-test now covers a large GPU search with these annotations",
+  "ç»æè¡¨æçªåèªéåºï¼åç¼©ååå®½åº¦ãæè§å£å®½åº¦èªå¨æå ãè·ç¦»/å¯åº¦ãæ¬¡è¦åï¼éè¦æ¶åºç°æ¨ªåæ»å¨æ¡ï¼æå¨åå®½ä»å¯ç¨": "Adaptive narrow result table: column widths are compacted, secondary distance and density columns collapse automatically based on viewport width, a horizontal scrollbar appears when needed, and columns remain user-resizable",
+  "GPU å¤§åºåæç´¢çè¿åº¦åé¦ï¼å¯åº¦ GPU å¹éå¯¹è¾å¤§åºåæ¹ä¸ºæè¡å¸¦åæ¹æ´¾åï¼å®æ¶æ´æ°ãå·²æ«æåºåæ° / éåº¦ / é¢è®¡å©ä½ãââæ­¤å GPU æç´¢æ¶è¿åº¦æ¡æä¸º 0ãæ¾ç¤º 0 åºåï¼ç¨æ·åé¦ï¼": "Progress feedback for large GPU searches: density GPU matching now dispatches large areas in row bands and updates scanned chunks, speed and ETA continuously. Previously the progress bar stayed at 0 and showed 0 scanned during GPU searches",
+  "ç§»é¤çªå£å·¦ä¸è§çè¿ç¨å¾æ æ¡ï¼ç¨æ·æ æ³¨ççº¢è²åºåï¼ï¼è¿ç¨é¢æ¿ä¿çå¨å³ä¸è§ï¼æ é¢æ ãè¿ç¨ Â· è¿åº¦/åé¦/æ¥å¿/å½ä»¤ãåé¡µç­¾ + æ¶èµ·/å±å¼æé®ï¼æå åä»å¯ä¸é®å±å¼": "Removed the process icon strip at the bottom-left corner (the area marked red by the user). The process panel stays in the lower right with a header containing progress, feedback, log and command tabs plus a collapse/expand button, and it can always be expanded again after collapsing",
+  "å¿½ç¥éå¼ï¼æä¼åéï¼å¨é¾è·¯ç¡®è®¤å¯ç¨ï¼ç»æç»è®¡è¡ä¼æ æ³¨ãæä¼åéï¼å·²å¿½ç¥éå¼ï¼æå¯åº¦æåºãï¼GUI èªæ£æ°å¢çå®æç´¢æ­è¨ï¼éå¼ 0.99 ä¸ä»è¿å N æ¡ä¸å¯åº¦éåºï¼": "Ignore-threshold (best candidates) verified end to end: the result summary line is marked as best candidates sorted by density, and the GUI self-test now runs a real search asserting N results even with a 0.99 threshold and density-descending order",
+  "ç¯å½¢æç´¢èå´ä¸éæ¾å®½å° Java æ´å¾è§æ¨¡ï¼3,750,001Ã3,750,001 åºåï¼ï¼å¨å¾çº§æç´¢ä¼å¨ç¶ææ æç¤ºãå¯è½éè¦æ°åéãå¯éæ¶åæ¶ã": "The ring search range limit was raised to the full Java map (3,750,001 by 3,750,001 chunks); full-map ring searches show a status hint that they may take minutes and can be cancelled",
+  "å¿«éé¢è®¾æ°å¼ä¸è°ï¼éè¿ Â±5000ãå±é¨ Â±50000ãå¨å± Â±300000 åºåï¼å Â±1000/Â±5000/Â±30000ï¼GPU å éåæ§å¼å¤ªå°ï¼": "Quick presets increased: nearby plus or minus 5000, local 50000, global 300000 chunks (previously 1000, 5000 and 30000, too small now that GPU is fast)",
+  "è¿åº¦è¡æ°å¢ãéçåä½ãä¸æï¼èªå¨ / ä¸æ¯ç§ / äº¿æ¯ç§ï¼åæ¢åè¿åº¦ä¸ç»æææ¬ç«å³éç¨è¯¥åä½ï¼å¹¶åå¥ config.json æä¹å": "A rate unit dropdown was added to the progress row: automatic, ten-thousand per second or hundred-million per second; progress and result text follow it immediately and the choice is persisted in config.json",
+  "è¿ç¨é¢æ¿å¹¶å¥å³åï¼ç»æå¨ä¸ / è¿ç¨å¨ä¸ï¼ï¼ä¸åæ¨ªè·¨æ´ä¸ªçªå£åºé¨ï¼å°å¾ãç»æãè¿ç¨åå±ï¼å³ååå²æ¡å¯æå¨ï¼åå»æ¢å¤é»è®¤ï¼ç»æ / è¿ç¨ 240ï¼": "The process panel moved into the right column (results on top, process below) instead of spanning the window bottom, so map, results and process are visible together; the right splitter is draggable and double-click restores the default (results / process 240)",
+  "è¿ç¨é¢æ¿æ é¢æ ï¼æ¾ç¤ºãè¿ç¨ Â· è¿åº¦/åé¦/æ¥å¿/å½ä»¤ãå¹¶å¸¦åä¸ªé¡µç­¾ä¸ãæ¶èµ·ãæé®ï¼ç¹é¡µç­¾æå·¦ä¾§å¾æ é½è½åæ¢ï¼åæ¬¡ç¹å»åä¸é¡¹æ¶èµ·ï¼å¨ç¼å­æå»º/è®¾ç½®/æ´æ°åå²é¡µç¹å»è¿ç¨å¾æ ä¼èªå¨ååæç´¢é¡µ": "The process panel gained a header showing Process with progress, feedback, log and command tabs plus a collapse button; the tabs and the left icon strip both switch pages, clicking the same item collapses, and using a process icon on the build, settings or history page first returns to the search page",
+  "æ¢å¤é»è®¤å¸å±åæ­¥æ´æ°ï¼ä¸çºµå 380/480/360ï¼å³å 560+240ï¼å·¦ä¸è§å¾æ æ¡ä¿çä¸ºå¿«æ·å¥å£": "Restore Default Layout updated: three columns 380/480/360 with a 560+240 right split; the bottom-left icon strip remains as a shortcut",
+  "çªçªå£ï¼1000Ã650ï¼ä¸è¿ç¨é¢æ¿åä¸ªé¡µç­¾ä¸åè¢«çç¥æãâ¦ãï¼é¡µç­¾åºå® 40pxãåç¼©åè¾¹è·ä¸å­å·": "In narrow windows (1000x650) the four process tabs no longer collapse into ellipses: each tab is 40px wide with reduced padding and font size",
+  "UI ä¸çºµåæ¹çï¼å·¦ãåæ°/ç»æè¦æ±ãï½ä¸­ãå°å¾ãï½å³ãç»æãï¼å°å¾ç¬ç«æåå¹¶ææ»¡é«åº¦ï¼ç»æåè¡¨è¡æ°ä¸åæ¤åå°å¾ï¼ç»æè¡¨å¤´ç¼©ç­ãåå®½åºå®ä»¥ééçªå": "Three-column UI: parameters and result requirements on the left, the map in the middle and results on the right. The map is now its own column filling the full height, so the result list can no longer squeeze it; result headers are shorter and column widths are fixed for the narrower column",
+  "ä¸åå®½åº¦ä¸çªå£èªéåºï¼é»è®¤ 380/480/360ï¼åéæ¡å¯ææ½ãåå»æ¢å¤é»è®¤ï¼çªå£ç¼©å° 1000Ã650 æ¶ä¸åä»å¯ç¨ï¼å·¦ â¥360 / å°å¾ â¥260 / ç»æ â¥300ï¼": "Column widths adapt to the window: default 380/480/360, draggable splitter and double-click to restore defaults; three columns remain usable at 1000x650 (left >= 360, map >= 260, results >= 300)",
+  "GUI èªæ£ééæ°å¸å±å¹¶æ°å¢æ ¸å¿æ­è¨ï¼ä¸»åæ å« 3 åãä¸åå®½åº¦åçãç»æåè¡¨ 20 è¡æ¶å°å¾é¢æ¿å°ºå¯¸ä¸åãå°å¾æå /å±å¼æé®ä½ç½®ä¸å": "GUI self-test adapted to the new layout with core assertions: the main splitter has 3 columns, column widths are reasonable, a 20-row result list does not change the map panel size, and the map collapse button does not move",
+  "æ°å¢é¡¶é¨å¨å±è®¾ç½®æ ï¼å¹³å°ï¼Java/åºå²©ï¼ãæ¸¸æçæ¬ãä¸çç§å­ç§»å°çªå£é¡¶é¨å¸¸é©»ï¼å·¦ä¾§åæ°æ åªä¿çæç´¢åæ°ä¸ç»æè¦æ±ï¼åãæ¸¸æè®¾ç½®ãåç»åæ¶ï¼": "Added a global top bar: platform (Java/Bedrock), game version and world seed now live at the top of the window, while the left column keeps only search parameters and result requirements (the old Game Settings group is gone)",
+  "å·¦ä¾§å¯¼èªç± 96px æ¶çªå° 56pxï¼å¾æ  + å°å­å·æå­ï¼ï¼æå®½åº¦è®©ç»å°å¾ä¸ç»æåºï¼å¯¼èªé¡¹ä»ä¸º æç´¢ / ç¼å­æå»º / è®¾ç½® / æ´æ°åå²": "The left navigation rail is narrower, from 96px to 56px (icon plus small label), giving the map and results more room; items remain Search, Cache Build, Settings and Update History",
+  "GUI èªæ£åæ­¥æ´æ°ï¼å·¦ä¾§åç»æ° 6â5ï¼å¹¶æ°å¢ãé¡¶é¨å¨å±è®¾ç½®æ åå« å¹³å°/æ¸¸æçæ¬/ä¸çç§å­ãæ­è¨": "GUI self-test updated: the left column now has 5 groups instead of 6, plus a new assertion that the top bar contains platform, game version and world seed",
+  "GUI èªæ£æ°å¢ãç»æè¦æ±æ¹æ¡ãæ­è¨ï¼å¯åº¦æ¨¡å¼ 4 æ¹æ¡ + èªå®ä¹ãå¾æ¡æ¨¡å¼ 2 æ¹æ¡ + èªå®ä¹ï¼åæ¢æ¹æ¡ä¸æ¹å GPU å¼å³ï¼æä¼åéæ¹æ¡èªå¨ç¦ç¨éå¼/æååæ­¢ï¼ååæ¹æ¡åéå¼æ¢å¤å¯ç¨ï¼å¾æ¡æ¨¡å¼ä¸å¿½ç¥éå¼ä¸å¯ç¨": "GUI self-test now asserts result presets: four presets plus custom in density mode and two plus custom in pattern mode; switching presets never changes the GPU switch; the best-candidates preset disables threshold and early stop; switching back restores the threshold; the ignore-threshold option is unavailable in pattern mode",
+  "æ¹æ¡æç¤ºææ¡ï¼éãæä¼ N ä¸ªï¼å¿½ç¥éå¼ï¼ãæ¶æç¤ºæç¡®ååºãæä¼åéãï¼é¿åä¸æ®éæ¹æ¡æ··æ·": "Preset hint text now explicitly says best candidates when the ignore-threshold preset is selected, avoiding confusion with the regular presets",
+  "æä¼åéæ¨¡å¼æ§è½ï¼ä½å¾å¡«åä¸ TopN éæ©é½æ¹ä¸ºæéç¹è¡å¹¶è¡ï¼æ¯çº¿ç¨ç¬ç«åç´æ»å¨å + å±é¨ TopNï¼æ«å°¾åå¹¶ï¼ãå®æµ Java 8192Â² ä»çº¦ 420 ms éå°çº¦ 118 msï¼ä»æ¢äºéå¼æ¨¡å¼ï¼çº¦ 5 åï¼ï¼ä½å®æ¯ä¸æ¬¡æ§æ¢ç´¢å·¥å·ãä¸éè¦åå¤è°éå¼": "Best-candidates mode performance: both bitmap filling and TopN selection now run in parallel by anchor rows (each thread keeps its own vertical sums and local TopN, merged at the end). A Java 8192 squared search drops from about 420 ms to about 118 ms; it is still about 5 times slower than threshold mode, but it is a one-shot exploration tool that avoids repeated threshold tuning",
+  "æä¼åéæ¨¡å¼ç®åä»æ¯æç»å¸è·¯å¾çåºåå¤§å°ï¼æ´å¤§åºåä¼æç¤ºç¼©å°èå´ï¼ï¼GPU çæ¬çå¾åç»­": "Best-candidates mode currently only supports areas handled by the classic path (larger areas are asked to narrow the range); a GPU version is left for later",
+  "æä¼åéæ¨¡å¼ï¼å¿½ç¥éå¼åæä¼ N ä¸ªï¼ï¼å¯åº¦æç´¢æ°å¢ãå¿½ç¥éå¼ï¼åæä¼ãå¼å³ï¼æçªå£åå²è±å§æ°éä»é«å°ä½è¿åç®æ æ°éä¸ªçªå£ï¼å¹¶åæè·ç¦»ãåæåæ åºï¼ï¼ç»æå¯è½ä½äºè®¾å®éå¼ï¼è¯¥æ¨¡å¼ä¸æ¯ææååæ­¢/æºè½èå´ï¼æåªæ¯æç»å¸è·¯å¾åºåå¤§å°": "Best-candidates mode (ignore threshold, return the best N): density search gains an Ignore threshold switch that ranks windows by slime count and returns the requested number of best windows (ties by distance, then raster order), so results may fall below the configured threshold. This mode disables early stop and smart range and currently supports only areas that use the classic path",
+  "æ¹æ¡é¢è®¾æ°å¢ç¬¬ 4 ç§ãæä¼ N ä¸ªï¼å¿½ç¥éå¼ï¼ãï¼éä¸­åèªå¨å¿½ç¥éå¼å¹¶ç¦ç¨æååæ­¢ï¼æç¤ºææ¡è¯´æç»æå¯è½ä½äºéå¼": "A fourth result preset Best N (ignore threshold) was added; it ignores the threshold and disables early stopping, with text explaining that results may be below the threshold",
+  "æä¼åéæ¨¡å¼å å¥è¿ç¨å¯è§åï¼ãæ¨¡å¼ï¼æä¼åéï¼å·²å¿½ç¥å¯åº¦éå¼ï¼æçªå£å¯åº¦æåºï¼ãä¼åºç°å¨è¿åº¦æµæ°´/åé¦/æ¥å¿/ç»æå¤å¶ææ¬ä¸­": "Best-candidates mode is included in the process summary: the mode line appears in the progress stream, feedback, log and copyable result text",
+  "ç»æè¦æ±æ¹æ¡ï¼å¿«æ·é¢è®¾ï¼ï¼å·¦åæ°å¢ãæ¹æ¡ãä¸æï¼**é¡ºåºæ¹ä¸ºåæ¨¡å¼åæ¹æ¡**ï¼å¯åº¦æ¨¡å¼ 3 ç§ï¼å¿«éæ¾æè¿ N ä¸ª / æ¾å¨é¨åé / å¤§èå´ç²ç­ï¼ï¼å¾æ¡æ¨¡å¼ 2 ç§ï¼æ¾æè¿ N ä¸ªï¼æååæ­¢ï¼ / æ¾å¨é¨åéï¼ï¼æ«å°¾ãèªå®ä¹ã": "Result presets (quick schemes): a new preset dropdown in the left column, ordered mode first then preset. Density mode offers 3 presets (quick nearest N, all candidates, coarse scan) and pattern mode offers 2 (nearest N with early stop, all candidates), plus a custom entry",
+  "æ¹æ¡åªè®¾ç½®ãä¼æ¹åç»æãçå¼å³ï¼åæ­¢æ¹å¼/ç®æ³ç­ï¼ï¼ç¨æ·æå¨æ¹å¨ä»»ä¸é¡¹ä¼èªå¨åå°ãèªå®ä¹ãå¹¶æç¤ºãå·²ä¿®æ¹ï¼XããGPU ç­å éå¼å³å®å¨ç¬ç«ï¼åæ¢æ¹æ¡ä¸ä¼æ¹åå®ä»¬": "Presets only set switches that change results (stop policy, algorithm and so on); manually changing any of them switches to Custom with a note about what changed. GPU and other speed switches stay fully independent and are never modified by switching presets",
+  "è¿ç¨å¯è§åï¼æç´¢å®æåå¨è¿åº¦æµæ°´/åé¦/æ¥å¿/ç»æå¤å¶ææ¬ä¸­æ¾ç¤ºãé¶æ®µèæ¶ï¼æ«æÂ·å¹éÂ·å¶å®ï¼ããGPU æ¯å¦ä½¿ç¨ååéåå ããåæ­¢è¯­ä¹ï¼æ ææ©å/è·¨ååªæ/ç¼å­åå¤æ°å³å/å®æ´æ«æï¼ãä¸æ§è¡è·¯å¾": "Process visibility: after a search the progress stream, feedback, log and copyable result text now show stage times (scan, match, other), whether the GPU was used and why it fell back, the stop semantics (lossless early stop, cross-chunk pruning, cache-first stop, full scan) and the execution path",
+  "ä¸ºè®¾ç½®éæéºè·¯ï¼æ°å¢ SearchPlanï¼ç»æè¦æ±ï¼/ RuntimeEnvï¼ä»éåº¦ï¼åç¦»æ¨¡åä¸å¯ä¸æ å° toOptions()ï¼å¹¶å å¥ååæµè¯ç»ï¼é»è®¤å¼ãå¨å­æ®µæ å°ãæ­£äº¤æ§ãGPU æ»å¼å³ï¼": "Groundwork for the settings redesign: a SearchPlan (result requirements) and RuntimeEnv (speed only) split with a single toOptions mapping, covered by a new unit test group (defaults, full-field mapping, orthogonality, GPU master switch)",
+  "ä¿®å¤ GPU æµå¼å¹éåæ°åéæ°å¯ç¨ãè¡å¸¦æååæ­¢ãï¼å¸¦ 1 åºåå®å¨ä½éï¼é¿å¼å¹¶åè·ç¦»æ­§ä¹ï¼ï¼32768Â² å¯åº¦æç´¢ CPU 263 ms â GPU 27.4 ms â æ©å 10.8 msï¼24 åï¼": "After fixing the GPU streaming arguments, row-band early stopping is enabled again (with a one-chunk safety margin to avoid tie ambiguity): a 32768 squared density search goes from 263 ms on CPU to 27.4 ms on GPU and 10.8 ms with early stop, about 24 times faster",
+  "ä¿®å¤ GPU æµå¼å¯åº¦å¹éç OpenCL åæ°å®½åº¦éè¯¯ï¼å¸å°å¼æ 1 å­èä¼ å¥ int åæ°ãlong æ 32 ä½ä¼ å¥ 64 ä½åæ°ï¼ï¼æ­¤åä¼å¯¼è´ GPU å¹ééé»å¤±è´¥å¹¶åé CPUãä¿®å¤å 12000Â² å¯åº¦æç´¢ 43.4â7.5 msã32768Â² ä» 27.4 ms": "Fixed OpenCL argument width bugs in GPU streaming density matching (a boolean passed as one byte to an int argument, and a 32-bit long passed to a 64-bit argument), which made GPU matching fail silently and fall back to the CPU. A 12000 squared density search now takes 7.5 ms instead of 43.4 ms, and 32768 squared takes only 27.4 ms",
+  "GPU å¹éç°å¨åä¼ çå®å½ä¸­æ»æ°ï¼ç´æ¹å¾è£åªåçå¼ï¼ï¼ä¿®å¤å¯éå½ä¸­æ¶çç»è®¡åå·®": "GPU matching now reports the true total hit count (the value before histogram trimming), fixing statistics on dense searches",
+  "GPU è¡å¸¦æååæ­¢ææ¶å³é­ï¼å®æµå¨é¨ååºåä¸ CPU çæè¿ N ååå­å¨å¹¶åè·ç¦»éåå·®å¼ï¼æ¹ä¸ºä¸æ¬¡æ´¾åå¨éä»¥ä¿è¯ç»æå®å¨ä¸è´": "GPU row-band early stopping is temporarily disabled: measurements showed a nearest-N tie difference from the CPU in some areas, so a single full dispatch is used to keep results identical",
+  "å¾æ¡æµå¼åæ ¸è°ç¨ä¿®å¤ä¸éªè¯ï¼2Ã2/æè½¬å¾æ¡ GPU ä¸ CPU å½ä¸­ç»æä¸è´ï¼3.4~5.3 åï¼": "Fixed and verified the pattern streaming kernel call: 2x2 and rotated patterns now produce identical GPU and CPU hits (3.4x to 5.3x faster)",
+  "ä¿®å¤ä¸ä¸çå¼å¥çä¸¥æ ¼å¾æ¡å¹éæ§è½åå½ï¼å¹¶è¡åæ¹åªå¨ãæååæ­¢ãæ¶å¯ç¨ï¼å¶ä½æåµæ¢å¤ä¸æ¬¡å¹¶è¡è·å®ï¼é¿åæ¯æ¹æ°å»º/åå¹¶å ï¼ãä¸¥æ ¼å¹é 163 â 1.3 msï¼æ§è½åºçº¿æ£æ¥æ¢å¤æ­£å¸¸": "Fixed a strict pattern matching performance regression introduced in the previous version: parallel batching now only runs for stop-at-target searches, and all other cases dispatch in one parallel pass (avoiding per-batch heap setup and merging). Strict matching returns from 163 to 1.3 ms and the performance baseline check passes again",
+  "GPU æµå¼å¯åº¦å¹éç°å¨ä¹æ¯æãæå¤å°±å / æºè½èå´ãï¼æéç¹è¡å¸¦ç±è¿å°è¿åæ¹æ´¾åãæ¯æ¹ææ æä¸çå¤åãå®æµ 32768Â² å¯åº¦æç´¢ 288.6ï¼CPUï¼â 148.1 msãåºå²© 12000Â² 473.6â114.9 msï¼ç»æä¸ CPU éé¡¹ä¸è´": "GPU streaming density matching now also supports stop-at-target and smart range: anchor rows are dispatched in batches from near to far with one lossless early-stop check per batch. A 32768 squared density search goes from 288.6 ms on CPU to 148.1 ms, and Bedrock 12000 squared from 473.6 to 114.9 ms, with identical results",
+  "ä»å½éç¹è¡æ° â¥ 4096 æ¶å¯ç¨è¡å¸¦åæ¹ï¼å°åèµ°åæ¬¡æ´¾åï¼é¿åååè·¯å¾çå¤æ¬¡æ´¾åå¼éï¼": "Row-band batching only activates when there are at least 4096 anchor rows (small blocks use a single dispatch to avoid repeated dispatch overhead in the chunked path)",
+  "ä¿®å¤ä¸¥æ ¼å¾æ¡æ¨¡å¼ä¸è¯¯ç¨ãåå±/ä¼°ç®ãç®æ³æ¶éé»ç»åºéè¯¯ç»æçé®é¢ï¼å¼æååæè¿ä¸¤ç§ç®æ³å½æå¯åº¦è¯­ä¹æ§è¡ï¼ãç°å¨ä¸¥æ ¼æ¨¡å¼ä¸å¾æç²¾ç¡®ç®æ³æ§è¡ï¼å®æµä¸ç²¾ç¡®ç»æå®å¨ä¸è´": "Fixed a silent wrong result when strict pattern mode was combined with the layered or sampling algorithm (the engine used to run them with density semantics). Strict mode now always runs the exact algorithm and matches exact results",
+  "æ°å¢ä¸ç±»ä¸è´æ§/å¥å£®æ§èªæµï¼GPU å¯¹ CPUï¼30 ä¾ï¼Java/åºå²©ãå¯åº¦/ä¸¥æ ¼å¨é¨ä¸è´ï¼ãå¤§åºåååè·¯å¾ï¼å« 16384Â²ï¼ç»æä¸è´ä¸æ©åçæ 84â60 msï¼ãç¼å­æå»ºå¯¼å¥ï¼æå»ºâä¿å­âå¯¼å¥âæç´¢ç»æä¸è´ï¼æé 18 åï¼": "Added three consistency and robustness test suites: GPU versus CPU (30 cases across Java and Bedrock, density and strict, all agreeing), large chunked-path areas (including 16384 squared, identical results with early stop speeding up 84 to 60 ms), and cache build/import (build, save, import and search agree, 18 times faster)",
+  "æºè½èå´çè¡å¸¦é«åº¦æ¹ä¸º 256 è¡ï¼A/B å®æµ 64/256/512 ä¸­ 256 æä¼ï¼ï¼å¯éæç´¢åå¿«çº¦ 25%ï¼ä¸ç¼å­å±é¨æ§æ´å¥½": "The smart range row band height is now 256 rows (A/B tests of 64/256/512 showed 256 is best): dense searches are about 25 percent faster with better cache locality",
+  "éæºä¸è´æ§æµè¯æ©å±å° 120 ç»ï¼è¦ç Java/åºå²©ãå¯åº¦/ä¸¥æ ¼ï¼éæºå¾æ¡å«ç½è²ä¸ä¸åä¸æ ¼ï¼ãéå¼ 0 ä¸ 1.0ãç®æ æ° 1~25ãåºå 200~4200 ââ å¨é/æºè½èå´/æååæ­¢/ä¸¤èç»åç»æå¨é¨ä¸è´": "The randomized consistency test now covers 120 cases: Java and Bedrock, density and strict modes (random patterns including white and ignored cells), thresholds 0 and 1.0, target counts 1 to 25, areas 200 to 4200 - full scan, smart range, early stop and both combined all agree",
+  "æååæ­¢ç»äºè½è·å¤çº¿ç¨äºï¼æ¹ä¸ºãåæ¹å¹¶è¡ + æ¯æ¹ä¸æ¬¡æ ææ©åå¤å®ãï¼Java 8192Â² å¯åº¦æ©å 55.7â23.0 msï¼æ¯å¨éè¿å¿«ï¼ï¼æ©å+æºè½èå´ 51.7â25.4 ms": "Stop-at-target can finally run multi-threaded: work is evaluated in parallel batches with one lossless early-stop check per batch, taking a Java 8192 squared density early-stop search from 55.7 to 23.0 ms (faster than the full scan), and early stop plus smart range from 51.7 to 25.4 ms",
+  "æ°å¢éæº A/B ä¸è´æ§æµè¯ï¼40 ç»éæºåºå/åæ°ï¼è¦çå¯åº¦ä¸ä¸¥æ ¼æ¨¡å¼ï¼ï¼å¨éãæºè½èå´ãæ©åãæ©å+æºè½èå´ åç§ç»æå®å¨ä¸è´": "Added a randomized A/B consistency test (40 random areas and parameters covering density and strict modes): full scan, smart range, early stop and early stop with smart range all produce identical results",
+  "æºè½èå´ï¼ç±è¿å°è¿ï¼æ¹ç¨ãè¡å¸¦æåºãå¹¶å¯ç¨æ»çªå¿«è·¯å¾ï¼å¯åº¦æç´¢ 182.7â21.5 msï¼8.5 åï¼ï¼ç»æä¸å¨éå N åéé¡¹ä¸è´ãä¸¥æ ¼å¾æ¡+æååæ­¢ä»æ²¿ç¨åé¡ºåºï¼ä¿è¯ä¸åèå®ç°ä¸è´ï¼": "Smart range (near to far) now orders rows by distance bands and uses the sliding fast path: a density search goes from 182.7 to 21.5 ms (8.5x) with results identical to the full-scan top list. Strict pattern searches with early stop keep the previous ordering so they still match the reference implementation",
+  "ãæ¾å¤å°±åãä¸åç¦ç¨æ»çªå¿«è·¯å¾ï¼æ©åå®æµ 167.8â59.6 msï¼2.8 åï¼ï¼ç»æä¸å¨éå N åå®å¨ä¸è´": "Stop-at-target no longer disables the sliding fast path: early stop measured 167.8 to 59.6 ms (2.8x) with results identical to the full scan top list",
+  "æ´æ­£ä¸ä¸çç»è®ºï¼æ­¤åæ¥åçãJava æ©åç»æä¸å¨éä¸ä¸è´ãæ¯éªè¯èæ¬è¯¯æ¥ï¼æ©åçå½ä¸­æ»æ°å¤©çæ´å°ï¼åªåºæ¯è¾å N åï¼": "Corrected a finding from the previous version: the reported mismatch between Java early-stop and full-scan results was a test-script error (an early-stopped search naturally counts fewer hits, so only the top list should be compared)",
+  "GPU æµå¼è¢«è·³è¿æ¶ä¼æç¡®æç¤ºï¼å¾éãæ¾å¤å°±åãæãæºè½èå´ãæ¶ GPU æµå¼ä¸æ¯æï¼çé¢ä¼ç´æ¥è¯´æãæ¬æ¬¡èµ° CPU ä½å¾è·¯å¾ãï¼ä¸åéé»åé": "When GPU streaming is skipped the UI now says so: the streaming path does not support stop-at-target or smart range, so the app states that this search uses the CPU bitmap path instead of silently falling back",
+  "å®æµåç°ä¸é¡¹å¾ä¿®é®é¢ï¼å·²è®°å½å¨ docs/v390_plan.mdï¼ï¼æ©åçä¸å°æ«æé¶æ®µæ¶é´ï¼æ«æä» 100%ï¼ãæ©å/æºè½èå´ä¼ç¦ç¨ GPU ä¸å¿«è·¯å¾å¯¼è´æ¢ 3~7 åãJava æ©åç»æä¸å¨éå N åä¸ä¸è´": "Measurements found three issues to fix (recorded in docs/v390_plan.md): early stop does not shorten the scan stage (still 100 percent), early stop and smart range disable GPU and fast paths making searches 3 to 7 times slower, and Java early-stop results differ from the full-scan top list",
+  "å¾æ¡ GPU æµå¼å¹éä»ç¯å¢åéè½¬æ­£ä¸ºè®¾ç½®é¡µéé¡¹ï¼ãè®¾ç½® â æ§è½ â å¯ç¨ GPU å¾æ¡æµå¼å¹éãï¼ï¼é»è®¤å³é­ãåºåè¶å¤§æ¶çè¶ææ¾ï¼å®æµ 8192Â² å¾æ¡æç´¢ç¸å¯¹ CPU 3.9~9.0 åï¼": "GPU pattern streaming moved from an environment variable to a settings option (Settings, Performance, Enable GPU pattern streaming matching), off by default. The gain grows with the area (measured 3.9x to 9.0x over the CPU for 8192 squared pattern searches)",
+  "æ³¨æï¼å¾æ¡æµå¼ç®ååªå¨ AMD æ¾å¡ä¸éªè¯è¿ï¼NVIDIA / Intel æ¾å¡æªåéªè¯ãå¦æå¼å¯ååºç°å¼å¸¸æç»æä¸ç¬¦ï¼è¯·å³é­è¯¥éé¡¹ï¼ä¼èªå¨åå° CPU è·¯å¾ï¼": "Note: pattern streaming has only been validated on AMD graphics; NVIDIA and Intel cards are not validated. If anything looks wrong after enabling it, turn the option off and the CPU path is used again",
+  "å¯éå½ä¸­ï¼åæ¥ >20 ä¸æ¡å°±åé CPUï¼æ¹ç¨ãä¸¤éç´æ¹å¾é¢ç­ãï¼ç¬¬ä¸éå¤å®çåæ¶ç»è®¡è·ç¦»ç´æ¹å¾ï¼ç¬¬äºéåªååçº¦ 5 ä¸æ¡æè¿å½ä¸­ãJava 8192Â² å¯åº¦æç´¢ 29.6ï¼CPUï¼â 20.8 msãåºå²© 58.5â15.0 msï¼ç»æéé¡¹ä¸è´": "Dense results (previously over 200k hits fell back to the CPU) now use a two-pass histogram pre-filter: the first pass decides chunks and accumulates a distance histogram, the second pass returns only the nearest 50k hits. A Java 8192 squared density search goes from 29.6 ms on CPU to 20.8 ms, Bedrock from 58.5 to 15.0 ms, with identical results",
+  "å½ä¸­ä¸éä» 20 ä¸æ¾å®½å° 400 ä¸ï¼ç±ç´æ¹å¾é¢ç­æ§å¶åè¯»éï¼ï¼å¯éåºæ¯ä¸ååé CPU": "The hit cap is raised from 200k to 4M since the histogram pre-filter now controls how much is read back, so dense searches no longer fall back to the CPU",
+  "å¾æ¡ GPU æµå¼çå¯ç¨é¨æ§åç¬ä¸è°å° 800 ä¸åºåï¼å¾æ¡æµå¼æ¯ CPU å¿«å¾å¤ï¼åé¨æ§æ²¿ç¨å¯åº¦è·¯å¾ç 3000 ä¸è¿äºä¿å®ï¼ã4096Â² å«æè½¬ 20.97â5.45 msï¼1.0â3.9Ãï¼ï¼5500Â² 1.1â5.7Ã": "The GPU pattern streaming threshold is now 8M chunks instead of the density path 30M (pattern streaming is much faster than the CPU, so the old threshold was too conservative). A 4096 squared search with rotations drops from 20.97 to 5.45 ms (1.0x to 3.9x), and 5500 squared goes from 1.1x to 5.7x",
+  "ä¿®å¤ GPU æµå¼å¯åº¦å¹éå¨ãéé¶èµ·ç¹ãä¸çå¤å®éè¯¯ï¼å¤å®ç¨ç x å°¾é¡¹æ¼å äºåºåèµ·ç¹ï¼å¯¼è´åªæä» (0,0) å¼å§çæç´¢ææ­£ç¡®ãå®æµ 4096Â²/8192Â² å¨èµ·ç¹ (0,0)ã(-2048,-2048)ã(1000,-2000) ä¸å½ä¸­éåç°å·²ä¸ CPU éé¡¹ä¸è´": "Fixed a wrong decision in the GPU streaming density path when the area does not start at the origin: the x term of the decision was missing the area origin, so only searches starting at (0,0) were correct. At 4096 squared and 8192 squared the hit sets now match the CPU exactly for origins (0,0), (-2048,-2048) and (1000,-2000)",
+  "å¾æ¡ GPU æµå¼ï¼ååä½ï¼æ¹åéå®ï¼æ¶è·³è¿è·¨åä½å»éå®¹å¨ï¼åæ¥æ¯æ¬¡å½ä¸­é½èµ°ä¸æ¬¡ std::mapï¼6924 æ¡è¦ 2.9 msï¼ã8192Â² å¾æ¡æç´¢ 7.4â4.3 msï¼ç¸å¯¹ CPU 4.3Ãï¼ï¼6144Â²/7000Â² è¾¾ 6.0Ã/6.4Ã": "GPU pattern streaming now skips the cross-variant dedupe container when there is only one variant (direction locked), since every hit previously paid a std::map lookup (2.9 ms for 6924 entries). An 8192 squared pattern search drops from 7.4 to 4.3 ms (4.3x over CPU), and 6144 squared and 7000 squared reach 6.0x and 6.4x",
+  "ä¿®å¤å¾æ¡ GPU æµå¼å¹éçè°ç¨ä½ç½®ï¼åæ¥å¨ãååè·¯å¾ãåé¨ï¼å¤§åºåè¢«åæå¤åãæ¯ååè·ä¸é GPU åæ ¸ï¼åºå®å¼éæ¾å¤§ 5~7 åï¼ï¼ç°å¨æå°é¡¶å±ï¼æ´åºåªè°ç¨ä¸æ¬¡": "Fixed where the GPU pattern streaming path is invoked: it used to run inside the chunked path, so a large area was split into several chunks and each one ran the GPU kernel again (multiplying fixed overhead 5 to 7 times); it now runs at the top level, once for the whole area",
+  "å¾æ¡ GPU æµå¼å¹éæ¯ææè½¬åä½ï¼æåä½ä¾æ¬¡æ´¾åãè·¨åä½ç¨ QuadKey å»éãrank ä¸ CPU è·¯å¾åæã8192Â² å¾æ¡æç´¢ï¼å«æè½¬ï¼75.8â15.7 msï¼4.8Ãï¼ï¼ç»æéé¡¹ä¸è´": "The GPU pattern streaming path now supports rotation variants: each variant is dispatched in turn, duplicates are removed across variants by QuadKey, and rank ordering matches the CPU path. An 8192 squared pattern search with rotations drops from 75.8 to 15.7 ms (4.8x) with identical results",
+  "æ°å¢ãä¸¥æ ¼å¾æ¡ GPU æµå¼å¹éãå®éªéè·¯ï¼å¾æ¡å¤å®ä¸å¹éé½å¨æ¾å¡åå®æãåªåä¼ å½ä¸­ï¼8192Â² å¾æ¡æç´¢ 16.1â4.5 msï¼3.6Ãï¼ï¼ç»æéé¡¹ä¸è´ãé»è®¤å³é­ï¼ç¨ç¯å¢åé SLIME_GPU_PATTERN=1 å¼å¯": "Added an experimental fully-GPU streaming path for strict pattern matching: chunk decisions and pattern matching both run on the GPU and only matches come back, taking an 8192 squared pattern search from 16.1 to 4.5 ms (3.6x) with identical results. It is off by default and enabled with the SLIME_GPU_PATTERN=1 environment variable",
+  "Java ç GPU å¤å®æ¹ç¨ãå°¾é¡¹å·®åéæ¨ãï¼æ¯åºå 3 æ¬¡å æ³æ¿ä»£ 3 æ¬¡ä¹æ³ï¼åæ ¸å®æµ 1227â1356 äº¿åºå/ç§ï¼å¿« 10.5%ï¼": "The Java GPU decision now uses a difference recurrence for the x term, replacing three multiplies with three adds per chunk: the kernel measures 122.7 to 135.6 billion chunks per second, 10.5 percent faster",
+  "æµå¼å¹éåæ ¸ä¸ GPU æ«æåæ ¸åæ­¥æ¹ç¨æ°çå¢éå¤å®ï¼ç»æä¸ CPU éä½ä¸è´ï¼å¨éæ¯å¯¹éè¿ï¼": "The streaming matching kernel and the GPU scan kernel use the same incremental decision routine, and results still match the CPU bit for bit (full comparison passed)",
+  "æµå¼å¹éåæ ¸çéç¹éåå»ææ´æ°é¤æ³ï¼GPU ä¸é¤æ³æ¯æ¨¡æçï¼ï¼æµå¼åæ ¸åå +7.7%": "The streaming kernel no longer uses integer division when walking anchor points (division is emulated on GPUs), lifting streaming kernel throughput by 7.7 percent",
+  "Java çå¤å®å å ãè¡åºåº§å¤æ + 32 ä½ä¹æ³ãåï¼GPU çº¯å¤å®åæ ¸å®æµ 1226 äº¿åºå/ç§ï¼æ­¤åçº¦ 190 äº¿ï¼": "With the row base hoisted and 32-bit multiplies, the Java GPU decision kernel now measures 122.6 billion chunks per second (previously about 19 billion)",
+  "å¯åº¦æç´¢æ¹ç¨ãå¨ GPU æµå¼å¹éãï¼å¤å®ãçªå£ç»è®¡é½å¨æ¾å¡åå®æï¼åªåä¼ å½ä¸­ï¼ä¸ååä¼ ä½å¾ãä¹ä¸å¨ CPU ä¸åå¹éãå®æµ Java 16384Â² å¿« 7.5 åã32768Â² å¿« 9.0 åï¼åºå²© 16384Â² å¿« 5.1 å": "Density searches now use full GPU streaming matching: chunk decisions and window counting happen on the GPU and only matches come back, so no bitmap is transferred and the CPU no longer matches. Measured 7.5x faster at 16384 squared, 9.0x at 32768 squared for Java, and 5.1x for Bedrock at 16384 squared",
+  "GPU å¯åº¦ç»æå¥æ¦å æ´æ°è·ç¦»åªæï¼å½ä¸­å¾å¤æ¶ä¸åéæ¡ç® hypot ä¸å æä½": "GPU density results are now pruned by integer distance before entering the top list, so hit-heavy searches no longer pay a hypot and heap operation per hit",
+  "æµå¼å¹éåªå¨ãå½ä¸­æ°å¯æ§ãæ¶å¯ç¨ï¼é»è®¤ â¤20 ä¸æ¡ï¼ï¼å½ä¸­è¿å¤èªå¨åé CPU è·¯å¾ï¼ç»æè¯­ä¹ä¿æéé¡¹ä¸è´": "Streaming matching only runs when the match count is controllable (about 200k by default); with more matches it falls back to the CPU path so results stay item-for-item identical",
+  "ç¼å­æå»ºæ¨¡å¼åºå®èµ° CPUï¼GPU æ«æé¶æ®µä¸äº§åºç¼å­æ¡ç®ï¼å¤æ®µæå»ºä¼åºç°ãæ«äºä¸äº¿åºåå´æ²¡åç¼å­ã": "Cache building always runs on the CPU: the GPU scan stage does not produce cache entries, so multi-segment builds could scan hundreds of millions of chunks without writing any",
+  "éåå½ä¸­è®°å½è·¯å¾ï¼åç¨æ´æ°è·ç¦»å¤æ­è½å¦è¿æ¦ãä¸è¡å°±ç´æ¥è·³è¿ï¼ä¸åç® hypotãä¸åæé ç»æãä¸åå¨å ï¼ï¼å®æ¶å½ä¸­è®¡æ°æ¹ä¸ºçº¿ç¨æ¬å°æ¹éæäº¤ãå¼æçº§å®æ´æç´¢ Java ç 55â28 msãGPU 22 ms": "Rewrote the hit-recording path: an integer distance check now rejects candidates that cannot enter the top list before any hypot, result construction or heap operation, and the live hit counter is batched per thread. Engine-level full search: Java 55 to 28 ms on CPU and 22 ms with GPU",
+  "å¯åº¦å¹éæ¹ç¨ãç²¾ç¡®æ´æ°é¨éãï¼ç±æµ®ç¹å¤å®åè§£åºç­ä»·æ´æ°éå¼ï¼SIMD æ©ç åªäº§åºçå½ä¸­ï¼å½ä¸­å¯éåºæ¯æå¿«ç¼©ç­ä¸åä»¥ä¸": "Density matching now uses an exact integer threshold derived from the floating-point rule, so the SIMD mask only yields true hits and hit-heavy searches finish in about half the time",
+  "GPU å¯ç¨é¨æ§æçæ¬èªéåºï¼Java çº¦ 3000 ä¸åºåãåºå²©çº¦ 9.6 ä¸åºåï¼ï¼ä½äºé¨æ§èªå¨èµ° CPUï¼é¿åå°èå´å¼ GPU åèåæ¢": "The GPU enable threshold is now version dependent (about 30M chunks for Java, 96K for Bedrock); below it the CPU path runs, so small searches no longer get slower with GPU enabled",
+  "SLIME_PROFILE=1 æ¶æ°å¢å¯åº¦å¹éè¡åæ®µçèæ¶æç»ä¸å½ä¸­/åªæè®¡æ°ï¼ä¾¿äºåç»­ç»§ç»­åæµç¨ä¼å": "With SLIME_PROFILE=1 the density matching inner section now reports its own timing plus hit and prune counts, to guide further process optimization",
+  "å¯åº¦å¹éæ¹ä¸ºãåéç´æ¥åºå½ä¸­æ©ç ãï¼ä¸ååè¯»æ¯éç¹ 4 å­èçè®¡æ°æ°ç»ï¼1 äº¿éç¹çä¸çº¦ 400 MB å¾è¿ï¼ï¼å¼æçº§å®æ´æç´¢ CPU 55â47 msãGPU 45â39 ms": "Density matching now produces a hit bitmask directly in vector code instead of writing and reading a four-byte count per anchor (about 400 MB of traffic saved at 100M anchors): engine-level full search went from 55 to 47 ms on CPU and 45 to 39 ms with GPU",
+  "ç¯å½¢è¦ççåç¼åè¡¨æ¹ä¸ºå¸¸é©»æ¾å­å¤ç¨ï¼åä¸åºååå¤æç´¢æ¶ä¸åæ¯æ¬¡éæ°åéä¸ä¼ ": "The ring-coverage prefix table now stays resident in GPU memory and is reused, so repeated searches over the same area no longer reallocate and re-upload it",
+  "Java GPU åæ ¸ç 48 ä½éæºæ°ä¹æ³æ¹ç¨ 32 ä½ä¹æ³æ¼è£ãè¡åºåº§æå°æ¯è¡ä¸æ¬¡ï¼åºå²© GPU æ¹ä¸ºä¸¤æ¡ç§å­é¾äº¤éæ¨è¿": "The Java GPU kernel builds its 48-bit random multiplies from 32-bit pieces and hoists the row base out of the inner loop; the Bedrock GPU kernel now interleaves two seed chains",
+  "ç¯å½¢è§åçå°èå´ç²¾ç¡®è·¯å¾æ¹ç¨ GPU æ¹éç®è¦çï¼40Ã40 åºåå¿« 3.1 åã60Ã60 åºåå¿« 5.1 åï¼åéä¸è¦çéé¡¹ä¸è´": "The small-area exact ring path now computes coverage on the GPU in batches: 3.1x faster at 40x40 chunks and 5.1x at 60x60 chunks, with identical candidates and coverage values",
+  "GPU åªæ¥ç®¡è¿ä¸æ¡å­è·¯å¾ï¼æ  GPUãå ææ¨¡å¼ãä¸­å¿æ°ä¸è¶³ 2 ä¸æ¶ä»èµ°å CPU è®¡ç®ï¼ä¸åæ´ä½æ¿ä»£": "GPU only takes over that one sub-path: without a GPU, in weighted mode, or below 20k centers the original CPU computation still runs, so nothing is replaced wholesale",
+  "ç§»é¤äºä¸è½½é¡µçè®¿é®å¯ç ï¼ç°å¨åªç»ä¸è½½é¾æ¥ï¼å¤å¶ä¸æ£æ¥æ´æ°é½ä¸åæå¯ç ": "Removed the extra verification step on the release page: the update check now opens it directly",
+  "ãå³äºãä¸ãèç³»æä»¬ãéæ°åå·¥ï¼å³äºåªè®²çæ¬/ç®æ³/ç¦»çº¿ç¹æ§ï¼èç³»æä»¬åªè®²åé¦æ¸ éä¸åé¦æ¶è¯¥éä»ä¹": "Split About and Contact: About now covers version, algorithm and offline behaviour; Contact covers feedback channels and what to include in a report",
+  "ä½¿ç¨æç¨æ°å¢å·¦ä¾§ç®å½ï¼9 ç« å¯ç¹å»è·³è½¬ï¼ï¼å¹¶æ´æ°äº GPUãåºå²©çéåº¦ç­è¿æ¶ææ¡": "The tutorial now has a clickable nine-section table of contents, and the GPU and Bedrock speed passages are up to date",
+  "å¸®å©èåæ°å¢ãé¸£è°¢ãï¼ååºæä¾æ³æ³ä¸å¸®å©çæå": "Added a Credits entry to the Help menu listing the people who contributed ideas and help",
+  "ä¼åäºåºå²©çç GPU æ«æï¼æ¹ç¨æåå­åæ ¸ï¼åè¯»ééå° 1/8ï¼ï¼GPU æ«æ 16.7â9.6 msï¼æ¯ CPU å¤æ ¸å¿« 5.2 å": "Improved the Bedrock GPU scan: the packed-word kernel cuts readback to one eighth, taking the GPU scan from 16.7 to 9.6 ms and running 5.2x faster than multi-core CPU",
+  "ä¼åäº GPU ååçä½å¾åå¹¶ï¼æ 128 ä½æ¹é ORï¼éæèæ¶åé 3 å": "Improved the GPU write-back merge to use 128-bit OR operations, making integration another three times faster",
+  "GPU å éä¸åæ¯ãå®éªæ§ãåè½ï¼ä½ä»é»è®¤å³é­ï¼CPU å¼ºäºæ¾å¡æ¶å¯ç»§ç»­ç¨çº¯ CPUï¼å¯ç¨æ¶ä¼å®æµä¸¤èååå¹¶ç»åºå»ºè®®": "GPU acceleration is no longer marked experimental but stays off by default: on machines with a strong CPU you can keep using CPU only, and enabling it now measures both rates and shows a recommendation",
+  "ä¼åäº Java çç GPU æ«æï¼åæ ¸ç´æ¥è¾åºæåç 64 ä½å­ï¼åè¯»ééå° 1/8ï¼éæéåä¸ºæå­ ORï¼ï¼GPU æ«æ 24.1â7.1 msï¼é¦æ¬¡å¨é¢å¿«äº CPU å¤æ ¸": "Improved the Java GPU scan: the kernel now returns packed 64-bit words (readback drops to one eighth and integration becomes a word-wise OR), cutting the GPU scan from 24.1 to 7.1 ms and beating multi-core CPU for the first time",
+  "ä¼åäº GPU è·¯å¾çæµæ°´çº¿ï¼GPU æ«ä¸ä¸åæ¶ CPU åæ¶éæå½ååï¼åç¼å²ï¼ï¼Java GPU æ«æ 31.7â24.1 msãåºå²© 16.3â15.8 ms": "Pipelined the GPU path: the CPU now integrates the current tile while the GPU scans the next one (double buffering), cutting the Java GPU scan from 31.7 to 24.1 ms and Bedrock from 16.3 to 15.8 ms",
+  "ä¼åäº GPU è·¯å¾çææå·¥ä½å æ¯ï¼åè¯»çéåºåæåæ¹ç¨ SSE2 ä¸æ¬¡åº 16 ä½ï¼Java GPU æ«æ 105â31 msãåºå²© 41â16 msï¼éè¡éæ 0.97â0.084 ns/åºåï¼": "Improved the effective GPU work share: the readback packing now uses SSE2 movemask (16 bits at a time), cutting the Java GPU scan from 105 to 31 ms and Bedrock from 41 to 16 ms (per-row integration 0.97 -> 0.084 ns per chunk)",
+  "æ°å¢ãGPU å ç¨çä¸éãè®¾ç½®ï¼10~100%ï¼ä¸æ¬¡æç´¢çæï¼ï¼æå ç©ºæ¯å¨ç¦çä¹é´ä¼ç ï¼æ¹ä¾¿è¾¹ç¨çµèè¾¹è·": "Added a GPU utilization cap (10-100 percent, applied to the next search): the engine idles between tiles to keep GPU duty cycle under the limit",
+  "ä¼åäºåºå²©çç GPU å¤å®ï¼æ¹ç¨ 398 æ­¥ç­ä»·æ·å¾ï¼åæ¥è·å®æ´ç 624 æ­¥åå§å + 624 æ­¥åæ + 624 é¡¹ç§ææ°ç»ï¼ï¼GPU ååæåçº¦ 52 å": "Improved the Bedrock GPU check: it now uses the equivalent 398-step shortcut instead of a full 624-step init plus 624-step twist with a 624-entry private array, about 52x faster on the GPU",
+  "ä¼åäºåºå²©çå¤å®ç®æ³ï¼ä¸æ¡é¾æ¹ç¨ 8 ä¸ª laneï¼åæ¥åªç¨äº 4 ä¸ªï¼æµªè´¹ä¸å SIMD ééï¼ï¼åæ ¸å¿« 1.35 åãå¤æ ¸å¿« 1.94 å": "Improved the Bedrock chunk check: each chain now uses 8 lanes instead of 4 (half the SIMD lanes were idle), 1.35x faster on one core and 1.94x with all cores",
+  "ä¼åäºå¤§å¾æ¡çä¸¥æ ¼å¹éï¼å¨ç»¿ä¸å®½åº¦ â¥16 çå¾æ¡æ¹ç¨åå¢åç¼ ANDï¼16Ã16 çº¦å¿« 1.3 åã24Ã24 çº¦å¿« 1.5 å": "Improved strict matching for large all-green patterns (width 16 or more) using doubling prefix AND: about 1.3x faster at 16x16 and 1.5x at 24x24",
+  "ç¯å½¢è§åæ¹ç¨é¢ç®çç£çè¡è½®å»ï¼ç»æä¸åï¼ä»£ç æ´ç®æ´ï¼": "Ring planning now uses a precomputed disk row profile (same results, simpler code)",
+  "ä¿®å¤äºæç´¢ç»æååæ¢æç´¢æ¹å¼æ¶ç»æåè¡¨ä¸æ´æ°çé®é¢ï¼ç¯å½¢æç´¢æ ææ¶ä¹ä¼æ¸ç©ºæ§ç»æï¼åæ¢å¾æ¡/å¯åº¦æ¶ä¸»å¨æ¸åº": "Fixed the result list not refreshing when switching search mode after a search: empty ring searches now clear old results and switching pattern/density clears the list",
+  "ä¿®å¤äºç©ºç»ææ¶ç»æåè¡¨ä¿çæ§æ°æ®çé®é¢ï¼ç°å¨åè¡¨ãè®¡æ°ãå°å¾æ è®°ä¸èµ·æ¸ç©ºï¼": "Fixed stale rows left in the result list when a search finds nothing (list, caption and map markers are now cleared together)",
+  "æ¤éäº 3.6.9 çæ­£å¼çèµæ ¼ï¼æ­£å¼çä»ä¸º 2.8.4 / 3.1.1 / 3.3.0 / 3.5.0ï¼": "Revoked the stable status of 3.6.9 (stable builds remain 2.8.4 / 3.1.1 / 3.3.0 / 3.5.0)",
+  "æ´æ°åå²æ¹åææ´ç®æ´çè¯´æï¼ä¾å¦ãä¼åäºå¯åº¦æç´¢çå¹éç®æ³ï¼éåº¦æåçº¦ 17 åãï¼": "Rewrote update history entries in a shorter, plain-language style (for example \"Improved the density matching algorithm, about 17x faster\")",
+  "æ¬çç»ç¨æ·æµè¯åè½¬ä¸ºæ­£å¼ç": "This build is now marked stable after user testing",
+  "ä¼åäºå¯åº¦æç´¢çå¹éç®æ³ï¼éåº¦æåçº¦ 17 å": "Improved the density matching algorithm, about 17x faster",
+  "æ°å¢äºæ¨¡æè·ç¦»è°èï¼ç¯å½¢æç´¢æ´è´´åæ¸¸æè®¾ç½®": "Added a simulation distance setting so ring searches match your game settings",
+  "ä¼åäºåºåå¤å®ç®æ³ï¼æ«æéåº¦æåçº¦ 1.7 å": "Improved the chunk check kernel, about 1.7x faster scanning",
+  "ä¼åäºå¨å²è±å§çªå£çå¯åº¦æç´¢ï¼éåº¦å¿«äº 27 å": "Made all-slime density searches about 27x faster",
+  "æ°å¢äº 6 ä¸ªå¯¹ç§æµè¯ç¨ä¾ï¼è¦çæ°çå¿«éè·¯å¾": "Added six regression cases covering the new fast path",
+  "ä¼åäº Java çå¤å®ç®æ³ï¼æ«æéåº¦æåçº¦ 1.7 å": "Improved the Java chunk check, about 1.7x faster scanning",
+  "æ°å¢äºå¨å²è±å§çªå£çå¿«éå¤å®ï¼å¯åº¦æç´¢æ´å¿«": "Added a fast path for all-slime windows, speeding up density searches",
+  "è°æ´äºåºå²©çè¯´æï¼éåº¦å·²æ¥è¿æ¬æºä¸é": "Clarified that Bedrock speed is already near this machine's limit",
+  "ä¿®å¤äºæå¨å°å¾å¡é¡¿çé®é¢": "Fixed stuttering while dragging the map",
+  "è°æ´äºå°å¾ç¼å­ç­ç¥ï¼åªç¼å­æµè§è¿çåºå": "Changed map caching to keep only areas you actually viewed",
+  "è°æ´äºéªè¯æµç¨ï¼æ¹æææ¡£ä½è¿è¡ï¼æ¹ä¸å¤æ´å¿«åºç»æ": "Tiered the verification flow so single changes are checked faster",
+  "ä¼åäºå°å¾æå¨ï¼æ¾æåä¸åæ´å¼ éç»": "Smoothed map panning: releasing no longer repaints the whole layer",
+  "è°æ´äºæåæµç¨ï¼åä¸è½®ä¸éå¤è·èªæ£": "Streamlined packaging so self-tests are not run twice in a round",
+  "ä¼åäºå°å¾ç¼å­ï¼æ¥åæå¨ä¸ç¨éæ°å è½½": "Improved map caching so panning back and forth reloads nothing",
+  "ç§»é¤äºå°å¾åºå¾çç£çç¼å­": "Removed the on-disk map tile cache",
+  "æ°å¢äºæå¨ç¼å­çåå½æµè¯": "Added a regression test for the drag cache",
+  "æ°å¢äºå°å¾åºå¾ç¼å­ï¼åæ¬¡æå¼åä¸çå°å¾æ´å¿«": "Added a map tile cache so opening the same area again is faster",
+  "ä¿®å¤äºåºå²©çç§å­æ¡ä¸è½ç¼è¾çé®é¢ï¼å¤å®ä»ä¸ç§å­æ å³ï¼": "Fixed the locked seed box in Bedrock mode (results still do not depend on it)",
+  "è°æ´äºåºå²©çç¾¤ç³»è¯´æï¼æç¡®æ æ³¨ä¸ºè¿ä¼¼ç»æ": "Clarified Bedrock biome support and marked it as an approximation",
+  "æ°å¢äºãç¾¤ç³»å°å¾ â  å°å½¢å¾ãçä½¿ç¨æç¨": "Added a tutorial section explaining biomes versus terrain",
+  "æ°å¢äºåºå²©çç¾¤ç³»çèªæ£æ­è¨": "Added self-test assertions for Bedrock biomes",
+  "ä¿®å¤äºå°å¾è¢«æ¤çªãæ æ³æå¨è°æ´çé®é¢": "Fixed the map being squeezed narrow and unable to resize",
+  "ä¿®å¤äºç»æåè¡¨å±å¼åé«åº¦å¼å¸¸çé®é¢": "Fixed the result list expanding to a wrong height",
+  "ä¿®å¤äºæå æé®ç¹å»åä½ç½®åç§»çé®é¢": "Fixed the collapse buttons shifting after being clicked",
+  "ä¼åäºç¯å½¢æç´¢çç²æ«ï¼åå°åå­è¯»å": "Trimmed memory traffic in the ring coarse pass",
+  "è°æ´äºçæ¬è¯´æï¼è¯¥çæ¬åå·²æ¤éæ­£å¼çèµæ ¼ï¼": "Adjusted the release note (this build is no longer marked stable)",
+  "è®¾ç½®é¡µæ Esc æ´é¡µæ¶å¤±ï¼åªå©ãæ¢å¤é»è®¤ãæé®ï¼ï¼è®¾ç½®é¡µæ¯åµå¨ä¸»çªå£éçæ®éé¡µé¢ï¼QDialog é»è®¤æ Esc äº¤ç» reject() å¹¶ hide() ââ ç°å¨ç´æ¥åæ Esc": "Pressing Esc in the settings page wiped the page (only \"Restore defaults\" remained): the page is an embedded child widget, so QDialog handed Esc to reject() and hid everything. Esc is now swallowed",
+  "å°å¾/ç»ææå æé®ç¹å»åä»ä¼ä½ç§»ï¼æéæ ç­¾åæ¥è¢«å¡è¿åéæ¡ï¼ç¬¬ 3 ä¸ªå­æ§ä»¶ï¼ï¼æ¾ç¤º/éèä¼éæåç´ ï¼ç°å¨æªè¿ç»æé¢æ¿ï¼å¹¶å¨å±å¼æ¶æ¢å¤æå åçåç´ é«åº¦": "The Map / Results collapse buttons still shifted the panes: the notice label was a third child of the splitter, so showing it re-distributed pixels. It now lives inside the results pane, and the map height is restored on expand",
+  "æ¸çæ´æ°åå²ééå¤çãå·²ä¿®å¤ãæ¡ç®ï¼å°å¾æå å¥å£ï¼3.6.0/3.6.1/3.6.3 éå¤ï¼ãè±æè¦çï¼3.6.2/3.5.28 éå¤ï¼ãå°å¾ä¸ä¸è²ï¼3.5.26 ä¸ 3.5.27 éå¤ï¼ã2.8.3 éåæ¡ç®": "Cleaned duplicated \"already fixed\" notes from the update history (map toggle in 3.6.0/3.6.1/3.6.3, English coverage in 3.6.2/3.5.28, map coloring in 3.5.26 vs 3.5.27, duplicate 2.8.3 entry)",
+  "æç´¢æç»æä½ç»æåè¡¨ä¸æ¾ç¤ºï¼ç»ææ¯ååææ¬ãåå m_lastOutcomeï¼èå¡«è¡¨è¯»çæ­£æ¯ m_lastOutcome ââ åè¡¨æ°¸è¿æ¢ä¸æï¼é¦æ¬¡æç´¢å¿ç©ºãä¹åæ¾ç¤ºä¸ä¸æ¬¡ï¼ãç°å·²æ¹ä¸ºååç»æåå·æ°åè¡¨": "Search found results but the result list stayed empty: the text was built before m_lastOutcome was assigned, and the table reads m_lastOutcome - so the list always lagged one search behind. Results are now stored before the list is refreshed",
+  "æé®å¨é¨æ¹åç´è§ï¼å«æ·±è²ä¸»é¢ä¸æå æ é¢ï¼": "All buttons are square again (including dark theme and collapse headers)",
+  "é¨åç¾¤ç³»æ¾ç¤º unknownï¼è¡¥é½ 1.7~1.17 çæ§ç¾¤ç³» IDï¼127~167ï¼ï¼æªæ¶å½ ID ä¹æç¨³å®çæ£åéè²ï¼æ¬åæ¾ç¤ºãæªç¥ç¾¤ç³»ï¼ID Nï¼ãèä¸æ¯è£¸ unknown": "Some biomes showed \"unknown\": legacy 1.7-1.17 biome IDs (127-167) were added, and unmapped IDs now get a stable hashed color with a hover text of \"unknown biome (ID N)\"",
+  "ç¹ãå°å¾ / ç»æãæå æé®æ¶é¢æ¿ä½ç§»ï¼æå åªåå¯è§æ§ï¼ä¸åéæåæ å°ºå¯¸": "Clicking the Map / Results collapse headers no longer shifts the panes: collapsing only toggles visibility and stops re-laying out the splitter",
+  "CPU å ç¨çæ­è¨æ¾å®½å° 10~95%ï¼è¯¥ææ ä¸æºå¨è´è½½å¼ºç¸å³ï¼æå»ºå¹¶è¡æ¶ä¼ææ¾åç§»ï¼": "CPU-usage assertion widened to 10-95% (the metric depends heavily on machine load)",
+  "æ°å¢ãæåçé¢æµãï¼äºæ¬¡ç¡®è®¤çªå£éç»åºç®æ è³å°è¢«æ¾å° 1 ä¸ªçæ¦çï¼å¾æ¡æç»¿/ç½æ ¼çº¦æãå¯åº¦æçªå£äºé¡¹å°¾æ¦çä¼°ç®ï¼ï¼å¹¶ç»åºåéä½ç½®æ°ä¸åç¹å½ä¸­ç": "New success-probability prediction: the confirmation dialog now reports the chance of finding at least one target (pattern uses green/white constraints, density uses a binomial tail on the window), plus candidate positions and per-position hit rate",
+  "äºæ¬¡ç¡®è®¤çªå£éåï¼åè¯´æ¸è¦æ«æå¤å¤§èå´ï¼åç»æåçä¸ãåªä»£è¡¨è½æ¾å°ä¸ä¸ªãçè¯´æ": "Confirmation dialog rewritten: first what will be scanned, then the probability and a note that it only means \"at least one found\"",
+  "ç»ææ°éä¸å¤ä¸ä¸è´ï¼ç»æææ¬ãç»æåè¡¨ãç»è®¡è¡ç»ä¸ä½¿ç¨åä¸ä¸ªå±ç¤ºä¸éï¼500 æ¡ï¼ï¼ä¸ååºç°äºç¸çç¾çæ°å­": "Fixed the three-way count mismatch: result text, result list and the stats line now share one display cap (500)",
+  "å¾æ¡æ¨¡å¼ä¸ãå¼å§æç´¢ãåå§ç½®ç°ï¼ç»å®å¾æ¡ / åæ¢æ¨¡å¼åç«å³å·æ°å¯ç¨ç¶æ": "Fixed Start being greyed out in pattern mode: drawing a pattern or switching modes now refreshes the button state immediately",
+  "æé®æ ·å¼ç»ä¸ï¼å¨é¨æé® 6px åè§ï¼æ¬åç»ä¸åç»¿ï¼æå æ é¢ãæ·±è²ä¸»é¢å¾æ æ¡ä¸å¹¶ä¿®æ­£ï¼": "Unified button styling: 6px radius everywhere and green hover (including collapse headers and dark-theme icon bar)",
+  "å¸å±ä¸åãå°å¤è·ãï¼æå¨æè¿å³æ åéæ¡åç¨åºä¸åèªå¨æ¹å°ºå¯¸ï¼ä¸­ææ¨¡å¼ä¸åæ¯é 500ms å·¡æ£çé¢": "Layout no longer jumps around: after the user drags the right splitter the app stops resizing it, and Chinese mode no longer re-scans the UI every 500 ms",
+  "è®¾ç½®æ°å¢ãä¿®æ¹éè¦éå¯çè®¾ç½®åèªå¨éå¯ãï¼æ¥å¿ç®å½/ä¿çå¤©æ°/çªå£è®°å¿ç­æ¹å¨ä¿å­åèªå¨éå¯ä¸æ¬¡": "New setting: automatically restart the app when a change needs a restart (log folder, retention days, window memory)",
+  "æ¼æ¥åºæ¥çä¸­æï¼ç¯å½¢ç»è®¡ãç»ææè¦ãçº¿ç¨æç¤ºãæå»ºé¢ä¼°ãåå²è®¡æ°ãç¶ææ /åé¦ï¼ç°å¨ä¹èµ°ç¿»è¯ï¼æ¨¡æ¿åç¿»è¯åä»£å¥æ°å­": "Composed Chinese text (ring stats, result summary, thread hint, build estimate, history count, status bar and feedback) is translated too: the template is translated first, then numbers are substituted",
+  "ç»æåè¡¨ä¸æ¹æ°å¢æ¾ç¼æéï¼æ²¡æç»æ / åªæ¾å° N ä¸ªï¼æªæ¾å°æ´å¤ç»æï¼æ¶ç´æ¥åæåå ä¸å»ºè®®": "A prominent notice above the result list now explains \"no results\" or \"only N found (no more results)\" with suggestions",
+  "è¿åº¦æ¡æ¹æçº¯è²ä»å·¦å¾å³å¡«åï¼ä¸æ¸åï¼ï¼å®ææ¶ç¾åæ¯åæ­¥å° 100%ï¼æç´¢ç»æ/ç¯å½¢ç»æé½ä¼å·æ°": "The progress bar fills solid from left to right (no gradient) and the percentage label reaches 100% on completion",
+  "æç´¢æ¡ä»¶ä¸è¶³æ¶ãå¼å§æç´¢ãåç°ï¼å¹¶å¨ tooltip è¯´æç¼ºä»ä¹ï¼æªå¡«ç§å­ / æªç»å¾æ¡ï¼": "Start is greyed out when the search conditions are incomplete, with a tooltip saying what is missing (seed / pattern)",
+  "å½ä»¤ç»ç«¯åéåè¡¨å¸¸æ¾ï¼Tab åªå¨åéé´åæ¢ï¼ä¸ä¸é®ç§»å¨åéï¼Enter ææåéå¡«è¿å½ä»¤æ ": "The command terminal keeps its candidate list visible: Tab only cycles, arrow keys move, Enter inserts into the command line",
+  "èå´ï¼X(%1 ~ %2)ãZ(%3 ~ %4) â %5 åºå\\né¢ä¼°ä½ç§¯ï¼ä½å¾å£å¾çº¦ %6 MBï¼1 bit/åºåï¼ï½ æ§åæ å£å¾çº¦ %7 MBï¼å¯åº¦ 10% Ã 8 B/æ¡ï¼\\nå½åé¢ç®ï¼%8 MB â %9": "Range: X(%1 ~ %2)  Z(%3 ~ %4) => %5 chunks\\nEstimated size: bitmap about %6 MB (1 bit/chunk) | legacy about %7 MB (density 10% x 8 B/entry)\\nCurrent budget: %8 MB => %9",
+  "å¼å¯åï¼å¯å¨æ¶æ¢æµä¸æ¬¡ OpenCL å¹¶å¨ãæ§è½è®¾ç½®ãéæ¾ç¤ºç¶æï¼å³é­åä¸æ£æµï¼å¾éãå¯ç¨ GPU å éãæ¶ä»ä¼å³æ¶æ£æµï¼": "When on: probe OpenCL once at startup and show the status under Performance; when off no probe runs (enabling GPU acceleration still probes immediately)",
+  "è¿è¡æ¶æåå¥çä¸­æï¼GPU ç¶æãçº¿ç¨æç¤ºãæå»ºé¢ä¼°ãå¯¹è¯æ¡æ­£æï¼ä¹åæ æ³ç¿»è¯ï¼ç°å¨è±ææ¨¡å¼ä¸æ¯ 500ms å·¡æ£ä¸æ¬¡ï¼å½ä¸­è¯è¡¨å°±èªå¨æ¹å": "Texts written at runtime (GPU status, thread hints, build estimates, dialog bodies) could not be translated: English mode now re-scans every 500 ms and rewrites anything found in the table",
+  "è¾å¥æ¡å ä½æå­ï¼å¦ãä¾å¦ 0 æ -4172144997902289642ãï¼ç°å¨ä¹ä¼éè¯­è¨åæ¢": "Input placeholders (such as 0 or -4172144997902289642) now follow the language",
+  "ãå³äºãä¸ãä½¿ç¨æç¨ãæ°å¢è±æçï¼æç¨æåä¸ç« èç»æéåï¼": "About and Tutorial dialogs gained English versions (the tutorial keeps the same section structure)",
+  "å°å¾å¼å³å½ä½ï¼æå åæ é¢è¡ä»å¨ï¼æ¾ç¤ºä¸ºãâ¸ å°å¾ãï¼ç¹å®å°±è½å±å¼": "Map toggle stays in the header: when collapsed it reads ââ¸ Mapâ and expands on click",
+  "GPU é©±å¨å²çªå¯¼è´å´©æºï¼OpenCL æä¸¾ä¸ä¸ä¸æåå»ºåäº SEH ä¿æ¤ï¼GPU å´©æºåä¸æ¬¡å¯å¨èªå¨å³ GPU å¹¶æç¤º": "GPU driver crashes: OpenCL enumeration and context creation are SEH-guarded; after a crash the next start disables the GPU automatically",
+  "è±æè¯æè¦çè¡¥å¨ï¼çé¢ææ¡ 1028/1034 ä¸æ´æ°åå²å¨é¨ 318 æ¡åå·²è¯æè±æï¼è¯æè¡¨çº¦ 1240 æ¡ï¼": "Translation coverage completed: 1028/1034 UI strings and all 318 history items are translated (about 1240 table entries)",
+  "GPU æ¯å¦å¯ç¨ææ¬æºå®æµå¤æ­å¹¶æ¾ç¤ºå®æµéåº¦": "GPU availability is measured on this machine and the measured speed is shown",
+  "è®¾ç½®æ©ä¸ºäºä¸ªæ ç­¾é¡µï¼æ¯é¡¹å¸¦å°å­è¯´æï¼ä½¿ç¨æç¨ä¿®æ­£æ¸¸ææºå¶æè¿°": "Settings grew to five tabs with a short note per item; the tutorial now describes game mechanics correctly",
+  "çé¢æ´ä½éæï¼èåæ ãå·¥å·æ ãç¶ææ å ä¸­é¨å¯æå¨åå²": "The UI was rebuilt: menu bar, toolbar, status bar and a draggable splitter",
+  "åºé¨åä¸ªæ ç­¾é¡µï¼è¿åº¦ / åé¦ / æ¥å¿ / å½ä»¤ç»ç«¯": "Four bottom tabs: Progress / Feedback / Log / Command terminal",
+  "å½ä»¤ç»ç«¯ï¼æ¯æåå²ä¸è¡¥å¨": "The command terminal supports history and completion",
+  "æ´æ°æéå¾½ç« ": "Update reminder badge",
+  "åé¦æéè¯¯ãè­¦åãä¿¡æ¯ãæååç»ï¼å¯æå å¯è¿æ»¤": "Feedback grouped into error / warning / info / success, collapsible and filterable",
+  "å¸®å©ä¸ä½¿ç¨æç¨": "Help and tutorial",
+  "çæç¼å­åç¼å­ç¶ææ ç­¾ä¸å·æ°": "The cache status label did not refresh after a build",
+  "è¿åº¦åé¶æ®µæ¾ç¤ºï¼æ«æãå¹éãæåºï¼ï¼å¤§éç»æä¸åå¡ä½çªå£": "Progress is shown per stage (scan, match, sort) and many results no longer freeze the window",
+  "ç»æå¯æè·ç¦»æå¯åº¦æåºï¼è®¾ç½®åç»å¯æå ": "Results sort by distance or density; setting groups collapse",
+  "çæ¬å·ç»ä¸ï¼exe å³é®å±æ§å¯è§æä»¶ä¸äº§åçæ¬": "Unified version numbers; file and product version visible in the exe properties",
+  "ç¼å­æä»¶å­å¨å´å¨å¯¼å¥å¯¹è¯æ¡éçä¸å°ãéä¸ä¸­": "A cache file existed but could not be seen or selected in the import dialog",
+  "å¯¼å¥æ¯æå¨é¨åå²æ ¼å¼ï¼éä¸­æ§ç¼å­ä¼ç»åºè½¬æ¢æç¤º": "Import accepts all legacy formats and hints at conversion for old caches",
+  "ç¼å­çä¿å­ãå è½½ä¸è¿ç§»é½è®°å½å®æ´è·¯å¾ï¼ä¾¿äºææ¥": "Cache save, load and migration log full paths for troubleshooting",
+  "æå»ºæç¼ºé·ï¼å¯å¨æ´å¯é ": "Build-time defects fixed; startup is more reliable",
+  "åºå²©çå¯åº¦å¹éä¸éæ ·æ«æå¤§å¹æé": "Bedrock density matching and sampled scans are much faster",
+  "ç¼å­æ©å±åç»ä¸ï¼å¯å¨æ¶èªå¨è¯»åå¹¶è¿ç§»æ§æ ¼å¼ï¼æ§æä»¶ä¿çï¼": "The cache extension is unified; old formats are migrated on startup (old files kept)",
+  "GPU å¯åº¦å¹éæåå¼åï¼å¯åº¦å¹éç»§ç»­ä½¿ç¨ CPU": "GPU density matching paused; density matching stays on the CPU",
+  "åå±æç´¢æ¨¡å¼": "Layered search mode",
+  "å¿«éä¼°ç®æ¨¡å¼": "Fast estimate mode",
+  "ç®æ³éæ©çé¢ï¼ç²¾ç¡® / åå± / å¿«éä¼°ç® / ä¿å®": "Algorithm picker: exact / layered / fast estimate / brute force",
+  "éç²¾ç¡®æ¨¡å¼çæ¼æ£è­¦å": "Missed-hit warning for non-exact modes",
+  "å¯åº¦æç´¢å¤§å¹æé": "Density search is much faster",
+  "ä¸¥æ ¼å¾æ¡å¹éæ¾èå é": "Strict pattern matching is noticeably faster",
+  "åºå²©çå¤å®éåº¦å¤§å¹æå": "Bedrock matching is much faster",
+  "ä¸»çé¢ GPU å éå¼å³ï¼é»è®¤å³é­ï¼": "GPU acceleration switch on the main UI (off by default)",
+  "å¯å¨æ¶åå°æ£æµ GPU æ¯å¦å¯ç¨ï¼ç»ææ¾ç¤ºå¹¶åå¥æ¥å¿": "The GPU is checked in the background at startup; the result is shown and logged",
+  "å¾é GPU åæç´¢éªé": "Searching crashed when the GPU was enabled",
+  "GPU ä¸å¯ç¨æ¶èªå¨åé CPUï¼ä¸å½±åç»æ": "Falls back to the CPU when the GPU is unavailable, with identical results",
+  "GPU å éï¼æ«æäº¤ç» GPUï¼å¹éäº¤ç» CPU": "GPU acceleration: scanning on the GPU, matching on the CPU",
+  "GPU ä¸å¯ç¨æ¶èªå¨åæ¢å CPU": "Automatically switches back to the CPU when the GPU is unavailable",
+  "å¹éé¶æ®µå¤æ ¸å¹¶è¡ï¼åæ¶ååºæ´å¿«": "Matching runs multi-core and cancels faster",
+  "ç½æ ¼å°å¾åè½ï¼æä»»å¡ä¹¦è¦æ±ï¼": "Grid map feature (as required by the task)",
+  "è¯¥çæ¬æ²¡æç¬ç«æ´æ°æ¥å¿çæ¡£ï¼æ®çæ¬åºåä¸ºååçæ¬ä¹é´çå°ä¿®": "No dedicated notes for this build; it is a small fix between neighbours",
+  "æ¯ææ´å¼ å°å¾èå´ï¼Java çä¸åºå²©çåèªçä¸çè¾¹çï¼": "Full-map ranges (world border per edition)",
+  "æ´å¾æç´¢åå¼¹çªä¼°ç®æ¬æºèæ¶": "An ETA dialog before full-map searches",
+  "è¶å¤§èå´èªå¨ååæ«æï¼åå­å ç¨å¯æ§": "Very large ranges are scanned in tiles with bounded memory",
+  "å¿«éé¢è®¾èå´ï¼éè¿ãå±é¨ãå¨å±ãä¸çè¾¹çãåºå²©è¾¹ç": "Presets: near, local, global, world border, Bedrock border",
+  "å¤å¶ä¸º Minecraft å½ä»¤": "Copy as Minecraft commands",
+  "æ§è½æ¥å¿ï¼åæ°ãèæ¶ãéåº¦ãåå­ï¼": "Performance log (parameters, timing, speed, memory)",
+  "ç®æ³ä¸åå­è®¿é®æ¹è¿ï¼éåº¦è¿ä¸æ­¥æå": "Algorithm and memory-access improvements for more speed",
+  "ç¼å­èªå¨å è½½ï¼åªè¡¥ç®ç¼ºå¤±åºå": "The cache loads automatically and only missing areas are computed",
+  "ç¨åºæ¹ç¨ C++/Qt å®ç°ï¼æ§è½å¤§å¹æå": "The program moved to C++/Qt with a large speed-up",
+  "æ¯æ Java çä¸åºå²©çå¤å®": "Java and Bedrock determination",
+  "ä¸¥æ ¼å¾æ¡å¹éãå¯åº¦æç´¢ä¸å¾æ¡ç¼è¾å¨": "Strict pattern matching, density search and the pattern editor",
+  "ãè¾¾å°ç®æ æ°éç«å³åæ­¢ã": "Stop immediately once the target count is reached",
+  "ç¼å­æ¹ä¸ºäºè¿å¶æ ¼å¼ï¼è¯»åæ´å¿«": "The cache uses a binary format for faster I/O",
+  "æ¯æå¤æ ¸å¹¶è¡ï¼ååå©ç¨ CPU": "Multi-core parallelism to use the CPU fully",
+  "è®¡ç®å¨é¨äº¤ç» C++ï¼çé¢åªè´è´£æ¾ç¤º": "All computation moved to C++ and the UI only displays",
+  "æ¯æå¨å¾å¿«éæç´¢": "Fast full-map searches",
+  "ç¼å­ç³»ç»éåï¼å¤èå´åå¹¶å­å¨ï¼æ¯æå¯¼å¥ä¸æ¸é¤ç¼å­": "The cache was rewritten: multiple ranges merged, import and clear supported",
+  "èªå¨è¯å«ç¼å­å·²è¦ççåºåï¼åªè®¡ç®ç¼ºå¤±é¨å": "Covered areas are detected automatically and only missing parts are computed",
+  "æç´¢ä¸ç¼å­ç®¡çä¸­çå¤å¤ç¼ºé·": "Several defects in search and cache management",
+  "ç¼å­ç¶æä¸æç´¢ç¶ææ¾ç¤ºæ´æ¸æ¥": "Cache and search status are clearer",
+  "èªå¨ä¿å­ææ¬ç»ææä»¶": "Results are saved to a text file automatically",
+  "å¤çº¿ç¨å·æ°çé¢å¯è½åºé": "Multi-threaded UI refreshes could fail",
+  "å¯åº¦æç´¢çæ¯è¾ç²¾åº¦é®é¢": "Density comparison precision issue",
+  "å¯åº¦æç´¢è¿åº¦åå¹¶ä¸ºåä¸æ­¥éª¤": "Density search progress merged into a single step",
+  "ãåæ¶åé¦ãæ¨¡å¼ï¼æ¾å°ç¬¬ä¸ä¸ªç»æç«å³è¿å": "Instant feedback mode: returns as soon as the first result is found",
+  "è¿åº¦æ¾ç¤ºå¢å æ­¥éª¤æç¤º": "Progress display gained step hints",
+  "å¯å¨æ¶çé¢å¯è½æ¥ééåº": "The UI could fail to start",
+  "å¾æ¡ç¼è¾æ¡é¡ºåºè°æ´ï¼åå§åæ´ç¨³å®": "The pattern editor fields were re-ordered for stable initialization",
+  "å¯åº¦æç´¢æ¨¡å¼ï¼å¯æå®ç½æ ¼å¤§å°ä¸å¯åº¦éå¼": "Density search mode: grid size and density threshold can be set",
+  "ç¼å­æç´¢ç´æ¥æ¥å²è±å§éåï¼éåº¦æå": "Cache searches consult the slime set directly and are faster",
+  "çé¢æ¹ä¸ºç¨åéæé®éæ©æç´¢æ¨¡å¼": "Search mode is chosen with radio buttons",
+  "é²éå¤å¯å¨æºå¶": "Protection against launching twice",
+  "ç¼å­æç´¢éåº¦å¤§å¹æå": "Cache searches are much faster",
+  "åºå²©çé¢è®¡ç®é»è®¤å¼å¯": "Bedrock precomputation is on by default",
+  "é¢è®¡å©ä½æ¶é´æ¾ç¤º": "ETA display",
+  "é¢è®¡ç®æ¹ä¸ºå¤è¿ç¨å¹¶è¡": "Precomputation runs as multiple processes",
+  "åºå²©çå¤å®ç®æ³ä¸¥æ ¼å¯¹é½æ¸¸æè¡ä¸º": "Bedrock determination strictly matches game behaviour",
+  "å¤§èå´è®¡ç®æ¶çæ°å¼æº¢åºé®é¢": "Numeric overflow on large ranges",
+  "é¢è®¡ç®æ§è½æ¹è¿": "Precomputation performance improved",
+  "åºå²©çå¤å®ä¸æ¸¸æè¡ä¸ºå®å¨ä¸è´": "Bedrock determination matches the game exactly",
+  "Java çå¤§åæ ä¸çå¤å®éè¯¯ï¼ç°ä¸æ¸¸æä¸è´ï¼": "Fixed Java misjudgement at large coordinates (now matches the game)",
+  "å¾æ¡ç¼è¾å¨ç¼ºå¤±å¯¼è´çå´©æº": "Crash caused by a missing pattern editor",
+  "å¤§èå´æç´¢çä»»å¡ååæ´åè¡¡": "Large searches are split into more balanced tasks",
+  "è¿åº¦æ´æ°æ´ç»è´": "Finer progress updates",
+  "é¢è®¡ç®ç¼å­é»è®¤å¼å¯": "Precomputed cache on by default",
+  "å°èå´ç¨åçº¿ç¨ãå¤§èå´ç¨å¤è¿ç¨": "Single thread for small ranges, multiple processes for large ones",
+  "åºå²©çæ¹ç¨ä¸æ¸¸æä¸è´çéæºæ°ç®æ³": "Bedrock now uses the same RNG as the game",
+  "ãæ¨¡ç³æç´¢ãå¼å³æ æ³å¾é": "The fuzzy search toggle could not be checked",
+  "å¤è¿ç¨å¹¶è¡è®¡ç®": "Multi-process parallel computation",
+  "è¿åº¦æ¡ä¸é¢è®¡æ¶é´æ¾ç¤º": "Progress bar and ETA display",
+  "è®¡ç®ä¸çé¢åç¦»ï¼æç´¢æ¶çé¢ä¸å¡é¡¿": "Computation separated from the UI so searches do not freeze it",
+  "ç¼å­è·¨ä¼è¯å¤ç¨": "The cache is reused across sessions",
+  "ãæ¨¡ç³æç´¢ãæ¨¡å¼ï¼æè¿éåå¹éï¼": "Fuzzy search mode (component matching)",
+  "å¾æ¡ç¼è¾å¨æ¯æå³é®æ ç°": "The pattern editor supports right-click to ignore",
+  "å¾æ¡ç»å¶åè½ï¼å·¦é®åæ¢ï¼å³é®æ ç°ï¼": "Pattern drawing (left click cycles, right click ignores)",
+  "ä¸¥æ ¼æ¹åéå®": "Strict orientation lock",
+  "å¾æ¡å¯è°æ´è¡åæ°": "Pattern rows and columns are adjustable",
+  "åºå²©çæ¯æ": "Bedrock support",
+  "åºå Java çååºå²©ç": "Java and Bedrock are distinguished",
+  "åºå²©çé»è®¤èå´æ¹ä¸ºæ´å¼ å°å¾": "The default Bedrock range is the whole map",
+  "åå§åå¸ï¼Java çå²è±å§åºåå¤å®": "Initial release: Java slime chunk determination",
+  "åºç¡çé¢ï¼å¯èªå®ä¹æç´¢èå´": "Basic UI with a custom search range",
+  "ç»ææè·ç¦»æåºå¹¶ä¿å­ä¸ºææ¬æä»¶": "Results sorted by distance and saved to a text file",
+  "ææºç¹ï¼ç¯å½¢è¦çï¼ï¼ç²¾åº¦ç»åå° 1/16 åºåï¼1 æ ¼ï¼ï¼ç®åºãç«åªéå·æªé¢ç§¯æå¤§ãï¼å¹¶ç»åºä¸é®å¤å¶çä¼ éå½ä»¤": "Farm spot (ring): 1/16 chunk precision finds where the spawn area is largest, with a one-click teleport command",
+  "å°å¾é¢è§ï¼åç§å­å°å¾é£æ ·ç¨ç¾¤ç³»é¢è²æ¾ç¤ºå°å½¢ï¼å å å²è±å§åºåãæç´¢ç»æä¸ææºç¹ï¼å¯ç¼©æ¾ãææ½ãåå»å¤ä½": "Map preview: biome colors like seed-map sites, plus slime chunks, results and farm spots; zoom, drag, double-click to reset",
+  "ç¾¤ç³»æéï¼æç¾¤ç³»å¯¹å²è±å§å·æªæççå·®å¼ç»ææºç¹å ææåºï¼èèå²ãæ·±æä¹åç­ä¸å·çå°æ¹èªå¨é¿å¼ï¼": "Biome weights: rank farm spots by how well each biome spawns slimes (mushroom fields and deep dark are avoided)",
+  "å¹³å°ä¸ç¾¤ç³»çæ¬éæ©ï¼Java 1.7.10ï½1.21.3 å¯éï¼åºå²©çæçº¯é¢ç§¯æåºå¹¶è¯´æå·®å¼": "Platform and biome version selection: Java 1.7.10 to 1.21.3; Bedrock ranks by area only and explains the difference",
+  "ææºç¹å¯¹è¯æ¡æ°å¢ãå æè¦çããå¹³åæéãä¸¤åï¼ç»æåºæ°å¢ãææºç¹ããå°å¾ãä¸¤ä¸ªå¥å£": "The farm spot dialog gains Weighted cover and Average weight columns; the result pane gains Farm spot and Map entries",
+  "å®è£ç¨åºï¼å¨æºå¨å®è£ï¼å¯éå®è£è·¯å¾ï¼èªå¨åå»ºå¼å§èåä¸æ¡é¢å¿«æ·æ¹å¼": "Installer: per-machine install with a selectable path, Start menu and desktop shortcuts",
+  "å¸è½½å¥å£åºç°å¨ãåºç¨ååè½ãï¼å¸è½½ä¼åæ¶æ¸çç¨åºãå¿«æ·æ¹å¼ãæ³¨åè¡¨é¡¹ä¸æ¬å°éç½®ç¼å­": "Uninstall entry in Apps and Features removes the program, shortcuts, registry entries and local config",
+  "å®è£ååç½®è¿è¡åºï¼å¾å½¢çé¢åºãOpenCL å è½½å¨ãVC++ è¿è¡æ¶ï¼ï¼æ éå¦è£ä»»ä½ä¾èµ": "The installer bundles the runtime (GUI library, OpenCL loader, VC++ runtime) so nothing else is needed",
+  "å®è£åæ¹ä¸ºè½»åº¦åç¼©ï¼ä¸åæºå¸¦å¼åææªå¾ä¸å¼åææ¡£ï¼åªä¿çæ´æ°åå²": "The installer uses lighter compression: no development screenshots or docs, only the update history",
+  "å®è£æ¶è¥åç°æ§çéç½®ææ§çç¼å­ï¼æä»¶æ¹åä¿çï¼å¯æå¨å¯¼å¥ï¼ï¼ä½ä¸ä¼è¢«èªå¨å è½½": "Old config and cache files found during install are renamed and kept (importable, never auto-loaded)",
+  "ç¼å­æå»ºæ¶åªç¨å°ä¸ä¸¤ä¸ªæ ¸å¿ï¼ç°å¨æå¹¶åæèå´åå¤åæ°ï¼æå»ºæ¶è½è®© CPU åæ»¡": "Cache builds used only one or two cores: the range is now split into enough segments to saturate the CPU",
+  "åæ°åå¤åå¶åçå´©æºï¼å·¥ä½çº¿ç¨è¯»ç¼å­ä¸åå°åç¼å­åæ¶è¿è¡å¯¼è´": "Occasional crash after the segment count grew: worker reads raced the background writer",
+  "æ¥å¿éç CPU å ç¨çæ°å¼ä¸å¯ä¿¡ï¼æ¾åºç°ä¸å¯è½çå¤§æ°å¼ï¼ï¼ç°å¨æå¨åçèå´": "The CPU usage number in the log was implausible: it now always stays in a sane range",
+  "æå»ºæ¨¡å¼ãè¾¾å°å®¹éä¸éå³åæ­¢ãææ¶ä¸æç¤ºï¼ç°å¨ä¼å¦å®æ¥å": "The build mode capacity-limit stop was sometimes silent: it is now reported",
+  "ç¼å­æå»ºææ¾æ´å¿«ï¼æ´çæå»ºä»ä¸å°æ¶çº§éå°ååéçº§ï¼ï¼åå­å³°å¼åæ¶ä¸é": "Cache builds are much faster (hours down to minutes) with a lower memory peak",
+  "æç´¢æè¦è¡¥åãåæ° / æ¯åè¡æ° / å¹¶å / å½å¹¶ç­å¾ãï¼ä¾¿äºå¤æ­ä¸ºä»ä¹ CPU ä¸ä¸å»": "The search summary now reports segments, rows per segment, concurrency and merge wait so you can see why the CPU is idle",
+  "è®¾ç½®å¯è½è¢«åè¿æåçéç½®æä»¶ï¼è·¯å¾éçåææ ç­å­ç¬¦ä¼è®©æ´ä»½è®¾ç½®ä¸æ¬¡å¯å¨è¯»ä¸åæ¥ï¼": "Settings could be written into a broken config file (backslashes in paths made the whole file unreadable next start)",
+  "ç¼å­æå»ºæ¶ä»è¢«è¦æ±è®¾ç½®æç´¢æ¨¡å¼æç»å¶å¾æ¡ï¼ç°å¨æå»ºåªåå¤å®ä¸åç¼å­ï¼ä¸éè¦æ¨¡å¼ä¸å¾æ¡ï¼": "Cache build mode still asked for a search mode or pattern; builds now only evaluate and write cache",
+  "æå»ºé¢ä¼°çä¿¡æ¯åå½ååæ°å¯¹ä¸ä¸ï¼ç°å¨éèå´ä¸é¢ç®å®æ¶æ´æ°ï¼ä¹ä¸åå¼¹çªææ­ï¼": "The build estimate did not match the current parameters; it now updates live with range and budget",
+  "å½ä»¤ç»ç«¯æ Tab æ¶åéæ¡ä¸åºç°ï¼ç©ºè¾å¥æ¶ç°å¨ä¼ååºå¨é¨å½ä»¤ï¼": "The Tab completion popup did not appear in the command terminal (an empty input now lists all commands)",
+  "åä½æ¤å¨è¾å¥æ¡éçä¸å¨ï¼MB / å¤© / % / åºå / çº¿ç¨ç­æ¹ä¸ºè¾å¥æ¡åé¢çå°æ ç­¾ï¼": "Units were squeezed inside the inputs (MB / days / % / chunks moved to labels after the field)",
+  "èªæ£ä¼èªå¨æ¸çå®èªå·±äº§ççç¼å­æä»¶ï¼é¿åä¸æ¬¡å¯å¨åæ¢": "The selftest now removes the cache files it creates so the next start is not slowed down",
+  "å é¤è®¾ç½®é¡µå·¦ä¸è§éå¤çé£è¡ãæ¢å¤ææè®¾ç½®å°åºåé»è®¤å¼ãç°å­ï¼åºé¨æé®å°±æ¯å¥å£ï¼": "Removed the duplicated grey line at the top of the settings page",
+  "æå»ºé¡µå»æãé¢ä¼° / å¼å§æå»º / ä¸­æ­ãæé®ï¼å¼å§ä¸ä¸­æ­ç»ä¸èµ°å·¥å·æ ä¸»æé®": "The build page drops the estimate/start/stop buttons: start and stop use the toolbar",
+  "å½ä»¤ç»ç«¯æ¯ææ´å¤å½ä»¤ï¼ä¸»é¢ãç¼å­ãæå»ºæ¨¡å¼ãçº¿ç¨æ°ãç½æ ¼ãå¯åº¦ãæå¼ç®å½ç­": "The command terminal supports more commands: theme, cache, build mode, threads, grid, density, open folders",
+  "å½ä»¤ç»ç«¯ç Tab åéæ¡ï¼è¾å¥è¡ä¸æ¹ååºåéï¼Tab ä¾æ¬¡å¾ªç¯ãEsc å³é­ï¼ä¸æ¸¸æçè¡¥å¨ææä¸è´ï¼": "The Tab popup lists candidates above the input; Tab cycles, Esc closes (matching the game)",
+  "clear å½ä»¤ï¼æ¸ç©ºå½ä»¤ç»ç«¯çè¾åº": "clear command: empties the command terminal output",
+  "è¾¾å°ç®æ æ°éå³åæ­¢ï¼ç¼å­èå´ååæ»¡ç®æ æ°å°±åæ¶ï¼çé¢æ²¡ææ¾ç¤ºãæååæ­¢ã": "Stop at target count did not show 'stopped early' when the cache range filled the target",
+  "è®¾ç½®å¨éå¯åè½ç¶çæï¼ä½è®¾ç½®é¡µæ¾ç¤ºçä»æ¯é»è®¤å¼": "Settings took effect after a restart, but the settings page still showed defaults",
+  "ç¨å½ä»¤æ¹äºè®¾ç½®ï¼ä¸»é¢ãæ¥å¿ç­ï¼ä¹åï¼è®¾ç½®é¡µæ¾ç¤ºä¸åæ­¥": "Changing settings from commands (theme, log) left the settings page out of sync",
+  "ç¼å­æå»ºæ¨¡å¼ä¸ï¼æç´¢ç¸å³çåæ°å½ä»¤ä¼éé»æ æï¼ç°å¨ä¼æç¡®æç»å¹¶è¯´æåå ï¼": "In cache build mode, search-related parameter commands silently did nothing; they now refuse with a reason",
+  "é³éç­æ»åæå¨æ´é¡ºçï¼æ¹è®¾ç½®ä¸åæ´çªéå·æ ·å¼è¡¨ï¼éç½®æä»¶ä¹æ¹ä¸ºåå¹¶åå¥": "Sliders such as volume drag smoothly: settings no longer replay the whole stylesheet, and config writes are merged",
+  "å¸®å©éååºãä½å®éæ²¡æå®ç°çå½ä»¤": "Commands listed in the help but never implemented",
+  "æ´æ°åå²å¨æ°æçï¼æçæ¬æå ï¼ç¹å»å±å¼æ¥çæç»ï¼ææ°çé»è®¤å±å¼": "Update history redesigned: versions collapse, click to expand, the newest is open by default",
+  "æ­£å¼çç¨æµç»¿åºãæµè¯çç¨æµæ©åºå¹¶å¸¦æ©è²å·¦è¾¹çº¿ï¼ä¸ç¼åºå": "Stable versions use a light green background, beta versions light orange with an orange left border",
+  "æ¡ç®åç±»æ ç­¾ï¼æ°å¢ / ä¿®å¤ / ä¼å / è°æ´ / ç§»é¤ï¼åèªéè²": "Change tags: added / fixed / improved / adjusted / removed, each with its own color",
+  "çæ¬ä¸¥æ ¼æçæ¬å·æåºï¼ä¸ååºç°é¡ºåºéä¹±": "Versions sort strictly by version number, no more jumbling",
+  "æ´æ°è¯´ææ¹ç¨éä¿æè¿°ï¼ä¸åå¼åè¿ç¨ãä¸å å·ä½æ°å¼": "Release notes use plain wording instead of development details and raw numbers",
+  "æå»ºèå´ä¸æç´¢èå´å¶å°ä¸åæ­¥ï¼å¿«éé¢è®¾ç­æ¹å¨åå°¤å¶ææ¾ï¼": "The build range and the search range occasionally diverged (especially after presets)",
+  "æå»ºæç¤ºï¼èå´ãé¢è®¡ç¼å­ä½ç§¯ãå¯ä¸­æ­ç»­ä¼ ãå®ææ¡ä»¶ï¼éæå»ºåå®¹æ¾å¨æå»ºé¡µ": "Build hints (range, expected cache size, resumable, completion rule) now live on the build page",
+  "æç´¢é¡µçãç¼å­æå»ºæ¨¡å¼ãå¼å³ï¼æå»ºç»ä¸å¨å·¦ä¾§ãç¼å­æå»ºãé¡µè¿è¡": "The Search page gained a cache build mode switch; builds happen on the Cache build page",
+  "å·¦ä¾§ãç¼å­æå»ºãå¯¼èªé¡¹ï¼æå»ºç¬ç«æé¡µï¼ä¸å¿åéæ¸¸æçæ¬ãå¡«ä¸çç§å­æææç´¢æ¨¡å¼": "Left navigation gains Cache build: a dedicated page that needs no version, seed or search mode",
+  "è®¾ç½®é¡µãæ¢å¤ææè®¾ç½®ãæé®ï¼ä¸é®åå°åºåé»è®¤": "The settings page gains a Restore all settings button",
+  "ãè¾¾å°ç®æ æ°éå³åæ­¢ãä¸èµ·ä½ç¨ï¼å¾éåè®¡ç®éææ¾åå°ï¼ç»æä»ä¸ºæè¿çè¥å¹²æ¡": "Stop at target count did nothing; with it enabled the work drops and results are the most recent ones",
+  "æ»è½®è°èæ°å¼å¨è®¾ç½®éå¼å¯åä»ç¶æ æ": "The mouse wheel still changed values after it was enabled in settings",
+  "åæ¢æµè² / æ·±è²ä¸»é¢åï¼çé¢å¾æ¡çé¢è²ä¸è·çå": "Light/dark theme switching left control icons colored incorrectly",
+  "ç¼å­æå»ºæ¨¡å¼ä¸æ å³éé¡¹æ²¡æåç°ï¼ä»è¢«è¦æ±éæ©æ¸¸æçæ¬ä¸å¡«åç§å­": "In cache build mode unrelated options were not greyed out and the version/seed were still required",
+  "è®¾ç½®æ¹å¨å ä¹ç«å»çæ": "Setting changes apply almost immediately",
+  "é¡µé¢åæ¢å¨ç»æ´é¡ºæ»ï¼åªç¼©æ¾å¾æ¡ãä¸å½±åå¸å±": "Page transition animation only scales icons and does not affect layout",
+  "è¿åº¦æ¡æ¹ä¸ºç»¿è²": "The progress bar turned green",
+  "è®¾ç½® â é«çº§ï¼å¯å¨æ¶èªå¨æ£æ¥ GPU ç¶æ": "Settings, Advanced: check the GPU status at startup",
+  "çªçªä¸åæ°æ ä¸ç»ææ å å­": "Labels overlapped in the parameter column at narrow widths",
+  "æ·±è²æ¨¡å¼ä¸é¨åæå­å¯¹æ¯åº¦ä¸è¶³": "Some text had too little contrast in dark mode",
+  "è®¾ç½®ä¿®æ¹åéå¯ä¸¢å¤±": "Settings were lost after a restart",
+  "æ·±è²æ¨¡å¼ä¸å°æ°å®¹å¨ä»æ¯æµè²åº": "A few containers stayed light in dark mode",
+  "åæ°åé´è·è°æ´ï¼æ´æè¯»": "The parameter column spacing was adjusted for readability",
+  "æ´æ°åå²å»æå·¦ä¾§çæ¬ç´¢å¼åï¼ä¸ä¸ªçæ¬åªç¨ä¸ç§åºè²": "The update history drops the left version index; each version uses one background color",
+  "è®¾ç½®æ¹å¨ç«å³çæï¼æ éåç¹ãåºç¨ / ç¡®å®ã": "Setting changes apply immediately, no Apply/OK needed",
+  "åºé¨é¢æ¿æ¹ç±å·¦ä¾§å¾æ æ¡åæ¢ï¼å±å¼æ¶ä¸åé¡¶èµ·å·¦ä¸è§æé®": "The bottom panel is switched from the left icon bar and no longer pushes the corner buttons",
+  "æ´æ°åå²çæåºæé®ç§»å°å³ä¸è§": "The update history sort button moved to the top right",
+  "çªå£åéæ¡å¯¹æ¯åº¦å¢å¼ºï¼æ´å®¹ææå¨": "Splitter handles have more contrast and are easier to drag",
+  "çé¢æè®¾è®¡ç¨¿æ´ä½éå»ºï¼å¨ç´è§ãç³»ç»å­ä½ï¼å¼ºè°è²åªç¨äºæ¬åä¸éä¸­": "The UI was rebuilt from the design: square corners, system font, accent color only for hover and selection",
+  "æ°å¸å±ï¼èåæ  + å·¥å·æ  + æ¨ªè·¨æ´çªçè¿åº¦è¡ + å·¦ä¾§å¯¼èª + åºé¨é¢æ¿ + ç¶ææ ": "New layout: menu bar, toolbar, full-width progress row, left navigation, bottom panel and status bar",
+  "é¡µé¢éæ°ååä¸ºæç´¢ / æå»º / è®¾ç½® / æ´æ°åå²": "Pages split into Search / Cache build / Settings / History",
+  "è®¾ç½®é¡¹ãå¯å¨æ¶èªå¨æ£æ¥ GPU ç¶æã": "Setting: check the GPU status at startup",
+  "ç¼å­æå»ºè¿åº¦è¶è¿ä¸éå¹¶éå¤è®°å½": "Cache build progress exceeded the limit and recorded duplicates",
+  "æå»ºè¿ç¨å¶åéªé": "The build process occasionally crashed",
+  "æå»ºæ¨¡å¼ä¸ä¸æå»ºæ å³çéé¡¹åç°å¹¶è¯´æåå ": "In build mode, unrelated options are greyed out with an explanation",
+  "ç¼å­æå»ºæ¨¡å¼ï¼åªè®°å½å²è±å§å¤å®ç»æï¼æ¯æç´¢æ´å¿«": "Cache build mode: only records slime determinations, faster than searching",
+  "ç¼å­æå»ºæ¯æä¸­æ­ç»­ä¼ ï¼éå¯åèªå¨è·³è¿å·²è®°å½åºå": "Cache builds resume after a restart and skip already-recorded areas",
+  "æå»ºåæé¢ç§¯é¢ä¼°ç¼å­ä½ç§¯ï¼è¶åºä¸éåæç¤º": "Cache size is estimated from the area before building; going over the limit warns first",
+  "èµæºæ§å¶ï¼åå­ä¸éä¸ CPU å ç¨çä¸é": "Resource limits: memory cap and CPU usage cap",
+  "æç¼å­æ¶åæ»¡ç®æ æ°éç«å³åæ­¢ï¼éå¤æç´¢æ´å¿«": "With a cache, reaching the target count stops the search early",
+  "æå»ºè¿åº¦æ¾ç¤ºå·²è®°å½åºåæ°ãç¾åæ¯ãéåº¦ä¸å·²è±è´¹æ¶é´": "Build progress shows recorded chunks, percentage, speed and elapsed time",
+  "ç¨åºå¾æ æ¢æå²è±å§æ¹åï¼çªå£åç§°å»æææ¯è¯": "The icon is now a slime block and the window title drops technical words",
+  "å¯¼å¥ç¼å­æ¹ä¸ºåå°è¯»åå¹¶æ¾ç¤ºè¿åº¦": "Cache import reads in the background and shows progress",
+  "ç¨ç¼å­æç´¢æ¶ï¼ç¼å­è¦çèå´åä¸ä¼åæ¶åæ­¢": "With a cache, searches did not stop in time inside covered areas",
+  "å¯¼å¥å¤§å®¹éç¼å­æ¶çé¢å¡ä½": "The UI froze when importing a large cache",
+  "åä¸èå´éå¤æç´¢ä¼éå¤åç¼å­ï¼ç¼å­æä»¶è¶æ¥è¶å¤§": "Repeated searches over the same range rewrote the cache and grew the file",
+  "çé¢ç»èï¼çº¿ç¨æ°è¿å¤§æç¤ºãå¤§èå´æé¢è®¡èæ¶ç¡®è®¤ãç»æè¡å»æåæ ä¼ éå½ä»¤": "Polish: warnings for too many threads, ETA confirmation for large ranges, result rows no longer show teleport commands",
+  "ç¼å­æ¼å­å¯¼è´å²è±å§åºåæ¼å¤": "The cache missed entries, causing slime chunks to be misjudged",
+  "æç´¢ä¸­çãé¢è®¡å©ä½ãä¸ç´æ¾ç¤ºå ä½ç¬¦": "The ETA label showed a placeholder during searches",
+  "ç¼å­ä½ç§¯ç¼©å°ãå è½½æ´å¿«ï¼å·²è¦çèå´ç´æ¥å¤ç¨": "The cache is smaller and loads faster; covered areas are reused directly",
+  "åå²ç¼å­é¦æ¬¡å¯å¨èªå¨åç¨å¹¶æç¤ºéæ°æ«æï¼æ§æä»¶ä¿çä¸æ®µæ¶é´": "Legacy caches are disabled on first start with a rescan hint; old files are kept for a while",
+  "è¿åº¦åºç°ä¸¤ä¸ªç¾åæ¯ãçè³è¶è¿ä¸é": "The progress showed two percentages, sometimes above the limit",
+  "é¶æ®µæå­ä¸å½åæ¨¡å¼ä¸ç¬¦ï¼å¯åº¦æç´¢è¯¯æ¾ç¤ºãæ­£å¨å¹éå¾æ¡ãï¼": "Stage text did not match the mode (density searches said matching pattern)",
+  "äº¤ä»æªå¾éæå­æ¾ç¤ºææ¹å": "Text rendered as boxes in the delivery screenshots",
+  "å¤§ç¼å­ä¸æç´¢ææ¾æé": "Searches with a large cache are noticeably faster",
+  "åºäºä¸ä¸ççç´§æ¥ç­ä¿®ï¼è¯¥çæªæååå¸ï¼å·ä½åå®¹æ æ³ç¡®è®¤ï¼": "Emergency hotfix on top of the previous build (never packaged, details unknown)",
+  "ãè¾¾å°ç®æ æ°éå³åæ­¢ãå¨å¤§èå´æç´¢ä¸­çæ­£çæ": "Stop at target count now really works on large searches",
+  "åæ¶æç´¢åå¡æ­»æéªé": "Cancelling a search could hang or crash",
+  "å´©æºæ¶ç¼ºå°è¯æ­ä¿¡æ¯": "Crashes lacked diagnostic information",
+  "è¿åº¦ä¸ç¶ææ ç»ä¸æ¾ç¤ºæ«æåºåæ°ä¸ç¾åæ¯": "Progress and status bar now report the same chunk count and percentage",
+  "å¤§èå´æç´¢çåå­å ç¨æ´å¯æ§": "Memory usage on large searches is more controllable",
+  "ä¸»é¢ï¼æµè² / æ·±è² / è·éç³»ç»ï¼ãå®ææç¤ºé³ä¸é³éãæ¥å¿æ»å¨ä¸è¡æ°ç­è®¾ç½®é¡¹": "Settings for theme (light/dark/system), completion sound and volume, log scrolling and line count",
+  "å¨çé¢åªä¿çå·¥å·æ ä¸ä¸ªãå¼å§æç´¢ãæé®ï¼è®¾ç½®å¥å£ç§»å°å·¥å·æ ": "Only one Start button in the whole UI; settings moved to the toolbar",
+  "è¿åº¦æ¡ç§»å°å·¥å·æ ä¸æ¹å¹¶æ¨ªè·¨æ´çªï¼åºé¨æ¹ä¸ºå·¦ä¾§å¯¼èªå å³ä¾§åå®¹": "The progress bar sits below the toolbar across the window; the bottom is a left nav with content on the right",
+  "GPU ç¸å³çå¤ä½æç¤ºææ¡ï¼ä¸åç»åºå éå»ºè®®éå¼ï¼": "Removed redundant GPU hint text (no more speed-up threshold advice)",
+  "å½ä»¤ç»ç«¯çè¡¥å¨ä¼æ¢èµ°è¾å¥ç¦ç¹": "The command terminal completion stole the input focus",
+  "ãæ£æ¥æ´æ°ãæ¹ä¸ºåå¼¹çªè¯´æï¼ç¹ãæå¼æµè§å¨ãæè·³è½¬": "Check for updates now explains first and opens the browser only when clicked",
+  "C:\\Temp\\slime\\ç¼å­": "C:\\Temp\\slime\\cache",
+  "logs\\èªæ£": "logs\\selftest",
+  "ç¼å­æå»ºæ¨¡å¼æè®¾è®¡ç¦ç¨": "Cache build is disabled by design",
+  "ç¼å­æå»ºæ¨¡å¼ï¼%1ï¼æå»ºé¡µä¸ä¹ä¸è´ï¼ç¦»å¼è¯·æ§è¡ build offï¼": "Cache build mode: %1 (the build page follows; run build off to leave)",
+  "ç¼å­æå»ºç»æ": "Cache build ended",
+  "ç¼å­æå»ºè¾¾å°å®¹éä¸é": "Cache build reached the capacity limit",
+  "ç¼å­æå»ºé¢ä¼°": "Cache build estimate",
+  "ç¼å­ç®å½:": "Cache folder:",
+  "ç¼å­ç®å½å·²åæ¢ä¸ºï¼%1": "Cache folder switched to: %1",
+  "ç¼å­ï¼%1 ï½ æ¡ç® %2 ï½ åºå %3 ï½ æä»¶ %4": "Cache: %1 | entries %2 | areas %3 | file %4",
+  "ç¼©å°": "Zoom out",
+  "ç½æ ¼å¤§å°": "Grid size",
+  "ç½æ ¼è¾¹é¿å·²è®¾ä¸º %1": "Grid edge set to %1",
+  "ç½æ ¼è¾¹é¿ï¼%1ï¼åºåï¼": "Grid edge: %1 (chunks)",
+  "ç¾¤ç³»çæ¬ï¼Javaï¼ï¼": "Biome version (Java):",
+  "ç¾¤ç³»çæ¬ï¼": "Biome version:",
+  "ç¾¤ç³»ç²¾åº¦ï¼": "Biome detail:",
+  "ç¾¤ç³»é¢è²": "Biome colors",
+  "èªå¨": "Auto",
+  "èªå¨æ»å¨": "Auto-scroll",
+  "èªå¨ï¼å¨é¨æ ¸å¿ï¼": "Auto (all cores)",
+  "èªæ£æåï¼ä¸åºæ¾ç¤º": "Selftest OK: should not be shown",
+  "èªæ£èå´": "Selftest range",
+  "èªæ£èå´ -8..8": "Selftest range -8..8",
+  "èªæ£è­¦åï¼èå´è¾å°": "Selftest warning: small range",
+  "èªæ£éè¯¯ï¼ç¤ºä¾éè¯¯": "Selftest error: sample error",
+  "èå´": "Range",
+  "èå´ %1Ã%1 åºåï¼X/Z å %2 ~ %3ï¼ä»¥åç¹ä¸ºä¸­å¿ï¼": "Range %1Ã%1 chunks (X/Z %2 ~ %3, centered on the origin)",
+  "èå´ %1Ã%2 åºåï¼åå¾ %3ï¼": "Range %1Ã%2 chunks (radius %3)",
+  "èå´ 2000Ã2000 åºå": "Range 2000Ã2000 chunks",
+  "èå´åæ²¡æå¯ç¨çå²è±å§åºåï¼%1 %2ï¼ã": "No usable slime chunks inside the range (%1 %2).",
+  "èå´å·²è®¾ä¸º Â±%1ï¼X(%2~%3) Z(%4~%5)ï¼": "Range set to Â±%1 (X(%2~%3) Z(%4~%5))",
+  "èå´å·²è®¾ç½®ï¼X(%1 ~ %2) Z(%3 ~ %4)": "Range set: X(%1 ~ %2) Z(%3 ~ %4)",
+  "èå´æ æ": "Invalid range",
+  "èå´æ æï¼X1 é â¥ X0ãZ1 é â¥ Z0": "Invalid range: X1 must be â¥ X0 and Z1 â¥ Z0",
+  "èå´è¶è¿æ­¤å¼æ¶å¼¹çªç¡®è®¤": "Confirm with a dialog when the range exceeds this",
+  "èå´è¾å¤§": "Large range",
+  "èå´è¿å¤§": "Range too large",
+  "è¡": "rows",
+  "è¡æ°:": "Rows:",
+  "è¦çåºå": "Covered chunks",
+  "è¦çåå¾ Rï¼æ ¼ï¼ï¼": "Cover radius R (blocks):",
+  "è¦çæ ¼æ°": "Covered cells",
+  "è¦çç": "Coverage",
+  "è­¦å": "Warning",
+  "è®¡ç®ææºç¹": "Compute farm spot",
+  "è®¾ç½®å·²åºç¨ï¼è®¾ç½®é¡µï¼": "Settings applied (settings page)",
+  "è®¾ç½®å·²æ¢å¤ä¸ºé»è®¤å¼": "Settings restored to defaults",
+  "è¯¥ç¹æ­£è½å¨åºåè§ç¹ï¼åæ¶è¦ç 4 ä¸ªåºåçè¾¹ç¼": "This point sits on a chunk corner and touches 4 chunks",
+  "è¯¥çæ¬": "This version",
+  "è¯¥è¡ä¸æ¯ç»æè¡ï¼æ²¡æå¯å¤å¶ç /tp å½ä»¤ï¼": "This row is not a result row (no /tp command to copy)",
+  "è¯¦ç»": "Detailed",
+  "è¯¦ç»ä¼éä½ 10~30% éåº¦": "Detailed logging costs 10~30% speed",
+  "è¯·åå¨ä¸æ¹å¡«åä¸çç§å­ï¼åæ¾ç¤ºå°å¾": "Fill in the world seed above before showing the map",
+  "è¯·åå¡«åä¸çç§å­ï¼å°å¾éè¦ç§å­æè½çæï¼": "Fill in the world seed first (the map needs it)",
+  "è¯·åå¡«åææçä¸çç§å­ï¼æ´æ°ï¼": "Fill in a valid world seed (integer) first",
+  "è¯·åå¡«åææçæç´¢èå´ã": "Fill in a valid search range first.",
+  "è¯·åç¹å»ãç»å¶å¾æ¡ãå¹¶ç¡®è®¤ç®æ å¾æ¡ã": "Draw and confirm a target pattern first.",
+  "è¯·è¾å¥ææçæ´æ°æ¹ååæ ã": "Enter a valid integer block coordinate.",
+  "è°æ´å¤§å°": "Resize",
+  "è°è¯æ¨¡å¼å·²å³é­": "Debug mode off",
+  "è°è¯æ¨¡å¼å·²å¼å¯ï¼å°è®°å½é¢å¤è°è¯ä¿¡æ¯": "Debug mode on: extra debug info will be logged",
+  "è¶åºéå¼": "Above threshold",
+  "è¶åºé¢ç®æ¶èªå¨åæ­¢æ¶éï¼å·²å®æåºåä»ç¶ææï¼": "Stop collecting once over budget (finished areas stay valid)",
+  "è¶åºé¢ç®ï¼è¿ç¨ä¸­ä¼èªå¨åæ­¢æ¶éï¼å·²å®æåºåä»ææï¼": "Over budget: collection stops automatically (finished areas stay valid)",
+  "è¶å¤§è§æ¨¡åºå": "Oversized chunk",
+  "è¶è¿å¤©æ°åèªå¨å é¤æ§æ¥å¿": "Delete old logs after this many days",
+  "è¶è¿æ­¤å¤§å°åèªå¨æ¸çææ§çæ°æ®": "Clean up the oldest data beyond this size",
+  "è¶è¿æ­¤æ°éåä¸¢å¼ææ§çæ¥å¿": "Drop the oldest log lines beyond this count",
+  "è¶è¿ç©çæ ¸å¿æ°": "Above the physical core count",
+  "è·éç³»ç»": "Follow system",
+  "è·éç³»ç»æ¶ï¼ä¼èªå¨åæ­¥ç³»ç»ä¸»é¢": "When following the system, the theme syncs automatically",
+  "è½¬æ¢ä¸ºæ¥è¯¢èµ·ç¹": "Convert to origin",
+  "è½¬æ¢ç»æè¶åºåºååæ æ¯æèå´ã": "The converted result is outside the supported chunk range.",
+  "è¾å¥å½ä»¤ååè½¦ï¼help æ¥çå¨é¨å½ä»¤ï¼â/â åå²ï¼Tab è¡¥å¨ï¼": "Type a command and press Enter (help for all commands, up/down history, Tab completes)",
+  "è¾å¥è¶åº %1 ä¸çè¾¹çï¼å·²èªå¨æªæ­å° Â±%2 åºåï¼Â±%3 æ¹åï¼": "Input exceeds the %1 world border; clamped to Â±%2 chunks (Â±%3 blocks)",
+  "è¾å¥éè¯¯": "Input error",
+  "è¾¾å°å³å": "Stop at target",
+  "è¾¾å°ç®æ æ°éå³åæ­¢": "Stop once the target count is reached",
+  "è¿è¿ä¸å·æªçè·ç¦»ï¼é»è®¤ 24": "Distance below which mobs do not spawn; default 24",
+  "è¿è¡åé¦ï¼ææ¶é´é¡ºåºï¼ä»æ¾ç¤ºéè¯¯/è­¦å/ä¿¡æ¯ï¼": "Run feedback (errors, warnings and info in time order)",
+  "è¿åº¦": "Progress",
+  "è¿åº¦è¡åªæ 1 ä¸ªç¾åæ¯æ ç­¾ï¼å®é %1 ä¸ªï¼": "The progress row has exactly one percentage label (actual %1)",
+  "éæ©å²è±å§ç¼å­æä»¶": "Choose a slime cache file",
+  "éæ©æ¥å¿ç®å½": "Choose a log folder",
+  "éæ©ç¼å­ç®å½": "Choose a cache folder",
+  "éçªéæ ¼ç»è®¡ï¼v3.2.1 å­é¢å®ç°ï¼ï¼ä¸ä½¿ç¨æ»å¨/åªæï¼ç¨äºåæºæ§è½å¯¹ç§ã": "Per-window exhaustive scan (v3.2.1 behaviour), no sliding or pruning; for performance comparison.",
+  "éæ ·é´é": "Sample step",
+  "éæ°è®¡ç®": "Recompute",
+  "éç½®": "Reset",
+  "éè¯¯": "Error",
+  "éè¿ï¼ä»¥åç¹ä¸ºä¸­å¿ Â±1000 åºåï¼çº¦ 2000Ã2000ï¼": "Near: Â±1000 chunks around the origin (about 2000Ã2000)",
+  "éè¦ç§å­": "Seed required",
+  "é¢ç®è¶³å¤ï¼å¯å®æ´æå»ºæ¬èå´": "Budget is sufficient: the whole range can be built",
+  "é¢è®¡å©ä½": "ETA",
+  "é¢è®¡å©ä½ï¼%1:%2": "ETA: %1:%2",
+  "é¢è®¡å©ä½ï¼--:--": "ETA: --:--",
+  "é¢è®¡å©ä½ï¼1:05": "ETA: 1:05",
+  "é¢è®¡èæ¶": "Estimated time",
+  "é«çº§è°è¯åæ°ï¼æ¹å¨ä¼ç´æ¥å½±åæç´¢å£å¾ï¼ä»ä¾æéï¼": "Advanced tuning (affects search semantics; troubleshooting only)",
+  "é»è®¤å¼": "Defaults",
+  "é»è®¤å¯ç¨ GPU å é": "Enable GPU acceleration by default",
+  "é»è®¤å¼å¯åæ¶åé¦": "Enable instant feedback by default",
+  "é»è®¤æç´¢æ¨¡å¼:": "Default search mode:",
+  "é»è®¤ç®æ æ°é:": "Default result count:",
+  "é»è®¤çº¿ç¨æ°:": "Default thread count:",
+  "é»è®¤èå´é¢è®¾:": "Default preset:",
+  "ï¼å³é­æ¶ä¸åæä»¶ï¼": "(no file is written when off)",
+  "ï¼å·²è·³è¿ %1 åºåï¼ç¼å­å·²è¦çï¼": "(skipped %1 chunks: already cached)",
+  "ï¼æ ç»æï¼": "(no results)",
+  "ï¼æ è¾åºï¼": "(no output)",
+  "ï¼æ ï¼": "(none)",
+  "ï¼æ¾ç¤ºå %1ï¼": "(showing first %1)",
+  "ï¼æªæ£æµï¼": "(not checked)",
+  "ï¼æ¬æ¬¡è·³è¿ %1 ä¸ªçªå£ï¼å  %2%ï¼": "(skipped %1 windows this run, %2%)",
+  "ï¼æ¬é¡µåªåå¤å® + åç¼å­ï¼cache build å¯ç«å³å¼å§æå»ºï¼": "(this page only evaluates and writes cache; cache build starts a build)",
+  "ï¼ç»æä¸ºä¼°ç®å¼ï¼ä¸ä»£è¡¨ç²¾ç¡®åå¸ï¼ä»ä¾ç²ç­åèï¼": "(estimated values, not an exact distribution; for screening only)",
+  "ï¼ç¼å­è·¯å¾å°å¨å¯å¨åæ¾ç¤ºï¼": "(cache path is shown after startup)",
+  "ï¼ç¼å­ï¼%1 åºå / %2 åºåï¼": "(cache: %1 areas / %2 chunks)",
+  "ï¼èå´è¿å¤§ï¼å·²å¨ä¸­å¿ %1Ã%1 åºååæ¥æ¾%2ï¼": "(range too large; searched within %1Ã1 chunks around the center%2)",
+  "ï¼è¯»åèå´ä¸é¢ç®â¦ï¼": "(reading range and budgetâ¦)",
+  "ï¼éæ©ãæé«ä¸éå¹¶ç»§ç»­ãä¼æ cache.maxSizeMB åå¥ config.jsonï¼": "(choosing Raise the limit writes cache.maxSizeMB to config.json)",
+  "ï¼åæ§è¡ search": ", run search first",
+  "ï¼å ææ¨¡å¼çªå£æ´å°": ", weighted mode uses a smaller window",
+  "ï¼å¦éç²¾ç¡®ç»æè¯·åæ¢å°ç²¾ç¡®æ¨¡å¼ã": ", switch to Exact mode for exact results.",
+  "ï¼ç²æ«æ­¥é¿ %1 åºå": ", coarse step %1 chunks",
+  "ï½å æï¼Java %1ï¼ç¾¤ç³»æé 0~1ï¼": "| weighted: Java %1 (biome weight 0~1)",
+  "ï½å æï¼æªå¯ç¨ï¼åºå²©çæ ç¾¤ç³»æ°æ®ï¼æçº¯é¢ç§¯ï¼": "| weighted: off (Bedrock has no biome data, area only)",
+  "ï½æä¼ææºç¹ (%1, %2)ï¼è¦ç %3 æ ¼ / %4 åºå": "| best farm spot (%1, %2): %3 cells / %4 chunks",
+  "ï½æ»è½®ç¼©æ¾ Â· ææ½å¹³ç§» Â· åå»å¤ä½": "| wheel zooms, drag pans, double click resets",
+  "ï½ç¾¤ç³» Java %1ï¼1:%2ï¼": "| biomes Java %1 (1:%2)",
+  "ï½ç¾¤ç³»ï¼ä¸å¯ç¨ï¼%1ï¼": "| biomes: unavailable (%1)",
+  "æ¥è¯¢èµ·ç¹Z": "Origin Z",
+  "æ¥è¯¢èµ·ç¹å·²è®¾ä¸º (%1, %2)": "Origin set to (%1, %2)",
+  "æ¥è¯¢èµ·ç¹ï¼(%1, %2)": "Origin: (%1, %2)",
+  "æ ¼": "cells",
+  "æ£æ¥æ´æ°": "Check for updates",
+  "æ£æ¥æ´æ°ï¼èªæ£æ¨¡å¼ï¼æªæå¼æµè§å¨ï¼ï¼%1 å¯ç  %2": "Check for updates (selftest: no browser opened): %1 password %2",
+  "æ£æ¥æ´æ°ï¼ç­å¾ç¨æ·ç¹å»ãæå¼æµè§å¨ãï¼èªæ£æ¨¡å¼è·³è¿ï¼": "Check for updates: waiting for the user to open the browser (skipped in selftest)",
+  "æ£æµå°ä¸æ¬¡è¿è¡å¯è½å æ¾å¡é©±å¨å´©æºï¼å·²èªå¨å³é­ GPU å éï¼å¯å¨è®¾ç½®ééæ°å¼å¯ï¼": "Previous run may have crashed in the graphics driver: GPU acceleration was turned off automatically (re-enable in Settings)",
+  "æ£æµå°ä¸æ¬¡è¿è¡å¼å¸¸ç»æï¼è¯¦æè§ logs/crash-*.log ä¸ crashes/*.dmp": "Previous run ended abnormally: see logs/crash-*.log and crashes/*.dmp",
+  "æ­£å¨ä¼°ç®â¦": "Estimatingâ¦",
+  "æ­£å¨å¹éå¾æ¡â¦": "Matching the patternâ¦",
+  "æ­£å¨å¹éå¯åº¦â¦": "Matching densityâ¦",
+  "æ­£å¨åæ¶â¦": "Cancellingâ¦",
+  "æ­£å¨å¯¼å¥ç¼å­â¦ï¼å·²è¯·æ±åæ¶ï¼è¯»åå®æåä¸ä¼åå¹¶ï¼": "Importing cacheâ¦ (cancel requested: it will not be merged after reading)",
+  "æ­£å¨å¯¼å¥ç¼å­â¦ï¼æä»¶ %1 MBï¼": "Importing cacheâ¦ (file %1 MB)",
+  "æ­£å¨æ«æåºå": "Scanning chunks",
+  "æ­£å¨æ«æåºåâ¦": "Scanning chunksâ¦",
+  "æ­£å¨æåºç»æâ¦": "Sorting resultsâ¦",
+  "æ­£å¨æç´¢ï¼åçº¿ç¨ï¼â¦": "Searching (single thread)â¦",
+  "æ¯ä¾ >1.00 â åªææ´æ¿è¿ï¼å¯è½æ¼æ£ï¼ç»æåºæ¾ç¤ºè­¦åï¼ã": "Ratio > 1.00 makes pruning more aggressive and may miss hits (a warning shows in the results).",
+  "æ²¡æå½ä»¤ %1ï¼æ§è¡ help æ¥çå¨é¨ %2 æ¡ï¼": "No command %1 (run help to see all %2)",
+  "æ²¡æç¬¬": "No result number",
+  "æ²¡æç¬¬ %1 æ¡ç»æï¼å½å %2 æ¡%sï¼": "No result %1 (currently %2%s)",
+  "æ²¡æç¬¬ %1 æ¡ç»æï¼å½å %2 æ¡ï¼": "No result %1 (currently %2)",
+  "æ³¨æï¼ä¸æ¯åæ³æ´æ°ï¼Java çæç´¢ä¼æç¤ºå»å¡«å": "Note: not a valid integer; Java searches will ask you to fill it in",
+  "æµè²": "Light",
+  "æµè§": "Browse",
+  "æµè§â¦": "Browseâ¦",
+  "æ·±è²": "Dark",
+  "æ¸ç©ºå¨é¨åé¦": "Clear all feedback",
+  "æ¸ç©ºå¨é¨è¿åº¦è®°å½ï¼ä¸åè¯¢é®ï¼": "Clear the whole progress log (no confirmation)",
+  "æ¸ç©ºææç¼å­": "Clear all caches",
+  "ç°": "Grey",
+  "ç¹å»å±å¼ / æ¶èµ·è¯¥çæ¬çæ´æ°åå®¹": "Click to expand or collapse this version's notes",
+  "ç¹å»åºç¨åå é¤ç£çä¸çç¼å­æä»¶": "Delete the on-disk cache file after clicking Apply",
+  "ç¹å»åºç¨åæå¼ä¸é¢è®¾ç½®ç®å½ä¸­çæ¥å¿æä»¶å¤¹": "Open the log folder from the settings above after clicking Apply",
+  "ç¹å»æå¼ä¸è½½é¡µé¢ï¼%1ï¼è®¿é®å¯ç  3o8iï¼": "Click to open the download page: %1 (password 3o8i)",
+  "ç¹å»æ¶èµ·/å±å¼å°å¾ï¼Ctrl+Mï¼ï¼ç¼©æ¾ç¨æ»è½®": "Click to collapse or expand the map (Ctrl+M); the wheel zooms",
+  "ç¹å»æ¶èµ·/å±å¼ç»æåè¡¨": "Click to collapse or expand the result list",
+  "çæ¬(Javaç)": "Version (Java)",
+  "çæ¬(åºå²©ç)": "Version (Bedrock)",
+  "ç¶ææ åæ¯ %1 == å¼ææ»é %2": "Status denominator %1 == engine total %2",
+  "ç¯å¸¦åå²è±å§è¦ççä¸éï¼0~1ï¼ï¼ä½äºå®çç«ä½ä¸æ¾ç¤ºã": "Minimum slime coverage inside the ring (0~1); lower spots are hidden.",
+  "ç¯å½¢": "Ring",
+  "ç¯å½¢ %1~%2 æ ¼ï½æ y=%3 ç»è®¡ï¼%4 ä¸ªç«ä½ï¼æä¼ %5 æ ¼ / %6 åºå / è¦çç %7%%ï¼ç¨æ¶ %8 ç§%9ï¼": "Ring %1~%2 blocks | stats at y=%3: %4 spots, best %5 cells / %6 chunks / %7%% cover (%8 s%9)",
+  "ç¯å½¢èå´è¶åºç©çä¸éï¼%1Ã%2 åºåï¼": "Ring range exceeds the physical limit (%1Ã%2 chunks)",
+  "ç¯å½¢è¦çï¼24~128 æ ¼ç¯å¸¦ï¼æç®æ æ°éä¸æå°å¯åº¦ç­é": "Ring: 24~128 block annulus; filters by target count and min density",
+  "çç©çæåå¾éå¸¸å 128ï¼åå¾åçå²è±å§åºåé¢ç§¯è¶å¤§ï¼å¯å·æªæ ¼æ°è¶å¤": "Mob spawn radius is usually 128: more slime area inside means more spawn cells",
+  "ç¨æ³": "Usage",
+  "ç¨æ³ï¼%1 [on|off]": "Usage: %1 [on|off]",
+  "ç¨æ³ï¼build [on|off]": "Usage: build [on|off]",
+  "ç¨æ³ï¼cache [status|clear|import <è·¯å¾>|build]": "Usage: cache [status|clear|import <path>|build]",
+  "ç¨æ³ï¼cache import <ç¼å­æä»¶è·¯å¾>": "Usage: cache import <cache file path>",
+  "ç¨æ³ï¼center x z": "Usage: center x z",
+  "ç¨æ³ï¼center x zï¼ä¸¤ä¸ªæ´æ°ï¼": "Usage: center x z (two integers)",
+  "ç¨æ³ï¼copy <n>ï¼n â¥ 1ï¼": "Usage: copy <n> (n â¥ 1)",
+  "ç¨æ³ï¼copy <n>ï¼å¤å¶ç¬¬ n æ¡ç»æç /tp å½ä»¤ï¼": "Usage: copy <n> (copy the /tp command of result n)",
+  "ç¨æ³ï¼density 0~1ï¼ä¾å¦ density 0.28ï¼": "Usage: density 0~1 (for example density 0.28)",
+  "ç¨æ³ï¼gpu [on|off]": "Usage: gpu [on|off]",
+  "ç¨æ³ï¼grid nï¼1~512ï¼": "Usage: grid n (1~512)",
+  "ç¨æ³ï¼log [off|brief|detailed]": "Usage: log [off|brief|detailed]",
+  "ç¨æ³ï¼open logs|cache|crash": "Usage: open logs|cache|crash",
+  "ç¨æ³ï¼preset near|local|global|world|bedrock": "Usage: preset near|local|global|world|bedrock",
+  "ç¨æ³ï¼range X0 X1 Z0 Z1 æ range Â±n": "Usage: range X0 X1 Z0 Z1 or range Â±n",
+  "ç¨æ³ï¼range X0 X1 Z0 Z1ï¼åä¸ªæ´æ°ï¼": "Usage: range X0 X1 Z0 Z1 (four integers)",
+  "ç¨æ³ï¼result copy <n>": "Usage: result copy <n>",
+  "ç¨æ³ï¼target nï¼n â¥ 1ï¼": "Usage: target n (n â¥ 1)",
+  "ç¨æ³ï¼theme [light|dark|system]": "Usage: theme [light|dark|system]",
+  "ç¨æ³ï¼threads nï¼0 = èªå¨ï¼": "Usage: threads n (0 = auto)",
+  "çé¢æå¤§è¡æ°:": "Max lines in the panel:",
+  "çé¢è¯­è¨å·²åæ¢ï¼é¨åæ§ææ¡éå¯åå®å¨çæï¼": "Language switched (some older texts need a restart)",
+  "çç©º = ç¨åºç®å½": "Empty = program folder",
+  "ç½": "White",
+  "ç®æ æ°é": "Result count",
+  "ç®æ æ°éå·²è®¾ä¸º %1": "Result count set to %1",
+  "ç®æ æ°éï¼æè¿ N ä¸ªï¼ï¼%1": "Result count (latest N): %1",
+  "çå®æç´¢å·²åãè¿åº¦ãåç±»è¿½å æµæ°´ï¼%1 æ¡ï¼": "The real search appended entries to the Progress tab (%1)",
+  "ç¡®å®è¦æ¸é¤ææç¼å­æ°æ®åï¼": "Clear all cached data?",
+  "ç¡®è®¤": "Confirm",
+  "ç§å­": "Seed",
+  "ç§å­éæ³": "Invalid seed",
+  "ç¨åºåå¸æ¥æè¶è¿æ­¤å¤©æ°åæ¾ç¤ºæ´æ°æé": "Show the update reminder after the release is older than this many days",
+  "ç¨åºå¯å¨åèªå¨å¼å§è®°å½æ¥å¿": "Start logging when the program starts",
+  "ç¨åºå´©æºæ¶çæ .dmp æä»¶ï¼ä¾¿äºææ¥": "Write a .dmp file when the program crashes",
+  "ç¨åºè®¾ç½®å·²åºç¨": "Settings applied",
+  "ç¨åºè®¾ç½®å·²åºç¨ï¼åå¹¶åå¥ config.jsonï¼": "Settings applied (merged into config.json)",
+  "ç¨åºè®¾ç½®ï¼å·²ä»å·¥å·æ æå¼ï¼èªæ£æ¨¡å¼ä¸å¼¹çªï¼": "Settings: opened from the toolbar (no dialog in selftest)",
+  "ç¨åºè®¾ç½®ï¼æªåä¿®æ¹": "Settings: no changes",
+  "çªå£æå¤§å": "Maximized window",
+  "ç¬¬%1å (è·ç¦» %2 åºå)": "No. %1 (distance %2 chunks)",
+  "ç¬¬1å": "#1",
+  "ç¬¬ä¸æ¡": "first",
+  "ç¬¬äºæ¡": "second",
+  "ç®ä½ä¸­æ": "Chinese (Simplified)",
+  "ç®è¦": "Brief",
+  "ç®è¦ï¼åªè®°å½å³é®äºä»¶ï¼è¯¦ç»ï¼è®°å½ææäºä»¶": "Brief: key events only; Detailed: everything",
+  "ç®æ³(åå±)": "Algorithm (layered)",
+  "ç®æ³(ç²¾ç¡®)": "Algorithm (exact)",
+  "ç®æ³(éæ ·)": "Algorithm (sampling)",
+  "ç®æ³å·²è®¾ä¸ºä¿å®æ¨¡å¼": "Algorithm set to brute force",
+  "ç®æ³å·²è®¾ä¸ºåå±æ¨¡å¼": "Algorithm set to layered",
+  "ç®æ³å·²è®¾ä¸ºå¿«éä¼°ç®æ¨¡å¼ï¼ç»æä¸ºä¼°ç®å¼ï¼": "Algorithm set to fast estimate (approximate)",
+  "ç®æ³å·²è®¾ä¸ºç²¾ç¡®æ¨¡å¼": "Algorithm set to exact",
+  "ç²¾ç¡®æ¨¡å¼": "Exact mode",
+  "ç²¾ç¡®æ¨¡å¼èå´è¿å¤§ï¼%1Ã%2 = %3 ä¸åºåï¼ä¸é 400 ä¸ï¼ââè¯·æ¹ç¨ãå¿«éãæç¼©å°åå¾": "Exact range too large (%1Ã%2 = %3 x10k chunks, limit 4M) - use Fast or a smaller radius",
+  "ç²¾ç¡®æ¨¡å¼ï¼é»è®¤ï¼ç»æ 100% å®æ´ï¼": "Exact (default, 100% complete)",
+  "ç²¾ç¡®æ¨¡å¼ï¼æ»å¨çªå£å¢éç»è®¡ + AVX2 ä½å¹¶è¡ï¼ç»æ 100% å®æ´ã": "Exact: sliding-window incremental stats plus AVX2 bit-parallel matching; 100% complete.",
+  "ç²¾ç¡®ï¼éåºåï¼": "Exact (per chunk)",
+  "ç²¾ç®éæ ·ï¼å¯åº¦ç²¾ç¡®ï¼": "Sampled (density exact)",
+  "ç´¯ç§¯å¼è¿åº¦æµæ°´ï¼æ¯ 0.5 ç§ä¸æ¡ï¼": "Cumulative progress log (one line every 0.5 s)",
+  "çº¦ %1 ä¸äº¿åºå": "about %1 trillion chunks",
+  "çº¦ %1~%2 åé": "about %1~%2 minutes",
+  "çº¦ %1~%2 å¤©": "about %1~%2 days",
+  "çº¦ %1~%2 å°æ¶": "about %1~%2 hours",
+  "çº¦ %1~%2 ç§": "about %1~%2 seconds",
+  "çº¿ç¨æ°": "Thread count",
+  "çº¿ç¨æ° %1 è¶è¿å¼æååå¹¶åä¸é 12ï¼å®éå¹¶åæ 12 è®¡ç®": "Threads %1 exceed the engine's 12-way tile limit: using 12",
+  "çº¿ç¨æ° %1 è¶è¿ç©çæ ¸å¿æ° %2ï¼å¯è½ä¸ä¼æ´å¿«ï¼å»ºè®®è®¾ä¸º %2ï¼": "Threads %1 exceed the %2 physical cores; it may not be faster (use %2)",
+  "çº¿ç¨æ° %1 è¶è¿ç©çæ ¸å¿æ° %2ï¼è¶çº¿ç¨æ¶çæéï¼å¯è½ä¸ä¼æ´å¿«": "Threads %1 exceed the %2 physical cores: hyperthreading gains are limited",
+  "çº¿ç¨æ°å·²è®¾ä¸º %1": "Thread count set to %1",
+  "çº¿ç¨æ°ï¼%1ï¼0 = èªå¨ï¼ï½æè¿ä¸æ¬¡çæçº¿ç¨ï¼%2": "Threads: %1 (0 = auto) | last used: %2",
+  "ç»ç«¯æªè¿æ¥å°ä¸»çªå£ã": "Terminal is not attached to the main window.",
+  "ç»æ %1 æ¡ï¼æ¾ç¤ºå %2 æ¡ï¼ï½ æ«æ %3 åºå ï½ ç¨æ¶ %4 ç§ ï½ æ¨¡å¼ï¼%5": "%1 results (%2 shown) | %3 chunks scanned | %4 s | mode: %5",
+  "ç»æå·²å¤å¶å°åªè´´æ¿": "Results copied to the clipboard",
+  "ç»æå·²å¯¼åºå° %1": "Results exported to %1",
+  "ç»æå·²å¯¼åºï¼%1": "Results exported: %1",
+  "ç»æå·²æå¯åº¦ï¼é« â ä½ï¼éæ°æåï¼å± %1 æ¡ï¼": "Results re-sorted by density (high to low), %1 items",
+  "ç»æå·²æ¸ç©º": "Results cleared",
+  "ç»æå·²æ¸ç©ºã": "Results cleared.",
+  "ç»å¶å¾æ¡": "Draw pattern",
+  "ç»å¶å¾æ¡ â å·¦é®å¾ªç¯ï¼ç°(å¿½ç¥)âç½(éå²è±å§)âç»¿(å²è±å§)ï¼å³é®=å¿½ç¥": "Draw pattern - left click cycles grey/white/green; right click = ignore",
+  "ç»¿": "Green",
+  "ç¼å­ä¸éå·²æé«å° %1 MB": "Cache limit raised to %1 MB",
+  "ç¼å­å®¹éä¸é:": "Cache size limit:",
+  "ç¼å­å·²å è½½ï¼å±": "Cache loaded,",
+  "ç¼å­å·²å è½½ï¼å± %1 ä¸ªåºåï¼è¦ç %2 ä¸ªåºåï¼çº¦ %3 MBï¼": "Cache loaded: %1 chunks (%2 areas, about %3 MB)",
+  "ç¼å­å·²å¯¼å¥ï¼%1ï¼æ°å¢ %2 æ¡ï¼": "Cache imported: %1 (%2 new entries)",
+  "ç¼å­å·²æ´æ°ï¼å± %1 ä¸ªåºå": "Cache updated: %1 chunks in total",
+  "ç¼å­å·²æ¸ç©ºï¼å«ç£çæä»¶ï¼": "Cache cleared (including the on-disk file)",
+  "ç¼å­æ«æ": "Cache scan",
+  "ç¼å­æ«æï¼å·²è¦çåºåï¼": "Cache scan (covered areas)",
+  "ç¼å­æä»¶çå­æ¾ä½ç½®ï¼çç©ºè¡¨ç¤ºç¨åºç®å½": "Where the cache file lives; empty means the program folder",
+  "ç¼å­æå»ºåºé": "Cache build error",
+  "ç¼å­æå»ºå®æ": "Cache build finished",
+  "ç¼å­æå»ºå·²åæ¶ï¼å·²è½çï¼": "Cache build cancelled (progress saved)",
+  "ç¼å­æå»ºå·²ç§»å°": "Cache build moved to",
+  "ç¼å­æå»ºå·²ç§»å°å·¦ä¾§ãç¼å­æå»ºãé¡µï¼æ¬é¡µåªè´è´£æç´¢ï¼": "Cache build moved to the left Cache build page (this page only searches)",
+  "ç¼å­æå»ºå¼å§ï¼%1 åºå / %2 æ®µï¼å¯è¾¾å®¹éä¸éå³åæ­¢ï¼": "Cache build started: %1 chunks / %2 segments (stops at capacity)",
+  "ç¼å­æå»ºæ¨¡å¼": "Cache build mode",
+  "ç¼å­æå»ºæ¨¡å¼å·²%1%2": "Cache build mode is %1%2",
+  "å¼å¯": "On",
+  "å¼å¯åæ¾ç¤ºé¢å¤è°è¯ä¿¡æ¯": "Show extra debug information",
+  "å¼å¯åï¼å¯ç¨ GPU æ¶æ¾ç¤ºâä¸ä¸å®æ´å¿«âæé": "Show a âmay not be fasterâ reminder when GPU is enabled",
+  "å¼å§æå»º": "Start build",
+  "å½åä¸»é¢ï¼%1ï¼æ¡£ä½ï¼%2ï¼": "Current theme: %1 (mode: %2)",
+  "å½åä½¿ç¨æ¨¡å¼": "Current mode",
+  "å½åä½¿ç¨æ¨¡å¼ï¼%1": "Current mode: %1",
+  "å½åä½¿ç¨æ¨¡å¼ï¼ä¸¥æ ¼å¾æ¡å¹éï¼ç²¾ç¡®ï¼": "Current mode: strict pattern match (exact)",
+  "å½åä½¿ç¨æ¨¡å¼ï¼ç²¾ç¡®æ¨¡å¼": "Current mode: exact",
+  "å½åæç´¢èå´": "Current search range",
+  "å½åæ¨¡å¼ä¸ä¸ä½¿ç¨è¯¥éé¡¹": "Not used in the current mode",
+  "å½åæ¨¡å¼ï¼%1 ï½ ç®æ³ï¼%2 ï½ ç½æ ¼ %3 ï½ æå°å¯åº¦ %4 ï½ çº¿ç¨ %5": "Current mode: %1 | algorithm: %2 | grid %3 | min density %4 | threads %5",
+  "å½åæ²¡æå¯å¤å¶çå½ä»¤": "No command to copy right now",
+  "å½åæ²¡æå¯å¯¼åºçç»æã": "No results to export right now.",
+  "å½åæ²¡ææ­£å¨è¿è¡çæç´¢ã": "No search is running.",
+  "å½åæ²¡æç»æï¼åæ§è¡ searchï¼ã": "No results yet (run search first).",
+  "å½åæ²¡æè¿è¡ä¸­çæç´¢": "No search in progress",
+  "å½åèå´ï¼X(%1 ~ %2) Z(%3 ~ %4)ï¼å± %5 åºå": "Current range: X(%1 ~ %2) Z(%3 ~ %4), %5 chunks",
+  "å¿«éä¼°ç®æ¨¡å¼ï¼ç²¾ç®éæ ·ï¼": "Fast estimate mode (sampled)",
+  "å¿«éé¢è®¾": "Presets",
+  "å¿«éé¢è®¾:": "Presets:",
+  "å¿«éï¼å¤§èå´èªå¨æ¾å¤§ç²æ«æ­¥é¿ï¼åå¯¹åå ååéæ ¼ç²¾ä¿®ï¼ç²¾ç¡®ï¼æ¯ä¸ªåºåé½ç®ã": "Fast: widen the coarse step on big areas, then refine the best; Exact: every chunk.",
+  "æ¢å¤": "Restore",
+  "æ¢å¤ææè®¾ç½®": "Restore all settings",
+  "æ¢å¤ææè®¾ç½®å°åºåé»è®¤å¼": "Restore all settings to factory defaults",
+  "æ¢å¤é»è®¤ä¸ä¼å é¤ç¼å­æä»¶ï¼æç´¢èå´ç­ãæ¬æ¬¡ä»»å¡ãçåæ°ä¸å¨è®¾ç½®èå´åã": "Restoring does not delete the cache; task-level parameters such as the search range are not part of settings.",
+  "æå¨é¡µé¢æªæ¾ç¤º": "Not shown on the current page",
+  "æå¼": "Open",
+  "æå¼æµè§å¨": "Open browser",
+  "æ«æ": "Scan",
+  "æ«æ ": "Scan ",
+  "æ«æ %1": "Scan %1",
+  "æ«æ 1000/2000 åºåï¼50.0%ï¼": "Scan 1000/2000 chunks (50.0%)",
+  "æ«æ 1234/5678 åºå": "Scan 1234/5678 chunks",
+  "æ«æ 267596340/314572500 åºåï¼85.1%ï¼": "Scan 267596340/314572500 chunks (85.1%)",
+  "æ«æä¸­ç¶ææ ç¾åæ¯ä¸è¶è¿ 100%ï¼å®é %1%ï¼": "Status percentage during a scan never exceeds 100% (actual %1%)",
+  "æ«æåå­ %1 â¤ åæ¯ %2ï¼åæºåæ¯ï¼": "Scan numerator %1 â¤ denominator %2 (same denominator)",
+  "æ«æå®æ": "Scan finished",
+  "æ«æå®æï¼æ­£å¨ä¼°ç®â¦": "Scan finished, estimatingâ¦",
+  "æ«æå®æï¼æ­£å¨å¹éå¾æ¡": "Scan finished, matching the pattern",
+  "æ«æå®æï¼æ­£å¨å¹éå¾æ¡â¦": "Scan finished, matching the patternâ¦",
+  "æ«æå®æï¼æ­£å¨å¹éå¯åº¦â¦": "Scan finished, matching densityâ¦",
+  "æ¾å° 7 ä¸ª": "7 found",
+  "æ¾å° N ä¸ªç®æ åç«å³åæ­¢æç´¢": "Stop as soon as N targets are found",
+  "æ¾å¤å³å": "Stop when found",
+  "æä¸é¢çæ¹ååæ é¤ä»¥ 16 å¾å°åºååæ ï¼å¹¶å¡«å¥æ¥è¯¢èµ·ç¹": "Divide the block coordinates above by 16 and fill the result into the origin",
+  "æä¸é¢ææéé¡¹æ¢å¤ä¸ºåºåé»è®¤å¼ï¼è¿éç¹ãåºç¨ãæä¼çæï¼": "Reset every option below to factory defaults (click Apply to take effect)",
+  "æå¨é¨åé¦ï¼æ¯è¡ä¸æ¡ï¼å¤å¶å°åªè´´æ¿": "Copy all feedback (one line each) to the clipboard",
+  "æå¨é¨è¿åº¦è®°å½å¤å¶å°åªè´´æ¿": "Copy the whole progress log to the clipboard",
+  "ææç¨çå¨é¨æå­å¤å¶å°åªè´´æ¿ï¼ä¾¿äºä¿å­æåç»æåã": "Copy all tutorial text to the clipboard",
+  "ææºç¹": "Farm spot",
+  "ææºç¹ï¼ç¯å½¢è¦ç Â· 1/16 åºåç²¾åº¦ï¼": "Farm spot (ring Â· 1/16 chunk precision)",
+  "ææºç¹ï¼Java çéè¦åå¡«åä¸çç§å­": "Farm spot: Java needs a world seed first",
+  "æ 1/16 åºåç²¾åº¦ç®ææºç¹å¹¶ç»å°å°å¾ä¸ï¼åãææºç¹ãå¯¹è¯æ¡ï¼": "Compute farm spots at 1/16 chunk precision and draw them on the map",
+  "æãç½æ ¼å¤§å°ãæ«è¿æ´ä¸ªæç´¢èå´ï¼æ¾å²è±å§å¯åº¦æé«çæ¹æ ¼ã": "Sweep the whole area with the grid size and rank by slime density.",
+  "æå½åä¸éç»§ç»­": "Continue with the current limit",
+  "æé»è¾æ ¸å¿æ°æç®çæçº¿ç¨æ°ï¼è®¾ 50% æ¶å®æµå ç¨çº¦ 50%ï¼": "Scale threads by logical cores (50% measures about 50% CPU)",
+  "æååæ­¢": "Stop early",
+  "æç¤º": "Notice",
+  "æç¤ºé³çé³éå¤§å°ï¼0 ~ 100%ï¼": "Notification volume (0 ~ 100%)",
+  "æç¤ºï¼åå¡«ä¸çç§å­ï¼æ°å­æ¡é»è®¤ä¸åæ»è½®ï¼è®¾ç½®éå¯å¼ï¼ï¼F11 åæ¢å¨å±": "Tip: enter the seed first; the wheel does not change numbers by default (enable in Settings); F11 toggles fullscreen",
+  "æé": "Reminder",
+  "æé«ä¸éå¹¶ç»§ç»­": "Raise the limit and continue",
+  "æç´¢ä¸­ ETA æå·ä½æ°å¼ï¼å®é %1ï¼": "ETA shows a real value during a search (actual %1)",
+  "æç´¢åºé": "Search error",
+  "æç´¢å®æå ETA å·²æ¸ç©ºï¼å®é %1ï¼": "ETA cleared after the search (actual %1)",
+  "æç´¢å®æåï¼è¿éæ¾ç¤ºç»æä¸åæ ": "Results and coordinates appear here after a search",
+  "æç´¢å®æï¼å± %1 æ¡ç»æï¼æ«æ %2 åºåï¼ç¨æ¶ %3 ç§ï¼": "Search done: %1 results (%2 chunks scanned, %3 s)",
+  "æç´¢å®æï¼å± %1 æ¡ï¼æ¾ç¤º %2 æ¡ï¼ï½ %3": "Search done: %1 results (%2 shown) | %3",
+  "æç´¢å®æï¼å·²å®ä½å°ç¬¬ 1 æ¡ç»æï¼åºå %1, %2ï¼": "Search done: jumped to result 1 (chunk %1, %2)",
+  "æç´¢æ¶ä½¿ç¨çå¹¶è¡çº¿ç¨æ°": "Number of parallel threads used for searching",
+  "æç´¢æ¨¡å¼(ä¸¥æ ¼)": "Search mode (strict)",
+  "æç´¢æ¨¡å¼(å¯åº¦)": "Search mode (density)",
+  "æç´¢æ­£å¨è¿è¡ä¸­ï¼èªæ£æ¨¡å¼ï¼å¿½ç¥éå¤å¯å¨ï¼": "A search is already running (selftest: duplicate start ignored)",
+  "æç´¢æ­£å¨è¿è¡ä¸­ï¼è¯·å¿éå¤å¯å¨ã": "A search is already running; do not start it twice.",
+  "æç´¢ç®æ³ï¼": "Search algorithm:",
+  "æç´¢ç»ææ¶ååºå£°é³æé": "Play a sound when the search finishes",
+  "æç´¢ç»æ": "Search results",
+  "æç´¢è¿è¡ä¸­â¦": "Searchingâ¦",
+  "æç´¢éè¯¯": "Search error",
+  "æ¾å¤§": "Zoom in",
+  "æ¾å¼æ¬æ¬¡ä¿®æ¹ï¼ä¸ä¿å­ãä¸çæ": "Discard these changes (do not save or apply)",
+  "æç¨": "Tutorial",
+  "æ´å¾æç´¢ç¡®è®¤": "Full-map confirmation",
+  "æ´å¾èå´å·²å¡«å¥ï¼è¯·åç»å¶ç®æ å¾æ¡åå¼å§æç´¢ã": "The full-map range is filled in; draw the target pattern before searching.",
+  "ææ¬æä»¶ (*.txt);;æææä»¶ (*.*)": "Text files (*.txt);;All files (*.*)",
+  "æ°åºåæ«æ": "New-area scan",
+  "æ°æ¥å¿åºç°æ¶èªå¨æ»å¨å°åºé¨": "Auto-scroll to the bottom when new log lines arrive",
+  "æ¹åéå®": "Orientation lock",
+  "æ¹å X": "Block X",
+  "æ¹å Z": "Block Z",
+  "æ¹åâåºå:": "Block â chunk:",
+  "æ¹ååæ  (%1, %2) â åºååæ  (%3, %4)": "Block coordinates (%1, %2) â chunk coordinates (%3, %4)",
+  "æ æ³ä¼°ç®": "Cannot estimate",
+  "æ æ³å®æµä¼°ç®": "Cannot estimate from measurements",
+  "æ è¾¹æ¡å¨å± = éºæ»¡å±å¹æ æ é¢æ ï¼çªå£æå¤§å = ä¿çæ é¢æ ä¸è¾¹æ¡ãF11 éæ¶åæ¢": "Borderless = fills the screen without a title bar; Maximized = keeps frame. F11 toggles",
+  "æ¥å¿å·²å³é­": "Logging off",
+  "æ¥å¿å·²å³é­ï¼ä¸ååå¥æ¥å¿æä»¶ï¼": "Logging off (no more log files)",
+  "æ¥å¿å·²å¯ç¨ï¼%1æ¨¡å¼ï¼": "Logging enabled (%1 mode)",
+  "æ¥å¿å·²å¯ç¨ï¼%1æ¨¡å¼": "Logging enabled: %1 mode",
+  "æ¥å¿æä»¶çå­æ¾ä½ç½®ï¼ç¸å¯¹ç¨åºç®å½çå­ç®å½åï¼": "Folder for log files (relative to the program folder)",
+  "æ¥å¿æªå¯ç¨": "Logging not enabled",
+  "æ¥å¿æ¨¡å¼å·²åæ¢ä¸º %1": "Log mode switched to %1",
+  "æ¥å¿æ¨¡å¼ï¼%1 ï½ æä»¶ï¼%2 ï½ åå­æ¡ç®ï¼%3 / %4": "Log mode: %1 | file: %2 | in-memory entries: %3 / %4",
+  "æ¥å¿çº§å«:": "Log level:",
+  "æ¥å¿èªå¨æ»å¨": "Auto-scroll log",
+  "æ¥å¿è·¯å¾:": "Log path:",
+  "æ¥å¿ï¼é»è®¤å³é­ï¼": "Log (off by default)",
+  "æ§çç¼å­": "Legacy cache",
+  "æ¯": "Yes",
+  "æ¾å­": "VRAM",
+  "æ¾ç¤º GPU å éæé": "Show the GPU reminder",
+  "æ¾ç¤ºå¨é¨å½ä»¤ä¸ç¨æ³": "Show all commands and usage",
+  "æ¾ç¤ºç¨åºçæ¬ä¸è·¯å¾": "Show the program version and paths",
+  "æºè½èå´": "Smart range",
+  "æ´æ°æéï¼æ¬çæ¬å·²åå¸ %1 å¤©ï¼åå¸æ¥æ %2ï¼ï¼å¯è½ææ°çæ¬ã": "Update reminder: this build is %1 days old (released %2); a newer one may exist.",
+  "æå¤è¿åå¤å°ä¸ªç»æã": "How many results to return at most.",
+  "æå°å¯åº¦": "Min density",
+  "æå°å¯åº¦å·²è®¾ä¸º %1": "Minimum density set to %1",
+  "æå°å¯åº¦ï¼%1": "Min density: %1",
+  "æè¿ä¸æ¬¡ç»æï¼%1 æ¡ï¼": "Latest result set (%1)",
+  "æè¿ä¸æ¬¡ç»æï¼%1 æ¡ï¼å¤æ© 2 åºåï¼": "Latest result set (%1, expanded by 2 chunks)",
+  "æææ ¼ Â· æ»æé": "Cells Â· weight",
+  "æªå è½½": "Not loaded",
+  "æªå è½½ç¼å­": "No cache loaded",
+  "æªå è½½ç¼å­ï¼ç£çä¸å·²æ %1ï¼å¯ç¹ãå¯¼å¥ç¼å­ãæéå¯ç¨åºè½½å¥ï¼": "No cache loaded (%1 exists on disk; use Import cache or restart)",
+  "æªå¯ç¨": "Off",
+  "æªå¡«åä¸çç§å­ãJava çå¤å®ä¾èµç§å­ï¼æªå¡«åæ æ³æç´¢ã": "The world seed is missing. Java searches need it.",
+  "æªå¡«åä¸çç§å­ï¼Java çå¤å®ä¾èµç§å­ï¼æªå¡«åæ æ³æç´¢ã": "The world seed is missing; Java searches need it.",
+  "æªå¡«åç§å­": "Seed not filled in",
+  "æªæ¾å° OpenCL è®¾å¤": "No OpenCL device found",
+  "æªæ¾å°å¹éç»æï¼æ«æ %1 åºåï¼ç¨æ¶ %2 ç§ï¼": "No matching results (%2 s over %1 chunks)",
+  "æªæ£æµ": "Not checked",
+  "æªç¥": "Unknown",
+  "æªç¥å½ä»¤": "Unknown command",
+  "æªç¥å½ä»¤ï¼è¾å¥ help æ¥çå¨é¨å½ä»¤ï¼": "Unknown command (type help for all commands)",
+  "æªç¥å½ä»¤ï¼%1ï¼è¾å¥ help æ¥çå¨é¨å½ä»¤ï¼": "Unknown command: %1 (type help for all commands)",
+  "æªç¥æ¨¡å¼ï¼%1ï¼å¯ç¨ strict/density/exact/layered/sample/bruteï¼": "Unknown mode: %1 (use strict/density/exact/layered/sample/brute)",
+  "æªç¥é¢è®¾ï¼%1ï¼å¯ç¨ near/local/global/world/bedrockï¼": "Unknown preset: %1 (use near/local/global/world/bedrock)",
+  "æ¥æºï¼%1 %2%5ï½èå´åå²è±å§å æ¯ %3%%ï½æä¼ï¼%4": "Source: %1 %2%5 | slime ratio in range %3%% | best: %4",
+  "æ¥æºï¼%1ï½å¯è§ %2Ã%3 åºåï½ç¼©æ¾ %4 px/æ ¼": "Source: %1 | visible %2Ã%3 chunks | zoom %4 px/block",
+  "æå»º": "Build",
+  "æå»ºå®æï¼èå´å·²å¨é¨è®°å½ï¼%1 åºåï¼ç¨æ¶ %2 ç§ï¼": "Build finished: the whole range is recorded (%1 chunks, %2 s)",
+  "æå»ºæ¨¡å¼": "Build mode",
+  "æå»ºèå´ä¸é¢ç®ï¼ä¸ãæç´¢ãé¡µå±ç¨åä¸ä»½èå´ï¼æ¹è¿éç­äºæ¹é£è¾¹ï¼": "Build range and budget (shares the range with the Search page)",
+  "æå»ºè¿åº¦ãï¼â  æ«æ â¡ å¤å® â¢ å½å¹¶ â£ è½çï¼": "Build progress (1 scan  2 evaluate  3 merge  4 save)",
+  "æå»ºé¢ä¼°": "Build estimate",
+  "æå»ºé¢ä¼°ï¼%1 åºå â çº¦ %2 MBï¼é¢ç® %3 MBï¼": "Build estimate: %1 chunks â about %2 MB (budget %3 MB)",
+  "æ¥è¯¢èµ·ç¹X": "Origin X",
+  "åå±æ¨¡å¼": "Layered mode",
+  "åå±ç²å": "Coarse blocks",
+  "åå±ï¼%1 ç²åï¼éå¼æ¯ä¾ %2ã": "Layered: %1 coarse blocks, threshold ratio %2.",
+  "åé": "min",
+  "åæ¢åç«å³å¥ç¨ï¼å·²è¿ç§»ççé¢ææ¡çæï¼å¶ä½ææ¡éæ­¥è¿ç§»ï¼": "Applies right away (migrated texts update now; the rest migrate gradually)",
+  "å": "col",
+  "åæ°:": "Columns:",
+  "å¤å®ç®æ³": "Algorithm",
+  "å·æªæ¶å¤±è·ç¦»ï¼é»è®¤ 128": "Distance at which mobs despawn; default 128",
+  "å æè¦ç": "Weighted cover",
+  "å¾éåå¾æ¡å¿é¡»ä¸ç»å¶æ¹åä¸è´ï¼ä¸ä¼æ 4 ä¸ªæ¹åæè½¬å¹éã": "When checked, the pattern must match the drawn orientation (no rotations).",
+  "å¹é": "Matching",
+  "åºå": "chunks",
+  "åå¾ Rï¼": "Radius R:",
+  "åå¾ï¼åºåï¼": "Radius (chunks)",
+  "åå¾ï¼åºåï¼ï¼èå´ = ä»¥åç¹ä¸ºä¸­å¿ãè¾¹é¿ 2Ãåå¾ çæ­£æ¹å½¢": "Radius (chunks): the range is a square of side 2Ãradius around the origin",
+  "å³å°æ«æ": "About to scan",
+  "åå²ç¼å­å·²åç¨": "Legacy cache disabled",
+  "åå²ç¼å­å·²åç¨ï¼æ¼å­ ~34%ï¼ï¼å»ºè®®éæ«": "Legacy cache disabled (about 34% missing): rescan recommended",
+  "å»å¡«å": "Go fill in",
+  "åæ°éè¯¯": "Invalid parameter",
+  "åæ¶ååº < 1 ç§ï¼æå·® %1 msï¼": "Cancel responds in under 1 s (worst %1 ms)",
+  "åæ¶æå¨æ«æä¸­ï¼10 æ¬¡ä¸­ %1 æ¬¡æç´¢ä»å¨è¿è¡ï¼": "Cancel during scan (search still running in %1 of 10 cases)",
+  "åªæ¾ç¤ºæè¿ç N ä¸ªç»æ": "Show only the latest N results",
+  "å¯å¿½ç¥": "Can be ignored",
+  "å¯ç¨": "available",
+  "å¯ç¨ï¼å·²å¯ç¨ï¼": "available (enabled)",
+  "å¯ç¨ï¼æªå¯ç¨ï¼": "available (off)",
+  "å²è±å§åºå": "Slime chunks",
+  "å²è±å§åºåæ¥æ¾å¨": "Slime Chunk Finder",
+  "å²è±å§åºåæ¥æ¾å¨ %1": "Slime Chunk Finder %1",
+  "å²è±å§åºåæ¥æ¾å¨ å½ä»¤ç»ç«¯ ââ è¾å¥ help æ¥çå½ä»¤ï¼å½ä»¤ä¼ç«å³æ§è¡ï¼å¯æéå°æ­£å¨è¿è¡çæç´¢ã": "Slime Chunk Finder command terminal - type help for commands; commands run immediately and can jump ahead of a running search.",
+  "å²è±å§è¦ççä¸éï¼0~1ï¼ï¼ä½äºå®çç»æä¸æ¾ç¤ºã": "Minimum slime coverage (0~1); results below it are hidden.",
+  "åå¹¶æåä½ä¿å­é»è®¤ç¼å­å¤±è´¥ï¼%1": "Merged, but saving the default cache failed: %1",
+  "åæ³æ´æ°": "Valid integer",
+  "å¦": "No",
+  "å¯å¨åèªå¨è¯»åç£çä¸çç¼å­æä»¶ï¼å å¿«é¦æ¬¡æç´¢": "Load the cache file from disk after startup to speed up the first search",
+  "å¯å¨æ¶å¯ç¨æ¥å¿": "Enable logging at startup",
+  "å¯å¨æ¶å·²èªå¨æ£æµ GPUï¼%1": "GPU was auto-checked at startup: %1",
+  "å¯å¨æ¶çé»è®¤æç´¢ç®æ³": "Default search algorithm at startup",
+  "å¯å¨æ¶èªå¨å è½½ç¼å­": "Auto-load cache at startup",
+  "å¯å¨æ¶èªå¨å¡«å¥çæç´¢èå´": "Search range filled in at startup",
+  "å¯å¨æ¶èªå¨å¼å¯ GPUï¼éæ¾å¡æ¯æ OpenCLï¼": "Enable GPU at startup (needs OpenCL support)",
+  "å¯å¨æ¶èªå¨æ£æ¥ GPU ç¶æ": "Check GPU status at startup",
+  "å¯ç¨æ¥å¿": "Enable logging",
+  "å¯ç¨æ¥å¿â¦": "Enable loggingâ¦",
+  "å½ä»¤": "Command",
+  "å¾æ¡": "Pattern",
+  "å¾æ¡ä¸å¯åº¦æç´¢é½åå®å½±åï¼ç¯å½¢æç´¢ç¨ãç¯å½¢æ«æãéçå¿«é/ç²¾ç¡®ï¼ä¸èµ°è¿éã": "Pattern and density searches both use it; ring search uses the fast/exact scan instead.",
+  "å¾æ¡ï¼%1Ã%2ï¼%3 ä¸ªæææ ¼": "Pattern: %1Ã%2, %3 valid cells",
+  "å¨å°å¾ä¸å®ä½å°è¿ä¸æ¡": "Locate this entry on the map",
+  "å¨æç´¢èå´åæ¾å²è±å§åºåæå¯éçåºåã": "Find the densest patch of slime chunks in the search area.",
+  "å¨æç´¢èå´åæ¾åèªå®ä¹å¾æ¡ä¸è´çåºåæåã": "Find a block arrangement that matches your custom pattern.",
+  "å°å¾å·²å®ä½å°åºå (%1, %2)": "Map centered on chunk (%1, %2)",
+  "å°å¾å·²æ¶èµ·ï¼ç¹æ é¢ãå°å¾ãå±å¼ï¼ææ Ctrl+Mï¼": "Map collapsed (click the Map title or press Ctrl+M)",
+  "å°å¾é¢è§ï¼ç¾¤ç³» / å²è±å§åºå / æç´¢ç»æ / ææºç¹ï¼": "Map preview (biomes / slime chunks / results / farm spots)",
+  "å°å¾é¢è§ï¼Java çéè¦åå¡«åä¸çç§å­": "Map preview: Java needs a world seed first",
+  "åçº§å¿è¦æ¡ä»¶åªæ â ç»æä¸ç²¾ç¡®æ¨¡å¼å®å¨ä¸è´ï¼æ æï¼ã": "Block-level necessary-condition pruning â identical to exact mode (lossless).",
+  "åºå²©çä¸çè¾¹çï¼Â±1048576 åºåï¼æ´å¾æç´¢ï¼ä¼åç»åºèæ¶ä¼°ç®ç¡®è®¤ï¼": "Bedrock world border: Â±1048576 chunks (full map; you get an ETA first)",
+  "å¤ä½": "Reset",
+  "å¤å¶åæ æå¨è¡çå½ä»¤": "Copy the command on the cursor line",
+  "å¤å¶å¨é¨": "Copy all",
+  "å¤å¶å¨é¨æå­": "Copy all text",
+  "å¤å¶ç»æï¼å¨é¨ææ¬ï¼": "Copy results (all text)",
+  "å¤å¶éä¸­": "Copy selection",
+  "å¤å¶éä¸­ç¹ç /tp å½ä»¤": "Copy the /tp command of the selected point",
+  "å¤å¶é¾æ¥": "Copy link",
+  "å¤§èå´æç´¢è­¦åéå¼:": "Large-search warning threshold:",
+  "å¤©": "days",
+  "å®æåç¶ææ ç¾åæ¯ä¸è¶è¿ 100%ï¼å®é %1%ï¼": "Finish-state status percentage never exceeds 100% (actual %1%)",
+  "å®ææç¶ææ  %1/%2 ä¸æ¥å¿ search.summary %3/%4 ä¸è´": "Finish status %1/%2 matches log search.summary %3/%4",
+  "å®æµååç": "Measured throughput",
+  "å®æµååçï¼CPU %1 äº¿åºå/ç§ ï½ GPU %2 äº¿åºå/ç§ï¼å«åè¯»ï¼config.json ç¼å­ï¼": "Measured throughput: CPU %1 x100M chunks/s | GPU %2 x100M chunks/s (with readback, cached in config.json)",
+  "å¯åº¦æç´¢": "Density search",
+  "å¯åº¦æç´¢å¹éé¶æ®µä¸åºç°ãå¾æ¡ãï¼é¶æ®µ=%1 æ¶æ¯=%2ï¼": "No pattern word during density matching (stage=%1 message=%2)",
+  "å¯åº¦æ»å¨çªå£å¢éç»è®¡ + ä¸¥æ ¼å¹éå­çº§ä½å¹¶è¡ï¼ç»æä¸ v3.2.1 éä½ä¸è´ã": "Density sliding-window incremental stats plus word-level parallel exact matching; identical to v3.2.1.",
+  "å¯åº¦çªå£è¾¹é¿ï¼åºåï¼ï¼5 è¡¨ç¤ºæ 5Ã5 åºåçæ¹æ ¼ç»è®¡å¯åº¦ã": "Density window edge in chunks; 5 means 5Ã5 chunks.",
+  "å¯ç ": "Password",
+  "å¯¼å¥å¤±è´¥": "Import failed",
+  "å¯¼å¥æå": "Import succeeded",
+  "å¯¼å¥æªå¢å ä»»ä½æ¡ç®ï¼è·¯å¾æ æ / å·²åæ¶ / åå®¹å·²å­å¨ï¼ï¼%1": "Import added nothing (bad path / cancelled / already present): %1",
+  "å¯¼åºå¤±è´¥ï¼æ æ³åå¥ %1": "Export failed: cannot write %1",
+  "å¯¼åºç»æ": "Export results",
+  "å±é¨ï¼ä»¥åç¹ä¸ºä¸­å¿ Â±5000 åºåï¼çº¦ 10000Ã10000ï¼": "Local: Â±5000 chunks around the origin (about 10000Ã10000)",
+  "å´©æºè½¬å¨å·²å³é­ï¼å´©æºæ¶å°ä¸çæ .dmpï¼": "Crash dumps are off (no .dmp on crash)",
+  "å´©æºè½¬å¨å·²å¼å¯ï¼å´©æºæ¶çæ .dmp å° crashes/ï¼": "Crash dumps are on (writes .dmp into crashes/)",
+  "å·¦å¯¼èªåæ¢é¡µé¢ï¼åæ¢å¨ç»åªç¼©æ¾å¾æ¡ï¼ä¸å½±åå¸å±": "Left navigation switches pages; the animation only scales icons and does not affect layout",
+  "å·¦é®ç¹å»å¾ªç¯åæ¢ç¶æï¼å³é®ç¹å»ç´æ¥è®¾ä¸ºå¿½ç¥ï¼ç°è²ï¼ãç»¿è²=å²è±å§åºåï¼ç½è²=éå²è±å§åºåã": "Left click cycles the state; right click sets it to ignore (grey). Green = slime chunk, white = not.",
+  "å·²å³é­": "Off",
+  "å·²åæ¢ä¸º%1": "Switched to %1",
+  "å·²åæ¢å°ä¸¥æ ¼å¾æ¡å¹é": "Switched to strict pattern matching",
+  "å·²åæ¢å°å¯åº¦æç´¢": "Switched to density search",
+  "å·²å è½½": "Loaded",
+  "å·²å è½½ %1 åºå": "Loaded %1 chunks",
+  "å·²åæ¶å¯¼å¥ç¼å­": "Cache import cancelled",
+  "å·²åæ¶å¯¼å¥ç¼å­ï¼æªåå¹¶ï¼": "Cache import cancelled (not merged)",
+  "å·²åæ¶æå¼ä¸è½½é¡µé¢": "Download page cancelled",
+  "å·²åæ¶ï¼å·²æ«æ %1 åºåï¼": "Cancelled (%1 chunks scanned)",
+  "å·²åæ¶ï¼æ¬æ¬¡å·²è½çï¼ä¸æ¬¡ç¹ãå¼å§æç´¢ãèªå¨è·³è¿å·²æå»ºåºåç»§ç»­ï¼": "Cancelled; progress saved (next Start resumes where it left off)",
+  "å·²å¨å°å¾ä¸æ åº %1 ä¸ªææºç¹": "Marked %1 farm spots on the map",
+  "å·²å¨èµæºç®¡çå¨ä¸­æå¼æ¥å¿ç®å½": "Opened the log folder in Explorer",
+  "å·²å¨èµæºç®¡çå¨ä¸­æå¼ç¨åºï¼ç¼å­ï¼ç®å½": "Opened the program (cache) folder in Explorer",
+  "å·²å¤å¶ %1 æ¡ /tp å½ä»¤": "Copied %1 /tp commands",
+  "å·²å¤å¶ %1 æ¡ /tp å½ä»¤å°åªè´´æ¿": "Copied %1 /tp commands to the clipboard",
+  "å·²å¤å¶ä¸è½½é¾æ¥ä¸å¯ç ": "Copied the download link and password",
+  "å·²å¤å¶ä¸è½½é¡µé¢ä¸è®¿é®å¯ç å°åªè´´æ¿": "Copied the download page and password to the clipboard",
+  "å·²å¤å¶å°åªè´´æ¿": "Copied to clipboard",
+  "å·²å¤å¶å½ä»¤ï¼%1": "Copied command: %1",
+  "å·²å¤å¶ç¬¬ %1 æ¡çå½ä»¤ï¼%2": "Copied the command of result %1: %2",
+  "å·²å¤å¶éä¸­ææ¬": "Copied the selected text",
+  "å·²å¥ç¨é¢è®¾ %1ï¼X(%2 ~ %3) Z(%4 ~ %5)": "Applied preset %1: X(%2 ~ %3) Z(%4 ~ %5)",
+  "å·²å®æï¼å±æ«æ": "Done: scanned",
+  "å·²å®æï¼å±æ«æ 2000 åºå": "Done: scanned 2000 chunks",
+  "å·²å±å¼å°å¾é¢æ¿": "Map panel expanded",
+  "å·²å±å¼ç»æåè¡¨": "Result list expanded",
+  "å·²åºç¨é¢è®¾èå´ Â±%1 åºå": "Applied preset range Â±%1 chunks",
+  "å·²å¼å¯": "On",
+  "å·²å¼å§æç´¢ï¼åå°æ§è¡ï¼è¿åº¦è§ãè¿åº¦ãåç±»ï¼status å¯æ¥çç¶æï¼ã": "Search started in the background (see the Progress tab; use status to check).",
+  "å·²æ¢å¤ææè®¾ç½®ï¼åºåé»è®¤å¼ï¼ï¼å·²ç«å³çæå¹¶åå¥ config.json": "All settings restored to factory defaults and applied immediately",
+  "å·²æ¢å¤é»è®¤åæ ï¼å·¦æ  400ï¼": "Restored the default pane layout (left 400)",
+  "å·²æ¢å¤é»è®¤åæ ï¼åºé¨ 180ï¼": "Restored the default pane layout (bottom 180)",
+  "å·²æ¢å¤é»è®¤å¸å±": "Restored the default layout",
+  "å·²æ¢å¤é»è®¤å¸å±ï¼å·¦æ  400 / åºé¨ 180 / çªå£ 1280Ã860ï¼": "Restored the default layout (left 400 / bottom 180 / window 1280Ã860)",
+  "å·²æå¼ãå³äºã": "Opened About",
+  "å·²æå¼ä¸è½½é¡µé¢ï¼è®¿é®å¯ç  3o8iï¼": "Opened the download page (password 3o8i)",
+  "å·²æå¼æ´æ°åå²": "Opened the update history",
+  "å·²æå¼ç®å½ï¼%1": "Opened folder: %1",
+  "å·²æç¨åºè®¾ç½®æ¸ç©ºç£çç¼å­": "Disk cache cleared as configured",
+  "å·²æ¶èµ·å°å¾é¢æ¿ï¼Ctrl+M å¯åå±å¼ï¼": "Map panel collapsed (Ctrl+M to expand)",
+  "å·²æ¶èµ·ç»æåè¡¨": "Result list collapsed",
+  "å·²æä»»å¡å¨è¿è¡ï¼å¯åæ§è¡ cancelã": "A task is already running; run cancel first.",
+  "å·²ææç´¢æ­£å¨è¿è¡ï¼å¯åæ§è¡ cancel å searchã": "A search is already running; run cancel before search.",
+  "å·²ç¨æ¶": "Elapsed",
+  "å·²ç¨æ¶ï¼%1 s": "Elapsed: %1 s",
+  "å·²èªå¨å è½½ç¼å­ï¼%1 åºå / %2 åºå": "Auto-loaded cache: %1 areas / %2 chunks",
+  "å·²èªå¨æªæ­": "Truncated",
+  "å·²è±è´¹": "Spent",
+  "å·²è®°å½": "Recorded",
+  "å·²è®°å½ %1 åºå(%2%)ï¼è®°å½éåº¦ä¸º %3 ä¸åºå/ç§ï¼å·²è±è´¹ %4 ç§": "Recorded %1 chunks (%2%), %3 x10k chunks/s, %4 s spent",
+  "å·²è®°å½ %1 åºå(%2%)ï¼è®°å½éåº¦ä¸º %3 ä¸åºå/ç§ï¼å·²è±è´¹ %4 ç§%5": "Recorded %1 chunks (%2%), %3 x10k chunks/s, %4 s spent%5",
+  "å·²è®°å½ (\\\\d+) åºå\\\\(([0-9.]+)%\\\\)": "recorded (\\\\d+) chunks\\\\(([0-9.]+)%\\\\)",
+  "å·²è¯·æ±åæ¶ï¼ç«å³çæï¼ä¸éç­å¾æç´¢çº¿ç¨ï¼ã": "Cancellation requested (takes effect immediately).",
+  "å·²è½½å¥ %1 ä¸ªæææ ¼å­ (%2Ã%3)": "Loaded %1 valid cells (%2Ã%3)",
+  "å·²è¿å¥ç¼å­æå»ºæ¨¡å¼å¹¶å¼å§æå»ºï¼è¿åº¦è§ãè¿åº¦ãåç±»ï¼build off å¯éåºï¼": "Entered cache-build mode and started building (see Progress; build off to leave)",
+  "å·²éä¸­ç¬¬ %1 ä¸ªç¯å¿ï¼%2,%3ï¼ï¼ææ %4 æ ¼ / æé %5": "Selected ring center %1 (%2,%3): %4 cells / weight %5",
+  "å·²éä¸­ç¬¬ %1 ä¸ªç¯å¿ï¼%2,%3ï¼ï¼ææ %4 æ ¼ / æé %5 / %6 åºå": "Selected ring center %1 (%2,%3): %4 cells / weight %5 / %6 chunks",
+  "å¹³å°ï¼": "Platform:",
+  "å¹³åæé": "Average weight",
+  "åºç¨çæ¬å¸¸éä¸º %1": "Application version constant is %1",
+  "å»ºè®®å®éæµè¯åå³å®æ¯å¦å¯ç¨": "Decide whether to enable it after testing",
+  "  â ï¸ éç²¾ç¡®ç»æï¼å¯è½ä¸å®æ´": "  â ï¸ Not exact; results may be incomplete",
+  "  å¯åº¦ %1%": "  Density %1%",
+  "  æ¹å X(%1~%2) Z(%3~%4)": "  Blocks X(%1~%2) Z(%3~%4)",
+  " Â· å²è±å§åºå %1 ä¸ª": " Â· Slime chunks %1",
+  " Â· ç¾¤ç³» 1:%1%2": " Â· Biomes 1:%1%2",
+  " Â· é¼ æ (%1,%2)": " Â· Cursor(%1,%2)",
+  " Â· é¼ æ (%1,%2) ç¾¤ç³» %3": " Â· Cursor(%1,%2) biome %3",
+  " åªææ ææ¶èªå¨æ¹ç¨æ»å¨è·¯å¾ã": "Falls back to the sliding path when pruning is not applicable.",
+  " åºå": "chunks",
+  " èªå¨": "Auto",
+  " ï½ æ¾å° %1 ä¸ª": " | found %1",
+  " ï½ éåº¦ %1 ä¸/ç§": " | speed %1 x10k/s",
+  "%1 ä¸ªæææ ¼å­ï¼å± %2Ã%3ï¼": "%1 valid cells (of %2Ã%3)",
+  "%1 å·²%2": "%1 has %2",
+  "%1 æ ¼": "%1 cells",
+  "%1 æ ¼ Â· %2": "%1 cells Â· %2",
+  "%1~%2 ç¯å¸¦": "%1~%2 ring",
+  "(æ å¯¹è±¡å)": "(no object name)",
+  "(æªç¥è®¾å¤)": "(unknown device)",
+  "/%1 åºåï¼%2%ï¼": "/%1 chunks (%2%)",
+  "/1000000 åºåï¼": "/1000000 chunks (",
+  "0 ä¸ªæææ ¼å­": "0 valid cells",
+  "0 ä¸ªæææ ¼å­ï¼å± %1Ã%2ï¼": "0 valid cells (of %1Ã%2)",
+  "1 = æ¯æ ¼é½ç®ï¼æåææ¢ï¼ï¼é»è®¤ 4": "1 = every block (slowest, most accurate); default 4",
+  "1 ~ %1ï¼æ¨è %2 = ç©çæ ¸å¿æ°ï¼è¶è¿ %2 æ¶çæéï¼é»è¾æ ¸å¿ %3ï¼": "1 ~ %1 (recommended %2 = physical cores; more gains little, logical cores %3)",
+  "1:16ï¼å¿«ï¼": "1:16 (fast)",
+  "1:1ï¼æç»ï¼æ¢ï¼": "1:1 (finest, slow)",
+  "1:4ï¼æ¨èï¼": "1:4 (recommended)",
+  "1:64ï¼æç²ï¼": "1:64 (coarsest)",
+  "439 äº¿åºæ¯ï¼è¿åº¦æ¡ %1% ä¸ç¶ææ  %2% ä¸è´ï¼åæºåæ¯ï¼": "43.9B scenario: progress %1% matches status %2% (same denominator)",
+  "C:\\\\Temp\\\\slime\\\\ç¼å­": "C:\\\\Temp\\\\slime\\\\cache",
+  "GPU ä¸å¯ç¨": "GPU unavailable",
+  "GPU å é": "GPU acceleration",
+  "GPU å¯ç¨": "GPU available",
+  "GPU å·²å³é­ï¼æç´¢ä½¿ç¨çº¯ CPU è·¯å¾ï¼ã": "GPU is off (searches use the CPU path).",
+  "GPUï¼ä¸å¯ç¨ï¼æªå¯ç¨ï¼å¾éåä»èµ° CPUï¼": "GPU: unavailable (off; enabling still uses CPU)",
+  "GPUï¼ä¸å¯ç¨ï¼ä½¿ç¨ CPU": "GPU: unavailable, using CPU",
+  "GPUï¼ä¸å¯ç¨ï¼å°ä½¿ç¨ CPUã": "GPU: unavailable, CPU will be used.",
+  "GPUï¼å¯ç¨ï¼å·²å¯ç¨ï¼": "GPU: available (enabled)",
+  "GPUï¼å¯ç¨ï¼æªå¯ç¨ï¼å¾éåä½¿ç¨ï¼": "GPU: available (off; used once enabled)",
+  "GPUï¼å°æªæ£æµã": "GPU: not detected yet.",
+  "GPUï¼æªå¯ç¨ï¼å¾éåæ£æµï¼": "GPU: off (detected when enabled)",
+  "GPUï¼æªæ£æµï¼å¯å¨ãè®¾ç½® â é«çº§ãå¼å¯å¯å¨æ¶èªå¨æ£æ¥ï¼": "GPU: not checked (enable the startup check in Settings â Advanced)",
+  "GPUï¼æ£æµä¸­â¦": "GPU: detectingâ¦",
+  "GPUï¼æ­£å¨æ£æµâ¦": "GPU: detectingâ¦",
+  "Java çä¸çè¾¹çï¼Â±1875000 åºåï¼æ´å¾æç´¢ï¼ä¼åç»åºèæ¶ä¼°ç®ç¡®è®¤ï¼": "Java world border: Â±1875000 chunks (full map; you get an ETA first)",
+  "Java çä½¿ç¨": "Java uses",
+  "Java ççå²è±å§åºåä¸ä¸çç§å­æå³ï¼è¯·åå¨ä¸çç§å­ä¸æ å¡«åç§å­ã": "Java slime chunks depend on the world seed; please fill in the seed first.",
+  "Java è¾¹ç": "Java border",
+  "QApplication çæ¬ä¸º %1ï¼ä¸ kAppVersion ä¸è´ï¼": "QApplication version is %1 (matches kAppVersion)",
+  "X=%1 Z=%2ï¼åºå %3,%4ï¼è¦ç %5 æ ¼ / %6 åºå / è¦çç %7%%": "X=%1 Z=%2 (chunk %3,%4) covers %5 cells / %6 chunks / %7%%",
+  "[%1] %2ï¼å·²è®°å½ %3 åºå(%4%)ï¼è®°å½éåº¦ä¸º %5 ä¸åºå/ç§ï¼å·²è±è´¹ %6 ç§ï¼å·²è·³è¿ %7ï¼": "[%1] %2: recorded %3 chunks (%4%), %5 x10k chunks/s, %6 s elapsed (skipped %7)",
+  "[%1] å·²åæ¶ï¼å·²æ«æ %2 åºåï¼": "[%1] cancelled (%2 chunks scanned)",
+  "[%1] å·²å®æç¬¬ %2/%3 æ®µå¹¶è½çï¼å¯éæ¶å³é­ç¨åºï¼éè·èªå¨ç»­ä¼ ï¼": "[%1] segment %2/%3 saved (safe to close; continues next run)",
+  "[%1] å·²å®æï¼å±æ«æ %2 åºåï¼æ¾å° %3 ä¸ªç»æï¼èæ¶ %4 ç§": "[%1] done: %2 chunks scanned, %3 results, %4 s",
+  "[%1] å·²ç¨æ¶ %2 ç§ï¼æ«æ %3 åºåï¼æ¾å° %4 ä¸ª": "[%1] %2 s elapsed, %3 chunks, %4 found",
+  "[%1] å·²ç¨æ¶ %2 ç§ï¼æ«æ %3/%4 åºåï¼%5%ï¼ï¼æ¾å° %6 ä¸ª": "[%1] %2 s elapsed, %3/%4 chunks (%5%), %6 found",
+  "[%1] æç´¢åºéï¼%2": "[%1] search error: %2",
+  "[%1] ç¼å­æå»ºï¼%2": "[%1] cache build: %2",
+  "[23:04:45] å·²å®æï¼å±æ«æ 401234567 åºåï¼æ¾å° 10 ä¸ªç»æï¼èæ¶ 2.1 ç§": "[23:04:45] done: 401234567 chunks scanned, 10 results, 2.1 s",
+  "[23:04:45] å·²ç¨æ¶ 0.2 ç§ï¼æ«æ 45397675 åºåï¼æ¾å° 1 ä¸ª": "[23:04:45] 0.2 s elapsed, 45397675 chunks, 1 found",
+  "[23:04:45] å·²ç¨æ¶ 12.5 ç§ï¼æ«æ 250/1000 åºåï¼25.0%ï¼ï¼æ¾å° 7 ä¸ª": "[23:04:45] 12.5 s elapsed, 250/1000 chunks (25.0%), 7 found",
+  "aboutï¼çæ¬ä¸èç³»ä¿¡æ¯": "about: version and contact info",
+  "build [on|off]ï¼è¿å¥/éåºç¼å­æå»ºæ¨¡å¼": "build [on|off]: enter/leave cache-build mode",
+  "cache [status|clear|import <è·¯å¾>|build]ï¼ç¼å­ç¶æ/æ¸ç©º/å¯¼å¥/æå»º": "cache [status|clear|import <path>|build]: cache status/clear/import/build",
+  "cancelï¼ç«å³åæ¶å½åæç´¢": "cancel: cancel the current search",
+  "center [x z]ï¼æ¥ç/è®¾ç½®æ¥è¯¢èµ·ç¹ï¼è·ç¦»åºåï¼": "center [x z]: show/set the search origin (distance base)",
+  "clear ç±ç»ç«¯èªå·±å¤çï¼æ¸ç©ºå½ä»¤ç»ç«¯çè¾åºåºï¼ä¸æ¹åæç´¢/ç¼å­ç¶æï¼ã": "clear is handled by the terminal: it only clears the output area.",
+  "clearï¼æ¸ç©ºç»ç«¯è¾åºï¼ç»ç«¯åç½®ï¼": "clear: clear the terminal output",
+  "copy <n>ï¼å¤å¶ç¬¬ n æ¡ç»æç /tp å½ä»¤ï¼è¶çä¼æç¡®æ¥éï¼": "copy <n>: copy the /tp command of result n",
+  "density [0~1]ï¼å¯åº¦æç´¢æå°å¯åº¦éå¼": "density [0~1]: minimum density threshold",
+  "gpu [on|off]ï¼æ¥ç/åæ¢ GPU å éå¹¶æ¾ç¤ºè®¾å¤ä¸å®æµååç": "gpu [on|off]: show or toggle GPU acceleration",
+  "grid [n]ï¼å¯åº¦æç´¢ç½æ ¼è¾¹é¿ï¼1~512ï¼": "grid [n]: density window size (1~512)",
+  "lock [on|off]ï¼ä¸¥æ ¼æ¨¡å¼ä¸çæ¹åéå®": "lock [on|off]: orientation lock in pattern mode",
+  "log [off|brief|detailed]ï¼æ¥ç/åæ¢æ¥å¿æ¨¡å¼ï¼åæ­¥è®¾ç½®é¡µï¼": "log [off|brief|detailed]: show or set log mode",
+  "logs\\\\èªæ£": "logs\\\\selftest",
+  "mode strict|density|exact|layered|sample|bruteï¼æ¥ç/è®¾ç½®æ¨¡å¼ä¸ç®æ³": "mode strict|density|exact|layered|sample|brute: show or set mode and algorithm",
+  "open logs|cache|crashï¼æå¼æ¥å¿/ç¼å­/å´©æºç®å½": "open logs|cache|crash: open those folders",
+  "preset near|local|global|world|bedrockï¼å¥ç¨å¿«éé¢è®¾": "preset near|local|global|world|bedrock: apply a preset",
+  "range [X0 X1 Z0 Z1 | Â±n]ï¼æ¥ç/è®¾ç½®æç´¢èå´": "range [X0 X1 Z0 Z1 | Â±n]: show or set the search range",
+  "result list [n] | result copy <n>ï¼ååºç»æ / å¤å¶ç¬¬ n æ¡å½ä»¤": "result list [n] | result copy <n>: list results or copy a command",
+  "searchï¼ç«å³å¼å§æç´¢ï¼åå°æ§è¡ï¼ä¸é»å¡ç»ç«¯ï¼": "search: start a search in the background",
+  "seed [å¼]ï¼æ¥ç/è®¾ç½®ä¸çç§å­ï¼Java çï¼": "seed [value]: show or set the world seed (Java)",
+  "smart [on|off]ï¼æºè½èå´ï¼ç±è¿åè¿ï¼": "smart [on|off]: expand from the origin",
+  "statusï¼æ¾ç¤ºå½åç¶ææè¦": "status: show a status summary",
+  "stop [on|off]ï¼è¾¾å°ç®æ æ°éå³åæ­¢": "stop [on|off]: stop once the target count is reached",
+  "target [n]ï¼æ¥ç/è®¾ç½®ç®æ æ°éï¼æè¿ N ä¸ªï¼": "target [n]: show or set the target count",
+  "theme [light|dark|system]ï¼æ¥ç/åæ¢å¤è§ä¸»é¢ï¼åæ­¥è®¾ç½®é¡µï¼": "theme [light|dark|system]: show or set the theme",
+  "threads [n]ï¼çº¿ç¨æ°ï¼0 = èªå¨ï¼": "threads [n]: thread count (0 = auto)",
+  "v3.4.11 clear æµè¯": "v3.4.11 clear test",
+  "â¶ å¼å§æç´¢": "â¶ Start",
+  "â¶ å¼å§æå»º": "â¶ Start build",
+  "â  è¶è¿å¼æååå¹¶åä¸é 12ï¼å®éå¹¶åæ 12 è®¡ç®": "â  Above the engine's 12-way tile limit: using 12",
+  "â  è¶è¿ç©çæ ¸å¿æ° %1ï¼è¶çº¿ç¨æ¶çæéï¼å¯è½ä¸ä¼æ´å¿«": "â  Above %1 physical cores: hyperthreading gains are limited",
+  "â ï¸ å½åä¸º%1ï¼ç»æå¯è½ä¸å®æ´": "â ï¸ Currently %1; results may be incomplete",
+  "ãä¼åã": "[Improved]",
+  "ãä¿®å¤ã": "[Fixed]",
+  "ãå½åä½¿ç¨æ¨¡å¼ã%1": "[Current mode] %1",
+  "ãæ°å¢ã": "[Added]",
+  "ãç§»é¤ã": "[Removed]",
+  "ãè°æ´ã": "[Adjusted]",
+  "ä¸/ç§": "x10k/s",
+  "ä¸åºå/ç§": "x10k chunks/s",
+  "ä¸æ¬¡è¿è¡æªæ­£å¸¸ç»æï¼%1ï¼ãå³é®ä¿¡æ¯è§ï¼%2ï¼è½¬å¨è§ï¼%3": "Last run ended abnormally (%1). Details: %2; dump: %3",
+  "ä¸æ¬¡å¯å¨æ¶æ¢å¤ä¸æ¬¡ççªå£å¤§å°åä½ç½®": "Restore the last window size and position on next start",
+  "ä¸è½½": "Download",
+  "ä¸ä¸å®æ¯çº¯ CPU å¼º": "not necessarily faster than CPU",
+  "ä¸å¯ç¨": "unavailable",
+  "ä¸å¯ç¨ï¼å°åé CPU": "unavailable; falling back to CPU",
+  "ä¸éç¨": "n/a",
+  "ä¸é¢è®¾": "No preset",
+  "ä¸ãæç´¢ãé¡µåä¸ä»½èå´": "Same range as the Search page",
+  "ä¸çç§å­å¿é¡»æ¯æ´æ°ï¼æ¯æè´æ°ï¼ï¼å½åè¾å¥ã%1ãæ æã": "The seed must be an integer (negatives allowed); \"%1\" is invalid.",
+  "ä¸¥æ ¼å¾æ¡": "Strict pattern",
+  "ä¸¥æ ¼å¾æ¡å¹é": "Strict pattern match",
+  "ä¸­å¿ (%1, %2) Â· ç¼©æ¾ %3 px/æ ¼ Â· å¯è§ %4Ã%5 åºå": "Center (%1, %2) Â· zoom %3 px/block Â· visible %4Ã5 chunks",
+  "ä¸´ç": "Critical",
+  "ä¸ºç©ºï¼Java çæç´¢ä¼è¢«é»æ­¢": "is empty; Java searches are blocked",
+  "ä¸»å·¥å·æ ": "Main toolbar",
+  "ä¸»çªå£æ é¢åå« %1": "Main window title contains %1",
+  "ä¸»é¢å·²åæ¢ä¸º %1ï¼è®¾ç½®é¡µä¸ config.json å·²åæ­¥ï¼": "Theme switched to %1 (settings and config.json synced)",
+  "ä¸»é¢å·²åæ¢ä¸ºã%1ãå¹¶åå¥ config.json": "Theme switched to \"%1\" and written to config.json",
+  "äº¤åç¹": "crossing",
+  "äº¿åºå/ç§": "x100M chunks/s",
+  "ä»åºå²©çå¯ç¨": "Bedrock only",
+  "ä»ãæ¥è¯¢èµ·ç¹ãå¼å§ä¸åååå¤æ¾ï¼å¯ä»¥æ´æ©åå¤ç®æ æ°éã": "Search outward from the origin so the target count is reached sooner.",
+  "ä»¥ä¸è®¾ç½®å·²ç«å³çæï¼%1": "Applied immediately: %1",
+  "ä»¥æ¯ä¸ªåéå 24~128 æ ¼ç¯å¸¦ï¼æ¾ç¯å¸¦åå²è±å§é¢ç§¯æå¤§çææºç¹ã": "Take a 24-128 block ring at each candidate and rank by slime area.",
+  "ä¼°ç®": "Estimate",
+  "ä¿å­å½åè®¾ç½®å¹¶ç«å³çæï¼å¯¹è¯æ¡ä¿ææå¼ï¼å¯ç»§ç»­ä¿®æ¹ï¼": "Save and apply now (the dialog stays open)",
+  "ä¿å®æ¨¡å¼": "Brute force",
+  "ä¿å®æ¨¡å¼ï¼éçªéæ ¼ç»è®¡ï¼v3.2.1 å­é¢å®ç°ï¼ï¼ä¸ä½¿ç¨æ»å¨/åªæï¼ç»æä¸ç²¾ç¡®æ¨¡å¼ä¸è´ä½ææ¢ã": "Brute force: per-window exhaustive scan; same results as exact but slowest.",
+  "ä¿çå¤©æ°:": "Keep days:",
+  "åéæ°ï¼": "Candidates:",
+  "åééæ ¼ç»è®¡ææå æ¡å¹¶è¡å¸¦ï¼é»è®¤ 4": "Row bands used for strict stats; default 4",
+  "åéï¼": "Candidates: ",
+  "å¼": "Value",
+  "å¨å±ï¼ä»¥åç¹ä¸ºä¸­å¿ Â±30000 åºåï¼çº¦ 60000Ã60000ï¼": "Global: Â±30000 chunks around the origin (about 60000Ã60000)",
+  "å¨çé¢ãå¼å§æç´¢ãæé®æ°é = 1ï¼å®é %1ï¼": "Exactly one Start button (actual %1)",
+  "å¨çé¢æ ã%1ãå­æ ·ï¼æ§ä»¶ + tooltip + èåå¨ä½ï¼": "No \"%1\" anywhere (widgets + tooltips + menu actions)",
+  "å¨é¨éç½®ä¸ºå¿½ç¥": "Reset all to ignore",
+  "å± %1 ä¸ªçæ¬ï¼1.0.0 â %2ï¼ï½æ­£å¼ç %3 ä¸ªï½å½åæ¾ç¤º %4 ä¸ª": "%1 versions (1.0.0 â %2) | stable %3 | showing %4",
+  "å± %1 æ¡%2": "%1 items in total %2",
+  "å³äº / èç³»æä»¬": "About / Contact",
+  "å³é­åï¼æ»è½®åè¿è¾å¥æ¡ä¸ä¼æ¹åæ°å¼": "When off, the mouse wheel never changes values",
+  "å³é­æ¥å¿": "Turn logging off",
+  "åå­ä¸è¶³ï¼è¯·ç¼©å°åå¾ææ¹ç¨ãå¿«éãæ¨¡å¼": "Out of memory: reduce the radius or use Fast mode",
+  "åå¤ãç®æ æ°éãåç«å³ç»æï¼æ´å¿«ï¼ä½å¯è½ä¸æ¯å¨é¨åéï¼ã": "Stop once the target count is reached (faster, may miss some).",
+  "ååä½å¾é¢ç®ï¼è¶åºæ¶èªå¨éä½å¹¶åï¼0 = èªå¨ï¼": "Tile bitmap budget: lowers concurrency when exceeded (0 = auto)",
+  "åå±": "Layered",
+  "éæ°æç´¢æ¶ä¸æ¸é¤ä¸ä¸æ¬¡çç»æï¼å®¹æè¯¯ä»¥ä¸ºææ°ç»æï¼ï¼å¼å§æ¶æ¸ç©ºç»æè¡¨ä¸å°å¾æ è®°": "Starting a new search now clears the previous results (table + map markers)",
+  "ç¯å½¢æç´¢ç»ææ°è¿å°ï¼æå°å¯åº¦ > 0 æ¶å¤ç²¾ä¿®ä¸æ¹åéï¼è³ 256 ä¸ªï¼ï¼å¹¶å¨æ¥å¿éè¯´æãåæå°å¯åº¦/é´è·éå¶ã": "Ring search returned too few results: with min density > 0 the refine pool grows to at least 256 candidates and the log explains what limits the count",
+  "æ å°å¼å³ä»å·¥å·æ ç§»å°å·¦æ åºé¨å¾æ æ¡ï¼æå ä½ç½®ï¼": "Map toggle moved from the toolbar to the left icon bar (collapsible area)",
+  "çæ¬å·å½æ¡£ï¼ä»å å¥å°å¾ççæ¬èµ·ç® 3.6 ç³»å": "Versioning: the 3.6 series starts from the version that added the map",
+  "ç®æ æ°éåå¤§æ¶ç»æè¢«å¡å¨å¾å°ï¼ç²¾ä¿®åéæ°éç®æ æ¾å¤§ï¼ä¸é 4000ï¼ï¼ç®æ  >8 æ¶æå°é´è· 24â8 åºå": "Large result counts were capped: the refine pool now scales with the target (max 4000) and min separation drops from 24 to 8 chunks when target > 8",
+  "å°å¾é¢æ¿æå åæ²¡æå±å¼å¥å£ï¼å·¥å·æ å¸¸é©»ãå°å¾ãå¼å³": "No way to reopen a collapsed map: the toolbar now keeps a Map toggle",
+  "ç¯å½¢æ¨¡å¼ä¸éèãæç´¢ç®æ³ãç»ï¼ç¯å½¢èªå¸¦å¿«é/ç²¾ç¡®ä¸¤ç§æ«æï¼ï¼ç®æ³æ æ³¨ä¿®æ­£ä¸ºãå¾æ¡/å¯åº¦é½çæã": "Ring mode hides the algorithm group (ring has its own fast/exact scan); the label now states the algorithm applies to pattern and density",
+  "ç¹å¼å§åæé®å¡å¨æä¸ç¶æãåæ¶ä¸å¯ç¹ï¼è¿åº¦æ¡è¦ç­æ«å®æå¨ï¼ç°å¨ä¸å¼å§å°±åè¿è¡æ + å¿ç¢æ»å¨": "Start stayed pressed and Cancel was not clickable, and progress only moved after scanning: the UI now switches to the running state immediately with a busy bar",
+  "è¿åº¦æ¡æ¹ä¸ºç©å½¢ï¼ãèç³»æä»¬ãåå°å·¥å·æ å³ä¾§": "Progress bar is rectangular again; Contact us is back on the right side of the toolbar",
+  "æ´æ°åå²æ¯æç­éï¼å¨é¨ / åªçæ­£å¼ç / åªçæµè¯çï¼é¡¶é¨ç»è®¡èªå¨çæ": "History can be filtered: all versions / stable only / beta only, with an auto-generated header count",
+  "æ¸çæ´æ°åå²ééå¤ä¸çç¾çæè¿°ï¼åä¸é®é¢å¤ä¸ªçæ¬é½åãä¿®å¤ãï¼": "Cleaned up duplicated and contradictory history notes",
+  "å¤§èå´ç²¾ç¡®æç´¢è·ä¹äºå´©æºï¼ç²¾ç¡®æ¨¡å¼æ¯éåºåéºå¾ï¼å½ä¸­è¡¨ä¼æ¶¨å° GB çº§ï¼OOMï¼ãç°å¨ç²¾ç¡®æ¨¡å¼é 400 ä¸åºåãå¿«éæ¨¡å¼æ½æ ·éå¼éå° 2000 ä¸ï¼å¹¶æè· bad_alloc ç»åºæç¤º": "Large exact searches crashed after a while (hit table grew to GBs): exact mode is capped at 4M chunks, fast-mode sampling threshold lowered to 20M, and bad_alloc is caught",
+  "è¿åº¦æ¡æ ·å¼ï¼åè§ãå é«ï¼14~20pxï¼ãç»¿è²æ¸å chunkï¼æµè²/æ·±è²ä¸»é¢åä¸å¥": "Progress bar restyled: taller with a green gradient chunk, for both light and dark themes",
+  "å é¤çº¯è£é¥°æå­ï¼è¿åº¦è¡å°¾é¨çãâ¡ å¹éãâ¢ æåºãï¼æ´æ°æéå¾½ç« æ¹æçé¾æ¥ï¼ä¹åæååæ ç¹äºæ²¡ååºï¼": "Removed decorative text (the match/sort tail); the update badge is now a real link",
+  "æç´¢ç»æåç¶æé¢æ¿åå°ãé¶æ®µï¼ç©ºé²ã": "The status panel returns to Stage: idle when a search finishes",
+  "å°å¾åºç°æ¡çº¹éåå´©æºï¼ç¾¤ç³»å¾åå°ºå¯¸ä¸ç¼å­åæ°æ®ä¸ä¸è´ï¼éçº§åªéè§å£æ¶éä½/è¶çï¼ï¼å·²ç»ä¸ç¨å®éçæå°ºå¯¸": "Map showed stripes then crashed: biome image size and cache metadata disagreed after the viewport-only fallback; both now use the actual generated size",
+  "æªå¡«ç§å­æ¶ä¸åæ¸²æãç§å­ 0ãçå°å¾ï¼ä¸¤ä¸ªå¹³å°é½éè¦ç§å­ï¼ï¼æ¹ä¸ºå±ä¸­æç¤ºãè¯·åå¡«åä¸çç§å­ã": "No map is rendered before a seed is entered (both platforms); a centered hint is shown instead",
+  "ç§»é¤è®¾ç½®é¡µãé¢çä½ç½®ï¼æä¸å¯ç¨ï¼ãåç»ï¼å®å¨ç§»é¤ä¸ææ¡/è¾å¥æ¡åçç°è²åä¸è§ï¼å«æ·±è²ä¸»é¢ï¼": "Removed the settings placeholder group and the grey dropdown arrows in both themes",
+  "ç¶ææ å³ä¾§ä¿¡æ¯ç§»é¤ï¼å·¦ä¾§å¸¸é©»æç¤ºï¼å·¥å·æ æ°å¢æç´¢ç¶æé¢æ¿ï¼é¶æ®µ/ç»ææ°/å·²ç¨æ¶/å©ä½ï¼": "The right side of the status bar is gone; the toolbar now has a search status panel (stage / results / elapsed / ETA)",
+  "è±æè¦çåæ©å¤§ï¼ç¿»è¯è¡¨è¦çå°æ ç­¾é¡µåãç»æè¡¨å¤´ãæ´å¤èå/æé®/è®¾ç½®é¡¹": "English coverage widened to tab names and result table headers",
+  "åºå²©çå°å¾ï¼æªå¡«ç§å­ä¸åæ¸²æï¼ç¾¤ç³»ææéçæ¬ï¼1.18+ æä½åè½ï¼": "Bedrock map: no render without a seed; biomes follow the selected version (falls back to 1.18+)",
+  "åå¤åå¹³å°/çæ¬åç¼©å°æå°ä¸ä¸è²ï¼éæ ·è¶éæ¶åå»æ 25% ä½éãåªéè§å£éè¯ï¼ä»è¶éæä¿çä¸ä¸å¼ ": "Zooming out stopped coloring after repeated platform/version switches: over-limit sampling retries viewport-only before keeping the last image",
+  "è®¾ç½®é¡µæ æ³¨ååºæ¶æºï¼çªå£è®°å¿/æ¥å¿ç®å½ä¸ºä¸æ¬¡å¯å¨ï¼ï¼åºé¨æ°å¢ä¸è¡ç»ä¸æç¤º": "Settings annotate when each change applies (window memory and log folder need a restart)",
+  "è±æè¦çæ©å¤§ï¼æ°å¢ãä¸­æåæ â è±æãè¿è¡æ¶ç¿»è¯è¡¨ + applyLanguage() éå½æ¹åå·²å»ºå¥½çæ§ä»¶/èåï¼çº¦ 70 æ¡ææ¡ï¼": "Runtime zh-to-en translation table plus applyLanguage() rewriting existing widgets and menus",
+  "æç´¢æ¶è¿åº¦æ¡ä¸é¿ï¼ç°å¨ä»»ä½æç´¢ï¼å«ç¯å½¢/ç²¾ç¡®ï¼åè¿å¥å¿ç¢æ»å¨ï¼é¦æ¬¡æ¿å°çå®è¿åº¦åååç¾åæ¯": "The progress bar now starts as a busy indicator and switches to a percentage on the first real tick",
+  "æå° 0 ç»ææ¶è¿åº¦æ¡åçº¢ï¼ä¸ç¼çåºæ²¡æ¾å°ï¼": "The progress bar turns red when a search finds nothing",
+  "ç¼©å°å°æå°æ¶å°å¾ä¸ä¸è²ï¼éæ ·è¶éæ¶ä¿çä¸ä¸å¼ ç¾¤ç³»å¾ï¼æ¾å¤§åèªå¨éé": "Zooming out keeps the last biome image and resamples when zooming back in",
+  "ç®æ æå°å¯åº¦ä¸ç»æå¯åº¦æ¥è¿æ¶è¢«è¯¯å¤ä¸ºåæ ¼ï¼æ¹ææçé¢æ¾ç¤ºå¼ï¼ä¸ä½å°æ°ï¼æ¯è¾": "Density is compared against the displayed value (3 decimals) to avoid borderline false positives",
+  "è®¾ç½®éçéé¡¹åæ¢æ æ³ç«å³çæï¼åæ¶ãä»æ¯æ§é»è®¤å¼æè¦çãçå¯åå¼ï¼æ¹å®å³å¥ç¨": "Option changes in settings now apply immediately",
+  "æ§å¶å°è¡¥å¨æ å æ´è¡ï¼å®½åº¦ææé¿åéæ¶çªï¼ä¸è¾å¥æ¶èªå¨å¨ä¸æ¹å±ç¤ºåéè¯ï¼ä¸ç¨ Tabï¼": "The command completion popup is sized to its content and appears while typing (no Tab needed)",
+  "æ°å¢ãç¾¤ç³»çæ¬ãä¸æï¼Java/Bedrock ä¹å¤çåå²çæ¬ï¼ï¼å°å¾ä¸è²ä¸ç¯å½¢ç»è®¡è·éè¯¥çæ¬ï¼å¹¶åå¥ config.json": "New biome version selector drives map coloring and ring statistics, persisted in config.json",
+  "çé¢è¯­è¨åæ¢è¢«åéï¼æ¢å¤å³æ¶åæ¢ï¼å·²è¿ç§»ææ¡ç«å»çæï¼å¶ä½éå¯åå®å¨çæï¼": "Language switching is immediate again (migrated texts update at once)",
+  "ç¯å½¢ç²¾ä¿®é¶æ®µæéï¼çªå£åå²è±å§æ ¼æ¹ä¸ºç¨çè¡¨ + å­åç§»æ ¸è½¬ç½®å¸å±ï¼è®¿å­ 148KBâ15KBï¼+ åéè¦çæ°ç´æ¥ä»çªå£ç»è®¡ï¼çæ 3.5 ä¸æ¬¡è°è¯è°ç¨ï¼ï¼400x400 åºå 17.6â14.4 msï¼ç»æéä½ä¸è´": "Ring refine stage sped up: sparse window table, transposed sub-offset kernels (148KB to 15KB traffic) and chunk counts taken from the window; 400x400 17.6 to 14.4 ms with identical results",
+  "ç¯å½¢æç´¢ä¸ä¸è½®å¼æ­¥ååå°äº 40ms çè½®è¯¢å»¶è¿ï¼è½®è¯¢ 40msâ2msï¼ï¼ç¨æ¶åªç»è®¡çå®è®¡ç®": "Removed the 40 ms polling delay added by the async ring search; timing now reports pure compute time",
+  "æåºæéç½æ ¼è®°å¿ä¸æ ¼ï¼çæ¬+ç§å­+èå´+ç½æ ¼æ¡£ä½ç¸åæ¶ç´æ¥å¤ç¨ï¼ï¼è¿ç»­åç±»æç´¢ç 2~6 ms": "The ranking weight grid is memoized, saving 2 to 6 ms on repeated searches",
+  "è®¾ç½®é¡µæ æ³¨ååºæ¶æºï¼çé¢è¯­è¨ï¼éå¯åçæï¼ãCPU/åå­ä¸éï¼ä¸æ¬¡æç´¢ï¼ãå¯å¨æ¶æ£æµGPUï¼ä¸æ¬¡å¯å¨ï¼": "Settings annotate when changes apply (language after restart, CPU/memory on next search, GPU check on next start)",
+  "å¤§é¨åè®¾ç½®é¡¹æ æ³ç«å³çæââæç´¢é»è®¤å¼ï¼çº¿ç¨æ°/ç®æ æ°é/å¤å®ç®æ³/æ¾å¤å³å/GPU/å¿«éé¢è®¾ï¼ä»¥ååªå¨å¯å¨æ¶å¥ç¨ä¸æ¬¡ï¼ç°å¨æ¹å®ç«å³å¥ç¨å°å½åæç´¢é¡µï¼ä»è¦çä»æ¯æ§é»è®¤å¼çæ§ä»¶ï¼ä¸æ¹æææ¹å¼ï¼å¹¶å¨åé¦éååºçæé¡¹": "Search defaults (threads, count, algorithm, stop, GPU, preset) now apply to the current page immediately",
+  "å°å¾æå¨æµçåº¦ï¼æå¨ä¸­ä¸åééæ ·/éå»ºåºå¾ï¼åªå¹³ç§»ç¼å­å¾ï¼ï¼æ¾æåç»ä¸éå»ºä¸æ¬¡": "Map dragging no longer resamples; the cached image is translated and rebuilt on release",
+  "åæ¢æ¸¸æçæ¬åå°å¾ç¾¤ç³»é¢è²ä¸¢å¤±ï¼ç¼©æ¾ææ¢å¤ï¼ââæ¢çæ¬/æ¢ç§å­æ¶åæåºå¾æ²¡å¤±æï¼ç°å¨ä¸å¹¶éå»º": "Switching game versions no longer loses biome colors",
+  "é¨åå°å¾å°ºå¯¸ä¸è¾¹ç¼çä¸å°å²è±å§åºåââåºå¾å¸¦ 25% ä½éä½åªæè§å£ç»åºåï¼ç°å¨æåºå¾ç©å½¢ç»": "Slime chunks are drawn for the whole cached rectangle, so map edges no longer go missing",
+  "ç¯å½¢æç´¢ä¸æä¸å»çé¢å°±å¡æ­»ï¼ç²¾ç¡®æ¨¡å¼æ´ææ¾ï¼ââè®¡ç®æ¹å°åå°çº¿ç¨ï¼UI ç¨å±é¨äºä»¶å¾ªç¯ç­å¾ï¼æé´çªå£ç§å¸¸éç»": "Ring search runs on a worker thread with a local event loop, so the UI stays responsive",
+  "æ è¾¹æ¡å¨å±ä¸ Win11 åè§ä»æåè§ââç¨ DWM å³æçªå£åè§": "Win11 rounded corners are disabled for borderless fullscreen",
+  "æç´¢æç»ææ¶èªå¨è·³å°å°å¾å¯¹åºä½ç½®å¹¶æ æ³¨ï¼áç¯å·æ°æ¶åæ­¥": "Results now jump the map to the best hit automatically",
+  "åå²çæ¬ææ»¡ï¼1.0 / 1.1 / 1.2.5 / 1.3.2 / 1.4.7 / 1.5.2 / 1.6.4 / 1.9.4 / 1.10.2 / 1.16.1 ç­ï¼é»è®¤çªå£æå¤§å": "The version list was extended (1.0 to 1.16.1); the default window is maximized",
+  "åºå²©çå°å¾ä¸ä¸è²ï¼ç¾¤ç³»ä¸å¯ç¨ï¼ââåä¸ 64 ä½ç§å­ä¸ Java ä¸åºå²©ççå°å½¢ä¸ç¾¤ç³»ä¸è´ï¼å®æ¹ Wiki å£å¾ï¼1.18+ ç»ä¸ä¸ºå¤åªå£°çç©ç¾¤ç³»æºï¼ï¼ç°å¨åºå²©çç´æ¥ç¨ Java çæå¨è·åä¸ä»½ç§å­": "Bedrock biomes are enabled through Java parity for the same seed (1.18+)",
+  "ç¯å¢æ³¨éï¼æ¥å¿/ç¶ææ æ³¨ãåºå²©çï¼æ Java åç§å­ç¾¤ç³»ãï¼æ§çåºå²©ï¼1.17 åä»¥åï¼ç¾¤ç³»ç®æ³ä¸åï¼ä»ä¸ä¸è²": "Log notes mark Bedrock biomes as derived from the Java generator",
+  "ææ¡£ docs/bedrock_biome_research.mdï¼åºå²©çç¾¤ç³»éåææè°ç ï¼Wiki / cubiomes / Chunkbase / ChunkBiomesGUIï¼ä¸å®ç°è¯´æ": "Added docs/bedrock_biome_research.md",
+  "ä¸¤ç§å¨å±ï¼æ è¾¹æ¡å¨å± / çªå£æå¤§åï¼è®¾ç½®-éç¨å¯éï¼F11 éæ¶åæ¢ï¼ï¼é»è®¤æ è¾¹æ¡å¨å±": "Two fullscreen modes: borderless or maximized window (F11 toggles)",
+  "çé¢è¯­è¨è®¾ç½®ä¸è¢«è®°å¿ï¼åªåä¸è¯»ï¼ï¼ç°å¨åå¥å¹¶è¯»å config.jsonï¼åæ¢è¯­è¨æç¤ºãéå¯åçæã": "The language setting is now persisted and read back",
+  "å¤§èå´ç¯å½¢åæéï¼å¿«éæ¨¡å¼å¢å ãç²æ«åéç¹æ°é¢ç®ãï¼çº¦ 40 ä¸ï¼ï¼1000x1000 åºå 38â28 msã2000x2000 åºå 70â46 msï¼400x400 åä»¥ä¸ç»æå®å¨ä¸å": "Large ring searches sped up via a coarse candidate budget: 1000x1000 38 to 28 ms, 2000x2000 70 to 46 ms",
+  "å¾æ¡ç¼è¾å¨åå§ä¸æ¾ç¤ºæ ¼å­ / è®¾ç½®-é«çº§é®æ¡ / æ­£æ¹å½¢ç¼ºæå°å¯åº¦ï¼v3.5.19 ä¿®å¤é¡¹ä¿æï¼": "The pattern editor now starts with a visible 5x5 grid",
+  "å¾æ¡ç¼è¾å¨åå§ä¸æ¾ç¤ºæ ¼å­ï¼æé æ¶å¾æ¡æ¯ 0x0ï¼å¿é¡»ç¹ãåºç¨è¡åãæåºç°ï¼ââç°å¨åå§å°±æ¯ 5x5": "Settings pages scroll, so text and inputs no longer overlap",
+  "è®¾ç½®-é«çº§é¡µæå­ä¸è¾å¥æ¡äºç¸é®æ¡ï¼æ¯ä¸ªæ ç­¾é¡µæ¹å¥æ»å¨åºï¼é¡µåå®¹åå¤ä¹ä¸ä¼æ¤å¨ä¸èµ·": "Minimum density is shared by both density shapes",
+  "å¯åº¦æç´¢çæ­£æ¹å½¢å½¢ç¶ç¼ºå°ãæå°å¯åº¦ãââæå°å¯åº¦æ¹ä¸ºä¸¤ç§å½¢ç¶å±ç¨ï¼ä¸ååªæå¨ç¯å½¢ä¸ï¼": "The ring range is no longer capped at 400M chunks",
+  "ç¯å½¢æç´¢èå´ä¸åå 4 äº¿åºåéå¶ï¼å¿«éæ¨¡å¼ææ½æ ·èµ°ï¼ææ¬ä¸é¢ç§¯æ å³ï¼åªçç©çä¸éï¼": "Fullscreen by default; a language selector was added",
+  "é»è®¤å¨å±è¿è¡ï¼è®¾ç½®-éç¨æ°å¢ãçé¢è¯­è¨ãï¼ç®ä½ä¸­æ / Englishï¼ï¼æç´¢æ¨¡å¼é¢æ¿ä¸é«çº§é¡µææ¡å·²èµ° UiStrings åä¸å¥å£": "Search mode split into two levels showing only relevant options",
+  "æç´¢æ¨¡å¼éæä¸ºä¸¤çº§ï¼å¾æ¡ / å¯åº¦ï¼ä¸æ¹åªæ¾ç¤ºå½åæ¨¡å¼è½è°çéé¡¹ï¼ä¸åç½®ç°ï¼ï¼åç¯å½¢ç¶ä¸æ­£æ¹å½¢åæ°åå ä¸å": "The pattern editor is embedded in the page instead of a dialog",
+  "å¾æ¡ç¼è¾å¨ç´æ¥ååµå°ãæç´¢æ¨¡å¼ â å¾æ¡ãï¼ä¸åå¼¹åºç¬ç«çªå£ï¼è¡åè°æ´ãç¹å»å¾ªç¯ãå¨é¨å¿½ç¥é½å¨é¢æ¿éå®æ": "Smart range visibility fixed",
+  "ãæºè½èå´ãå¶å°å¾ä¸ä¸çé®é¢ï¼æ¹æåªæ¾ç¤º/éèç¸å³éé¡¹ï¼ä¸åä¾èµ enable ç¶æï¼": "Advanced tuning parameters added",
+  "è®¾ç½® â é«çº§æ°å¢ãé«çº§è°è¯åæ°ãï¼ç¯å½¢å/å¤åå¾ãç¯å½¢ç²æ«æ­¥é¿ãä¸¥æ ¼ç»è®¡è¡å¸¦æ°ï¼å¯ç´æ¥è°å¹¶åå¥ config.jsonï¼çé¢ææ¡æ¹ä¸ºåä¸å¥å£ï¼UiStrings.hï¼ï¼ä¸ºå¤è¯­è¨é¢ç": "Huge ring ranges no longer return 0 silently (integer overflow fixed)",
+  "è¶å¤§èå´ç¯å½¢æç´¢éé»è¿å 0 ä¸ªç»æï¼èå´é¢ç§¯ç¨ int ç¸ä¹æº¢åºæè´æ°ï¼320000x320000 åºåç´æ¥è¢«å½æãæ æèå´ã": "Ring has fast and exact scan modes",
+  "ç¯å½¢ä¸¤ç§æ«ææ¨¡å¼ï¼å¿«éï¼ç²æ« + ç²¾ä¿®ï¼/ ç²¾ç¡®ï¼éåºåï¼ï¼è¶å¤§èå´ï¼>2 äº¿åºåï¼å¿«éæ¨¡å¼èªå¨æ¹ç¨ç­è·æ½æ ·ï¼åå­ä¸èæ¶æçï¼": "No more phantom map jumps when there are no results",
+  "æ ç»ææ¶å°å¾ãèç©ºè·³è½¬ãï¼fitToContent æè§å¾æååç¹ï¼ï¼è¢«æå°å¯åº¦ç­ç©ºæ¶ç»åºæç¡®ç¶æèä¸æ¯ä¸å¥ãæ²¡ç»æã": "Biome precision limited to 1:1 and 1:4",
+  "å°å¾ç¾¤ç³»ç²¾åº¦åªä¿çä¸¤æ¡£ï¼1:1 / 1:4ï¼ï¼ä¸ååºç° 1:16/1:64": "The cached biome layer now stretches with zoom and stays in sync with the grid",
+  "å°å¾ç¼©æ¾æ¶åºå¾ä¸ç½æ ¼ä¸åæ­¥ï¼ç¼©æ¾ä¼ãé¬¼çãï¼ï¼ç¼å­åºå¾ä»¥åææ§æ¯ä¾ 1:1 è´´å¾ï¼ç°å¨æå½åç¼©æ¾æä¼¸å°å¯¹åºæ¹åç©å½¢ï¼ä¸ç½æ ¼/ç¯/ç»æåæ­¥": "Changing the search range no longer moves the map center",
+  "è°æ´æç´¢èå´ä¸åæå¨å°å¾ä¸­å¿ï¼æ­¤åæ¹èå´ä¼è®©å°å¾ä¸­å¿ãåæ­¥ãå°èå´ä¸­å¿ï¼ççåéä½ï¼": "The search range is entered as a single radius",
+  "æç´¢èå´æ¹æåªå¡«ãåå¾ãï¼ä¸ä¸ªæ°ï¼æ­£æ¹å½¢è¾¹é¿ = 2Ãåå¾ï¼ï¼å¿«éé¢è®¾ä¸ç¼å­æå»ºé¡µåæ­¥æ¹ç¨åå¾è¾å¥": "The ring range follows the radius (streaming scan), with a min-density recheck",
+  "ç¯å½¢æç´¢èå´ä¸åå¡ 4096 åºåï¼æ¹ä¸ºè·éåå¾è®¾å®å¼ï¼ç²æ«æ z å¸¦æµå¼å¤çï¼åå­ä¸èå´æ å³ï¼ï¼æå°å¯åº¦å¨ä¸¥æ ¼ç»è®¡åéæ°å¤æ ¸": "Large ring searches sped up further (banded scan, x-sorted chunks, reversed kernel copy)",
+  "ç¯å½¢å¤§èå´åæéï¼24 ä¸åºåçº§å«çèå´ï¼2000x2000ï¼ç²æ« 55 ms â çº¦ 20 msï¼åå¸¦æ 256KB åç + åºåæ x æåºåªæ«æ¬å¸¦ãæ ¸ååæ·è´è®©åå±å¯åéåï¼ï¼å¤§èå´æåºç½æ ¼èªå¨æ¾å®½å° 1:512ï¼éæ ·ééå° 1/4ï¼": "The biome layer no longer stalls at wide zoom (coarser by area, capped cell count)",
+  "å°å¾åºå¾ä¸åå¡ï¼ç¼©å°æ´çåºåæ¶ç¾¤ç³»ç²¾åº¦æé¢ç§¯èªå¨æ¾å®½ï¼1:16 èµ·ï¼ï¼åæ¬¡éæ ·æ ¼æ°å°é¡¶çº¦ 6 ä¸ââæ­¤åè¿ä¸æ¡£è¦ä¹å¡ 100+ msï¼è¦ä¹ç´æ¥è¶éãç¾¤ç³»æ´å±ä¸ç»": "Ring search 0.09 to 0.015 s at 400x400",
+  "ç¯å½¢æç´¢åæéï¼400x400 åºåç«¯å°ç«¯ 0.09 ç§ â 0.015 ç§ï¼ä¸­ç­èå´ 0.05 ç§ â 0.01 ç§ï¼ç²æ«åå±å»æåæ¨¡ä¸åæ¯ï¼åæèå´å¤¹å¥½åè¿ç»­åï¼ãç¯å¸¦æ ¸ä¸æéå¨æ¹æ´æ°è¿ç®ãæåºç½æ ¼æèå´èªéåºï¼1:64 / 1:128 / 1:256ï¼": "Strict stats parallelized across candidate and row bands; polish limited to the top 8",
+  "ä¸¥æ ¼ç»è®¡æ¹æãåé Ã è¡å¸¦ãæå¹³å¹¶è¡ï¼æ¯çº¿ç¨èªå¸¦ä¸ä¸ªçæå¨ï¼ï¼æéçªå£æééæ ·ï¼æåæ¹æå 8 åç 3x3 åºåæ ¸ç²¾ä¿®ï¼å£å¾ä¸åèææ¬éä¸ä¸ªæ°éçº§": "Ring parallelism no longer depends on the engine's last thread count",
+  "ç¯å½¢æç´¢çå¹¶è¡åº¦ä¸ååãå¼æä¸æ¬¡æç´¢ç¨ççº¿ç¨æ°ãå½±åââæ­¤åè·è¿ä¸æ¬¡åçº¿ç¨æç´¢åï¼ç¯å½¢ä¼æ´ä½éåæåçº¿ç¨ï¼æ¢ 3 åï¼": "Ring search 0.25 to 0.09 s at 400x400",
+  "ç¯å½¢æç´¢åæéï¼å¤§èå´ 400x400 åºå 0.25 ç§ â 0.09 ç§ï¼ä¸­ç­èå´ï¼16x16 åºåæ ¼ï¼0.16 ç§ â 0.05 ç§ï¼åéç¹çç¾¤ç³»æéæ¹ä¸ºæééæ ·ï¼æ´ç 69x69 æ ¼åªéå°ç¨å¾å°ççº¦ 12%ï¼ï¼ç¯å¸¦æ ¸æé ææ¬éå°åæ¥çåå åä¹ä¸": "Weighted medium ranges are about 6x faster",
+  "ä¸­ç­èå´çå ææ¨¡å¼æé 6 åä»¥ä¸ï¼æ¹ä¸ºç´æ¥èµ°ãåºåçº§ç²æ« + 1 æ ¼æ ¸ç²¾ä¿® + å 12 åæåãï¼å®æµåéä½ç½®ä¸éæ ¼ç²¾ç¡®è§£ç¸åææ´å¥½": "Fixed a chunk coordinate offset in strict stats",
+  "ä¿®å¤ä¸¥æ ¼ç»è®¡çåºååæ éä½ï¼ç¯å¸¦ç»è®¡ç X è½´ä»¥åæãç¸å¯¹åç§»ãå½å±åºåï¼Z è½´å´æ¯ç»å¯¹åæ ï¼ï¼å¯¼è´æææ ¼æ°/æéä¸å®éä¸ç¬¦ï¼ç°å¨ä¸ç²æ«ãéæ ¼åºåå®å¨ä¸è´": "Fixed empty results for medium weighted ranges",
+  "ä¿®å¤ä¸­ç­èå´ï¼çº¦ 46~110 åºåè§æ¹ï¼å¨ Java çä¸æä¸å°ç«ä½çé®é¢ï¼å æè®¡ç®ççªå£ä¸éæè¿ç±»èå´ç´æ¥å¤ç©ºäºï¼ç°å¨æ¹èµ°ç²æ«è·¯å¾ï¼ç§å¸¸ç»åºç»æ": "Ring search 0.87 to 0.24 s at 400x400",
+  "ç¯å½¢æç´¢åæéï¼400x400 åºåç«¯å°ç«¯ 0.87 ç§ â 0.24 ç§ï¼ç²æ«æ¹ä¸ºå­åç§»æ ¸æ£å°ãç²¾ä¿®/æçº¯/æ ¸æå»ºå¨é¨å¹¶è¡ï¼ï¼ç»æè´¨éä¸éååï¼æä¼è¦ç 6327 â 6334 æ ¼ï¼": "Biome sampling 400 to 85 ms for 130k cells",
+  "ç¾¤ç³»å°å¾éæ ·æéï¼1:4 éæ ·ç 13 ä¸æ ¼ä»çº¦ 400 ms éå°çº¦ 85 msï¼1.18+ æè¡å¸¦å¹¶è¡çæï¼æ¯çº¿ç¨ç¬ç«çæå¨ï¼": "Minimum density only filters; the count still follows the target",
+  "æå°å¯åº¦åªç¨äºç­éï¼ç»ææ°éä»æãç®æ æ°éãæªåï¼æ­¤åä½éå¼ãå°èå´ä¼ä¸æ¬¡è¿åå åä¸ªç«ä½ï¼ä¸è®¾ç½®ç 8 ä¸ªä¸ç¬¦ï¼": "Only the selected ring is drawn",
+  "ç¯å½¢æ¾ç¤ºæ¹ä¸ºæéæ¾ç¤ºï¼ç¹å°å¾ä¸çç¯å¿æç¹ç»æè¡ï¼åªæ¾ç¤ºè¯¥åéçç¯å½¢ï¼å¶ä½åéåªçå°åç¹æ è®°ï¼ä¸ååæ¶ç»å¤ä¸ªç¯": "The ring is drawn with a double stroke and a highlighted center dot",
+  "ç¯å½¢æ¹ç»çº¿åå±æè¾¹ï¼æ·±è²ä¸»çº¿ + æµè²åæè¾¹ï¼ï¼ç¯å¸¦ä¸åç¨ç¹çº¿/èçº¿ï¼ç¯å¿æ¹ä¸ºçº¢è²åç¹ï¼ç½æè¾¹ + æåï¼ï¼ä¸ç¼å°±è½æ¾å°": "Clicking a ring center or a result row selects it in both views",
+  "å°å¾ç¹å»ç¯å¿æ¢è½åæ¢éä¸­çææºç¹ï¼ä¹ä¼èå¨èå¨ç»æåè¡¨çéä¸­è¡ï¼ç¹ç»æè¡åæ ·è®©å°å¾èç¦å°è¯¥åé": "No extra result boxes in ring mode",
+  "ç¯å½¢æ¨¡å¼ä¸ä¸åé¢å¤ç»ç»ææ¹åï¼é¿åä¸åéåç¹éå¤ãç»é¢æä¹±": "The result list shows covered blocks and weight",
+  "ç»æåè¡¨æ¾ç¤ºãæææ ¼ Â· æ»æéãï¼ç¶ææ ç»åºæä¼ç¹çé¢ç§¯/æé/è¦çç": "Ring statistics use strict 1-block precision",
+  "ç¯å½¢ç»è®¡æ¹ä¸ºä¸¥æ ¼ 1 æ ¼ï¼1/16 åºåï¼ç²¾åº¦ï¼éæ ¼ç´¯å æææ ¼æ°ä¸æ»æéï¼ç¾¤ç³»æ 1:4 ç½æ ¼åæ ·ï¼æ¸¸æç¾¤ç³»æå°åä½å°±æ¯ 4 æ ¼ï¼ææ¯æ ¼ç²¾ç¡®ï¼ï¼ä¸åç¨ç²ç³ç 1:64 éæ ·": "Ring matching sped up (exact path for small ranges, branch-free inner loops)",
+  "ç¯å½¢å¹éæéï¼å°èå´èªå¨èµ°ç²¾ç¡®è·¯å¾ï¼å¤§èå´ç²æ«åå±å»åæ¯ï¼å¯åéåï¼ãå¤å¥å·ç§¯æ ¸ï¼è§ç¹/ä¸­å¿ï¼ãæåºåå»é": "The search mode panel was re-arranged",
+  "æç´¢æ¨¡å¼é¢æ¿é¡ºåºæ¹ä¸ºï¼æç´¢æ¨¡å¼ â åºåå½¢ç¶ â åèªçéé¡¹ï¼é¿åææ¨¡å¼ä¸å½¢ç¶æ··å¨ä¸èµ·ï¼": "Ring results include full statistics",
+  "ç¯å½¢ç»æç»åºå®æ´ç»è®¡ï¼æææ ¼æ°ãè¦çåºåæ°ãè¦ççãæ»æéï¼æä¸çåæ°ç¬¬äºå± y ç»è®¡ï¼å¼å®¹æ´ç©´æ´æ°ååçé«åº¦èå´ï¼": "The map draws both ring radii in ring mode",
+  "å°å¾å¨ç¯å½¢æ¨¡å¼ä¸ç»ååï¼å 24 / å¤ 128ï¼å¹¶é«äº®ç¯å¸¦åçå²è±å§åºå": "Ring supports minimum density and result count",
+  "ç¯å½¢æ¯ææå°å¯åº¦ä¸ç®æ æ°éç­éï¼ä¸æ­£æ¹å½¢ä¸è´ï¼": "Ring semantics corrected to the 24 to 128 spawn annulus",
+  "ç¯å½¢è¯­ä¹çº æ­£ï¼ç¯å½¢ = æªç©çæç¯å¸¦ 24~128 æ ¼ï¼è¿è¿ä¸å·ãè¿è¿æ¶å¤±ï¼ï¼ä¸åæ¯æ´ä¸ªåï¼è¦ççæç¯å¸¦é¢ç§¯è®¡ç®": "Search mode, algorithm and shape are decoupled",
+  "æç´¢æ¨¡å¼/å¹éç®æ³/åºåå½¢ç¶ä¸èè§£è¦ï¼å¾æ¡ä¸å¯åº¦åèªéé¡¹äºä¸å¹²æ°ï¼å¤å®ç®æ³åªå½±ååç¡®çï¼ä¸¤ç§æ¨¡å¼é½å¯ç¨ï¼ç¯å½¢å±å¯åº¦ç±»": "Ring results report coverage, chunks and weight",
+  "ç¯å½¢ç»ææ 1/16 ç²¾åº¦ç»åºå®æ´ææ ï¼è¦çé¢ç§¯ãè¦çåºåæ°ãå æè¦çãå¹³åæéï¼å¹¶æ¾ç¤ºå¨ç»æåè¡¨ãåºå Â· å æãå": "Layers are composited into one cached bitmap",
+  "å°å¾æ¸²æï¼æç¾¤ç³»/å²è±å§åºå/ç½æ ¼åæä¸ºä¸å¼ ç¼å­ä½å¾ï¼å¹³ç§»æ¶ç´æ¥è´´å¾ï¼å®æµ 0.3~0.8 ms/å¸§ï¼60 å¸§ä»éå»º 0~1 æ¬¡ï¼": "Ring search 3.75 to 0.13 s at 400x400",
+  "ç¯å½¢æç´¢æéï¼åºåçº§ç²æ«å¹¶è¡åãå·ç§¯æ ¸ç¼å­ãæéç½æ ¼ä¸æ¬¡é¢åãç¾¤ç³»çæå¨å¤ç¨ï¼400x400 åºå 3.75 ç§ â 0.13 ç§ï¼": "Ring ranking uses biome weights on Java",
+  "ç¯å½¢æ¨¡å¼å¨ Java çèªå¨å¸¦ä¸ç¾¤ç³»æéï¼æåºååæ ·ï¼ï¼æåºä¼åçå æè¦ç": "Ring supports large distant searches",
+  "ç¯å½¢æç´¢æ¯æå¤§èå´è¿è·ç¦»æ¾ç¹ï¼400x400 åºåçº¦ 0.15 ç§ï¼600x600 åºåçº¦ 0.18 ç§": "The ring radius is fixed at 128; the range only bounds the search",
+  "ç¯å½¢ç®æ³è¯­ä¹çº æ­£ï¼åå¾ 128 æ¯åºå®ççç©å·æ°èå´ï¼æç´¢èå´åªæ¯æ¾ç¹èå´ï¼æ°å¢åºåçº§ç²æ« + å±é¨ 1 æ ¼ç²¾ä¿®ï¼60x60 åºåä¸ç²¾ç¡®è§£å®å¨ä¸è´": "Hover biome matches the current detail",
+  "é¼ æ æ¬åæ¾ç¤ºçç¾¤ç³»æå½åæ¾ç¤ºç²¾åº¦æ¥è¯¢ï¼æ¾å¤§å° 1:1 åä¸åå¯¹ä¸ä¸ï¼": "Automatic detail limited to 1:1 and 1:4",
+  "å°å¾ç²¾åº¦èªéåºåªä¿çæé«ä¸¤æ¡£ï¼1:1 / 1:4ï¼": "Ring moved from algorithm to shape",
+  "æãç¯å½¢è¦çãä»æç´¢ç®æ³ç§»å°æç´¢æ¨¡å¼ä¸çãåºåå½¢ç¶ãï¼ä¸ãæ­£æ¹å½¢åºåãåçº§ï¼éç¯å½¢åç½æ ¼/å¯åº¦/ç®æ /ç®æ³ç­ç¸å³é¡¹å¨é¨ç½®ç°": "Results are shown as a sortable table",
+  "ç»ææ æ¹ä¸ºåè¡¨ï¼è¡¨å¤´ç¹å»å¯æè·ç¦»/å¯åº¦æåºï¼æ¯è¡å³ä¾§æãè·³è½¬ãæé®ç´è¾¾å°å¾": "The result list can be collapsed",
+  "ç»æåè¡¨å¯æå ï¼ç¹æ é¢ãç»æãï¼ï¼æå åå°å¾å æ»¡å³æ ": "The map shows coordinate ticks and hover info",
+  "å°å¾è¾¹çæ¾ç¤ºåæ å»åº¦ï¼é¡¶é¨å®æ¶æ¾ç¤ºé¼ æ å¤åæ ä¸ç¾¤ç³»å": "Ring is listed alongside the algorithms",
+  "ç¯å½¢è¦çå å¥ãæç´¢ç®æ³ãï¼ä¸ç²¾ç¡®/åå±/ä¼°ç®/ä¿å®å¹¶åï¼1 æ ¼ç²¾åº¦æ¾æå¤§å·æªé¢ç§¯ç«ä½ï¼": "Map detail limited to 1:1, 1:4 and 1:16",
+  "å°å¾ç²¾åº¦åªä¿çæé«ä¸æ¡£ï¼1:1 / 1:4 / 1:16ï¼ï¼è¿ç¼©æ¾ä¸åç³æ 1:64": "Removed redundant buttons from the result pane",
+  "ç§»é¤ç»ææ å¤ä½çãææºç¹ããå°å¾ãæé®ï¼å°å¾æ é¢åªçãéåºåå®¹ã+ æå ï¼æå æé®å ç²å¹¶å¸¦æ¬åé«äº®": "Window maximized by default; the map panel is sized to be square",
+  "ä¸»çªå£é»è®¤æå¤§åï¼å°å¾é¢æ¿æå®½åº¦åé«ãå°½éåæ­£æ¹å½¢": "Clicking a result jumps the map to it",
+  "ç¹å»ç»æéçä»»æä¸æ¡ï¼å°å¾ç«å³å®ä½å°è¯¥ç»ææå¨åºåï¼æå¨éå­ä¸ä¼è¯¯è§¦ï¼": "The map is embedded into the Search page",
+  "å°å¾ä»å·¦ä¾§å¯¼èªç§»é¤ï¼ç´æ¥ååµå°ãæç´¢ãé¡µå³ä¾§ï¼ä¸ï¼å°å¾ï¼ä¸ï¼ç»æï¼ï¼å¯¼èªåå° 4 é¡¹": "The map auto-refreshes when inputs change",
+  "å°å¾ä¸ä¿¡æ¯å¡«åæ èå¨ï¼æ¹çæ¬/ç§å­/èå´åèªå¨å·æ°ï¼250ms å»æï¼ï¼è·³è½¬å³æ¶éç»ä¸éªç½": "The map panel header collapses",
+  "å°å¾é¢æ¿æ é¢å¯æå ï¼Ctrl+M æç»æåºãå°å¾ãæé®ï¼ï¼æå åç»ææ å æ»¡é«åº¦": "Automatic biome detail with stronger slime chunk outlines",
+  "å°å¾ç¾¤ç³»ç²¾åº¦èªéåºï¼æ¾å¤§æ´ç²¾ç»ï¼ãå²è±å§åºåå æµæè¾¹ï¼è¿è·ç¦»è·³è½¬ä¸ååºç°ç©ºç½å¸§": "Automatic detail (1:1 to 1:64) with manual override",
+  "ç¾¤ç³»ç²¾åº¦èªéåºï¼æ¾å¤§èªå¨æ´ç²¾ç»ï¼1:1ï¼ï¼ç¼©å°èªå¨æ´ç²ï¼1:64ï¼ï¼ä¹å¯å³é­èªéåºæå¨æå®": "A map page was added to the main window",
+  "å°å¾å¹¶å¥ä¸»çªå£ï¼å·¦ä¾§æ°å¢ãå°å¾ãé¡µï¼åæ°æ  / å°å¾ / ç»ææ ä¸æ®µé½è½åç¬æå ": "Dragging and zooming use the cached layer with a 25% margin",
+  "å°å¾å¸§çï¼æå¨/ç¼©æ¾åç¨å·²æåºå¾å¹³ç§»æ¾ç¤ºï¼éæ­¢ååçæï¼åºå¾å¸¦ 25% ä½éç¼å­ï¼å°å¹å¹³ç§»ä¸åéç®": "Slime chunks stand out more",
+  "å²è±å§åºåæ´éç®ï¼å æµå¡«åå¹¶æè¾¹ï¼ç¾¤ç³»åºå¾ç¥éé¥±åï¼ç»¿è²æ ¼å­ä¸ç¼å¯è§": "The map and the input form stay in sync",
+  "å°å¾ä¸ä¿¡æ¯å¡«åæ åååæ­¥ï¼å¨å°å¾é¡µæ¹çæ¬ãç§å­ãèå´ä¼åæ­¥åæç´¢é¡µï¼åä¹äº¦ç¶": "Farm spot finder (ring) at 1-block precision",
+  "æ¾ç¤ºå°å¾": "Show map"
+}

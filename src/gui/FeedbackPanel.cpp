@@ -14,6 +14,7 @@
 //   * 无过滤按钮、无级别显隐 UI：工具行仅有「清空」「复制全部」；
 //   * 内存保护：最多保留 2000 条，超出时丢弃最旧（第一条）并同步修正计数。
 
+#include "gui/UiText.h"
 #include "gui/FeedbackPanel.h"
 
 #include <QAbstractItemView>
@@ -130,16 +131,16 @@ FeedbackPanel::FeedbackPanel(QWidget* parent) : QWidget(parent), m_impl(new Impl
     toolLayout->setSpacing(6);
     toolLayout->addStretch(1);
 
-    auto* clearBtn = new QPushButton(QStringLiteral("清空"), this);
+    auto* clearBtn = new QPushButton(slime::ui::t("ui.84fcd70d4280"), this);
     clearBtn->setAutoDefault(false);
-    clearBtn->setToolTip(QStringLiteral("清空全部反馈"));
+    clearBtn->setToolTip(slime::ui::t("ui.30e6eba7ba0d"));
     connect(clearBtn, &QPushButton::clicked, this, &FeedbackPanel::clearAll);
     toolLayout->addWidget(clearBtn);
     m_impl->clearButton = clearBtn;
 
-    auto* copyBtn = new QPushButton(QStringLiteral("复制全部"), this);
+    auto* copyBtn = new QPushButton(slime::ui::t("ui.55f59bc2f0c3"), this);
     copyBtn->setAutoDefault(false);
-    copyBtn->setToolTip(QStringLiteral("把全部反馈（每行一条）复制到剪贴板"));
+    copyBtn->setToolTip(slime::ui::t("ui.9b1fcc8158b8"));
     connect(copyBtn, &QPushButton::clicked, this, [this]() {
         if (QClipboard* clipboard = QGuiApplication::clipboard()) {
             clipboard->setText(allText());

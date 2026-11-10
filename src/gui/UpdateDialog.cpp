@@ -1,4 +1,5 @@
 // UpdateDialog.cpp — v3.10.12.10
+#include "gui/UiText.h"
 #include "gui/UpdateDialog.h"
 
 #include <algorithm>
@@ -98,30 +99,28 @@ UpdateDialog::~UpdateDialog() = default;
 
 void UpdateDialog::buildUi()
 {
-    setWindowTitle(QStringLiteral("检查更新"));
+    setWindowTitle(slime::ui::t("ui.a6df38586d84"));
     resize(780, 570);
     auto* root = new QVBoxLayout(this);
     root->setSpacing(8);
 
     // ---- 来源选择 ----
     auto* srcRow = new QHBoxLayout();
-    srcRow->addWidget(new QLabel(QStringLiteral("更新来源:"), this));
+    srcRow->addWidget(new QLabel(slime::ui::t("ui.ff199d6c0642"), this));
     m_source = new QComboBox(this);
-    m_source->addItem(QStringLiteral("自动（官方优先，失败后自动测速镜像）"));
-    m_source->addItem(QStringLiteral("GitHub 官方"));
-    m_source->addItem(QStringLiteral("网盘（国内备用，手动）"));
+    m_source->addItem(slime::ui::t("ui.854ed4cf5d4c"));
+    m_source->addItem(slime::ui::t("ui.8bdb14e091f3"));
+    m_source->addItem(slime::ui::t("ui.2f947dc750e1"));
     srcRow->addWidget(m_source, 1);
     root->addLayout(srcRow);
 
     // v3.10.12.10：更新通道（稳定=只正式版；测试=含 Pre-release）
     auto* chRow = new QHBoxLayout();
-    chRow->addWidget(new QLabel(QStringLiteral("更新通道:"), this));
+    chRow->addWidget(new QLabel(slime::ui::t("ui.268c85c4f8d7"), this));
     m_channel = new QComboBox(this);
-    m_channel->addItem(QStringLiteral("稳定版（只提示正式版）"), Stable);
-    m_channel->addItem(QStringLiteral("测试版（包含 Pre-release）"), Test);
-    m_channel->setToolTip(QStringLiteral(
-        "稳定版：只提示未勾选 Pre-release 的正式版；\n"
-        "测试版：还会提示勾了 Pre-release 的测试版本。"));
+    m_channel->addItem(slime::ui::t("ui.725b686f40ef"), Stable);
+    m_channel->addItem(slime::ui::t("ui.587e9efae2db"), Test);
+    m_channel->setToolTip(slime::ui::t("ui.83d8f760910f"));
     chRow->addWidget(m_channel, 1);
     root->addLayout(chRow);
 
@@ -131,33 +130,33 @@ void UpdateDialog::buildUi()
     m_mirror->addItems(defaultMirrorPresets());
 
     auto* btnRow = new QHBoxLayout();
-    m_checkBtn = new QPushButton(QStringLiteral("检查更新"), this);
-    m_githubBtn = new QPushButton(QStringLiteral("打开 GitHub 发布页"), this);
-    m_panBtn = new QPushButton(QStringLiteral("打开网盘下载页（备用）"), this);
+    m_checkBtn = new QPushButton(slime::ui::t("ui.a6df38586d84"), this);
+    m_githubBtn = new QPushButton(slime::ui::t("ui.eff607b3516f"), this);
+    m_panBtn = new QPushButton(slime::ui::t("ui.cfdde904fad7"), this);
     btnRow->addWidget(m_checkBtn);
     btnRow->addWidget(m_githubBtn);
     btnRow->addWidget(m_panBtn);
     btnRow->addStretch();
     root->addLayout(btnRow);
 
-    m_status = new QLabel(QStringLiteral("选择来源后点击「检查更新」。下载更新包时会校验 SHA256。"), this);
+    m_status = new QLabel(slime::ui::t("ui.4b144de87f39"), this);
     m_status->setWordWrap(true);
     root->addWidget(m_status);
 
     m_notes = new QPlainTextEdit(this);
     m_notes->setReadOnly(true);
-    m_notes->setPlaceholderText(QStringLiteral("最新版本的更新说明会显示在这里。"));
+    m_notes->setPlaceholderText(slime::ui::t("ui.c48b51f36c23"));
     root->addWidget(m_notes, 1);
 
     auto* dlRow = new QHBoxLayout();
     m_progress = new QProgressBar(this);
     m_progress->setVisible(false);
     m_progress->setTextVisible(true);
-    m_downloadBtn = new QPushButton(QStringLiteral("下载并安装更新（Setup）"), this);
+    m_downloadBtn = new QPushButton(slime::ui::t("ui.f9ff8c365c95"), this);
     m_downloadBtn->setEnabled(false);
-    m_folderBtn = new QPushButton(QStringLiteral("打开下载文件夹"), this);
+    m_folderBtn = new QPushButton(slime::ui::t("ui.9b519e408eb3"), this);
     m_folderBtn->setVisible(false);
-    auto* closeBtn = new QPushButton(QStringLiteral("关闭"), this);
+    auto* closeBtn = new QPushButton(slime::ui::t("ui.6c14bd7f6f9e"), this);
     dlRow->addWidget(m_progress, 1);
     dlRow->addWidget(m_downloadBtn);
     dlRow->addWidget(m_folderBtn);
@@ -176,7 +175,7 @@ void UpdateDialog::buildUi()
         m_cacheChannel = -1;
         saveConfig();
         if (!m_latestTag.isEmpty())
-            m_status->setText(QStringLiteral("已切换更新通道，请重新点击「检查更新」。"));
+            m_status->setText(slime::ui::t("ui.49747a3ed295"));
     });
     connect(m_checkBtn, &QPushButton::clicked, this, &UpdateDialog::startCheck);
     connect(m_downloadBtn, &QPushButton::clicked, this, &UpdateDialog::startDownload);
@@ -187,9 +186,7 @@ void UpdateDialog::buildUi()
 
     if (curlExe().isEmpty()) {
         m_checkBtn->setEnabled(false);
-        m_status->setText(QStringLiteral(
-            "未找到系统 curl.exe，无法联网检查更新。\n"
-            "可点击「打开 GitHub 发布页」或「打开网盘下载页」手动下载。"));
+        m_status->setText(slime::ui::t("ui.3da75b73fed1"));
     }
 }
 
@@ -246,15 +243,12 @@ void UpdateDialog::applySourceUi()
     m_mirror->setVisible(false);
     m_checkBtn->setEnabled(!pan && !curlExe().isEmpty());
     if (pan) {
-        m_status->setText(QStringLiteral(
-            "网盘源是手动备用入口：请点击「打开网盘下载页（备用）」。\n"
-            "网盘源不做自动更新检查。"));
+        m_status->setText(slime::ui::t("ui.7b71aa40fffb"));
         m_downloadBtn->setEnabled(false);
     } else if (!pan && curlExe().isEmpty()) {
-        m_status->setText(QStringLiteral(
-            "未找到系统 curl.exe，无法联网检查更新；可手动打开发布页/网盘页。"));
+        m_status->setText(slime::ui::t("ui.91c96f3dea75"));
     } else if (m_latestTag.isEmpty()) {
-        m_status->setText(QStringLiteral("选择来源后点击「检查更新」。下载更新包时会校验 SHA256。"));
+        m_status->setText(slime::ui::t("ui.4b144de87f39"));
     }
 }
 
@@ -384,8 +378,8 @@ void UpdateDialog::startCheck()
     if (!m_waitingForceCheck && m_cacheChannel == m_channel->currentIndex() &&
         !m_cacheManifest.isEmpty() && m_cacheTime > 0 && nowSecs - m_cacheTime < 6 * 3600) {
         m_waitingForceCheck = true;
-        m_checkBtn->setText(QStringLiteral("强制刷新"));
-        setStatusText(QStringLiteral("显示 6 小时内的缓存结果；再次点击「强制刷新」会重新联网检查。"));
+        m_checkBtn->setText(slime::ui::t("ui.d6cc30dcc227"));
+        setStatusText(slime::ui::t("ui.37a8dd4f0ae3"));
         setBusy(true);
         m_progress->setRange(0, 0);
         parseLatest(m_cacheManifest.toUtf8());
@@ -393,17 +387,17 @@ void UpdateDialog::startCheck()
         return;
     }
     m_waitingForceCheck = false;
-    m_checkBtn->setText(QStringLiteral("检查更新"));
+    m_checkBtn->setText(slime::ui::t("ui.a6df38586d84"));
 
     m_officialUrls = buildOfficialUrls();
     if (m_officialUrls.isEmpty()) {
-        setStatusText(QStringLiteral("没有可用的检查地址。"));
+        setStatusText(slime::ui::t("ui.31dfe582d4bc"));
         return;
     }
     m_officialIndex = 0;
     setBusy(true);
     m_progress->setRange(0, 0);
-    setStatusText(QStringLiteral("正在检查更新（官方优先）…"));
+    setStatusText(slime::ui::t("ui.e705b91e38b9"));
     tryNextApi();
 }
 
@@ -416,14 +410,12 @@ void UpdateDialog::tryNextApi()
             return;
         }
         setBusy(false);
-        setStatusText(QStringLiteral(
-            "官方地址不可达。\n"
-            "可稍后重试，或直接打开 GitHub/网盘页面手动下载。"));
+        setStatusText(slime::ui::t("ui.9a266b8bc047"));
         emit probeFinished(false, QStringLiteral("official-unreachable"));
         return;
     }
     const QString url = m_officialUrls.at(m_officialIndex++);
-    setStatusText(QStringLiteral("正在检查更新…（官方地址 %1/%2）\n%3")
+    setStatusText(slime::ui::t("ui.1610efe6bbfe")
                       .arg(m_officialIndex)
                       .arg(m_officialUrls.size())
                       .arg(url));
@@ -464,12 +456,12 @@ void UpdateDialog::startMirrorSpeedTest()
     m_mirrorProbeIndex = 0;
     if (m_mirrorCandidates.isEmpty()) {
         setBusy(false);
-        setStatusText(QStringLiteral("官方不可达，且没有可用镜像。"));
+        setStatusText(slime::ui::t("ui.7dd0b78fd953"));
         emit probeFinished(false, QStringLiteral("no-mirrors"));
         return;
     }
     m_progress->setRange(0, 0);
-    setStatusText(QStringLiteral("官方不可达，正在测速 %1 个镜像源（自动选最快）…")
+    setStatusText(slime::ui::t("ui.16a85c64312c")
                       .arg(m_mirrorCandidates.size()));
     probeNextMirrorManifest();
 }
@@ -486,7 +478,7 @@ void UpdateDialog::probeNextMirrorManifest()
         probeNextMirrorManifest();
         return;
     }
-    setStatusText(QStringLiteral("镜像测速：探测清单 %1/%2\n%3")
+    setStatusText(slime::ui::t("ui.c9ce02427591")
                       .arg(m_mirrorProbeIndex)
                       .arg(m_mirrorCandidates.size())
                       .arg(prefix));
@@ -522,8 +514,7 @@ void UpdateDialog::startMirrorSampleTest()
 {
     if (m_mirrorProbes.isEmpty()) {
         setBusy(false);
-        setStatusText(QStringLiteral("检查失败：官方与内置镜像都不可达。\n"
-                                     "可稍后重试，或直接打开 GitHub/网盘页面手动下载。"));
+        setStatusText(slime::ui::t("ui.0947947cec9d"));
         emit probeFinished(false, QStringLiteral("mirrors-unreachable"));
         return;
     }
@@ -557,7 +548,7 @@ void UpdateDialog::probeNextMirrorSample()
         probeNextMirrorSample();
         return;
     }
-    setStatusText(QStringLiteral("镜像测速：采样下载 %1/%2\n%3")
+    setStatusText(slime::ui::t("ui.057071fe4a58")
                       .arg(m_sampleIndex + 1)
                       .arg(m_mirrorProbes.size())
                       .arg(p.prefix));
@@ -606,7 +597,7 @@ void UpdateDialog::finishMirrorSelection()
     }
     if (!best) {
         setBusy(false);
-        setStatusText(QStringLiteral("检查失败：镜像测速没有得到可用结果。"));
+        setStatusText(slime::ui::t("ui.780e61c2248b"));
         emit probeFinished(false, QStringLiteral("speedtest-failed"));
         return;
     }
@@ -618,10 +609,10 @@ void UpdateDialog::finishMirrorSelection()
     setBusy(false);
     QString rateText;
     if (best->sampleBytes > 0 && best->sampleSec > 0.0) {
-        rateText = QStringLiteral("，采样 %1 KB/s")
+        rateText = slime::ui::t("ui.2d964eb5d055")
                        .arg(static_cast<qint64>(best->sampleBytes / best->sampleSec / 1024.0));
     }
-    setStatusText(QStringLiteral("官方不可达，已自动选择最快镜像：%1%2")
+    setStatusText(slime::ui::t("ui.08831e1e0a75")
                       .arg(best->prefix, rateText));
     parseLatest(best->manifest);
 }
@@ -722,16 +713,16 @@ void UpdateDialog::parseLatest(const QByteArray& body)
     setBusy(false);
     if (versionNewer(ver, current)) {
         m_updateAvailable = true;
-        setStatusText(QStringLiteral("发现新版本：v%1（当前 v%2）").arg(ver, current));
+        setStatusText(slime::ui::t("ui.1cc383f53f07").arg(ver, current));
         QString notes = releaseNotesFor(m_notesText);
-        if (notes.isEmpty()) notes = QStringLiteral("（该版本没有提供更新说明。）");
+        if (notes.isEmpty()) notes = slime::ui::t("ui.7e818e98207a");
         m_notes->setPlainText(notes);
         m_downloadBtn->setEnabled(!zip.url.isEmpty());
-        m_downloadBtn->setText(QStringLiteral("下载并安装更新（Setup）"));
+        m_downloadBtn->setText(slime::ui::t("ui.f9ff8c365c95"));
         m_progress->setVisible(false);
     } else {
         m_updateAvailable = false;
-        setStatusText(QStringLiteral("已是最新版本（当前 v%1）").arg(current));
+        setStatusText(slime::ui::t("ui.f11ef12bb9bd").arg(current));
         m_notes->setPlainText(releaseNotesFor(m_notesText));
         m_downloadBtn->setEnabled(false);
     }
@@ -785,14 +776,14 @@ void UpdateDialog::startDownload()
 
     m_downloadUrls = buildDownloadUrls(m_zipAsset.url);
     if (m_downloadUrls.isEmpty()) {
-        setStatusText(QStringLiteral("没有可用的下载地址。"));
+        setStatusText(slime::ui::t("ui.4eff45d10cb0"));
         return;
     }
     m_downloadIndex = 0;
     m_pendingDownload = true;
     setBusy(true);
     m_progress->setRange(0, 0);
-    setStatusText(QStringLiteral("正在下载更新包…（共 %1 个地址，自动回退）")
+    setStatusText(slime::ui::t("ui.b5ab16bc1a7b")
                       .arg(m_downloadUrls.size()));
     tryNextDownload();
 }
@@ -802,13 +793,12 @@ void UpdateDialog::tryNextDownload()
     if (m_downloadIndex >= m_downloadUrls.size()) {
         m_pendingDownload = false;
         setBusy(false);
-        setStatusText(QStringLiteral("下载失败：所有下载地址都不可用。\n"
-                                     "可打开 GitHub 发布页或网盘页手动下载。"));
+        setStatusText(slime::ui::t("ui.ce4f259b9f06"));
         emit probeDownloadFinished(false, QStringLiteral("all-download-urls-failed"));
         return;
     }
     const QString url = m_downloadUrls.at(m_downloadIndex++);
-    setStatusText(QStringLiteral("正在下载更新包（%1/%2）…\n%3")
+    setStatusText(slime::ui::t("ui.018f6944c95e")
                       .arg(m_downloadIndex)
                       .arg(m_downloadUrls.size())
                       .arg(url));
@@ -829,7 +819,7 @@ void UpdateDialog::onZipDone(int httpCode, bool ok)
     if ((httpCode == 200 || httpCode == 206) && ok) {
         m_downloadBtn->setEnabled(false);
         m_progress->setRange(0, 0);
-        setStatusText(QStringLiteral("下载完成，正在校验 SHA256…"));
+        setStatusText(slime::ui::t("ui.6089423ca2fc"));
         fetchSumsThenFinish();
         return;
     }
@@ -888,7 +878,7 @@ void UpdateDialog::onSumsDone(int httpCode, const QByteArray& body)
         QFile::remove(m_downloadPath);
         m_pendingDownload = false;
         setBusy(false);
-        setStatusText(QStringLiteral("SHA256 校验失败，已删除下载文件。请重试或手动下载。"));
+        setStatusText(slime::ui::t("ui.e8b133e9b0cf"));
         emit probeDownloadFinished(false, QStringLiteral("sha256-mismatch"));
         return;
     }
@@ -905,24 +895,23 @@ void UpdateDialog::finishDownloadOk()
     m_folderBtn->setVisible(true);
     m_downloadBtn->setEnabled(false);
     if (m_downloadPath.endsWith(QStringLiteral("-Setup.exe"), Qt::CaseInsensitive) && isInstalledCopy()) {
-        setStatusText(QStringLiteral("更新包已下载并通过 SHA256 校验。"));
+        setStatusText(slime::ui::t("ui.f002c118e5c0"));
         const auto answer = QMessageBox::question(
-            this, QStringLiteral("安装更新"),
-            QStringLiteral("更新已下载并通过校验。\n\n将关闭当前程序并打开安装向导，"
-                           "请点击「下一步」完成覆盖安装（安装前会请求管理员权限）。\n\n现在开始安装吗？"),
+            this, slime::ui::t("ui.b93a1ef02fdf"),
+            slime::ui::t("ui.22d851990ad1"),
             QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         if (answer == QMessageBox::Yes) {
             emit probeDownloadFinished(true, m_downloadPath);
             startInstallerAndQuit();
             return;
         }
-        setStatusText(QStringLiteral("已跳过安装；可稍后手动运行下载的安装程序。"));
+        setStatusText(slime::ui::t("ui.3fa881bd3073"));
     } else if (m_downloadPath.endsWith(QStringLiteral("-Setup.exe"), Qt::CaseInsensitive)) {
-        setStatusText(QStringLiteral("更新包已下载。当前是便携版，请手动运行安装程序完成安装。"));
+        setStatusText(slime::ui::t("ui.58b397270ac5"));
     } else {
-        setStatusText(QStringLiteral("更新包已下载：\n%1").arg(QDir::toNativeSeparators(m_downloadPath)));
+        setStatusText(slime::ui::t("ui.365f4ad9cc7b").arg(QDir::toNativeSeparators(m_downloadPath)));
     }
-    m_notes->appendPlainText(QStringLiteral("\n—— 下载位置 ——\n") + m_downloadPath);
+    m_notes->appendPlainText(slime::ui::t("ui.6d3e8e29a223") + m_downloadPath);
     emit probeDownloadFinished(true, m_downloadPath);
 }
 
@@ -950,7 +939,7 @@ void UpdateDialog::startInstallerAndQuit()
     const bool started = QProcess::startDetached(m_downloadPath, { QStringLiteral("/UPDATE=1") },
                                                  QFileInfo(m_downloadPath).absolutePath());
     if (!started) {
-        setStatusText(QStringLiteral("启动安装程序失败，请手动运行：\n%1")
+        setStatusText(slime::ui::t("ui.1c9aa694df5d")
                           .arg(QDir::toNativeSeparators(m_downloadPath)));
         return;
     }

@@ -1,4 +1,5 @@
 // MainWindow.cpp - 主窗口实现（v3.2.1）
+#include "gui/UiText.h"
 #include "gui/MainWindow.h"
 
 #include <QApplication>
@@ -177,7 +178,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.10.12.13";
+constexpr const char* kAppVersion = "v3.11.0";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置）
 constexpr int kNavCount = 3; // v3.10.12.13：移除更新历史，导航 3 项
@@ -289,24 +290,24 @@ bool largeRangeNeedsConfirm(int64_t totalChunks, bool estOk, double estSeconds, 
 QString largeRangeConfirmText(int64_t totalChunks, int64_t areaX, int64_t areaZ, bool estOk,
                               double estSeconds, int64_t warnAtChunks)
 {
-    QString body = QStringLiteral("即将扫描：%1 个区块（%2 × %3 区块）\n")
+    QString body = slime::ui::t("ui.b6c0337a9f51")
                        .arg(totalChunks)
                        .arg(areaX)
                        .arg(areaZ);
     if (estOk) {
         const double minutes = estSeconds / 60.0;
-        body += QStringLiteral("预计耗时：约 %1 分钟（%2 秒，按本机实测速率估算）\n")
+        body += slime::ui::t("ui.c3c31f003ac4")
                     .arg(minutes, 0, 'f', 1)
                     .arg(static_cast<qint64>(estSeconds));
-        body += QStringLiteral("超出阈值：超出「预计 5 分钟」阈值约 %1 分钟\n")
+        body += slime::ui::t("ui.831e399c0b24")
                     .arg((std::max)(0.0, minutes - 5.0), 0, 'f', 1);
     } else {
-        body += QStringLiteral("预计耗时：无法估算（样本过小），本次按区块数阈值判断\n");
-        body += QStringLiteral("超出阈值：超出设定阈值 %1 区块（本次 %2 区块）\n")
+        body += slime::ui::t("ui.50b3a2934d37");
+        body += slime::ui::t("ui.4b2071a74891")
                     .arg(warnAtChunks)
                     .arg(totalChunks);
     }
-    body += QStringLiteral("（阈值可在「设置 → 搜索」中调整）\n\n是否继续？");
+    body += slime::ui::t("ui.35970fb19f7f");
     return body;
 }
 // Java 世界边界 ±30000000 方块 → ±1875000 区块；基岩 ±16777216 方块 → ±1048576 区块
@@ -319,15 +320,15 @@ QString formatDurationRange(double loSec, double hiSec)
 {
     const auto roundUp = [](double v) { return static_cast<int>(std::ceil(v)); };
     if (hiSec < 90.0) {
-        return QStringLiteral("约 %1~%2 秒").arg((std::max)(1, roundUp(loSec))).arg((std::max)(1, roundUp(hiSec)));
+        return slime::ui::t("ui.331f7d0a823d").arg((std::max)(1, roundUp(loSec))).arg((std::max)(1, roundUp(hiSec)));
     }
     if (hiSec < 90.0 * 60.0) {
-        return QStringLiteral("约 %1~%2 分钟").arg((std::max)(1, roundUp(loSec / 60.0))).arg((std::max)(1, roundUp(hiSec / 60.0)));
+        return slime::ui::t("ui.efcbf4fde9db").arg((std::max)(1, roundUp(loSec / 60.0))).arg((std::max)(1, roundUp(hiSec / 60.0)));
     }
     if (hiSec < 48.0 * 3600.0) {
-        return QStringLiteral("约 %1~%2 小时").arg(loSec / 3600.0, 0, 'f', 1).arg(hiSec / 3600.0, 0, 'f', 1);
+        return slime::ui::t("ui.256faadb3fd0").arg(loSec / 3600.0, 0, 'f', 1).arg(hiSec / 3600.0, 0, 'f', 1);
     }
-    return QStringLiteral("约 %1~%2 天").arg(loSec / 86400.0, 0, 'f', 1).arg(hiSec / 86400.0, 0, 'f', 1);
+    return slime::ui::t("ui.c57bc8bb4623").arg(loSec / 86400.0, 0, 'f', 1).arg(hiSec / 86400.0, 0, 'f', 1);
 }
 
 // ---------------- v3.3.0：config.json 极简读取（本项目自写的扁平 JSON） ----------------
@@ -512,11 +513,7 @@ QString cacheImportFilter()
 {
     // v3.3.8（任务 2）：加入 *.legacy —— 历史缓存被改名停用后，用户仍可在导入对话框里**手动选中**它回滚
     //   （「默认不用于跳过判定」，但显式导入即视为用户确认使用；导入后仍走支撑度清扫）。
-    return QStringLiteral("史莱姆区块缓存 Slime Cache (*.slimecache *.cache *.pkl *.pickle *.legacy);;"
-                          "新版缓存 New (*.slimecache);;"
-                          "旧版二进制缓存 Legacy (*.cache *.slimecache.legacy *.cache.legacy);;"
-                          "Python 旧版缓存 (*.pkl *.pickle);;"
-                          "所有文件 All Files (*.*)");
+    return slime::ui::t("ui.4b49d666ca8a");
 }
 // v3.3.4（任务书 1.4）：按任务书要求**不做折叠、不搬移布局条目** ——
 // v3.3.3 的 makeCollapsibleGroup（搬迁布局条目实现折叠）已在本次重构中移除，
@@ -598,19 +595,19 @@ QString progressStageName(int stage, slime::Mode mode, slime::Algorithm alg)
     const bool density = (mode == slime::Mode::Density);
     const bool sample = (alg == slime::Algorithm::Sample);
     switch (stage) {
-    case 0: return QStringLiteral("正在扫描区块…");
+    case 0: return slime::ui::t("ui.b0894e1c9f9a");
     case 1:
-        return sample      ? QStringLiteral("扫描完成，正在估算…")
-               : density   ? QStringLiteral("扫描完成，正在匹配密度…")
-                           : QStringLiteral("扫描完成，正在匹配图案…");
+        return sample      ? slime::ui::t("ui.45a5facab1ca")
+               : density   ? slime::ui::t("ui.c7709064a72b")
+                           : slime::ui::t("ui.6df614a8dce8");
     case 2:
-        return sample    ? QStringLiteral("正在估算…")
-               : density ? QStringLiteral("正在匹配密度…")
-                         : QStringLiteral("正在匹配图案…");
-    case 3: return QStringLiteral("正在排序结果…");
-    case 4: return QStringLiteral("搜索完成");
-    case 5: return QStringLiteral("已取消");
-    default: return QStringLiteral("搜索出错");
+        return sample    ? slime::ui::t("ui.6a6660d8c144")
+               : density ? slime::ui::t("ui.1e28c06fde93")
+                         : slime::ui::t("ui.5b0b37bab0a8");
+    case 3: return slime::ui::t("ui.0133025c537b");
+    case 4: return slime::ui::t("ui.8174d1168fce");
+    case 5: return slime::ui::t("ui.a5ffdc95eeb0");
+    default: return slime::ui::t("ui.72b0bb777554");
     }
 }
 
@@ -619,21 +616,21 @@ QString rateText(double cps, int unit)
 {
     if (cps <= 0.0) return QString();
     const bool yi = (unit == 2) || (unit == 0 && cps >= 1.0e8);
-    if (yi) return QStringLiteral("%1 亿/秒").arg(cps / 1.0e8, 0, 'f', 2);
-    return QStringLiteral("%1 万/秒").arg(cps / 1.0e4, 0, 'f', 1);
+    if (yi) return slime::ui::t("ui.3865e40cfa59").arg(cps / 1.0e8, 0, 'f', 2);
+    return slime::ui::t("ui.3f0fac451d57").arg(cps / 1.0e4, 0, 'f', 1);
 }
 
 QString progressStatsText(int64_t scanned, int64_t total, double cps, int64_t found, int rateUnit = 0)
 {
-    QString text = QStringLiteral("扫描 %1").arg(scanned);
+    QString text = slime::ui::t("ui.6bef0c87c214").arg(scanned);
     if (total > 0) {
         const double pct = 100.0 * static_cast<double>(scanned) / static_cast<double>(total);
-        text += QStringLiteral("/%1 区块（%2%）").arg(total).arg(pct, 0, 'f', 1);
+        text += slime::ui::t("ui.a762858dd578").arg(total).arg(pct, 0, 'f', 1);
     } else {
-        text += QStringLiteral(" 区块");
+        text += slime::ui::t("ui.6b7ffe992657");
     }
-    if (cps > 0.0) text += QStringLiteral(" ｜ 速度 ") + rateText(cps, rateUnit);
-    if (found >= 0) text += QStringLiteral(" ｜ 找到 %1 个").arg(found);
+    if (cps > 0.0) text += slime::ui::t("ui.4e63cc922909") + rateText(cps, rateUnit);
+    if (found >= 0) text += slime::ui::t("ui.e1e99118cb5e").arg(found);
     return text;
 }
 
@@ -836,7 +833,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_telemetry = std::make_unique<slime::gui::TelemetryClient>();
 
     // v3.3.9（任务书 5.2）：窗口名称精简 —— 去掉「C++」「Qt」「重构」等技术词
-    setWindowTitle(QStringLiteral("史莱姆区块查找器 %1").arg(QLatin1String(kAppVersion)));
+    setWindowTitle(slime::ui::t("ui.8e056aa8f722").arg(QLatin1String(kAppVersion)));
     resize(700, 920);
     setMinimumSize(640, 720);
 
@@ -844,15 +841,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     // 只提供「显示主窗口 / 退出」两个入口；关闭主窗口仍然是正常退出（不改变原有行为）。
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         m_tray = new QSystemTrayIcon(windowIcon().isNull() ? qApp->windowIcon() : windowIcon(), this);
-        m_tray->setToolTip(QStringLiteral("史莱姆区块查找器 %1").arg(QLatin1String(kAppVersion)));
+        m_tray->setToolTip(slime::ui::t("ui.8e056aa8f722").arg(QLatin1String(kAppVersion)));
         auto* trayMenu = new QMenu(this);
-        trayMenu->addAction(QStringLiteral("显示主窗口"), this, [this]() {
+        trayMenu->addAction(slime::ui::t("ui.6db9e749dacb"), this, [this]() {
             showNormal();
             raise();
             activateWindow();
         });
         trayMenu->addSeparator();
-        trayMenu->addAction(QStringLiteral("退出"), this, []() { QCoreApplication::quit(); });
+        trayMenu->addAction(slime::ui::t("ui.feecb1e6adec"), this, []() { QCoreApplication::quit(); });
         m_tray->setContextMenu(trayMenu);
         connect(m_tray, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
             if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
@@ -958,9 +955,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         const std::string prev = slime::IncidentLog::previousSessionInfo();
         const QString logPath = QString::fromStdWString(slime::IncidentLog::currentFile().wstring());
         const QString crashDir = QString::fromStdWString(slime::CrashDump::dumpDir().wstring());
-        addFeedback(1, slime::ui::tr(QStringLiteral("上次运行未正常结束（%1）。关键信息见：%2；转储见：%3"))
+        addFeedback(1, slime::ui::tr(slime::ui::t("ui.1b18e34ef1fa"))
                            .arg(QString::fromStdString(prev), logPath, crashDir));
-        setStatus(slime::ui::tr(QStringLiteral("检测到上次运行异常结束：详情见 logs/crash-*.log 与 crashes/*.dmp")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.91b739f9e7f1")));
         slime::IncidentLog::note("检测到上次会话异常结束，已在界面提示用户：" + prev);
     }
     // 主界面初始值 = 设置界面的默认值（两者共享同一份 config.json）
@@ -1004,7 +1001,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
             m_gpuBenchCpuRate = rCpu;
             m_gpuBenchGpuRate = rGpu;
             // v3.3.6（任务书 Bug 2）：只缓存**实测吞吐率**，不再保存/推导交叉点
-            m_gpuBenchText = QStringLiteral("实测吞吐率：CPU %1 亿区块/秒 ｜ GPU %2 亿区块/秒（含回读，config.json 缓存）")
+            m_gpuBenchText = slime::ui::t("ui.25e6c0d099fc")
                                  .arg(rCpu / 1e8, 0, 'f', 2)
                                  .arg(rGpu / 1e8, 0, 'f', 2);
             if (!dev.empty()) slime::LogBus::info("采用 config.json 缓存的 GPU 基准（设备 " + dev + "）");
@@ -1027,14 +1024,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         for (const std::string& p : cacheMigration.moved)
             names << QFileInfo(QString::fromStdWString(std::filesystem::path(p).wstring())).fileName();
         const QString msg =
-            QStringLiteral("检测到 v3.3.7.2 及更早版本留下的缓存（%1）。这类缓存的覆盖声明可能没有条目支撑，"
-                           "实测漏存约 34%，继续用它会漏掉史莱姆区块，因此本次启动**不使用**它。\n\n"
-                           "旧文件已改名为 *.legacy 并保留 %2 天（可回滚：在「导入缓存」里选中它即可强行使用）；"
-                           "%2 天后自动清理。\n\n建议重新搜索一次以重建可信缓存（本次搜索结果可以正常保存为新缓存）。")
+            slime::ui::t("ui.25b5dbc65dc6")
                 .arg(names.join(QStringLiteral("、")))
                 .arg(kCacheLegacyKeepDays);
         addFeedback(1, msg);
-        setStatus(slime::ui::tr(QStringLiteral("历史缓存已停用（漏存 ~34%）：建议重扫")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.e3795aef15d9")));
         Logger::warning("历史缓存已停用并改名保留 " + std::to_string(kCacheLegacyKeepDays) + " 天：" +
                         cacheMigration.moved.front());
         slime::IncidentLog::note("cache.legacy 历史缓存已停用（方案 A：标记失效 + 强制重扫）：" +
@@ -1044,7 +1038,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
             // 注意自检模式必须跳过（自检在构造之后才置 m_uiQuiet=true，模态框会卡住自动化流程）。
             QTimer::singleShot(0, this, [this, msg]() {
                 if (m_uiQuiet) return;
-                QMessageBox::information(this, QStringLiteral("历史缓存已停用"), msg);
+                QMessageBox::information(this, slime::ui::t("ui.5807dd3e3a3e"), msg);
             });
         }
     }
@@ -1102,11 +1096,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     // 已经起来了、也便于从日志定位）；默认关闭（历史原因：无/异常 OpenCL 驱动下初始化可能原生崩溃）。
     QTimer::singleShot(0, this, [this]() { maybeAutoCheckGpuAtStartup(); });
     // 4) 反馈栏初始信息（任务书 2.2：信息级）
-    addFeedback(2, slime::ui::tr(QStringLiteral("程序已启动（%1）。搜索使用缓存会写入程序目录；"
-                                  "日志默认关闭，可在「工具 → 启用日志…」开启。"))
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.3a86af74f548"))
                        .arg(QLatin1String(kAppVersion)));
     if (m_cache->hasData()) {
-        addFeedback(2, slime::ui::tr(QStringLiteral("已自动加载缓存：%1 区域 / %2 区块"))
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.5694aeac03b6"))
                            .arg(m_cache->ranges().size())
                            .arg(m_cache->entryCount()));
     }
@@ -1345,11 +1338,11 @@ void MainWindow::maybeAutoCheckGpuAtStartup()
         ensureGpuScanOnce();     // 失败/不可用都会写入状态与日志（内部已 try/catch + 回退 CPU）
         updateGpuStatusUi();
         const QString st = m_w && m_w->gpuStatus ? m_w->gpuStatus->text() : QString();
-        addFeedback(2, slime::ui::tr(QStringLiteral("启动时已自动检测 GPU：%1")).arg(st));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.6c72f02735ba")).arg(st));
         slime::IncidentLog::note("启动自动检测 GPU：" + st.toStdString());
     } else {
         if (m_w && m_w->gpuStatus) {
-            m_w->gpuStatus->setText(QStringLiteral("GPU：未检测（可在「设置 → 高级」开启启动时自动检查）"));
+            m_w->gpuStatus->setText(slime::ui::t("ui.241ab1842137"));
         }
         Logger::info("启动时未检测 GPU（设置关闭；勾选「启用 GPU 加速」时会即时检测）");
         slime::IncidentLog::note("启动自动检测 GPU：关闭（按设置跳过）");
@@ -1378,7 +1371,7 @@ void MainWindow::restartApplication()
         std::fprintf(stderr, "[\u91cd\u542f] \u5df2\u542f\u52a8\u65b0\u5b9e\u4f8b\uff0c\u5f53\u524d\u8fdb\u7a0b\u9000\u51fa\n");
         QCoreApplication::quit();
     } else {
-        addFeedback(3, slime::ui::tr(QStringLiteral("自动重启失败，请手动关闭后重新打开程序")));
+        addFeedback(3, slime::ui::tr(slime::ui::t("ui.ed7d8b8345fb")));
     }
 }
 
@@ -1408,7 +1401,7 @@ void MainWindow::checkGpuCrashLoopOnStartup()
             m_w->gpuCheck->setChecked(false);
         }
         writeConfigFile(false, m_terminal ? m_terminal->history() : QStringList());
-        addFeedback(2, slime::ui::tr(QStringLiteral("检测到上次运行可能因显卡驱动崩溃：已自动关闭 GPU 加速（可在设置里重新开启）")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.4ff59f2e9677")));
         std::fprintf(stderr, "[gpu] 上次会话未正常结束，已自动禁用 GPU 加速\n");
     }
 }
@@ -1421,7 +1414,7 @@ void MainWindow::ensureGpuScanOnce()
     // 勾选是用户主动行为（默认关闭），此时初始化失败仅记录日志并标记不可用，搜索自动回退 CPU。
     if (m_gpuProbeDone) return; // 已尝试（成功或失败均为最终状态）
     m_gpuProbeDone = true;
-    if (m_w && m_w->gpuStatus) m_w->gpuStatus->setText(QStringLiteral("GPU：正在检测…"));
+    if (m_w && m_w->gpuStatus) m_w->gpuStatus->setText(slime::ui::t("ui.1410899e1131"));
     QApplication::processEvents(QEventLoop::AllEvents, 20); // 让“检测中”先上屏
     Logger::info("GPU 初始化中（用户勾选启用；无驱动将自动回退 CPU）…");
     std::string err;
@@ -1473,9 +1466,7 @@ void MainWindow::onGpuCheckChanged(Qt::CheckState state)
 // 状态对话框继续显示设备名、显存、计算单元与实测吞吐率（CPU vs GPU）。
 QString MainWindow::gpuReminderText() const
 {
-    return QStringLiteral("GPU 判定与 CPU 逐位一致；本轮优化后 GPU 在常见搜索上通常快数倍到数十倍。\n"
-                          "显卡很弱或 OpenCL 驱动异常时可关闭（会自动回退 CPU）。"
-                          "可在「设置 → 性能」里设为默认启用。");
+    return slime::ui::t("ui.2cc41f0950c5");
 }
 
 bool MainWindow::darkTheme() const
@@ -1506,30 +1497,30 @@ QString MainWindow::gpuStatusText() const
 {
     QString text;
     if (!m_gpuProbeDone) {
-        text = QStringLiteral("GPU：尚未检测。");
+        text = slime::ui::t("ui.3d68689da69a");
     } else if (!m_gpuAvailable) {
-        text = QStringLiteral("GPU：不可用，将使用 CPU。");
+        text = slime::ui::t("ui.8ecc4126994d");
         if (!m_gpuProbeReason.empty()) {
-            text += QStringLiteral("\n原因：%1").arg(QString::fromStdString(m_gpuProbeReason));
+            text += slime::ui::t("ui.4a18a14dd791").arg(QString::fromStdString(m_gpuProbeReason));
         }
     } else {
-        QString dev = QStringLiteral("(未知设备)");
+        QString dev = slime::ui::t("ui.e606485ff76a");
         if (m_gpuScan) {
             const std::string n = m_gpuScan->deviceName();
             if (!n.empty()) dev = QString::fromStdString(n);
         }
         const uint64_t vramMB = m_gpuScan ? (m_gpuScan->globalMemBytes() / (1024 * 1024)) : 0;
         const uint32_t cu = m_gpuScan ? m_gpuScan->computeUnits() : 0;
-        text = QStringLiteral("GPU：可用（%1）\n显存：%2 MB\n计算单元：%3 CU")
+        text = slime::ui::t("ui.c7d42c1885f2")
                    .arg(dev)
                    .arg(static_cast<qulonglong>(vramMB))
                    .arg(cu);
         if (m_gpuBenchCpuRate > 0.0 && m_gpuBenchGpuRate > 0.0) {
-            text += QStringLiteral("\n\n实测吞吐率（本机，含固定开销）：\nCPU %1 亿区块/秒 ｜ GPU %2 亿区块/秒")
+            text += slime::ui::t("ui.698a93bf3e8b")
                         .arg(m_gpuBenchCpuRate / 1e8, 0, 'f', 2)
                         .arg(m_gpuBenchGpuRate / 1e8, 0, 'f', 2);
         } else {
-            text += QStringLiteral("\n\n实测吞吐率：尚未测量（后台测量完成后显示）");
+            text += slime::ui::t("ui.41a80df96e75");
         }
     }
     // 任务书 Bug 2：提醒文案保留在状态对话框的说明文字里
@@ -1547,17 +1538,17 @@ void MainWindow::updateGpuStatusUi()
     if (!checked) {
         // v3.3.9.1（任务书 2.1）：未勾选时区分「已自动检测过」与「未检测」
         if (m_gpuProbeDone) {
-            text = m_gpuAvailable ? QStringLiteral("GPU：可用（未启用；勾选后使用）")
-                                  : QStringLiteral("GPU：不可用（未启用；勾选后仍走 CPU）");
+            text = m_gpuAvailable ? slime::ui::t("ui.fb3cd3586cf9")
+                                  : slime::ui::t("ui.3fc283d417f7");
         } else {
-            text = QStringLiteral("GPU：未启用（勾选后检测）");
+            text = slime::ui::t("ui.207ca70ac3f6");
         }
     } else if (!m_gpuProbeDone) {
-        text = QStringLiteral("GPU：正在检测…");
+        text = slime::ui::t("ui.1410899e1131");
     } else if (m_gpuAvailable) {
-        text = QStringLiteral("GPU：可用（已启用）");
+        text = slime::ui::t("ui.c0ba81d5e5b8");
     } else {
-        text = QStringLiteral("GPU：不可用，使用 CPU");
+        text = slime::ui::t("ui.b47adc07c963");
     }
     m_w->gpuStatus->setText(text);
     m_w->gpuStatus->setStyleSheet(m_gpuAvailable ? (darkTheme() ? QStringLiteral("color:#7EC97E;")
@@ -1606,7 +1597,7 @@ void MainWindow::buildUi()
     progRow->setContentsMargins(8, 2, 8, 2);
     progRow->setSpacing(8);
     m_progressRow = progRow; // 自检断言「同一行 + spacing==8」用
-    progRow->addWidget(new QLabel(QStringLiteral("进度:"), m_progressRowWidget));
+    progRow->addWidget(new QLabel(slime::ui::t("ui.8aa84f452a9b"), m_progressRowWidget));
     m_w->progress = new QProgressBar(m_progressRowWidget);
     m_w->progress->setRange(0, 1000);
     m_w->progress->setValue(0);
@@ -1620,7 +1611,7 @@ void MainWindow::buildUi()
     m_w->progressPercent = new QLabel(QStringLiteral("0%"), m_progressRowWidget);
     m_w->progressPercent->setMinimumWidth(40);
     progRow->addWidget(m_w->progressPercent);
-    m_w->progressStage = new QLabel(QStringLiteral("就绪"), m_progressRowWidget);
+    m_w->progressStage = new QLabel(slime::ui::t("ui.b796f2d4ca85"), m_progressRowWidget);
     m_w->progressStage->setWordWrap(false);
     // v3.3.9（任务书 3.3 根因）：阶段标签此前是 Expanding + stretch=2 ⇒ 窗口变宽时它吃掉大部分
     // 新增宽度，进度条几乎不变（用户实测「没变化」）。改为 Preferred 且不参与伸展，只留一个上限
@@ -1630,15 +1621,14 @@ void MainWindow::buildUi()
     progRow->addWidget(m_w->progressStage, 0);
     // v3.10.2（用户要求）：速率单位切换（自动 / 万/秒 / 亿/秒）—— 放在进度行，避免工具栏溢出
     progRow->addSpacing(6);
-    progRow->addWidget(new QLabel(QStringLiteral("速率单位:"), m_progressRowWidget));
+    progRow->addWidget(new QLabel(slime::ui::t("ui.602285707fd7"), m_progressRowWidget));
     m_w->rateUnitCombo = new QComboBox(m_progressRowWidget);
-    m_w->rateUnitCombo->addItem(QStringLiteral("自动"));
-    m_w->rateUnitCombo->addItem(QStringLiteral("万/秒"));
-    m_w->rateUnitCombo->addItem(QStringLiteral("亿/秒"));
+    m_w->rateUnitCombo->addItem(slime::ui::t("ui.4afad877551a"));
+    m_w->rateUnitCombo->addItem(slime::ui::t("ui.ee266fcea944"));
+    m_w->rateUnitCombo->addItem(slime::ui::t("ui.2d629d28eb4c"));
     m_w->rateUnitCombo->setCurrentIndex(std::clamp(m_settings.rateUnit, 0, 2));
     m_w->rateUnitCombo->setFixedWidth(76);
-    m_w->rateUnitCombo->setToolTip(QStringLiteral(
-        "进度/结果里的速度显示单位：自动 = 超过 1 亿自动用亿，否则用万"));
+    m_w->rateUnitCombo->setToolTip(slime::ui::t("ui.38a03968acf8"));
     connect(m_w->rateUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int idx) {
         m_settings.rateUnit = std::clamp(idx, 0, 2);
         if (m_w->progressInfo) m_w->progressInfo->setToolTip(m_w->progressInfo->text());
@@ -1685,8 +1675,8 @@ void MainWindow::buildUi()
         b->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
         b->setFixedWidth(56);                       // v3.9.15：导航收窄（原 96）
         b->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        static const char* const kNavText[kNavCount] = { "搜索", "缓存构建", "设置" };
-        b->setText(QString::fromUtf8(kNavText[i]));
+        static const char* const kNavText[kNavCount] = { "ui.nav.search", "ui.nav.build", "ui.nav.settings" };
+        b->setText(slime::ui::t(kNavText[i]));
         {
             QFont navFont = b->font();   // v3.9.15：56px 宽需更小字号才能放下 4 个字
             navFont.setPointSizeF(7.5);
@@ -1769,32 +1759,30 @@ void MainWindow::buildUi()
         m_topBarLay->addWidget(topLeft, 1);
         m_topBarLay->addWidget(topRight, 1);
 
-        m_w->javaRadio = new QRadioButton(QStringLiteral("Java 版"), m_topBar);
-        m_w->bedrockRadio = new QRadioButton(QStringLiteral("基岩版"), m_topBar);
+        m_w->javaRadio = new QRadioButton(slime::ui::t("ui.8accf0fe2eed"), m_topBar);
+        m_w->bedrockRadio = new QRadioButton(slime::ui::t("ui.618fd37c0c01"), m_topBar);
         m_w->javaRadio->setChecked(true);
-        topLeftLay->addWidget(new QLabel(QStringLiteral("平台:"), m_topBar));
+        topLeftLay->addWidget(new QLabel(slime::ui::t("ui.4ba273d420a7"), m_topBar));
         topLeftLay->addWidget(m_w->javaRadio);
         topLeftLay->addWidget(m_w->bedrockRadio);
 
         topLeftLay->addSpacing(10);
-        topLeftLay->addWidget(new QLabel(QStringLiteral("游戏版本:"), m_topBar));
+        topLeftLay->addWidget(new QLabel(slime::ui::t("ui.fc1424adcb78"), m_topBar));
         m_w->mapVersionCombo = new QComboBox(m_topBar);
         for (const auto& v : slime::javaVersionOptions())
             m_w->mapVersionCombo->addItem(QString::fromUtf8(v.label), v.id);
         m_w->mapVersionCombo->setCurrentIndex(0);
-        m_w->mapVersionCombo->setToolTip(QStringLiteral("地图群系按这个版本生成（1.18 起群系算法换过一次）。\n"
-                                                        "基岩版：1.18+ 才与 Java 同种子一致，选更早版本会自动回落到最新。"));
+        m_w->mapVersionCombo->setToolTip(slime::ui::t("ui.9820d2a24e2e"));
         topLeftLay->addWidget(m_w->mapVersionCombo);
 
         topLeftLay->addSpacing(10);
-        m_w->seedLabel = new QLabel(QStringLiteral("世界种子:"), m_topBar);
+        m_w->seedLabel = new QLabel(slime::ui::t("ui.df62e1c428e6"), m_topBar);
         topLeftLay->addWidget(m_w->seedLabel);
         m_w->seedEdit = new QLineEdit(m_topBar);
         m_w->seedEdit->setClearButtonEnabled(true);
         m_w->seedEdit->setText(QString());
-        m_w->seedEdit->setPlaceholderText(QStringLiteral("例如 0 或 -4172144997902289642"));
-        m_w->seedEdit->setToolTip(QStringLiteral("仅 Java 版使用，可为负数（64 位整数）；留空则无法搜索（会提示去填写）。\n"
-                                                 "基岩版判定与种子无关。"));
+        m_w->seedEdit->setPlaceholderText(slime::ui::t("ui.c9cebe51b762"));
+        m_w->seedEdit->setToolTip(slime::ui::t("ui.e8cae526ef7d"));
         topLeftLay->addWidget(m_w->seedEdit, 1);
         m_telemetryNotice = new QLabel(topRight);
         m_telemetryNotice->setObjectName(QStringLiteral("telemetryNotice"));
@@ -1813,7 +1801,7 @@ void MainWindow::buildUi()
 
 
     // ---- 分组 2：搜索范围（预设 + 范围 + 查询起点 + 坐标转换）----
-    auto* gRange = new QGroupBox(QStringLiteral("搜索范围"), groupsHost);
+    auto* gRange = new QGroupBox(slime::ui::t("ui.2cacc1b74217"), groupsHost);
     auto* rangeLay = new QVBoxLayout(gRange);
     rangeLay->setContentsMargins(6, 6, 6, 6);
     const int kMinCoord = -2147483646;
@@ -1838,11 +1826,10 @@ void MainWindow::buildUi()
     for (QSpinBox* s : { m_w->minX, m_w->maxX, m_w->minZ, m_w->maxZ }) s->setVisible(false);
     m_w->rangeRadius = makeSpin(1000, gRange);
     m_w->rangeRadius->setRange(1, 15000000);
-    m_w->rangeRadius->setToolTip(QStringLiteral("半径（区块）：范围 = 以原点为中心、边长 2×半径 的正方形\n"
-                                                "例：半径 1000 → X/Z 各约 ±1000 区块（2000×2000）"));
-    rangeGrid->addWidget(new QLabel(QStringLiteral("半径（区块）:"), gRange), 0, 0);
+    m_w->rangeRadius->setToolTip(slime::ui::t("ui.8d4c2b8f9d14"));
+    rangeGrid->addWidget(new QLabel(slime::ui::t("ui.f290ac0a5d9d"), gRange), 0, 0);
     rangeGrid->addWidget(m_w->rangeRadius, 0, 1);
-    m_w->rangeHint = new QLabel(QStringLiteral("范围 2000×2000 区块"), gRange);
+    m_w->rangeHint = new QLabel(slime::ui::t("ui.7b040a370be7"), gRange);
     m_w->rangeHint->setObjectName(QStringLiteral("topSummary"));
     rangeGrid->addWidget(m_w->rangeHint, 1, 0, 1, 4);
     rangeLay->addLayout(rangeGrid);
@@ -1850,20 +1837,20 @@ void MainWindow::buildUi()
     auto* presetRow = new QGridLayout();
     // v3.3.4：按钮只写范围名（具体数值在 tooltip 与点击后的输入框里显示），
     // 这样 340px 的最小左栏也不会出现横向滚动条
-    m_w->presetNear = new QPushButton(QStringLiteral("附近"), gRange);
-    m_w->presetLocal = new QPushButton(QStringLiteral("局部"), gRange);
-    m_w->presetGlobal = new QPushButton(QStringLiteral("全局"), gRange);
-    m_w->presetWorld = new QPushButton(QStringLiteral("Java 边界"), gRange);
-    m_w->presetBedrock = new QPushButton(QStringLiteral("基岩边界"), gRange);
+    m_w->presetNear = new QPushButton(slime::ui::t("ui.08c2940d3842"), gRange);
+    m_w->presetLocal = new QPushButton(slime::ui::t("ui.d4548049015d"), gRange);
+    m_w->presetGlobal = new QPushButton(slime::ui::t("ui.a5644f4bbfef"), gRange);
+    m_w->presetWorld = new QPushButton(slime::ui::t("ui.3a7839501e82"), gRange);
+    m_w->presetBedrock = new QPushButton(slime::ui::t("ui.c2fa11e4787c"), gRange);
     // v3.10.2（用户反馈：GPU 变快后旧快捷范围太小）：整体上调一档
     // v3.10.12.8：GPU 提速后快捷范围再上调一档（旧值按 3.10.2 的早期速度设定）
-    m_w->presetNear->setToolTip(QStringLiteral("附近：以原点为中心 ±20000 区块（约 40000×40000，GPU 通常 <1 秒）"));
-    m_w->presetLocal->setToolTip(QStringLiteral("局部：以原点为中心 ±200000 区块（约 400000×400000，GPU 约数秒）"));
-    m_w->presetGlobal->setToolTip(QStringLiteral("全局：以原点为中心 ±1000000 区块（约 2000000×2000000，GPU 约一分钟内；CPU 会很久）"));
-    m_w->presetWorld->setToolTip(QStringLiteral("Java 版世界边界：±1875000 区块（整图搜索，会先给出耗时估算确认）"));
-    m_w->presetBedrock->setToolTip(QStringLiteral("基岩版世界边界：±1048576 区块（整图搜索，会先给出耗时估算确认）"));
+    m_w->presetNear->setToolTip(slime::ui::t("ui.ea3036c908c7"));
+    m_w->presetLocal->setToolTip(slime::ui::t("ui.0807a0194761"));
+    m_w->presetGlobal->setToolTip(slime::ui::t("ui.49bc40cff907"));
+    m_w->presetWorld->setToolTip(slime::ui::t("ui.41fe5ad602fd"));
+    m_w->presetBedrock->setToolTip(slime::ui::t("ui.d116c4a6c576"));
     // v3.3.4：预设标签独占一行，按钮每行 3 个 —— 避免撑宽设置区（否则 400px 左栏出现横向滚动条）
-    presetRow->addWidget(new QLabel(QStringLiteral("快速预设:"), gRange), 0, 0, 1, 3);
+    presetRow->addWidget(new QLabel(slime::ui::t("ui.143e728e020a"), gRange), 0, 0, 1, 3);
     presetRow->addWidget(m_w->presetNear, 1, 0);
     presetRow->addWidget(m_w->presetLocal, 1, 1);
     presetRow->addWidget(m_w->presetGlobal, 1, 2);
@@ -1873,7 +1860,7 @@ void MainWindow::buildUi()
     rangeLay->addLayout(presetRow);
 
     auto* startRow = new QHBoxLayout();
-    startRow->addWidget(new QLabel(QStringLiteral("查询起点 X:"), gRange));
+    startRow->addWidget(new QLabel(slime::ui::t("ui.31db8e5f5036"), gRange));
     m_w->startX = makeSpin(0, gRange);
     m_w->startX->setMaximumWidth(120);
     startRow->addWidget(m_w->startX);
@@ -1886,29 +1873,29 @@ void MainWindow::buildUi()
 
     // v3.3.4：分两行 + 缩短文案（原一行最小宽 ~440px，会撑出横向滚动条）
     auto* convRow = new QHBoxLayout();
-    convRow->addWidget(new QLabel(QStringLiteral("方块→区块:"), gRange));
+    convRow->addWidget(new QLabel(slime::ui::t("ui.8f86ddd4fe10"), gRange));
     m_w->convX = new QLineEdit(gRange);
     m_w->convX->setMinimumWidth(60);
     m_w->convX->setMaximumWidth(90);
-    m_w->convX->setPlaceholderText(QStringLiteral("方块 X"));
+    m_w->convX->setPlaceholderText(slime::ui::t("ui.e272b0605275"));
     m_w->convZ = new QLineEdit(gRange);
     m_w->convZ->setMinimumWidth(60);
     m_w->convZ->setMaximumWidth(90);
-    m_w->convZ->setPlaceholderText(QStringLiteral("方块 Z"));
+    m_w->convZ->setPlaceholderText(slime::ui::t("ui.d3c729e2a6b7"));
     convRow->addWidget(m_w->convX);
     convRow->addWidget(m_w->convZ);
     convRow->addStretch();
     rangeLay->addLayout(convRow);
     auto* convRow2 = new QHBoxLayout();
-    m_w->convertBtn = new QPushButton(QStringLiteral("转换为查询起点"), gRange);
-    m_w->convertBtn->setToolTip(QStringLiteral("把上面的方块坐标除以 16 得到区块坐标，并填入查询起点"));
+    m_w->convertBtn = new QPushButton(slime::ui::t("ui.16d8f74f6cbf"), gRange);
+    m_w->convertBtn->setToolTip(slime::ui::t("ui.15e186ad6baa"));
     convRow2->addWidget(m_w->convertBtn);
     convRow2->addStretch();
     rangeLay->addLayout(convRow2);
     groupsLay->addWidget(gRange);
 
     // ---- 分组 3：搜索模式（严格/密度 + 图案 + 密度参数 + 目标数量）----
-    auto* gMode = new QGroupBox(QStringLiteral("搜索模式"), groupsHost);
+    auto* gMode = new QGroupBox(slime::ui::t("ui.5483493bb0d8"), groupsHost);
     m_w->modeGroup = gMode;
     auto* modeLayout = new QVBoxLayout(gMode);
     modeLayout->setContentsMargins(6, 6, 6, 6);
@@ -1934,14 +1921,11 @@ void MainWindow::buildUi()
     // v3.9.11（设置重构阶段 B）：先「模式」再「方案」——方案数量与内容由模式决定。
     {
         auto* presetRow = new QHBoxLayout();
-        presetRow->addWidget(new QLabel(QStringLiteral("方案:"), gMode));
+        presetRow->addWidget(new QLabel(slime::ui::t("ui.c06ee9fb0a7e"), gMode));
         m_w->presetCombo = new QComboBox(gMode);
         m_w->presetCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
         m_w->presetCombo->setMinimumContentsLength(16);
-        m_w->presetCombo->setToolTip(QStringLiteral(
-            "快捷方案只设置「会改变结果」的开关（停止方式/算法等）；"
-            "GPU 等加速开关是独立的，切换方案不会改变它们。\n"
-            "追求最快：请开启 GPU 加速（AMD 显卡可再开「图案 GPU 流式」）。"));
+        m_w->presetCombo->setToolTip(slime::ui::t("ui.7f3854b7425e"));
         presetRow->addWidget(m_w->presetCombo, 1);
         modeLayout->addLayout(presetRow);
         m_w->presetHint = new QLabel(gMode);
@@ -1958,15 +1942,15 @@ void MainWindow::buildUi()
     auto* strictLay = new QVBoxLayout(m_w->strictPanel);
     strictLay->setContentsMargins(12, 0, 0, 0);
     strictLay->setSpacing(4);
-    m_w->lockDir = new QCheckBox(QStringLiteral("方向锁定（不旋转/翻转）"), m_w->strictPanel);
+    m_w->lockDir = new QCheckBox(slime::ui::t("ui.4c557e552df9"), m_w->strictPanel);
     m_w->lockDir->setChecked(true);
-    m_w->lockDir->setToolTip(QStringLiteral("勾选后图案必须与绘制方向一致，不会按 4 个方向旋转匹配。"));
+    m_w->lockDir->setToolTip(slime::ui::t("ui.d6dbb5040c42"));
     strictLay->addWidget(m_w->lockDir);
     // v3.5.18：旧「绘制图案」按钮改为隐藏（图案编辑器已内嵌），保留对象避免其它代码空指针
-    m_w->drawPattern = new QPushButton(QStringLiteral("绘制图案"), m_w->strictPanel);
+    m_w->drawPattern = new QPushButton(slime::ui::t("ui.dcac1e7a2e19"), m_w->strictPanel);
     m_w->drawPattern->setVisible(false);
     auto* patRow = new QHBoxLayout();
-    m_w->patternInfo = new QLabel(QStringLiteral("未绘制图案"), m_w->strictPanel);
+    m_w->patternInfo = new QLabel(slime::ui::t("ui.a1b385fa0140"), m_w->strictPanel);
     patRow->addWidget(m_w->patternInfo);
     patRow->addStretch();
     strictLay->addLayout(patRow);
@@ -1982,7 +1966,7 @@ void MainWindow::buildUi()
     densityLay->setContentsMargins(12, 0, 0, 0);
     densityLay->setSpacing(4);
     auto* shapeRow = new QHBoxLayout();
-    shapeRow->addWidget(new QLabel(QStringLiteral("区域形状:"), m_w->densityPanel));
+    shapeRow->addWidget(new QLabel(slime::ui::t("ui.34a2f8af72f5"), m_w->densityPanel));
     m_w->shapeSquareRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ShapeSquare), m_w->densityPanel);
     m_w->shapeRingRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ShapeRing), m_w->densityPanel);
     m_w->shapeSquareRadio->setChecked(true);
@@ -2005,18 +1989,16 @@ void MainWindow::buildUi()
     m_w->minDensity->setDecimals(3);
     m_w->minDensity->setSingleStep(0.05);
     m_w->minDensity->setValue(0.3);
-    m_w->minDensity->setToolTip(QStringLiteral("史莱姆覆盖率下限（0~1）；低于它的结果不显示。"));
+    m_w->minDensity->setToolTip(slime::ui::t("ui.9f053e5570b1"));
 
-    m_w->ignoreThreshold = new QCheckBox(QStringLiteral("忽略阈值，取最优"), m_w->densityPanel);
-    m_w->ignoreThreshold->setToolTip(QStringLiteral(
-        "开启后忽略最小密度：按窗口内史莱姆数量从高到低返回目标数量个最优窗口。"
-        "结果可能低于你的密度要求；本模式不支持提前停止/智能范围。"));
+    m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityPanel);
+    m_w->ignoreThreshold->setToolTip(slime::ui::t("ui.e302a43e602a"));
 
     // v3.10.12.11：最小密度 / 忽略阈值改为密度面板常显（此前放在「结果要求」分组里，
     //   选择任意预设方案后就整组隐藏，用户找不到密度设置）。改动会切换为「自定义方案」。
     {
         auto* densCfgRow = new QHBoxLayout();
-        densCfgRow->addWidget(new QLabel(QStringLiteral("最小密度:"), m_w->densityPanel));
+        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityPanel));
         densCfgRow->addWidget(m_w->minDensity);
         densCfgRow->addWidget(m_w->ignoreThreshold);
         densCfgRow->addStretch();
@@ -2030,13 +2012,13 @@ void MainWindow::buildUi()
             const double v = m_w->minDensity->value();
             if (v == m_minDensityCommitted) return;
             m_minDensityCommitted = v;
-            markPresetCustom(QStringLiteral("最小密度"));
+            markPresetCustom(slime::ui::t("ui.d67b9dd37ebe"));
         });
     }
 
     QObject::connect(m_w->ignoreThreshold, &QCheckBox::toggled, this, [this](bool) {
         applyResultConflicts();
-        markPresetCustom(QStringLiteral("忽略阈值"));
+        markPresetCustom(slime::ui::t("ui.4256e53c8eaf"));
     });
 
 
@@ -2046,11 +2028,11 @@ void MainWindow::buildUi()
     squareLay->setContentsMargins(12, 0, 0, 0);
     squareLay->setSpacing(4);
     auto* densRow = new QHBoxLayout();
-    densRow->addWidget(new QLabel(QStringLiteral("网格大小:"), m_w->squareOpts));
+    densRow->addWidget(new QLabel(slime::ui::t("ui.28e8f6817207"), m_w->squareOpts));
     m_w->gridSize = new QSpinBox(m_w->squareOpts);
     m_w->gridSize->setRange(1, 512);
     m_w->gridSize->setValue(5);
-    m_w->gridSize->setToolTip(QStringLiteral("密度窗口边长（区块）；5 表示按 5×5 区块的方格统计密度。"));
+    m_w->gridSize->setToolTip(slime::ui::t("ui.830890653be7"));
     densRow->addWidget(m_w->gridSize);
     densRow->addStretch();
     squareLay->addLayout(densRow);
@@ -2063,15 +2045,12 @@ void MainWindow::buildUi()
     ringLay->setContentsMargins(12, 0, 0, 0);
     ringLay->setSpacing(4);
     auto* ringModeRow = new QHBoxLayout();
-    ringModeRow->addWidget(new QLabel(QStringLiteral("环形扫描:"), m_w->ringOpts));
+    ringModeRow->addWidget(new QLabel(slime::ui::t("ui.637be2399ba9"), m_w->ringOpts));
     m_w->ringScanCombo = new QComboBox(m_w->ringOpts);
     m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanFast), 0);
-    m_w->ringScanCombo->addItem(QStringLiteral("自动正方形预筛（更稳，较慢）"), 2);
+    m_w->ringScanCombo->addItem(slime::ui::t("ui.6ff11b12c236"), 2);
     m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanExact), 1);
-    m_w->ringScanCombo->setToolTip(QStringLiteral(
-        "快速：大范围等距抽样，再对少量候选精修（有随机性）；\n"
-        "自动正方形预筛：先用 GPU 全图扫描正方形密度，取分散种子后再做环形精修（慢，但基本不抽卡）；\n"
-        "精确：每个区块都算（超大范围会很慢，且 2000×2000 以上受限）。"));
+    m_w->ringScanCombo->setToolTip(slime::ui::t("ui.5201f6ebf6aa"));
     ringModeRow->addWidget(m_w->ringScanCombo);
     ringModeRow->addStretch();
     ringLay->addLayout(ringModeRow);
@@ -2079,17 +2058,15 @@ void MainWindow::buildUi()
     // v3.6.18（用户要求）：模拟距离（区块）—— 刷怪只发生在模拟距离内（16 格/区块），
     //   16×D < 128 时环带外沿会被收窄；>=8 区块（128 格）时与默认环带一致。
     auto* simRow = new QHBoxLayout();
-    simRow->addWidget(new QLabel(QStringLiteral("模拟距离:"), m_w->ringOpts));
+    simRow->addWidget(new QLabel(slime::ui::t("ui.73aa02598560"), m_w->ringOpts));
     m_w->simDistance = new QSpinBox(m_w->ringOpts);
     m_w->simDistance->setRange(2, 32);
     m_w->simDistance->setValue(12);
     // 单位写在框外（项目规则：输入框内不放单位）
     m_w->simDistance->setToolTip(
-        QStringLiteral("游戏「模拟距离」设置（区块）。刷怪只发生在模拟距离内，\n"
-                       "16×模拟距离 < 128 格时环带外沿会被收窄（例如 4 区块 = 64 格 ⇒ 环带 24~64）。\n"
-                       "≥8 区块（128 格）时与默认环带 24~128 完全一致。"));
+        slime::ui::t("ui.4855e48a8f7a"));
     simRow->addWidget(m_w->simDistance);
-    simRow->addWidget(new QLabel(QStringLiteral("区块"), m_w->ringOpts));
+    simRow->addWidget(new QLabel(slime::ui::t("ui.3da82d85c5de"), m_w->ringOpts));
     m_w->simDistanceNote = new QLabel(QString(), m_w->ringOpts);
     m_w->simDistanceNote->setObjectName(QStringLiteral("simDistanceNote"));
     simRow->addWidget(m_w->simDistanceNote, 1);
@@ -2103,29 +2080,29 @@ void MainWindow::buildUi()
 
     // ===== 通用选项 =====
     auto* optRow3 = new QHBoxLayout();
-    optRow3->addWidget(new QLabel(QStringLiteral("目标数量:"), gMode));
+    optRow3->addWidget(new QLabel(slime::ui::t("ui.1113d292c420"), gMode));
     m_w->targetCount = new QSpinBox(gMode);
     m_w->targetCount->setRange(1, 1000000);
     m_w->targetCount->setValue(1);
-    m_w->targetCount->setToolTip(QStringLiteral("最多返回多少个结果。"));
+    m_w->targetCount->setToolTip(slime::ui::t("ui.0405eccc6f77"));
     optRow3->addWidget(m_w->targetCount);
     optRow3->addStretch();
     modeLayout->addLayout(optRow3);
     // v3.10.9：停止方式已移入「结果要求」分组（仅自定义方案显示）
     auto* optRow1 = new QHBoxLayout();
-    m_w->stopAtTarget = new QCheckBox(QStringLiteral("找够目标数量就停止"), gMode);
-    m_w->stopAtTarget->setToolTip(QStringLiteral("凑够「目标数量」后立即结束（更快，但可能不是全部候选）。"));
+    m_w->stopAtTarget = new QCheckBox(slime::ui::t("ui.c4db3610d642"), gMode);
+    m_w->stopAtTarget->setToolTip(slime::ui::t("ui.804c72b80469"));
     optRow1->addWidget(m_w->stopAtTarget);
     optRow1->addStretch();
     QObject::connect(m_w->stopAtTarget, &QCheckBox::toggled, this,
-                     [this](bool) { markPresetCustom(QStringLiteral("找够就停")); });
+                     [this](bool) { markPresetCustom(slime::ui::t("ui.b77bf334b0d7")); });
     auto* optRow2 = new QHBoxLayout();
     m_w->smartRange = new QCheckBox(slime::ui::text(slime::ui::Key::SmartRange), gMode);
     m_w->smartRange->setToolTip(slime::ui::text(slime::ui::Key::SmartRangeTip));
     optRow2->addWidget(m_w->smartRange);
     optRow2->addStretch();
     QObject::connect(m_w->smartRange, &QCheckBox::toggled, this,
-                     [this](bool) { markPresetCustom(QStringLiteral("智能范围")); });
+                     [this](bool) { markPresetCustom(slime::ui::t("ui.9522c47b44f6")); });
     groupsLay->addWidget(gMode);
 
     // ---- v3.10.9（用户要求）：声明「自定义方案可能导致明显降速」+ 高级开关分级 ----
@@ -2138,12 +2115,10 @@ void MainWindow::buildUi()
     m_w->presetDisclaimer->setStyleSheet(QStringLiteral("color:%1;font-size:11px;")
                                              .arg(darkTheme() ? QStringLiteral("#ffb74d")
                                                               : QStringLiteral("#b26a00")));
-    m_w->presetDisclaimer->setText(QStringLiteral(
-        "⚠ 自定义方案由你自己组合开关，某些组合可能明显降低搜索速度（例如算法选「保守模式」或「估算」）。"
-        "最小密度 0 现在是秒级快路径；不确定时请先选上面的方案预设。"));
+    m_w->presetDisclaimer->setText(slime::ui::t("ui.08c668ef8483"));
     groupsLay->addWidget(m_w->presetDisclaimer);
 
-    auto* gResult = new QGroupBox(QStringLiteral("结果要求"), groupsHost);
+    auto* gResult = new QGroupBox(slime::ui::t("ui.a62f39a46c98"), groupsHost);
     m_w->resultGroup = gResult;
     auto* resultReqLay = new QVBoxLayout(gResult);
     resultReqLay->setContentsMargins(6, 6, 6, 6);
@@ -2160,30 +2135,28 @@ void MainWindow::buildUi()
     groupsLay->addWidget(gResult);
 
     // ---- 分组 4：匹配方式（搜索算法四模式与参数）----
-    auto* gMatch = new QGroupBox(QStringLiteral("匹配方式"), groupsHost);
+    auto* gMatch = new QGroupBox(slime::ui::t("ui.6a05dbdc884c"), groupsHost);
     m_w->matchGroup = gMatch; // v3.5.6：环形模式下整组置灰
     auto* algLay = new QVBoxLayout(gMatch);
     algLay->setContentsMargins(6, 6, 6, 6);
-    algLay->addWidget(new QLabel(QStringLiteral("搜索算法："), gMatch));
+    algLay->addWidget(new QLabel(slime::ui::t("ui.a3ff0ef4b1d2"), gMatch));
     // v3.6.0：算法对图案/密度两种模式都生效；环形模式有独立的快速/精确扫描（组内另有说明）
     if (auto* algLbl = qobject_cast<QLabel*>(algLay->itemAt(algLay->count() - 1)->widget()))
-        algLbl->setToolTip(QStringLiteral("图案与密度搜索都受它影响；环形搜索用「环形扫描」里的快速/精确，不走这里。"));
-    m_w->algExactRadio = new QRadioButton(QStringLiteral("精确模式（默认，结果 100% 完整）"), gMatch);
-    m_w->algLayeredRadio = new QRadioButton(QStringLiteral("分层模式（更快；比例 ≤1.00 时无损）"), gMatch);
-    m_w->algSampleRadio = new QRadioButton(QStringLiteral("快速估算模式（估算值，非精确）"), gMatch);
-    m_w->algBruteRadio = new QRadioButton(QStringLiteral("保守模式（纯暴力，最慢，对照用）"), gMatch);
-    m_w->algExactRadio->setToolTip(QStringLiteral("密度滑动窗口增量统计 + 严格匹配字级位并行；结果与 v3.2.1 逐位一致。"));
-    m_w->algLayeredRadio->setToolTip(QStringLiteral("粗块必要条件剪枝：阈值比例 ≤1.00 时结果与精确模式完全一致；\n"
-                                                    ">1.00 更激进、可能漏检（结果区显示警告）。"));
-    m_w->algSampleRadio->setToolTip(QStringLiteral("只扫描/评估采样网格上的区块（约 1/间隔² 工作量），密度为估算值，\n"
-                                                   "可能遗漏高密度区域；可勾选“精算采样”使报告密度精确。"));
-    m_w->algBruteRadio->setToolTip(QStringLiteral("逐窗逐格统计（v3.2.1 字面实现），不使用滑动/剪枝，用于同机性能对照。"));
+        algLbl->setToolTip(slime::ui::t("ui.deabcae2b7ea"));
+    m_w->algExactRadio = new QRadioButton(slime::ui::t("ui.c0639e939430"), gMatch);
+    m_w->algLayeredRadio = new QRadioButton(slime::ui::t("ui.d9cacedddc49"), gMatch);
+    m_w->algSampleRadio = new QRadioButton(slime::ui::t("ui.8c7ae92e09a8"), gMatch);
+    m_w->algBruteRadio = new QRadioButton(slime::ui::t("ui.9c3dbfa03e7d"), gMatch);
+    m_w->algExactRadio->setToolTip(slime::ui::t("ui.af1eb6b5f9dc"));
+    m_w->algLayeredRadio->setToolTip(slime::ui::t("ui.d423affec19f"));
+    m_w->algSampleRadio->setToolTip(slime::ui::t("ui.4460ce315bf8"));
+    m_w->algBruteRadio->setToolTip(slime::ui::t("ui.650ceeaab2e6"));
     m_w->algExactRadio->setChecked(true);
     algLay->addWidget(m_w->algExactRadio);
     // v3.9.11：用户手动改动「会改变结果」的开关 ⇒ 方案变自定义
     for (QRadioButton* r : { m_w->algExactRadio, m_w->algLayeredRadio, m_w->algSampleRadio, m_w->algBruteRadio }) {
         QObject::connect(r, &QRadioButton::toggled, this,
-                         [this](bool on) { if (on) markPresetCustom(QStringLiteral("算法")); });
+                         [this](bool on) { if (on) markPresetCustom(slime::ui::t("ui.60f424bf4ef4")); });
     }
     algLay->addWidget(m_w->algLayeredRadio);
     algLay->addWidget(m_w->algSampleRadio);
@@ -2192,7 +2165,7 @@ void MainWindow::buildUi()
     // v3.3.4：分层/采样参数各拆两行（原单行最小宽 ~400px）
     auto* layerRow = new QHBoxLayout();
     layerRow->setContentsMargins(12, 0, 0, 0);
-    layerRow->addWidget(new QLabel(QStringLiteral("分层级别:"), gMatch));
+    layerRow->addWidget(new QLabel(slime::ui::t("ui.a82ed5c3e01c"), gMatch));
     m_w->layerBlock = new QComboBox(gMatch);
     m_w->layerBlock->addItem(QStringLiteral("16×16"), 16);
     m_w->layerBlock->addItem(QStringLiteral("32×32"), 32);
@@ -2203,35 +2176,32 @@ void MainWindow::buildUi()
     algLay->addLayout(layerRow);
     auto* layerRow2 = new QHBoxLayout();
     layerRow2->setContentsMargins(12, 0, 0, 0);
-    layerRow2->addWidget(new QLabel(QStringLiteral("阈值比例:"), gMatch));
+    layerRow2->addWidget(new QLabel(slime::ui::t("ui.004c3be7d3e3"), gMatch));
     m_w->layerRatio = new QDoubleSpinBox(gMatch);
     m_w->layerRatio->setRange(0.2, 2.0);
     m_w->layerRatio->setDecimals(2);
     m_w->layerRatio->setSingleStep(0.1);
     m_w->layerRatio->setValue(1.0);
     // v3.4.12（用户要求）：单位从输入框里拿出来 ⇒ 框后单独放「×」标签
-    m_w->layerRatio->setToolTip(QStringLiteral("≤1.00：块级必要条件剪枝，结果与精确模式完全一致（无损）；\n"
-                                               ">1.00：更激进，可能漏检（结果区显示警告条）。"));
+    m_w->layerRatio->setToolTip(slime::ui::t("ui.e5a8256a3033"));
     layerRow2->addWidget(m_w->layerRatio);
     layerRow2->addStretch();
     algLay->addLayout(layerRow2);
 
     auto* sampleRow = new QHBoxLayout();
     sampleRow->setContentsMargins(12, 0, 0, 0);
-    sampleRow->addWidget(new QLabel(QStringLiteral("采样间隔:"), gMatch));
+    sampleRow->addWidget(new QLabel(slime::ui::t("ui.005b17520be0"), gMatch));
     m_w->sampleStep = new QSpinBox(gMatch);
     m_w->sampleStep->setRange(2, 64);
     m_w->sampleStep->setValue(8);
-    m_w->sampleStep->setToolTip(QStringLiteral("每 N×N 区域只扫描 / 评估 1 个区块（默认 8 → 约 1/64 工作量）。\n"
-                                               "间隔越大越快，估算值与真实密度的相关性上限约为 1/N。"));
+    m_w->sampleStep->setToolTip(slime::ui::t("ui.e33742fb2823"));
     sampleRow->addWidget(m_w->sampleStep);
     sampleRow->addStretch();
     algLay->addLayout(sampleRow);
     auto* sampleRow2 = new QHBoxLayout();
     sampleRow2->setContentsMargins(12, 0, 0, 0);
-    m_w->sampleExact = new QCheckBox(QStringLiteral("精算采样（密度精确）"), gMatch);
-    m_w->sampleExact->setToolTip(QStringLiteral("勾选后在采样锚点上逐窗精算密度：结果与精确模式在同一位置完全一致\n"
-                                                "（相关性 1.00，无假阳性），但只扫描采样窗口所需的区块。"));
+    m_w->sampleExact = new QCheckBox(slime::ui::t("ui.64feeab104d9"), gMatch);
+    m_w->sampleExact->setToolTip(slime::ui::t("ui.c8e19ae76760"));
     sampleRow2->addWidget(m_w->sampleExact);
     sampleRow2->addStretch();
     algLay->addLayout(sampleRow2);
@@ -2245,11 +2215,11 @@ void MainWindow::buildUi()
     groupsLay->addWidget(gMatch);
 
     // ---- 分组 5：性能设置（线程数 + GPU 加速）----
-    auto* gPerf = new QGroupBox(QStringLiteral("性能设置"), groupsHost);
+    auto* gPerf = new QGroupBox(slime::ui::t("ui.eb1f3e5ef69b"), groupsHost);
     auto* runLay = new QVBoxLayout(gPerf);
     auto* runRow = new QHBoxLayout();
     const int cores = QThread::idealThreadCount();
-    runRow->addWidget(new QLabel(QStringLiteral("线程数:"), gPerf));
+    runRow->addWidget(new QLabel(slime::ui::t("ui.dc3465f048b7"), gPerf));
     m_w->threads = new QSpinBox(gPerf);
     // v3.3.9（任务书 3.1 根因）：v3.3.8.1 把上限设为**逻辑核心数** ⇒ 在无超线程的机器上
     // 「超过物理核心数」永远不可达，警告实测永不出现。现放宽到 2× 逻辑核心，让「设得过大」
@@ -2270,14 +2240,14 @@ void MainWindow::buildUi()
         const int phys = physicalCoreCount();
         if (!m_w->threadsHint) return;
         if (phys > 0 && v > phys) {
-            m_w->threadsHint->setText(QStringLiteral("⚠ 超过物理核心数 %1：超线程收益有限，可能不会更快")
+            m_w->threadsHint->setText(slime::ui::t("ui.84ff5ba34922")
                                           .arg(phys));
             m_w->threadsHint->setStyleSheet(slime::ui::tr(QStringLiteral("color:%1;"))
                                                 .arg(darkTheme() ? QStringLiteral("#ffb74d")
                                                                  : QStringLiteral("#b26a00")));
             m_w->threadsHint->setVisible(true);
         } else if (v > 12) {
-            m_w->threadsHint->setText(QStringLiteral("⚠ 超过引擎分块并发上限 12：实际并发按 12 计算"));
+            m_w->threadsHint->setText(slime::ui::t("ui.fa3eb4b9a8c6"));
             m_w->threadsHint->setStyleSheet(QStringLiteral("color:%1;")
                                                 .arg(darkTheme() ? QStringLiteral("#ffb74d")
                                                                  : QStringLiteral("#b26a00")));
@@ -2292,11 +2262,11 @@ void MainWindow::buildUi()
         if (v <= 0) return;
         const int phys = physicalCoreCount();
         if (phys > 0 && v > phys) {
-            setStatus(slime::ui::tr(QStringLiteral("线程数 %1 超过物理核心数 %2：超线程收益有限，可能不会更快")).arg(v).arg(phys));
-            addFeedback(1, slime::ui::tr(QStringLiteral("线程数 %1 超过物理核心数 %2，可能不会更快（建议设为 %2）")).arg(v).arg(phys));
+            setStatus(slime::ui::tr(slime::ui::t("ui.476bd74f4d20")).arg(v).arg(phys));
+            addFeedback(1, slime::ui::tr(slime::ui::t("ui.fdcf43a74de7")).arg(v).arg(phys));
         } else if (v > 12) {
-            setStatus(slime::ui::tr(QStringLiteral("线程数 %1 超过引擎分块并发上限 12：实际并发按 12 计算")).arg(v));
-            addFeedback(2, slime::ui::tr(QStringLiteral("线程数 %1 超过引擎分块并发上限 12：实际并发按 12 计算")).arg(v));
+            setStatus(slime::ui::tr(slime::ui::t("ui.f0bde910701c")).arg(v));
+            addFeedback(2, slime::ui::tr(slime::ui::t("ui.f0bde910701c")).arg(v));
         }
     });
     // v3.3.9（任务书 3.1）：默认值保持历史行为（全部逻辑核心，与既有性能基准一致）；
@@ -2304,20 +2274,20 @@ void MainWindow::buildUi()
     // 「过大时给出警告」，且 tooltip 给出推荐值（物理核心数）。
     m_w->threads->setValue(cores);
     updateThreadsHint();
-    m_w->threads->setToolTip(QStringLiteral("1 ~ %1（推荐 %2 = 物理核心数；超过 %2 收益有限，逻辑核心 %3）")
+    m_w->threads->setToolTip(slime::ui::t("ui.44f41848ac07")
                                  .arg(threadsMax)
                                  .arg(physicalCoreCount() > 0 ? physicalCoreCount() : cores)
                                  .arg(cores));
     runRow->addStretch();
     runLay->addLayout(runRow);
     auto* gpuRow = new QHBoxLayout();
-    m_w->gpuCheck = new QCheckBox(QStringLiteral("启用 GPU 加速（默认关闭，现代 GPU 通常显著更快）"), gPerf);
+    m_w->gpuCheck = new QCheckBox(slime::ui::t("ui.c903f3eb38b6"), gPerf);
     m_w->gpuCheck->setChecked(false);
     // v3.3.6（任务书 Bug 2）：不再显示阈值提示，只保留「不一定更快」提醒（tooltip 见 updateGpuStatusUi）
     m_w->gpuCheck->setToolTip(gpuReminderText());
     gpuRow->addWidget(m_w->gpuCheck);
     runLay->addLayout(gpuRow);
-    m_w->gpuStatus = new QLabel(QStringLiteral("GPU：检测中…"), gPerf);
+    m_w->gpuStatus = new QLabel(slime::ui::t("ui.f7d4441772c2"), gPerf);
     m_w->gpuStatus->setWordWrap(true);
     runLay->addWidget(m_w->gpuStatus);
 
@@ -2325,11 +2295,11 @@ void MainWindow::buildUi()
     {
         auto* advRow = new QHBoxLayout();
         m_w->gpuAdvBtn = new QToolButton(gPerf);
-        m_w->gpuAdvBtn->setText(QStringLiteral("设置 ▸"));
+        m_w->gpuAdvBtn->setText(slime::ui::t("ui.9ce9703b1e69"));
         m_w->gpuAdvBtn->setAutoRaise(true);
         m_w->gpuAdvBtn->setCursor(Qt::PointingHandCursor);
         m_w->gpuAdvBtn->setToolButtonStyle(Qt::ToolButtonTextOnly);
-        m_w->gpuAdvBtn->setToolTip(QStringLiteral("展开 GPU 相关设置：图案流式 / GPU 占用率上限 / 启动时自动检测"));
+        m_w->gpuAdvBtn->setToolTip(slime::ui::t("ui.8f223956c5e5"));
         advRow->addWidget(m_w->gpuAdvBtn);
         advRow->addStretch();
         runLay->addLayout(advRow);
@@ -2340,46 +2310,38 @@ void MainWindow::buildUi()
         advLay->setContentsMargins(12, 0, 0, 0);
         advLay->setSpacing(3);
         auto* rowS = new QHBoxLayout();
-        m_w->gpuStreamCheck = new QCheckBox(QStringLiteral("图案 GPU 流式（AMD 实测约 2~18×，默认关）"), m_w->gpuAdvPanel);
+        m_w->gpuStreamCheck = new QCheckBox(slime::ui::t("ui.d76a8f60e8cf"), m_w->gpuAdvPanel);
         m_w->gpuStreamCheck->setChecked(m_settings.gpuPatternStream);
-        m_w->gpuStreamCheck->setToolTip(QStringLiteral(
-            "图案搜索使用 GPU 流式匹配：AMD 显卡实测约 2~18 倍提速（100k² 图案约 2.8 s→0.16 s）；"
-            "NVIDIA/Intel 未验证，可先试跑一个小范围，异常时关闭（自动回退 CPU）。\n"
-            "改动立即写入 config.json，与「设置 → 高级」中的同名开关同步。"));
+        m_w->gpuStreamCheck->setToolTip(slime::ui::t("ui.86b8fbcbd4f9"));
         rowS->addWidget(m_w->gpuStreamCheck);
         rowS->addStretch();
         advLay->addLayout(rowS);
         // v3.10.11.1：结果自优化（默认关；只影响速度与"已保留数量"统计，不改变结果内容）
         auto* rowO = new QHBoxLayout();
-        m_w->gpuSelfOptCheck = new QCheckBox(QStringLiteral("结果自优化（提前停止，默认关）"), m_w->gpuAdvPanel);
+        m_w->gpuSelfOptCheck = new QCheckBox(slime::ui::t("ui.b2a291b0c108"), m_w->gpuAdvPanel);
         m_w->gpuSelfOptCheck->setChecked(m_settings.gpuResultSelfOptimize);
-        m_w->gpuSelfOptCheck->setToolTip(QStringLiteral(
-            "只保留离起点最近的 N 个结果：命中很多时自动跳过远处区域，大范围搜索更快。\n"
-            "只影响「已保留数量」统计，不改变结果内容。\n"
-            "适用场景：① 找最近 N 个 ② 阈值偏低/命中密集 ③ 大范围搜索 ④ 只要最近结果 ⑤ 想尽快出结果。"));
+        m_w->gpuSelfOptCheck->setToolTip(slime::ui::t("ui.39342fda69c7"));
         rowO->addWidget(m_w->gpuSelfOptCheck);
         rowO->addStretch();
         advLay->addLayout(rowO);
-        auto* selfOptNote = new QLabel(QStringLiteral(
-            "说明：只保留最近的 N 个结果，命中多时自动跳过远处区域；只影响「已保留数量」统计，不改变结果。"),
+        auto* selfOptNote = new QLabel(slime::ui::t("ui.62ff4651a917"),
             m_w->gpuAdvPanel);
         selfOptNote->setWordWrap(true);
         selfOptNote->setStyleSheet(QStringLiteral("color:#888; font-size:11px;"));
         advLay->addWidget(selfOptNote);
         auto* rowL = new QHBoxLayout();
-        rowL->addWidget(new QLabel(QStringLiteral("GPU 占用率上限(%):"), m_w->gpuAdvPanel));
+        rowL->addWidget(new QLabel(slime::ui::t("ui.8a71c973fb98"), m_w->gpuAdvPanel));
         m_w->gpuLimitSpin = new QSpinBox(m_w->gpuAdvPanel);
         m_w->gpuLimitSpin->setRange(10, 100);
         m_w->gpuLimitSpin->setValue(std::clamp(m_settings.gpuLimitPercent, 10, 100));
-        m_w->gpuLimitSpin->setToolTip(QStringLiteral("100% = 不限制；降低可让出显卡给其它程序"));
+        m_w->gpuLimitSpin->setToolTip(slime::ui::t("ui.6f21a103a38e"));
         rowL->addWidget(m_w->gpuLimitSpin);
         rowL->addStretch();
         advLay->addLayout(rowL);
         auto* rowA = new QHBoxLayout();
-        m_w->gpuAutoCheck = new QCheckBox(QStringLiteral("启动时自动检测 GPU（默认关）"), m_w->gpuAdvPanel);
+        m_w->gpuAutoCheck = new QCheckBox(slime::ui::t("ui.039b97bba306"), m_w->gpuAdvPanel);
         m_w->gpuAutoCheck->setChecked(m_settings.autoCheckGpuAtStartup);
-        m_w->gpuAutoCheck->setToolTip(QStringLiteral(
-            "无/异常 OpenCL 驱动环境下启动阶段接触 GPU 有崩溃风险，默认关闭。"));
+        m_w->gpuAutoCheck->setToolTip(slime::ui::t("ui.107542ecf736"));
         rowA->addWidget(m_w->gpuAutoCheck);
         rowA->addStretch();
         advLay->addLayout(rowA);
@@ -2388,8 +2350,8 @@ void MainWindow::buildUi()
         connect(m_w->gpuAdvBtn, &QToolButton::clicked, this, [this]() {
             const bool show = m_w->gpuAdvPanel && !m_w->gpuAdvPanel->isVisible();
             if (m_w->gpuAdvPanel) m_w->gpuAdvPanel->setVisible(show);
-            if (m_w->gpuAdvBtn) m_w->gpuAdvBtn->setText(show ? QStringLiteral("设置 ▾")
-                                                             : QStringLiteral("设置 ▸"));
+            if (m_w->gpuAdvBtn) m_w->gpuAdvBtn->setText(show ? slime::ui::t("ui.57441879db15")
+                                                             : slime::ui::t("ui.9ce9703b1e69"));
         });
         connect(m_w->gpuStreamCheck, &QCheckBox::toggled, this, [this](bool on) {
             m_settings.gpuPatternStream = on;
@@ -2411,32 +2373,30 @@ void MainWindow::buildUi()
     groupsLay->addWidget(gPerf);
 
     // ---- 分组 6：缓存管理 ----
-    auto* gCache = new QGroupBox(QStringLiteral("缓存管理"), groupsHost);
+    auto* gCache = new QGroupBox(slime::ui::t("ui.c15668b86bc6"), groupsHost);
     auto* cacheLay = new QVBoxLayout(gCache);
     auto* cacheRow = new QHBoxLayout();
-    m_w->importCache = new QPushButton(QStringLiteral("导入缓存"), gCache);
-    m_w->clearCache = new QPushButton(QStringLiteral("清除缓存"), gCache);
+    m_w->importCache = new QPushButton(slime::ui::t("ui.00e905651e85"), gCache);
+    m_w->clearCache = new QPushButton(slime::ui::t("ui.291952a2abb2"), gCache);
     cacheRow->addWidget(m_w->importCache);
     cacheRow->addWidget(m_w->clearCache);
     cacheRow->addStretch();
     cacheLay->addLayout(cacheRow);
-    m_w->useCache = new QCheckBox(QStringLiteral("使用缓存（覆盖不足自动补扫）"), gCache);
-    m_w->useCache->setToolTip(QStringLiteral("基岩版缓存：完整覆盖直接读取；部分覆盖自动补扫并增量合并保存。\n"
-                                             "容量上限由 config.json 的 cache.maxSizeMB 控制（默认 1024 MB），\n"
-                                             "超限自动丢弃最旧区域。"));
+    m_w->useCache = new QCheckBox(slime::ui::t("ui.ba695727a2f2"), gCache);
+    m_w->useCache->setToolTip(slime::ui::t("ui.72d08625eb17"));
     m_w->useCache->setChecked(true);
     cacheLay->addWidget(m_w->useCache);
     // v3.3.9（任务书 1.1）：**缓存构建模式** —— 唯一可以写缓存的模式（其他模式一律只读）。
     // v3.4.9（用户要求）：搜索页**不再**放「缓存构建模式」开关 —— 缓存构建已独立成左侧导航页，
     // 「是否处于构建模式」由当前页面决定（进构建页=开，回搜索页=关），状态保存在 m_buildModeActive。
     {
-        auto* moved = new QLabel(QStringLiteral("缓存构建已移到左侧「缓存构建」页（本页只负责搜索）"), gCache);
+        auto* moved = new QLabel(slime::ui::t("ui.2949f64a2809"), gCache);
         moved->setObjectName(QStringLiteral("topSummary"));
         moved->setWordWrap(true);
         cacheLay->addWidget(moved);
     }
     // v3.4.9：构建提示行随构建内容一起搬到「缓存构建」页（见 buildV340Pages），此处不再创建
-    m_w->cacheStatus = new QLabel(QStringLiteral("未加载缓存"), gCache);
+    m_w->cacheStatus = new QLabel(slime::ui::t("ui.23c0ca294841"), gCache);
     m_w->cacheStatus->setWordWrap(true);
     cacheLay->addWidget(m_w->cacheStatus);
     groupsLay->addWidget(gCache);
@@ -2452,11 +2412,11 @@ void MainWindow::buildUi()
     rightLay->setSpacing(4);
 
     auto* infoBar = new QHBoxLayout();
-    m_w->modeHeader = new QLabel(QStringLiteral("当前使用模式：精确模式"), rightPanel);
+    m_w->modeHeader = new QLabel(slime::ui::t("ui.014a215707f0"), rightPanel);
     m_w->modeHeader->setStyleSheet(QStringLiteral("font-weight:bold;"));
     infoBar->addWidget(m_w->modeHeader);
     infoBar->addStretch();
-    m_w->copyBtn = new QPushButton(QStringLiteral("复制结果"), rightPanel);
+    m_w->copyBtn = new QPushButton(slime::ui::t("ui.0d6cb0c3fd91"), rightPanel);
     infoBar->addWidget(m_w->copyBtn);
     rightLay->addLayout(infoBar);
     // v3.5.5（修复）：infoStats / modeWarn 的创建在右栏重写时丢失 ⇒ 布局里塞 nullptr 崩溃
@@ -2488,17 +2448,17 @@ void MainWindow::buildUi()
         hl->setSpacing(6);
         m_mapToggle = new QToolButton(head);
         m_mapToggle->setObjectName(QStringLiteral("mapPanelToggle"));
-        m_mapToggle->setText(QStringLiteral("地图"));
+        m_mapToggle->setText(slime::ui::t("ui.46e1efeb268a"));
         m_mapToggle->setArrowType(Qt::DownArrow);
         m_mapToggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         m_mapToggle->setAutoRaise(true);
         m_mapToggle->setCursor(Qt::PointingHandCursor);
-        m_mapToggle->setToolTip(QStringLiteral("点击收起/展开地图（Ctrl+M）；缩放用滚轮"));
+        m_mapToggle->setToolTip(slime::ui::t("ui.3e25cac4426c"));
         m_mapToggle->setStyleSheet(QStringLiteral(
             "QToolButton{border:none;padding:3px 8px;border-radius:0px;font-weight:bold;}"
             "QToolButton:hover{background:#4CAF50;color:#ffffff;}"));
         hl->addWidget(m_mapToggle);
-        auto* bFit = new QPushButton(QStringLiteral("适应内容"), head);
+        auto* bFit = new QPushButton(slime::ui::t("ui.e9562f6fa7af"), head);
         bFit->setAutoDefault(false);
         hl->addWidget(bFit);
         hl->addStretch();
@@ -2507,7 +2467,7 @@ void MainWindow::buildUi()
         m_map->setObjectName(QStringLiteral("searchMap"));
         m_map->setMinimumHeight(160);
         mapLay->addWidget(m_map, 1);
-        m_mapPlaceholder = new QLabel(QStringLiteral("地图已收起（点标题「地图」展开，或按 Ctrl+M）"), m_mapPanel);
+        m_mapPlaceholder = new QLabel(slime::ui::t("ui.7cb53520e436"), m_mapPanel);
         m_mapPlaceholder->setObjectName(QStringLiteral("mapPanelPlaceholder"));
         m_mapPlaceholder->setVisible(false);
         mapLay->addWidget(m_mapPlaceholder);
@@ -2536,7 +2496,7 @@ void MainWindow::buildUi()
     m_w->resultView = new QTextEdit(rightPanel);
     m_w->resultView->setObjectName(QStringLiteral("resultView"));
     m_w->resultView->setReadOnly(true);
-    m_w->resultView->setPlaceholderText(QStringLiteral("搜索完成后，这里显示结果与坐标"));
+    m_w->resultView->setPlaceholderText(slime::ui::t("ui.31bb4ff9f568"));
     m_w->resultView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_w->resultView, &QTextEdit::customContextMenuRequested, this, &MainWindow::showResultContextMenu);
     // v3.5.5：结果面板 = 可折叠标题 + 列表（表头排序、每行跳转）；resultView 保留在面板内并隐藏
@@ -2554,17 +2514,17 @@ void MainWindow::buildUi()
         hl->setSpacing(6);
         m_resultToggle = new QToolButton(head);
         m_resultToggle->setObjectName(QStringLiteral("resultPaneToggle"));
-        m_resultToggle->setText(QStringLiteral("结果"));
+        m_resultToggle->setText(slime::ui::t("ui.0a2c91cec6c8"));
         m_resultToggle->setArrowType(Qt::DownArrow);
         m_resultToggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         m_resultToggle->setAutoRaise(true);
         m_resultToggle->setCursor(Qt::PointingHandCursor);
-        m_resultToggle->setToolTip(QStringLiteral("点击收起/展开结果列表"));
+        m_resultToggle->setToolTip(slime::ui::t("ui.34e02c74cfb6"));
         m_resultToggle->setStyleSheet(QStringLiteral(
             "QToolButton{border:none;padding:3px 8px;border-radius:0px;font-weight:bold;}"
             "QToolButton:hover{background:#4CAF50;color:#ffffff;}"));
         hl->addWidget(m_resultToggle);
-        m_resultCountLabel = new QLabel(QStringLiteral("（无结果）"), head);
+        m_resultCountLabel = new QLabel(slime::ui::t("ui.a535edb5149b"), head);
         m_resultCountLabel->setObjectName(QStringLiteral("resultCaption"));
         hl->addWidget(m_resultCountLabel);
         hl->addStretch();
@@ -2579,9 +2539,9 @@ void MainWindow::buildUi()
         tb->setObjectName(QStringLiteral("resultTable"));
         tb->setColumnCount(7);
         // v3.10.0：结果独立成第三列（约 340px）⇒ 表头缩短、列宽固定，避免窄列裁字
-        tb->setHorizontalHeaderLabels({ QStringLiteral("排名"), QStringLiteral("X"), QStringLiteral("Z"),
-                                        QStringLiteral("距离"), QStringLiteral("密度"),
-                                        QStringLiteral("有效格"), QStringLiteral("") });
+        tb->setHorizontalHeaderLabels({ slime::ui::t("ui.db669ff2ab99"), QStringLiteral("X"), QStringLiteral("Z"),
+                                        slime::ui::t("ui.b3480678b68e"), slime::ui::t("ui.f90554a29e42"),
+                                        slime::ui::t("ui.3592ccaf66db"), QStringLiteral("") });
         tb->setColumnWidth(0, 40);
         tb->setColumnWidth(1, 56);
         tb->setColumnWidth(2, 56);
@@ -2666,14 +2626,14 @@ void MainWindow::buildUi()
     m_nav->setSelectionMode(QAbstractItemView::SingleSelection);
     m_nav->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_nav->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    static const char* const kNavNames[4] = { "进度", "反馈", "日志", "命令" };
+    static const char* const kNavNames[4] = { "ui.tab.progress", "ui.tab.feedback", "ui.tab.log", "ui.tab.command" };
     for (int i = 0; i < 4; ++i) {
         auto* it = new QListWidgetItem(m_nav);
-        it->setText(QStringLiteral("○ ") + QString::fromUtf8(kNavNames[i]));
-        it->setToolTip(i == 0 ? QStringLiteral("累积式进度流水（每 0.5 秒一条）")
-                              : i == 1 ? QStringLiteral("运行反馈（按时间顺序，仅显示错误/警告/信息）")
-                                       : i == 2 ? QStringLiteral("日志（默认关闭）")
-                                                : QStringLiteral("命令终端"));
+        it->setText(QStringLiteral("○ ") + slime::ui::t(kNavNames[i]));
+        it->setToolTip(i == 0 ? slime::ui::t("ui.774421d89d3b")
+                              : i == 1 ? slime::ui::t("ui.2024c0e4a2cf")
+                                       : i == 2 ? slime::ui::t("ui.418a1fb7c7d4")
+                                                : slime::ui::t("ui.b4fa25c4081b"));
         it->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     }
     bottomLay->addWidget(m_nav);
@@ -2710,7 +2670,7 @@ void MainWindow::buildUi()
         auto* dockHeadLay = new QHBoxLayout(dockHead);
         dockHeadLay->setContentsMargins(6, 0, 2, 0);
         dockHeadLay->setSpacing(2);
-        m_dockTitle = new QLabel(QStringLiteral("过程 · 进度"), dockHead);
+        m_dockTitle = new QLabel(slime::ui::t("ui.bc2bf86ea76e"), dockHead);
         m_dockTitle->setMaximumWidth(76);
         m_dockTitle->setObjectName(QStringLiteral("dockTitle"));
         QFont dockFont = m_dockTitle->font();
@@ -2719,10 +2679,10 @@ void MainWindow::buildUi()
         dockHeadLay->addWidget(m_dockTitle);
         dockHeadLay->addSpacing(8);
         {
-            static const char* const kTabNames[4] = { "进度", "反馈", "日志", "命令" };
+            static const char* const kTabNames[4] = { "ui.tab.progress", "ui.tab.feedback", "ui.tab.log", "ui.tab.command" };
             for (int i = 0; i < 4; ++i) {
                 auto* tab = new QToolButton(dockHead);
-                tab->setText(QString::fromUtf8(kTabNames[i]));
+                tab->setText(slime::ui::t(kTabNames[i]));
                 tab->setCheckable(true);
                 tab->setAutoExclusive(true);
                 tab->setProperty("dockTab", true);
@@ -2745,11 +2705,11 @@ void MainWindow::buildUi()
         }
         dockHeadLay->addStretch();
         m_dockToggleBtn = new QToolButton(dockHead);
-        m_dockToggleBtn->setText(QStringLiteral("收起"));
+        m_dockToggleBtn->setText(slime::ui::t("ui.5d5815647c76"));
         m_dockToggleBtn->setAutoRaise(true);
         m_dockToggleBtn->setToolButtonStyle(Qt::ToolButtonTextOnly);
         m_dockToggleBtn->setCursor(Qt::PointingHandCursor);
-        m_dockToggleBtn->setToolTip(QStringLiteral("收起/展开过程面板（折叠后标题行与页签仍在，随时可再展开）"));
+        m_dockToggleBtn->setToolTip(slime::ui::t("ui.c4708ce077c6"));
         m_dockToggleBtn->setFixedWidth(52);
         connect(m_dockToggleBtn, &QToolButton::clicked, this, [this]() {
             if (m_dockCollapsed) showDock(m_nav ? m_nav->currentRow() : 0);
@@ -2796,7 +2756,7 @@ void MainWindow::buildUi()
     // ---- 状态栏（QMainWindow 原生）----
     // v3.3.6（任务书 调整 1）：进度行的补充信息（已用时/预计剩余/阶段说明）放在状态栏，
     // 进度行本身保持「进度条 + 百分比 + 阶段文字」的紧凑形态。
-    statusBar()->showMessage(QStringLiteral("就绪"));
+    statusBar()->showMessage(slime::ui::t("ui.b796f2d4ca85"));
     // v3.3.7.2（任务书 1.3）：临时消息（showMessage）与右侧永久控件之间必须**有分隔符** ——
     // 否则「扫描完成，正在匹配图案」+「扫描 11265898000/… 区块（25.6%）」会被读成一句话。
     // 该分隔符只在存在临时消息时显示（messageChanged），消息清空后自动隐藏。
@@ -2808,24 +2768,24 @@ void MainWindow::buildUi()
     auto* ssLay = new QHBoxLayout(m_w->searchStatus);
     ssLay->setContentsMargins(8, 0, 8, 0);
     ssLay->setSpacing(10);
-    m_w->searchStage = new QLabel(QStringLiteral("阶段：空闲"), m_w->searchStatus);
+    m_w->searchStage = new QLabel(slime::ui::t("ui.2437d377fef4"), m_w->searchStatus);
     m_w->searchStage->setObjectName(QStringLiteral("searchStage"));
-    m_w->progressInfo = new QLabel(QStringLiteral("结果 0"), m_w->searchStatus);
+    m_w->progressInfo = new QLabel(slime::ui::t("ui.ce0d3fa9e579"), m_w->searchStatus);
     m_w->progressInfo->setWordWrap(false);
-    m_w->progressElapsed = new QLabel(QStringLiteral("已用时 0.0s"), m_w->searchStatus);
-    m_w->progressEta = new QLabel(QStringLiteral("剩余 --:--"), m_w->searchStatus);
+    m_w->progressElapsed = new QLabel(slime::ui::t("ui.6701fe136b68"), m_w->searchStatus);
+    m_w->progressEta = new QLabel(slime::ui::t("ui.d5c3799233cf"), m_w->searchStatus);
     ssLay->addWidget(m_w->searchStage);
     ssLay->addWidget(m_w->progressInfo);
     ssLay->addWidget(m_w->progressElapsed);
     ssLay->addWidget(m_w->progressEta);
     if (m_toolBar && m_toolBarSpacerAction) m_toolBar->insertWidget(m_toolBarSpacerAction, m_w->searchStatus);
     // v3.6.0（用户要求）：联系我们按钮回到界面（放工具栏右侧）
-    m_w->contactBtn = new QPushButton(QStringLiteral("联系我们"), m_toolBar);
+    m_w->contactBtn = new QPushButton(slime::ui::t("ui.152d3db75889"), m_toolBar);
     m_w->contactBtn->setFlat(true);
     connect(m_w->contactBtn, &QPushButton::clicked, this, &MainWindow::showContact);
     if (m_toolBar && m_toolBarSpacerAction) m_toolBar->insertWidget(m_toolBarSpacerAction, m_w->contactBtn);
     // 左下角常驻提醒（搜索时会被实时状态覆盖）
-    statusBar()->showMessage(QStringLiteral("提示：先填世界种子；数字框默认不吃滚轮（设置里可开）；F11 切换全屏"));
+    statusBar()->showMessage(slime::ui::t("ui.4865609e48db"));
 
     // ---- 连接 ----
     // v3.6.5：条件变化时刷新「开始搜索」可用状态
@@ -2871,9 +2831,9 @@ void MainWindow::buildUi()
                     updateStartEnabled();   // v3.6.6（用户实测）：画完图案要立刻可用
                     if (m_w->patternInfo) {
                         if (!m_patternSet) {
-                            m_w->patternInfo->setText(QStringLiteral("未绘制图案"));
+                            m_w->patternInfo->setText(slime::ui::t("ui.a1b385fa0140"));
                         } else {
-                            m_w->patternInfo->setText(QStringLiteral("图案：%1×%2，%3 个有效格")
+                            m_w->patternInfo->setText(slime::ui::t("ui.e10371e74d05")
                                                           .arg(m_pattern.rows())
                                                           .arg(m_pattern.cols())
                                                           .arg(m_pattern.activeCount()));
@@ -2971,8 +2931,7 @@ void MainWindow::buildUi()
                     m_w->minDensity->setValue(0.0);
                     m_minDensityCommitted = 0.0;
                     if (!m_uiQuiet)
-                        addFeedback(2, slime::ui::tr(QStringLiteral(
-                            "环形模式：最小密度已暂降为 0（环带覆盖率通常低于 30%，可手动调高）")));
+                        addFeedback(2, slime::ui::tr(slime::ui::t("ui.c8ae47b91135")));
                 }
             } else if (m_w->minDensity && m_w->minDensity->value() == 0.0) {
                 m_w->minDensity->setValue((std::max)(0.05, m_minDensityBeforeRing));
@@ -3128,8 +3087,8 @@ void MainWindow::resetAllSettings()
     slime::ThemeManager::instance().apply(qApp, mode);
     refreshThemedIcons();
     Logger::info("已恢复所有设置（出厂默认值）并写入 config.json");
-    addFeedback(2, slime::ui::tr(QStringLiteral("已恢复所有设置（出厂默认值），已立即生效并写入 config.json")));
-    setStatus(slime::ui::tr(QStringLiteral("设置已恢复为默认值")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.cee60fc4e81c")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.b04e535b0549")));
 }
 
 // v3.4.8（用户实测：切换外观主题后图案要立即跟着变，否则看不清）：
@@ -3184,14 +3143,13 @@ void MainWindow::showPage(int page)
     }
     // v3.4.8（用户要求）：主按钮随页面切换 —— 构建页 = 开始构建（不要求版本/种子），其它页 = 开始搜索
     if (m_w && m_w->start) {
-        m_w->start->setText(page == kPageBuild ? QStringLiteral("▶ 开始构建")
-                                               : QStringLiteral("▶ 开始搜索"));
+        m_w->start->setText(page == kPageBuild ? slime::ui::t("ui.b3e1c68ff574")
+                                               : slime::ui::t("ui.bd198edcb9cc"));
     }
     if (m_tabHint) {
         m_tabHint->setText(page == kPageBuild
-                               ? QStringLiteral("缓存构建：只做史莱姆判定并写缓存（固定基岩版 · 精确判定 · "
-                                                "不需要选版本、填种子、选搜索模式）")
-                               : QStringLiteral("左导航切换页面；切换动画只缩放图案，不影响布局"));
+                               ? slime::ui::t("ui.2b4394b6d8b9")
+                               : slime::ui::t("ui.4c9e1c3d1b92"));
     }
 }
 
@@ -3211,7 +3169,7 @@ void MainWindow::showDock(int index)
     dock->setMaximumHeight(QWIDGETSIZE_MAX);
     if (m_stack) m_stack->setVisible(true);
     m_dockCollapsed = false;
-    if (m_dockToggleBtn) m_dockToggleBtn->setText(QStringLiteral("收起"));
+    if (m_dockToggleBtn) m_dockToggleBtn->setText(slime::ui::t("ui.5d5815647c76"));
     if (m_nav && index >= 0 && index < m_nav->count()) m_nav->setCurrentRow(index);
     const int h = (m_dockHeight > 0) ? m_dockHeight : 240;
     const QList<int> sizes = m_rightSplit->sizes();
@@ -3236,11 +3194,11 @@ void MainWindow::hideDock()
     dock->setMinimumHeight(30);
     dock->setMaximumHeight(30);
     m_dockCollapsed = true;
-    if (m_dockToggleBtn) m_dockToggleBtn->setText(QStringLiteral("展开"));
+    if (m_dockToggleBtn) m_dockToggleBtn->setText(slime::ui::t("ui.b0e24833f752"));
     for (QPushButton* b : m_dockIcons) {
         if (b) b->setChecked(false);
     }
-    setStatus(slime::ui::tr(QStringLiteral("已收起过程面板（标题行仍可见，可随时展开）")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.71b2100f6466")));
 }
 
 // 其余四页：构建范围 / 设置 / 更新历史 / 控件状态（搜索页是 page0，已由 buildUi 装配）
@@ -3256,13 +3214,12 @@ void MainWindow::buildV340Pages()
         buildPageLay->setContentsMargins(8, 8, 8, 8);
         buildPageLay->setSpacing(8);
         {
-            auto* info = new QGroupBox(QStringLiteral("本页只做一件事：判定 + 写缓存"), buildPage);
+            auto* info = new QGroupBox(slime::ui::t("ui.55fdaa2e6652"), buildPage);
             info->setProperty("card", true);
             auto* infoLay = new QVBoxLayout(info);
             infoLay->setContentsMargins(8, 4, 8, 6);
             auto* infoText = new QLabel(
-                QStringLiteral("缓存构建会扫描指定范围，把每个区块「是不是史莱姆区块」记录到缓存文件，"
-                               "供后续搜索直接复用。它不产生搜索结果，因此以下选项固定、无需填写："), info);
+                slime::ui::t("ui.cd668bd50c3d"), info);
             infoText->setWordWrap(true);
             infoLay->addWidget(infoText);
             // v3.4.9：构建提示行（范围/位图体积/续传/完成条件）随构建功能一起放在本页
@@ -3271,8 +3228,7 @@ void MainWindow::buildV340Pages()
             m_w->buildHint->setVisible(false);
             infoLay->addWidget(m_w->buildHint);
             auto* fixedLine = new QLabel(
-                slime::ui::tr(QStringLiteral("游戏版本：基岩版（固定）　·　搜索模式：不适用（本模式不做匹配）　·　"
-                               "世界种子：不需要　·　判定算法：精确判定（固定）　·　目标数量/达到即停：不适用")),
+                slime::ui::tr(slime::ui::t("ui.8f50bddd8b88")),
                 info);
             fixedLine->setObjectName(QStringLiteral("buildFixedFacts"));
             fixedLine->setWordWrap(true);
@@ -3292,17 +3248,17 @@ void MainWindow::buildV340Pages()
         buildScroll->setWidget(page);
         buildPageLay->addWidget(buildScroll, 1);
         m_pageStack->addWidget(buildPage);
-        auto* cap = new QLabel(QStringLiteral("构建范围与预算（与「搜索」页共用同一份范围，改这里等于改那边）"), page);
+        auto* cap = new QLabel(slime::ui::t("ui.31dc91dcb1bc"), page);
         cap->setObjectName(QStringLiteral("colCaption"));
         lay->addWidget(cap);
         // 范围与预算（与搜索页同一份：编辑后同步回搜索页控件 → 引擎只读搜索页那份）
-        auto* card = new QGroupBox(QStringLiteral("构建范围与预算"), page);
+        auto* card = new QGroupBox(slime::ui::t("ui.918bc4a13f88"), page);
         card->setProperty("card", true);
         auto* grid = new QGridLayout(card);
         grid->setContentsMargins(8, 4, 8, 6);
         grid->setHorizontalSpacing(6);
         grid->setVerticalSpacing(4);
-        grid->addWidget(new QLabel(QStringLiteral("范围"), card), 0, 0, Qt::AlignRight);
+        grid->addWidget(new QLabel(slime::ui::t("ui.785b52eb97c1"), card), 0, 0, Qt::AlignRight);
         auto* rangeRow = new QWidget(card);
         auto* rangeLay = new QHBoxLayout(rangeRow);
         rangeLay->setContentsMargins(0, 0, 0, 0);
@@ -3322,15 +3278,15 @@ void MainWindow::buildV340Pages()
         m_w->bRadius->setFixedWidth(96);
         m_w->bRadius->setGroupSeparatorShown(true);
         m_w->bRadius->setKeyboardTracking(false);
-        m_w->bRadius->setToolTip(QStringLiteral("半径（区块）：范围 = 以原点为中心、边长 2×半径 的正方形"));
-        rangeLay->addWidget(new QLabel(QStringLiteral("半径（区块）"), rangeRow));
+        m_w->bRadius->setToolTip(slime::ui::t("ui.42ee662c2f29"));
+        rangeLay->addWidget(new QLabel(slime::ui::t("ui.ef40894b0c64"), rangeRow));
         rangeLay->addWidget(m_w->bRadius);
-        auto* sync = new QLabel(QStringLiteral("与「搜索」页同一份范围"), rangeRow);
+        auto* sync = new QLabel(slime::ui::t("ui.672ae5326a09"), rangeRow);
         sync->setObjectName(QStringLiteral("topSummary"));
         rangeLay->addWidget(sync);
         rangeLay->addStretch(1);
         grid->addWidget(rangeRow, 0, 1);
-        grid->addWidget(new QLabel(QStringLiteral("预算"), card), 1, 0, Qt::AlignRight);
+        grid->addWidget(new QLabel(slime::ui::t("ui.0dcf0e012a69"), card), 1, 0, Qt::AlignRight);
         auto* budRow = new QWidget(card);
         auto* budLay = new QHBoxLayout(budRow);
         budLay->setContentsMargins(0, 0, 0, 0);
@@ -3345,7 +3301,7 @@ void MainWindow::buildV340Pages()
             unit->setObjectName(QStringLiteral("unitLabel"));
             budLay->addWidget(unit);
         }
-        auto* budTip = new QLabel(QStringLiteral("超出预算时自动停止收集（已完成区域仍然有效）"), budRow);
+        auto* budTip = new QLabel(slime::ui::t("ui.434313d50d37"), budRow);
         budTip->setObjectName(QStringLiteral("topSummary"));
         budLay->addWidget(budTip);
         budLay->addStretch(1);
@@ -3356,18 +3312,18 @@ void MainWindow::buildV340Pages()
         lay->addWidget(card);
 
         // v3.4.12（用户黄框要求）：预估信息单独成卡片，**实时**跟着范围/预算更新（不再以弹窗形式显示）
-        auto* estCard = new QGroupBox(QStringLiteral("构建预估（随范围与预算实时更新）"), page);
+        auto* estCard = new QGroupBox(slime::ui::t("ui.1ca7f1347d3a"), page);
         estCard->setProperty("card", true);
         auto* estLay = new QVBoxLayout(estCard);
         estLay->setContentsMargins(8, 4, 8, 6);
         m_w->bEstimate = nullptr; // v3.4.12：预估按钮已移除（信息实时显示）
-        m_w->bSummaryLive = new QLabel(QStringLiteral("（读取范围与预算…）"), estCard);
+        m_w->bSummaryLive = new QLabel(slime::ui::t("ui.786d17b3a524"), estCard);
         m_w->bSummaryLive->setObjectName(QStringLiteral("buildEstimateLive"));
         m_w->bSummaryLive->setWordWrap(true);
         estLay->addWidget(m_w->bSummaryLive);
         lay->addWidget(estCard);
         // 构建进度（与主界面共用同一进度组件）
-        auto* progCard = new QGroupBox(QStringLiteral("构建进度　（① 扫描 ② 判定 ③ 归并 ④ 落盘）"), page);
+        auto* progCard = new QGroupBox(slime::ui::t("ui.b60d9a287dc2"), page);
         progCard->setProperty("card", true);
         auto* progLay = new QVBoxLayout(progCard);
         progLay->setContentsMargins(8, 4, 8, 6);
@@ -3376,16 +3332,16 @@ void MainWindow::buildV340Pages()
         m_w->bBar->setValue(0);
         m_w->bBar->setTextVisible(false);
         progLay->addWidget(m_w->bBar);
-        m_w->bText = new QLabel(QStringLiteral("未开始"), progCard);
+        m_w->bText = new QLabel(slime::ui::t("ui.062e5e670f73"), progCard);
         m_w->bText->setWordWrap(true);
         progLay->addWidget(m_w->bText);
         lay->addWidget(progCard);
         // 完成汇总
-        auto* sumCard = new QGroupBox(QStringLiteral("完成汇总"), page);
+        auto* sumCard = new QGroupBox(slime::ui::t("ui.86b0b92a37f4"), page);
         sumCard->setProperty("card", true);
         auto* sumLay = new QVBoxLayout(sumCard);
         sumLay->setContentsMargins(8, 4, 8, 6);
-        m_w->bSummary = new QLabel(QStringLiteral("尚未构建。范围与预算取自本页；构建只做判定并写缓存，不产生匹配结果。"),
+        m_w->bSummary = new QLabel(slime::ui::t("ui.6beea7b41bb8"),
                                    sumCard);
         m_w->bSummary->setWordWrap(true);
         sumLay->addWidget(m_w->bSummary);
@@ -3393,11 +3349,11 @@ void MainWindow::buildV340Pages()
         auto* pathLay = new QHBoxLayout(pathRow);
         pathLay->setContentsMargins(0, 0, 0, 0);
         pathLay->setSpacing(6);
-        m_w->bPath = new QLabel(QStringLiteral("（缓存路径将在启动后显示）"), pathRow);
+        m_w->bPath = new QLabel(slime::ui::t("ui.f22200ab7561"), pathRow);
         m_w->bPath->setObjectName(QStringLiteral("resultCaption"));
         m_w->bPath->setTextInteractionFlags(Qt::TextSelectableByMouse);
         pathLay->addWidget(m_w->bPath, 1);
-        auto* openDir = new QPushButton(QStringLiteral("打开目录"), pathRow);
+        auto* openDir = new QPushButton(slime::ui::t("ui.031c10557843"), pathRow);
         openDir->setProperty("mini", true);
         connect(openDir, &QPushButton::clicked, this, [this]() {
             QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdWString(appDirPath().wstring())));
@@ -3528,11 +3484,11 @@ void MainWindow::buildV340Pages()
             for (QRadioButton* rb : m_settingsPage->findChildren<QRadioButton*>()) {
                 const QString tx = rb->text();
                 slime::ThemeMode mode;
-                if (tx.contains(QStringLiteral("深色"))) {
+                if (tx.contains(slime::ui::t("ui.30b2c979ac87"))) {
                     mode = slime::ThemeMode::Dark;
-                } else if (tx.contains(QStringLiteral("浅色"))) {
+                } else if (tx.contains(slime::ui::t("ui.80ec9e2b1bc4"))) {
                     mode = slime::ThemeMode::Light;
-                } else if (tx.contains(QStringLiteral("跟随系统"))) {
+                } else if (tx.contains(slime::ui::t("ui.f4bbd91f79ba"))) {
                     mode = slime::ThemeMode::System;
                 } else {
                     continue; // 其它单选（默认模式等）不处理
@@ -3543,7 +3499,7 @@ void MainWindow::buildV340Pages()
                     slime::ThemeManager::instance().apply(qApp, mode); // 立即换肤
                     writeConfigFile(m_w->gpuCheck && m_w->gpuCheck->isChecked(),
                                     m_terminal ? m_terminal->history() : QStringList());
-                    addFeedback(2, slime::ui::tr(QStringLiteral("主题已切换为「%1」并写入 config.json"))
+                    addFeedback(2, slime::ui::tr(slime::ui::t("ui.b6634ac47177"))
                                        .arg(slime::ThemeManager::modeDisplayName(mode)));
                 });
             }
@@ -3559,16 +3515,16 @@ void MainWindow::buildV340Pages()
         // v3.4.2：设置立即生效 ⇒ 隐藏对话框式按钮（应用 / 取消 / 确定 / 恢复默认 / 重置所有设置）
         for (QPushButton* b : m_settingsPage->findChildren<QPushButton*>()) {
             const QString tx = b ? b->text() : QString();
-            if (tx.contains(QStringLiteral("确定")) || tx.contains(QStringLiteral("取消")) ||
-                tx.contains(QStringLiteral("应用")) || tx.contains(QStringLiteral("恢复默认")) ||
-                tx.contains(QStringLiteral("重置所有设置"))) {
+            if (tx.contains(slime::ui::t("ui.f526c89937e1")) || tx.contains(slime::ui::t("ui.4d0b4688c787")) ||
+                tx.contains(slime::ui::t("ui.4562024ddec7")) || tx.contains(slime::ui::t("ui.a191935bc678")) ||
+                tx.contains(slime::ui::t("ui.ad5d566fb4a3"))) {
                 b->hide();
             }
         }
         connect(m_settingsPage, &SettingsDialog::applied, this, [this]() {
             m_settings = m_settingsPage->currentValues();
             applyAppSettings(m_settings);
-            addFeedback(2, slime::ui::tr(QStringLiteral("设置已应用（设置页）")));
+            addFeedback(2, slime::ui::tr(slime::ui::t("ui.e02dedc30bc9")));
         });
         // v3.4.8（用户实测：找不到「恢复所有设置」）：设置页底部固定放一条操作栏，
         // 按钮是页面自己的子控件（不在 SettingsDialog 内），因此不会被"隐藏对话框按钮"的逻辑连带隐藏。
@@ -3577,13 +3533,12 @@ void MainWindow::buildV340Pages()
             auto* barLay = new QHBoxLayout(bar);
             barLay->setContentsMargins(8, 2, 8, 8);
             barLay->setSpacing(8);
-            auto* resetAll = new QPushButton(QStringLiteral("恢复所有设置"), bar);
+            auto* resetAll = new QPushButton(slime::ui::t("ui.cc342fcf8208"), bar);
             resetAll->setObjectName(QStringLiteral("resetAllSettingsBtn"));
-            resetAll->setToolTip(QStringLiteral("把全部设置恢复为出厂默认值（主题 / 性能 / 资源上限 / 日志等），"
-                                                "立即生效并写入 config.json"));
+            resetAll->setToolTip(slime::ui::t("ui.2c7b52e20f4f"));
             connect(resetAll, &QPushButton::clicked, this, [this]() { resetAllSettings(); });
             barLay->addWidget(resetAll);
-            auto* tip = new QLabel(QStringLiteral("恢复默认不会删除缓存文件；搜索范围等「本次任务」的参数不在设置范围内。"), bar);
+            auto* tip = new QLabel(slime::ui::t("ui.527d252d2fe4"), bar);
             tip->setObjectName(QStringLiteral("topSummary"));
             barLay->addWidget(tip);
             barLay->addStretch(1);
@@ -3605,9 +3560,7 @@ void MainWindow::updateBuildEstimateLive()
     const int capMB = (m_w->bBudget != nullptr) ? m_w->bBudget->value() : 2048; // 读控件，不读文件
     const bool over = bitmapMB > static_cast<double>(capMB);
     m_w->bSummaryLive->setText(
-        slime::ui::tr(QStringLiteral("范围：X(%1 ~ %2)　Z(%3 ~ %4) ⇒ %5 区块\n"
-                       "预估体积：位图口径约 %6 MB（1 bit/区块）｜ 旧坐标口径约 %7 MB（密度 10% × 8 B/条）\n"
-                       "当前预算：%8 MB ⇒ %9")
+        slime::ui::tr(slime::ui::t("ui.80e7a66cb853")
             .arg(m_w->minX->value())
             .arg(m_w->maxX->value())
             .arg(m_w->minZ->value())
@@ -3616,8 +3569,8 @@ void MainWindow::updateBuildEstimateLive()
             .arg(bitmapMB, 0, 'f', 1)
             .arg(legacyMB, 0, 'f', 1)
             .arg(capMB)
-            .arg(over ? slime::ui::tr(QStringLiteral("超出预算：过程中会自动停止收集（已完成区域仍有效）"))
-                      : slime::ui::tr(QStringLiteral("预算足够：可完整构建本范围")))));
+            .arg(over ? slime::ui::tr(slime::ui::t("ui.f5e7cf7143c3"))
+                      : slime::ui::tr(slime::ui::t("ui.23c0b832220a")))));
 }
 
 // 构建预估（构建前确认弹窗用；与实时卡片共用同一算法）
@@ -3627,10 +3580,7 @@ void MainWindow::showBuildEstimate()
     const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
     const double legacyMB = static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0);
     const int64_t capMB = cacheMaxBytes() / (1024 * 1024);
-    const QString body = QStringLiteral("范围：X(%1 ~ %2)　Z(%3 ~ %4) ⇒ %5 区块\n"
-                                       "预估体积：位图口径约 %6 MB（1 bit/区块）\n"
-                                       "　　　　　旧坐标口径约 %7 MB（密度 10% × 8 B/条）\n"
-                                       "当前预算：%8 MB　⇒ %9")
+    const QString body = slime::ui::t("ui.284d887f6e44")
                              .arg(m_w->minX->value())
                              .arg(m_w->maxX->value())
                              .arg(m_w->minZ->value())
@@ -3640,16 +3590,16 @@ void MainWindow::showBuildEstimate()
                              .arg(legacyMB, 0, 'f', 1)
                              .arg(capMB)
                              .arg(bitmapMB > static_cast<double>(capMB)
-                                      ? QStringLiteral("超出预算：过程中会自动停止收集（已完成区域仍有效）")
-                                      : QStringLiteral("预算足够：可完整构建本范围"));
+                                      ? slime::ui::t("ui.f5e7cf7143c3")
+                                      : slime::ui::t("ui.23c0b832220a"));
     if (m_w->bSummary) m_w->bSummary->setText(body);
-    setStatus(slime::ui::tr(QStringLiteral("构建预估：%1 区块 ⇒ 约 %2 MB（预算 %3 MB）"))
+    setStatus(slime::ui::tr(slime::ui::t("ui.8bd24afccf9b"))
                   .arg(total)
                   .arg(bitmapMB, 0, 'f', 1)
                   .arg(capMB));
     if (!m_uiQuiet) {
         QMessageBox box(this);
-        box.setWindowTitle(QStringLiteral("构建预估"));
+        box.setWindowTitle(slime::ui::t("ui.dfb05f73ba2c"));
         box.setText(body);
         box.setStandardButtons(QMessageBox::Ok);
         box.exec();
@@ -3664,99 +3614,99 @@ void MainWindow::buildMenus()
     QMenuBar* bar = menuBar(); // QMainWindow 原生菜单栏
 
     // ---- 文件(F) ----
-    m_menuFile = bar->addMenu(QStringLiteral("文件(&F)"));
-    QAction* aImport = m_menuFile->addAction(QStringLiteral("导入缓存…"));
+    m_menuFile = bar->addMenu(slime::ui::t("ui.a19ce4cf591e"));
+    QAction* aImport = m_menuFile->addAction(slime::ui::t("ui.0c909acf4f10"));
     aImport->setShortcut(QKeySequence(QStringLiteral("Ctrl+O")));
-    QAction* aExport = m_menuFile->addAction(QStringLiteral("导出结果…"));
+    QAction* aExport = m_menuFile->addAction(slime::ui::t("ui.06cee437ec54"));
     aExport->setShortcut(QKeySequence(QStringLiteral("Ctrl+S")));
     connect(aExport, &QAction::triggered, this, &MainWindow::exportResultsToFile);
     m_menuFile->addSeparator();
-    QAction* aClearCache = m_menuFile->addAction(QStringLiteral("清除缓存"));
+    QAction* aClearCache = m_menuFile->addAction(slime::ui::t("ui.291952a2abb2"));
     m_menuFile->addSeparator();
-    QAction* aQuit = m_menuFile->addAction(QStringLiteral("退出"));
+    QAction* aQuit = m_menuFile->addAction(slime::ui::t("ui.feecb1e6adec"));
     aQuit->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
     connect(aQuit, &QAction::triggered, this, &QWidget::close);
 
     // ---- 编辑(E) ----
-    m_menuEdit = bar->addMenu(QStringLiteral("编辑(&E)"));
-    QAction* aCopyRes = m_menuEdit->addAction(QStringLiteral("复制结果"));
+    m_menuEdit = bar->addMenu(slime::ui::t("ui.aaa1cc842e93"));
+    QAction* aCopyRes = m_menuEdit->addAction(slime::ui::t("ui.0d6cb0c3fd91"));
     aCopyRes->setShortcut(QKeySequence(QStringLiteral("Ctrl+C")));
     connect(aCopyRes, &QAction::triggered, this, &MainWindow::copyResults);
-    QAction* aCopyCmds = m_menuEdit->addAction(QStringLiteral("复制全部命令"));
+    QAction* aCopyCmds = m_menuEdit->addAction(slime::ui::t("ui.b55b79e1c9e9"));
     connect(aCopyCmds, &QAction::triggered, this, &MainWindow::copyAllCommands);
-    QAction* aClearRes = m_menuEdit->addAction(QStringLiteral("清空结果"));
+    QAction* aClearRes = m_menuEdit->addAction(slime::ui::t("ui.0fe9f67f7f41"));
     aClearRes->setShortcut(QKeySequence(QStringLiteral("Ctrl+L")));
 
     // ---- 查看(V) ----
-    m_menuView = bar->addMenu(QStringLiteral("查看(&V)"));
+    m_menuView = bar->addMenu(slime::ui::t("ui.05121202d940"));
     // v3.3.5 优化 3：删除「显示设置面板 / 显示结果面板」两项（面板始终可见），
     // 查看菜单只保留「恢复默认布局」。
-    QAction* aResetLayout = m_menuView->addAction(QStringLiteral("恢复默认布局"));
+    QAction* aResetLayout = m_menuView->addAction(slime::ui::t("ui.e003f209ca14"));
     aResetLayout->setShortcut(QKeySequence(QStringLiteral("Ctrl+0")));
     connect(aResetLayout, &QAction::triggered, this, &MainWindow::resetLayout);
 
     // ---- 工具(T)（「启用日志…」为任务书要求的隐蔽入口）----
     // v3.3.6（任务书 Bug 3）：原「程序设置…」入口已移除 —— 设置改为工具栏上的 [⚙ 设置] 按钮
-    m_menuTools = bar->addMenu(QStringLiteral("工具(&T)"));
-    QAction* aGpu = m_menuTools->addAction(QStringLiteral("GPU 状态"));
+    m_menuTools = bar->addMenu(slime::ui::t("ui.3b66d0c2fbe9"));
+    QAction* aGpu = m_menuTools->addAction(slime::ui::t("ui.e4d209f2e621"));
     connect(aGpu, &QAction::triggered, this, &MainWindow::showGpuStatus);
-    QAction* aOpenCacheDir = m_menuTools->addAction(QStringLiteral("打开缓存目录"));
+    QAction* aOpenCacheDir = m_menuTools->addAction(slime::ui::t("ui.50ff9620a061"));
     connect(aOpenCacheDir, &QAction::triggered, this, [this]() {
         QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdWString(appDirPath().wstring())));
-        setStatus(slime::ui::tr(QStringLiteral("已在资源管理器中打开程序（缓存）目录")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.2ad68491dd4b")));
     });
-    QAction* aOpenLogDir = m_menuTools->addAction(QStringLiteral("打开日志目录"));
+    QAction* aOpenLogDir = m_menuTools->addAction(slime::ui::t("ui.e153b1be0e3e"));
     connect(aOpenLogDir, &QAction::triggered, this, [this]() {
         const auto dir = appDirPath() / "logs";
         std::error_code ec;
         std::filesystem::create_directories(dir, ec);
         QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdWString(dir.wstring())));
-        setStatus(slime::ui::tr(QStringLiteral("已在资源管理器中打开日志目录")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.27af72f30925")));
     });
     // v3.5.2（任务 1）：挂机点（环形覆盖）—— 按 1/16 区块精度给出「站哪里刷怪面积最大」
-    QAction* aAfk = m_menuTools->addAction(QStringLiteral("挂机点（环形覆盖）…"));
+    QAction* aAfk = m_menuTools->addAction(slime::ui::t("ui.e4469ceb9f33"));
     aAfk->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     connect(aAfk, &QAction::triggered, this, &MainWindow::showAfkDialog);
     // v3.5.2（任务 2）：地图预览
-    QAction* aMap = m_menuTools->addAction(QStringLiteral("显示/隐藏地图面板"));
+    QAction* aMap = m_menuTools->addAction(slime::ui::t("ui.f9524bdc88f1"));
     aMap->setShortcut(QKeySequence(QStringLiteral("Ctrl+M")));
     connect(aMap, &QAction::triggered, this, [this]() { toggleMapPanel(); });
-    QAction* aMapDlg = m_menuTools->addAction(QStringLiteral("地图窗口（独立）…"));
+    QAction* aMapDlg = m_menuTools->addAction(slime::ui::t("ui.4b1166ff90c5"));
     connect(aMapDlg, &QAction::triggered, this, &MainWindow::showMapDialog);
     m_menuTools->addSeparator();
     // v3.3.5 Bug 5：日志菜单项动态切换「启用日志…/关闭日志」
-    m_actLogToggle = m_menuTools->addAction(QStringLiteral("启用日志…"));
+    m_actLogToggle = m_menuTools->addAction(slime::ui::t("ui.80005af43eec"));
     connect(m_actLogToggle, &QAction::triggered, this, &MainWindow::toggleLogging);
     updateLogMenuText();
 
     // ---- 帮助(H) ----
-    m_menuHelp = bar->addMenu(QStringLiteral("帮助(&H)"));
-    QAction* aHelp = m_menuHelp->addAction(QStringLiteral("使用教程"));
+    m_menuHelp = bar->addMenu(slime::ui::t("ui.15d7a578f420"));
+    QAction* aHelp = m_menuHelp->addAction(slime::ui::t("ui.e63e0a783b7d"));
     aHelp->setShortcut(QKeySequence(QStringLiteral("F1")));
     connect(aHelp, &QAction::triggered, this, [this]() { showHelpDialog(this); });
-    QAction* aUpdate = m_menuHelp->addAction(QStringLiteral("检查更新（GitHub/镜像）"));
+    QAction* aUpdate = m_menuHelp->addAction(slime::ui::t("ui.60ce2c44f1fb"));
     connect(aUpdate, &QAction::triggered, this, &MainWindow::openReleasePage);
-    QAction* aPan = m_menuHelp->addAction(QStringLiteral("网盘下载页（国内备用）"));
+    QAction* aPan = m_menuHelp->addAction(slime::ui::t("ui.c9c4521cd9a9"));
     connect(aPan, &QAction::triggered, this, &MainWindow::openPanPage);
-    QAction* aHistory = m_menuHelp->addAction(QStringLiteral("更新历史（GitHub）"));
+    QAction* aHistory = m_menuHelp->addAction(slime::ui::t("ui.5621bcb3e578"));
     connect(aHistory, &QAction::triggered, this, []() {
         QDesktopServices::openUrl(QUrl(QStringLiteral(
             "https://github.com/PillerBean/SlimeFinder/wiki/Version-Index")));
     });
-    QAction* aContact = m_menuHelp->addAction(QStringLiteral("联系我们"));
+    QAction* aContact = m_menuHelp->addAction(slime::ui::t("ui.152d3db75889"));
     connect(aContact, &QAction::triggered, this, &MainWindow::showContact);
     // v3.7.5（用户要求）：鸣谢名单
-    QAction* aCredits = m_menuHelp->addAction(QStringLiteral("鸣谢"));
+    QAction* aCredits = m_menuHelp->addAction(slime::ui::t("ui.c5583bc7e151"));
     connect(aCredits, &QAction::triggered, this, &MainWindow::showCredits);
-    QAction* aTelemetry = m_menuHelp->addAction(QStringLiteral("匿名统计（帮助改进）"));
+    QAction* aTelemetry = m_menuHelp->addAction(slime::ui::t("ui.6034809d2f3b"));
     connect(aTelemetry, &QAction::triggered, this, &MainWindow::showTelemetryDialog);
-    QAction* aAbout = m_menuHelp->addAction(QStringLiteral("关于"));
+    QAction* aAbout = m_menuHelp->addAction(slime::ui::t("ui.bed172efc953"));
     connect(aAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
 }
 
 void MainWindow::buildToolBar()
 {
-    m_toolBar = addToolBar(QStringLiteral("主工具栏")); // QMainWindow 原生工具栏
+    m_toolBar = addToolBar(slime::ui::t("ui.7ab2f460553b")); // QMainWindow 原生工具栏
     m_toolBar->setMovable(false);
     m_toolBar->setToolButtonStyle(Qt::ToolButtonTextOnly);
 
@@ -3767,16 +3717,16 @@ void MainWindow::buildToolBar()
     m_w->settings = nullptr;
     // v3.4.1：工具栏不再放「设置」按钮（改由左导航「设置」页进入）
 
-    m_w->start = new QPushButton(QStringLiteral("开始搜索"), m_toolBar);
+    m_w->start = new QPushButton(slime::ui::t("ui.8fdc065eda03"), m_toolBar);
     m_w->start->setDefault(true);
-    m_w->cancel = new QPushButton(QStringLiteral("取消"), m_toolBar);
+    m_w->cancel = new QPushButton(slime::ui::t("ui.4d0b4688c787"), m_toolBar);
     m_w->cancel->setEnabled(false);
     m_toolBar->addWidget(m_w->start);
     m_toolBar->addWidget(m_w->cancel);
     m_toolBar->addSeparator();
     QAction* aImport = nullptr; // v3.4.1：导入缓存移出工具栏（见搜索页「缓存管理」卡片与设置页「缓存」）
     QAction* aClear = nullptr; // v3.4.1：清除缓存移出工具栏
-    QAction* aHelp = m_toolBar->addAction(QStringLiteral("帮助"));
+    QAction* aHelp = m_toolBar->addAction(slime::ui::t("ui.adf465ebf0e6"));
     connect(aHelp, &QAction::triggered, this, [this]() { showHelpDialog(this); });
 
 
@@ -3811,15 +3761,14 @@ void MainWindow::openReleasePage()
     // 自检模式（m_uiQuiet）下不联网、不弹窗，仅记录状态供自动化断言。
     m_updateBrowserOpened = false;
     if (m_uiQuiet) {
-        addFeedback(2, slime::ui::tr(QStringLiteral(
-            "检查更新（自检模式，不联网）：来源支持 GitHub / 镜像加速 / 网盘备用")));
-        setStatus(slime::ui::tr(QStringLiteral("检查更新：自检模式不联网（GitHub/镜像/网盘）")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.6ec2519b3ed5")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.7cdc436f3b39")));
         return;
     }
     UpdateDialog dlg(this);
     dlg.exec();
     m_updateBrowserOpened = dlg.browserOpened();
-    addFeedback(2, slime::ui::tr(QStringLiteral("检查更新：已打开更新对话框（GitHub/镜像/网盘）")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.bdfe8381dda7")));
 }
 
 // v3.10.12.10：网盘源保留为国内手动备用入口（不做自动更新适配）
@@ -3828,35 +3777,34 @@ void MainWindow::openPanPage()
     const QString url = releasePageUrl();
     m_updateBrowserOpened = false;
     if (m_uiQuiet) {
-        addFeedback(2, slime::ui::tr(QStringLiteral("打开网盘下载页（自检模式，未打开浏览器）：%1")).arg(url));
-        setStatus(slime::ui::tr(QStringLiteral("网盘下载页：自检模式跳过打开浏览器")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.b70943cd2d9c")).arg(url));
+        setStatus(slime::ui::tr(slime::ui::t("ui.7182774d682a")));
         return;
     }
     QMessageBox box(this);
-    box.setWindowTitle(QStringLiteral("网盘下载页（国内备用）"));
+    box.setWindowTitle(slime::ui::t("ui.c9c4521cd9a9"));
     box.setTextFormat(Qt::PlainText);
-    box.setText(QStringLiteral("网盘下载页面：\n%1\n\n"
-                              "点击「打开浏览器」后，将在默认浏览器中打开此页面。")
+    box.setText(slime::ui::t("ui.de497048ef89")
                     .arg(url));
-    QPushButton* openBtn = box.addButton(QStringLiteral("打开浏览器"), QMessageBox::AcceptRole);
-    QPushButton* copyBtn = box.addButton(QStringLiteral("复制链接"), QMessageBox::ActionRole);
-    box.addButton(QStringLiteral("取消"), QMessageBox::RejectRole);
+    QPushButton* openBtn = box.addButton(slime::ui::t("ui.3f550f3594a5"), QMessageBox::AcceptRole);
+    QPushButton* copyBtn = box.addButton(slime::ui::t("ui.abb22bd95c4a"), QMessageBox::ActionRole);
+    box.addButton(slime::ui::t("ui.4d0b4688c787"), QMessageBox::RejectRole);
     box.setDefaultButton(openBtn);
     box.exec();
     if (box.clickedButton() == copyBtn) {
         QApplication::clipboard()->setText(url);
-        addFeedback(2, slime::ui::tr(QStringLiteral("已复制网盘下载链接到剪贴板")));
-        setStatus(slime::ui::tr(QStringLiteral("已复制网盘下载链接")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.de46b29e9f7d")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.bbe551e5d698")));
         return;
     }
     if (box.clickedButton() != openBtn) {
-        setStatus(slime::ui::tr(QStringLiteral("已取消打开网盘下载页")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.c5cac2c33c72")));
         return;
     }
     m_updateBrowserOpened = true;
     QDesktopServices::openUrl(QUrl(url));
-    addFeedback(2, slime::ui::tr(QStringLiteral("已打开网盘下载页")));
-    setStatus(slime::ui::tr(QStringLiteral("已打开网盘下载页")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.b415f1c02466")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.b415f1c02466")));
     slime::LogBus::info("打开网盘下载页: " + url.toStdString());
 }
 
@@ -3953,7 +3901,7 @@ void MainWindow::applyAppSettings(const AppSettings& s)
         }
         m_cacheFile = newFile;
         updateCacheStatusUi();
-        addFeedback(2, slime::ui::tr(QStringLiteral("缓存目录已切换为：%1")).arg(QString::fromStdWString(base.wstring())));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.6533e0806676")).arg(QString::fromStdWString(base.wstring())));
     }
     // 3) v3.3.6 新增项立即生效：主题、提示音、日志面板显示参数、调试模式
     // v3.4.11（用户拍板：全局约束）——**任何设置变更都不重放 QSS，除非主题真的变了**。
@@ -3971,10 +3919,10 @@ void MainWindow::applyAppSettings(const AppSettings& s)
                                  (old.rememberWindow != s.rememberWindow);
         m_restartPending = needRestart;
         if (needRestart && s.autoRestart && !m_uiQuiet) {
-            addFeedback(2, slime::ui::tr(QStringLiteral("检测到需要重启的设置，正在自动重启程序…")));
+            addFeedback(2, slime::ui::tr(slime::ui::t("ui.077be65263b2")));
             QTimer::singleShot(300, this, [this]() { restartApplication(); });
         } else if (needRestart) {
-            addFeedback(2, slime::ui::tr(QStringLiteral("有设置需要重启程序才生效（可在设置里开启自动重启）")));
+            addFeedback(2, slime::ui::tr(slime::ui::t("ui.60e5b5c99c91")));
         }
     }
     (void)old;
@@ -3986,7 +3934,7 @@ void MainWindow::applyAppSettings(const AppSettings& s)
                                                            : slime::ui::Language::Chinese);
         retranslateModeUi();
         applyLanguage();
-        setStatus(slime::ui::tr(QStringLiteral("界面语言已切换（部分旧文案重启后完全生效）")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.1f9090fec01f")));
         std::fprintf(stderr, "[\u8bbe\u7f6e] \u754c\u9762\u8bed\u8a00\u6539\u4e3a %s\uff08\u91cd\u542f\u540e\u751f\u6548\uff09\n",
                      s.language.toUtf8().constData());
     }
@@ -4002,14 +3950,14 @@ void MainWindow::applyAppSettings(const AppSettings& s)
     slime::CrashDump::setEnabled(s.crashDump);
     if (old.crashDump != s.crashDump) {
         slime::IncidentLog::note(std::string("崩溃转储已") + (s.crashDump ? "开启" : "关闭"));
-        addFeedback(2, s.crashDump ? QStringLiteral("崩溃转储已开启（崩溃时生成 .dmp 到 crashes/）")
-                                   : QStringLiteral("崩溃转储已关闭（崩溃时将不生成 .dmp）"));
+        addFeedback(2, s.crashDump ? slime::ui::t("ui.ffaefd5b8195")
+                                   : slime::ui::t("ui.e83c9f99b58b"));
     }
     slime::IncidentLog::setVerbose(s.debugMode);
     if (old.debugMode != s.debugMode) {
         slime::LogBus::info(std::string("调试模式 ") + (s.debugMode ? "已开启" : "已关闭"));
-        addFeedback(2, s.debugMode ? QStringLiteral("调试模式已开启：将记录额外调试信息")
-                                   : QStringLiteral("调试模式已关闭"));
+        addFeedback(2, s.debugMode ? slime::ui::t("ui.6cf4e0cdf166")
+                                   : slime::ui::t("ui.551cb231385d"));
     }
     // ---- v3.5.23（用户反馈：大部分设置项无法立即生效）----
     //   搜索默认值以前只在启动时套用一次。现在改成「立刻套用，但只覆盖仍是旧默认值的控件」，
@@ -4021,37 +3969,37 @@ void MainWindow::applyAppSettings(const AppSettings& s)
         auto anyWidget = [](QWidget*) { return true; };
         if (old.defaultThreads != s.defaultThreads ) {
             m_w->threads->setValue(s.defaultThreads > 0 ? s.defaultThreads : 0);
-            applied << QStringLiteral("线程数");
+            applied << slime::ui::t("ui.1795484c760a");
         }
         if (old.defaultTargetCount != s.defaultTargetCount ) {
             m_w->targetCount->setValue(s.defaultTargetCount > 0 ? s.defaultTargetCount : 1);
-            applied << QStringLiteral("目标数量");
+            applied << slime::ui::t("ui.41162519d223");
         }
         if (old.defaultStopAtTarget != s.defaultStopAtTarget &&
             true) {
             m_w->stopAtTarget->setChecked(s.defaultStopAtTarget);
-            applied << QStringLiteral("找够即停");
+            applied << slime::ui::t("ui.787ef54c30cd");
         }
         if (old.defaultAlgorithm != s.defaultAlgorithm) {
             if (s.defaultAlgorithm == QLatin1String("layered") && m_w->algLayeredRadio) m_w->algLayeredRadio->setChecked(true);
             else if (s.defaultAlgorithm == QLatin1String("sample") && m_w->algSampleRadio) m_w->algSampleRadio->setChecked(true);
             else if (s.defaultAlgorithm == QLatin1String("brute") && m_w->algBruteRadio) m_w->algBruteRadio->setChecked(true);
             else if (m_w->algExactRadio) m_w->algExactRadio->setChecked(true);
-            applied << QStringLiteral("判定算法");
+            applied << slime::ui::t("ui.73ccaa710a1a");
         }
         if (old.defaultPreset != s.defaultPreset && s.defaultPreset != QLatin1String("none")) {
             const QString pv = s.defaultPreset;
             if (pv == QLatin1String("near")) applyPreset(20000);
             else if (pv == QLatin1String("local")) applyPreset(200000);
             else if (pv == QLatin1String("global")) applyPreset(1000000);
-            applied << QStringLiteral("快速预设");
+            applied << slime::ui::t("ui.427110e95874");
         }
         if (old.defaultGpu != s.defaultGpu && m_w->gpuCheck) {
             m_w->gpuCheck->setChecked(s.defaultGpu);
-            applied << QStringLiteral("GPU 加速");
+            applied << slime::ui::t("ui.18b6202383c3");
         }
         if (!applied.isEmpty())
-            addFeedback(2, slime::ui::tr(QStringLiteral("以下设置已立即生效：%1")).arg(applied.join(QStringLiteral("、"))));
+            addFeedback(2, slime::ui::tr(slime::ui::t("ui.525a0adce0d1")).arg(applied.join(QStringLiteral("、"))));
     }
 
     // v3.10.9：设置页改动同步到搜索页「GPU 设置」展开面板
@@ -4081,8 +4029,8 @@ void MainWindow::applyAppSettings(const AppSettings& s)
     // 否则挂起的「设置自动生效」定时器 60ms 后会用**过期页面值**把刚改的设置改回去
     //（自检实测：主题被改回并多出一次 QSS 重放）。
     syncSettingsPageFromState();
-    addFeedback(2, slime::ui::tr(QStringLiteral("程序设置已应用（合并写入 config.json）")));
-    setStatus(slime::ui::tr(QStringLiteral("程序设置已应用")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.c68f92da9c8f")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.c5c0ada6fbc6")));
     slime::LogBus::info("程序设置已应用");
 }
 
@@ -4091,7 +4039,7 @@ void MainWindow::showProgramSettings()
     // v3.3.6：自检模式只记录「入口被点击」，不弹模态对话框（自动化流程不能被阻塞）
     m_settingsDialogOpened = true;
     if (m_uiQuiet) {
-        setStatus(slime::ui::tr(QStringLiteral("程序设置：已从工具栏打开（自检模式不弹窗）")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.94db9de1ffcf")));
         return;
     }
     SettingsDialog dlg(m_settings, this);
@@ -4100,7 +4048,7 @@ void MainWindow::showProgramSettings()
     const bool openLogDir = dlg.openLogDirRequested();
     const bool clearCache = dlg.clearCacheRequested();
     if (!dlg.applied()) {
-        setStatus(slime::ui::tr(QStringLiteral("程序设置：未做修改")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.d75c517a8e4a")));
         return;
     }
     const AppSettings s = dlg.settings();
@@ -4117,7 +4065,7 @@ void MainWindow::showProgramSettings()
         std::filesystem::remove(m_cacheFile, ec);
         std::filesystem::remove(appDirPath() / kCacheLegacyFileName, ec);
         updateCacheStatusUi();
-        addFeedback(2, slime::ui::tr(QStringLiteral("已按程序设置清空磁盘缓存")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.71e8b41e4d10")));
     }
     // 清空缓存请求的访问器（在对话框销毁前读取，避免悬垂）
 }
@@ -4151,10 +4099,10 @@ void MainWindow::initUpdateReminder()
     m_daysSinceRelease = static_cast<int>(rel.daysTo(QDate::currentDate()));
     if (m_daysSinceRelease > 30) {
         m_updateBadgeVisible = true;
-        m_updateBadge->setText(QStringLiteral("<a href=\"release\">🔔 本版本已发布 %1 天，可能有新版本</a>").arg(m_daysSinceRelease));
-        m_updateBadge->setToolTip(QStringLiteral("点击打开下载页面：%1").arg(releasePageUrl()));
+        m_updateBadge->setText(slime::ui::t("ui.30476aaf4b92").arg(m_daysSinceRelease));
+        m_updateBadge->setToolTip(slime::ui::t("ui.f953ab12b923").arg(releasePageUrl()));
         m_updateBadge->setVisible(true);
-        addFeedback(2, slime::ui::tr(QStringLiteral("更新提醒：本版本已发布 %1 天（发布日期 %2），可能有新版本。"))
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.d5c607c89b26"))
                            .arg(m_daysSinceRelease)
                            .arg(dateText));
     } else {
@@ -4184,21 +4132,14 @@ void MainWindow::showAboutDialog()
                  .arg(QLatin1String(kAppVersion))
                  .arg(m_daysSinceRelease)
                  .arg(releasePageUrl())
-             : QStringLiteral(
-                 "史莱姆区块查找器 %1（C++20 / Qt 6 重构版）\n\n"
-                 "版本：%1\n发布日期文件：build_date.txt\n已发布：%2 天\n\n"
-                 "史莱姆区块由世界种子按与游戏一致的算法推导（Java 版 48 位 LCG；基岩版 MT19937），"
-                 "并与参考实现逐位比对通过；基岩版算法由 @protolambda / @jocopa3 逆向工程得出。\n\n"
-                 "程序默认离线运行：不需要账号；匿名使用统计默认关闭，可在「帮助 → 匿名统计」自愿开启。\n"
-                 "反馈渠道见「帮助 → 联系我们」；致谢名单见「帮助 → 鸣谢」。\n\n"
-                 "下载页面：%3")
+             : slime::ui::t("ui.833b150c8f74")
                  .arg(QLatin1String(kAppVersion))
                  .arg(m_daysSinceRelease)
                  .arg(releasePageUrl());
-    addFeedback(2, slime::ui::tr(QStringLiteral("已打开「关于」")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.07efca1cd67e")));
     if (!m_uiQuiet) {
         QMessageBox box(this);
-        box.setWindowTitle(QStringLiteral("关于"));
+        box.setWindowTitle(slime::ui::t("ui.bed172efc953"));
         box.setTextFormat(Qt::PlainText);
         box.setText(text);
         box.setStandardButtons(QMessageBox::Ok);
@@ -4213,8 +4154,8 @@ void MainWindow::resetLayout()
     if (m_rightSplit) m_rightSplit->setSizes(QList<int>() << 560 << 240);   // v3.10.1：结果 / 过程
     selectBottomCategory(0); // v3.3.6：恢复默认布局回到「进度」分类
     resize(1280, 860);
-    setStatus(slime::ui::tr(QStringLiteral("已恢复默认布局（三纵列 380/480/360 / 右列 560+240 / 窗口 1280×860）")));
-    addFeedback(2, slime::ui::tr(QStringLiteral("已恢复默认布局")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.9e6824a751ec")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.cab9d4b12553")));
 }
 
 // ============================================================================
@@ -4229,8 +4170,8 @@ void MainWindow::showEnableLogDialog()
     saveAlgorithmToConfig(); // 写回 config.json（含 log.mode）
     if (m_logPanel) m_logPanel->refreshFromBus();
     const QString name = QString::fromUtf8(slime::LogBus::modeName(mode));
-    addFeedback(3, slime::ui::tr(QStringLiteral("日志已启用（%1模式）")).arg(name));
-    setStatus(slime::ui::tr(QStringLiteral("日志已启用：%1模式")).arg(name));
+    addFeedback(3, slime::ui::tr(slime::ui::t("ui.b1533230c471")).arg(name));
+    setStatus(slime::ui::tr(slime::ui::t("ui.b85b877657d1")).arg(name));
     slime::LogBus::info("日志模式切换为 " + std::string(slime::LogBus::modeName(mode)));
 }
 
@@ -4409,7 +4350,7 @@ void MainWindow::toggleResultPane()
     if (m_resultSpacer) m_resultSpacer->setVisible(!show);
     if (m_resultToggle) m_resultToggle->setArrowType(show ? Qt::DownArrow : Qt::RightArrow);
     m_rightSplitUserMoved = false;
-    setStatus(show ? QStringLiteral("已展开结果列表") : QStringLiteral("已收起结果列表"));
+    setStatus(show ? slime::ui::t("ui.7b68fe95d4a2") : slime::ui::t("ui.afdc9c7d9b9b"));
     // v3.6.9：折叠/展开期间把分隔条尺寸钉住，标题行（按钮）原地不动
     {
         const QList<int> keep = m_rightSplit->sizes();
@@ -4482,14 +4423,14 @@ void MainWindow::fillResultTable()
         if (ring && i < static_cast<int>(m_lastAfk.size())) {
             const auto& cd = m_lastAfk[static_cast<size_t>(i)];
             auto* it5 = new QTableWidgetItem();
-            it5->setText(QStringLiteral("%1 格 · %2")
+            it5->setText(slime::ui::t("ui.aca2c2cb22cf")
                              .arg(static_cast<qlonglong>(cd.coveredBlocks))
                              .arg(cd.coveredWeight, 0, 'f', 0));
             t->setItem(i, 5, it5);
         }
-        auto* jump = new QPushButton(QStringLiteral("跳转"), t);
+        auto* jump = new QPushButton(slime::ui::t("ui.28cd2efd8fa8"), t);
         jump->setAutoDefault(false);
-        jump->setToolTip(QStringLiteral("在地图上定位到这一条"));
+        jump->setToolTip(slime::ui::t("ui.b208126e95ab"));
         const int bx = blockX;
         const int bz = blockZ;
         connect(jump, &QPushButton::clicked, this, [this, i, ring, bx, bz]() {
@@ -4502,12 +4443,12 @@ void MainWindow::fillResultTable()
         t->setCellWidget(i, 6, jump);
     }
     if (m_resultCountLabel) {
-        m_resultCountLabel->setText(shown > 0 ? QStringLiteral("共 %1 条%2")
+        m_resultCountLabel->setText(shown > 0 ? slime::ui::t("ui.1389cca29639")
                                                    .arg(results.size())
                                                    .arg(shown < static_cast<int>(results.size())
-                                                            ? QStringLiteral("（显示前 %1）").arg(shown)
+                                                            ? slime::ui::t("ui.7d5266ad5822").arg(shown)
                                                             : QString())
-                                            : QStringLiteral("（无结果）"));
+                                            : slime::ui::t("ui.a535edb5149b"));
     }
 }
 
@@ -4529,8 +4470,7 @@ void MainWindow::applyResultConflicts()
         if (ignore) m_w->smartRange->setChecked(false);
     }
     if (m_w->presetHint && ignore && !patternMode) {
-        m_w->presetHint->setText(QStringLiteral(
-            "最优候选模式：已忽略阈值，按窗口密度取最优 N 个（不提前停止）"));
+        m_w->presetHint->setText(slime::ui::t("ui.ae90086a5180"));
     }
 }
 
@@ -4546,15 +4486,15 @@ struct PresetDef {
 };
 const PresetDef kPresetDensity[] = {
     // v3.10.12.8：实测「找够即停」不勾由近及远更快（CPU 114.5 vs 123.1 ms；GPU 也更快），预设改为仅停止
-    { "快速找最近 N 个",       true,  false, false, 0 },
-    { "找全部候选",            false, false, false, 0 },
-    { "最优 N 个（忽略阈值）",  false, false, true,  0 },
-    { "大范围粗筛",            false, false, false, 2 },
+    { "ui.preset.quick_nearest", true,  false, false, 0 },
+    { "ui.preset.all",           false, false, false, 0 },
+    { "ui.preset.best_ignore",   false, false, true,  0 },
+    { "ui.preset.coarse",        false, false, false, 2 },
 };
 const PresetDef kPresetPattern[] = {
     // v3.10.10.2：图案模式下「由近及远」会禁掉 AVX2 快路径（20k² 858→93 ms），预设改为仅停止
-    { "找最近 N 个（提前停止）", true,  false, false, 0 },
-    { "找全部候选",             false, false, false, 0 },
+    { "ui.preset.pattern_nearest", true,  false, false, 0 },
+    { "ui.preset.pattern_all",     false, false, false, 0 },
 };
 } // namespace
 
@@ -4566,11 +4506,11 @@ void MainWindow::rebuildPresets()
     m_presetApplying = true;
     m_w->presetCombo->clear();
     if (pattern) {
-        for (const auto& pd : kPresetPattern) m_w->presetCombo->addItem(QString::fromUtf8(pd.label));
+        for (const auto& pd : kPresetPattern) m_w->presetCombo->addItem(slime::ui::t(pd.label));
     } else {
-        for (const auto& pd : kPresetDensity) m_w->presetCombo->addItem(QString::fromUtf8(pd.label));
+        for (const auto& pd : kPresetDensity) m_w->presetCombo->addItem(slime::ui::t(pd.label));
     }
-    m_w->presetCombo->addItem(QStringLiteral("自定义"));
+    m_w->presetCombo->addItem(slime::ui::t("ui.c493338e8c33"));
     m_w->presetCombo->setCurrentIndex(0);
     m_presetApplying = false;
     applySelectedPreset();
@@ -4587,7 +4527,7 @@ void MainWindow::applySelectedPreset()
 
     if (idx == customIdx) {
         if (m_w->presetHint) {
-            m_w->presetHint->setText(QStringLiteral("自定义：所有开关按当前设置生效（不影响 GPU 等加速开关）"));
+            m_w->presetHint->setText(slime::ui::t("ui.7e7cf39ddc4d"));
         }
         updateAdvancedVisibility();   // v3.10.9：自定义方案展开高级开关并显示速度声明
         return;
@@ -4610,15 +4550,15 @@ void MainWindow::applySelectedPreset()
     if (m_w->presetHint) {
         QString desc;
         if (pattern) {
-            desc = QStringLiteral("图案模式提供 2 种方案 · 图案本身即筛选条件");
+            desc = slime::ui::t("ui.5c2f010bbc8f");
         } else if (pd.ignore) {
-            desc = QStringLiteral("密度模式提供 4 种方案 · 最优候选：忽略阈值，按密度取最优 N 个");
+            desc = slime::ui::t("ui.0f05e9ce3b76");
         } else if (pd.algorithm == 2) {
-            desc = QStringLiteral("密度模式提供 4 种方案 · 估算算法，可能漏检");
+            desc = slime::ui::t("ui.1f8e3c9e917b");
         } else if (pd.stop) {
-            desc = QStringLiteral("密度模式提供 4 种方案 · 阈值生效，找够即停");
+            desc = slime::ui::t("ui.b69e415cb8e3");
         } else {
-            desc = QStringLiteral("密度模式提供 4 种方案 · 不提前停止");
+            desc = slime::ui::t("ui.07c03132f5fe");
         }
         m_w->presetHint->setText(desc);
     }
@@ -4633,8 +4573,7 @@ void MainWindow::updatePresetDisclaimer()
     if (m_w->presetDisclaimer) m_w->presetDisclaimer->setVisible(custom);
     if (custom && !m_customDisclaimerLogged) {
         m_customDisclaimerLogged = true;
-        addFeedback(2, slime::ui::tr(QStringLiteral(
-                          "已切换到自定义方案：部分开关组合可能明显降低搜索速度；可用上方方案预设恢复推荐组合。")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.75418b9be246")));
     }
 }
 
@@ -4661,7 +4600,7 @@ void MainWindow::markPresetCustom(const QString& reason)
     m_presetApplying = false;
     m_presetLastIndex = customIdx;
     if (m_w->presetHint) {
-        m_w->presetHint->setText(QStringLiteral("已修改：%1（方案已切换为自定义）").arg(reason));
+        m_w->presetHint->setText(slime::ui::t("ui.fed55636b818").arg(reason));
     }
     updateAdvancedVisibility();
 }
@@ -4688,7 +4627,7 @@ void MainWindow::updateSearchShapeEnabled()
     if (m_w->stopAtTarget) m_w->stopAtTarget->setVisible(!ringShape);
     // 兼容：仍然按模式更新状态提示
     if (ringShape && !patternMode) {
-        setStatus(slime::ui::tr(QStringLiteral("环形覆盖：24~128 格环带；按目标数量与最小密度筛选")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.9e6da9fa6c38")));
     }
     updateAdvancedVisibility();
 }
@@ -4700,7 +4639,7 @@ void MainWindow::runRingSearch()
     // v3.10.12.12：图案模式下「区域形状」面板被隐藏，但环形单选按钮可能仍是 checked。
     //   这里必须优先按当前模式判断，否则会继续跑环形搜索并显示环形结果。
     if (m_w->strictRadio && m_w->strictRadio->isChecked()) {
-        setStatus(slime::ui::tr(QStringLiteral("当前是图案模式，不能执行环形搜索")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.53b2e9a1f672")));
         return;
     }
     const bool bedrock = m_w->bedrockRadio->isChecked();
@@ -4709,11 +4648,11 @@ void MainWindow::runRingSearch()
     const int minX = m_w->minX->value(), maxX = m_w->maxX->value();
     const int minZ = m_w->minZ->value(), maxZ = m_w->maxZ->value();
     if (maxX < minX || maxZ < minZ) {
-        setStatus(slime::ui::tr(QStringLiteral("范围无效：X1 需 ≥ X0、Z1 需 ≥ Z0")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.93ec3b99247b")));
         return;
     }
     if (!bedrock && !ok) {
-        setStatus(slime::ui::tr(QStringLiteral("请先填写有效的世界种子（整数）")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.d2d6c0b7fdb4")));
         return;
     }
     const int spanX = maxX - minX + 1, spanZ = maxZ - minZ + 1;
@@ -4725,11 +4664,11 @@ void MainWindow::runRingSearch()
     //   （±1,875,000 区块 ⇒ 3,750,001² ≈ 1.4e13 格）。快速模式成本与面积无关（抽样），
     //   但全图级仍可能需要数分钟；状态栏给出提示，搜索期间可取消。
         if (cells > 16000000000000LL) {
-            setStatus(slime::ui::tr(QStringLiteral("环形范围超出物理上限（%1×%2 区块）")).arg(spanX).arg(spanZ));
+            setStatus(slime::ui::tr(slime::ui::t("ui.dbcd349ec8e3")).arg(spanX).arg(spanZ));
             return;
         }
         if (cells > 1000000000000LL) {
-            setStatus(slime::ui::tr(QStringLiteral("全图级环形搜索（%1×%2 区块）：可能需要数分钟，可随时取消"))
+            setStatus(slime::ui::tr(slime::ui::t("ui.84839e3c68cb"))
                           .arg(spanX)
                           .arg(spanZ));
         } else if (cells > 40000000LL) {
@@ -4777,7 +4716,7 @@ void MainWindow::runRingSearch()
     o.scanStride = (ringScanMode == 1) ? 1 : 0;
     // v3.5.29：精确模式（逐区块）有内存/耗时上限，超了直接提示而不是跑崩
     if (o.scanStride == 1 && static_cast<long long>(spanX) * spanZ > 4000000LL) {
-        setStatus(slime::ui::tr(QStringLiteral("精确模式范围过大（%1×%2 = %3 万区块，上限 400 万）——请改用「快速」或缩小半径"))
+        setStatus(slime::ui::tr(slime::ui::t("ui.c11e33ee027d"))
                       .arg(spanX).arg(spanZ).arg(static_cast<qlonglong>(static_cast<long long>(spanX) * spanZ / 10000LL)));
         return;
     }
@@ -4881,10 +4820,10 @@ void MainWindow::runRingSearch()
     m_ringCancel.store(false, std::memory_order_relaxed);
     m_ringSearching = true;
     {
-        const QString scanText = autoPrescan ? QStringLiteral("自动正方形预筛 + 环形精修")
-                                             : ((o.scanStride == 1) ? QStringLiteral("\u7cbe\u786e\u9010\u533a\u5757")
-                                                                    : QStringLiteral("\u5feb\u901f\u7c97\u626b"));
-        setStatus(slime::ui::tr(QStringLiteral("\u73af\u5f62\u641c\u7d22\u8ba1\u7b97\u4e2d\u2026 %1\u00d7%2 \u533a\u5757\uff08%3\uff09"))
+        const QString scanText = autoPrescan ? slime::ui::t("ui.7ae0cd5f9a0b")
+                                             : ((o.scanStride == 1) ? slime::ui::t("ui.277ba15949a6")
+                                                                    : slime::ui::t("ui.6c29e3499ee0"));
+        setStatus(slime::ui::tr(slime::ui::t("ui.09d9fb4b92b6"))
                       .arg(spanX).arg(spanZ).arg(scanText));
         QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
     }
@@ -5020,19 +4959,19 @@ void MainWindow::runRingSearch()
     m_ringSearching = false;
     updateStartEnabled();
     if (ringCancelled) {
-        setStatus(slime::ui::tr(QStringLiteral("环形搜索已取消")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.397b1272aec8")));
     } else if (autoPrescan && prescanUsed) {
-        addFeedback(2, slime::ui::tr(QStringLiteral("自动正方形预筛完成：已用全图正方形密度种子做环形精修")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.29d84f827fc6")));
     } else if (autoPrescan && prescanFallback) {
-        addFeedback(2, slime::ui::tr(QStringLiteral("自动正方形预筛不可用，已回退「快速抽样」；可检查 GPU 设置")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.c736d29daa5b")));
     }
     if (m_resultsNotice) {
         const int got = static_cast<int>(cands.size());
         const int want = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
         if (got == 0)
-            m_resultsNotice->setText(QStringLiteral("未找到任何结果：可放宽最小密度、扩大半径或改用「快速」扫描"));
+            m_resultsNotice->setText(slime::ui::t("ui.e682244d5bfe"));
         else if (got < want)
-            m_resultsNotice->setText(QStringLiteral("未找到更多结果：只找到 %1 个（目标 %2 个），可放宽最小密度或扩大半径")
+            m_resultsNotice->setText(slime::ui::t("ui.af6b2c0e44d3")
                                          .arg(got).arg(want));
         else
             m_resultsNotice->setText(QString());
@@ -5048,9 +4987,9 @@ void MainWindow::runRingSearch()
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
     }
     if (ringOutOfMemory.load())
-        setStatus(slime::ui::tr(QStringLiteral("内存不足：请缩小半径或改用「快速」模式")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.a7216f4a8a80")));
     else if (ringEmptyAfterFilter)
-        setStatus(slime::ui::tr(QStringLiteral("\u6ca1\u6709\u7ad9\u4f4d\u8fbe\u5230\u6700\u5c0f\u5bc6\u5ea6 %1\uff08\u5df2\u6309\u4e25\u683c 1 \u683c\u590d\u6838\uff09"))
+        setStatus(slime::ui::tr(slime::ui::t("ui.b3df7b1e43a6"))
                       .arg(o.minDensity, 0, 'f', 3));
     const int stride = slime::AfkPlanner::coarseChunkStride((std::max)(spanX, spanZ));
     const double secs = ringComputeSecs > 0.0
@@ -5131,7 +5070,7 @@ void MainWindow::runRingSearch()
         const int cz = (r0.minZ + r0.maxZ) / 2;
         m_map->centerOnChunk(cx, cz);
         if (m_map && !m_map->isVisible()) toggleMapPanel();   // v3.6.2：按内容可见性判断
-        setStatus(slime::ui::tr(QStringLiteral("搜索完成：已定位到第 1 条结果（区块 %1, %2）")).arg(cx).arg(cz));
+        setStatus(slime::ui::tr(slime::ui::t("ui.061e37177602")).arg(cx).arg(cz));
     }
 
         m_map->setAfkCandidates(cands);
@@ -5139,7 +5078,7 @@ void MainWindow::runRingSearch()
         m_map->setAfkFocusHandler([this](int idx) {
             if (idx >= 0 && idx < static_cast<int>(m_lastAfk.size())) {
                 const auto& cd = m_lastAfk[static_cast<size_t>(idx)];
-                setStatus(slime::ui::tr(QStringLiteral("已选中第 %1 个环心（%2,%3）：有效 %4 格 / 权重 %5"))
+                setStatus(slime::ui::tr(slime::ui::t("ui.46355f6279ae"))
                               .arg(idx + 1)
                               .arg(cd.x)
                               .arg(cd.z)
@@ -5157,7 +5096,7 @@ void MainWindow::runRingSearch()
                         secs * 1000.0;
     std::fprintf(stderr, "[环形] 界面刷新（列表+地图）：%.1f ms（地图图层最近一次 %.0f ms）\n", uiMs,
                  m_map ? m_map->lastLayerBuildMs() : 0.0);
-    setStatus(slime::ui::tr(QStringLiteral("环形 %1~%2 格｜按 y=%3 统计：%4 个站位，最优 %5 格 / %6 区块 / 覆盖率 %7%%（用时 %8 秒%9）"))
+    setStatus(slime::ui::tr(slime::ui::t("ui.1d9c4069d770"))
                   .arg(kRingInner)
                   .arg(kRingOuter)
                   .arg(spawnY)
@@ -5166,7 +5105,7 @@ void MainWindow::runRingSearch()
                   .arg(cands.empty() ? 0 : cands.front().coveredChunks)
                   .arg(cands.empty() ? 0.0 : cands.front().coveragePercent, 0, 'f', 1)
                   .arg(secs, 0, 'f', 3)
-                  .arg(stride > 1 ? slime::ui::tr(QStringLiteral("，粗扫步长 %1 区块")).arg(stride) : QString()));
+                  .arg(stride > 1 ? slime::ui::tr(slime::ui::t("ui.c29ba5f06d05")).arg(stride) : QString()));
     std::fprintf(stderr, "[环形] 搜索完成：候选=%zu 最优=(%d,%d) 覆盖=%lld 格 用时=%.3fs\n", cands.size(),
                  cands.empty() ? 0 : cands.front().x, cands.empty() ? 0 : cands.front().z,
                  cands.empty() ? 0LL : static_cast<long long>(cands.front().coveredBlocks), secs);
@@ -5186,9 +5125,9 @@ void MainWindow::updateMapFromForm()
         const QString seedText = m_w->seedEdit ? m_w->seedEdit->text().trimmed() : QString();
         const bool needSeed = seedText.isEmpty() || !ok;   // v3.5.28：两版都要种子
         if (needSeed) {
-            m_map->setPlaceholderText(slime::ui::tr(QStringLiteral("请先在上方填写世界种子，再显示地图")));
+            m_map->setPlaceholderText(slime::ui::tr(slime::ui::t("ui.0c9972317e16")));
             m_map->setLayer(l);
-            setStatus(slime::ui::tr(QStringLiteral("请先填写世界种子（地图需要种子才能生成）")));
+            setStatus(slime::ui::tr(slime::ui::t("ui.27c2c9373f1b")));
             return;
         }
         m_map->setPlaceholderText(QString());
@@ -5243,9 +5182,9 @@ void MainWindow::updateSimDistanceNote()
     const int inner = std::clamp(m_settings.afkRingInner, 0, 64);
     const int simBlocks = m_w->simDistance->value() * 16;
     if (simBlocks >= outerBase) {
-        m_w->simDistanceNote->setText(QStringLiteral("≥ %1 格：环带仍是 %2~%3").arg(outerBase).arg(inner).arg(outerBase));
+        m_w->simDistanceNote->setText(slime::ui::t("ui.511104f69bef").arg(outerBase).arg(inner).arg(outerBase));
     } else {
-        m_w->simDistanceNote->setText(QStringLiteral("生效：环带收窄为 %1~%2 格").arg(inner).arg(simBlocks));
+        m_w->simDistanceNote->setText(slime::ui::t("ui.c2a121be1423").arg(inner).arg(simBlocks));
     }
 }
 
@@ -5258,7 +5197,7 @@ void MainWindow::clearResultsForNewSearch()
     m_lastOutcome = SearchOutcome{};
     m_hasLastOutcome = false;
     if (m_w->resultTable) m_w->resultTable->setRowCount(0);
-    if (m_resultCountLabel) m_resultCountLabel->setText(QStringLiteral("（无结果）"));
+    if (m_resultCountLabel) m_resultCountLabel->setText(slime::ui::t("ui.a535edb5149b"));
     if (m_resultsNotice) {
         m_resultsNotice->setText(QString());
         m_resultsNotice->setVisible(false);
@@ -5268,7 +5207,7 @@ void MainWindow::clearResultsForNewSearch()
         m_map->setAfkCandidates({});
         m_map->setFocusedAfk(-1);
     }
-    if (m_w->infoStats) m_w->infoStats->setText(QStringLiteral("尚未搜索"));
+    if (m_w->infoStats) m_w->infoStats->setText(slime::ui::t("ui.bff5b3f4bbe4"));
     if (m_w->resultView) m_w->resultView->clear();
     // 结果文本区在 v3.5.x 起默认折叠：清空时保持折叠状态即可
 }
@@ -5286,12 +5225,12 @@ void MainWindow::updateStartEnabled()
     const bool buildMode = m_buildActive;
 
     QString why;
-    if (!bedrock && (seedText.isEmpty() || !ok)) why = QStringLiteral("先填写世界种子");
-    else if (buildMode && seedText.isEmpty()) why = QStringLiteral("先填写世界种子");
-    else if (patternMode && !hasPattern && !buildMode) why = QStringLiteral("先绘制图案");
+    if (!bedrock && (seedText.isEmpty() || !ok)) why = slime::ui::t("ui.5344ca1e9e8b");
+    else if (buildMode && seedText.isEmpty()) why = slime::ui::t("ui.5344ca1e9e8b");
+    else if (patternMode && !hasPattern && !buildMode) why = slime::ui::t("ui.779966e118d2");
     const bool can = why.isEmpty();
     m_w->start->setEnabled(can);
-    m_w->start->setToolTip(can ? QStringLiteral("开始搜索") : why);
+    m_w->start->setToolTip(can ? slime::ui::t("ui.8fdc065eda03") : why);
     // 提示只放在 tooltip 里（左栏已经有线程/GPU 提示，避免再占一行）
 }
 
@@ -5319,9 +5258,9 @@ void MainWindow::toggleMapPanel()
     m_mapPaneWidth = (keepSizes.size() >= 3) ? keepSizes[1] : m_mapPaneWidth;
     if (show) {
         updateMapFromForm();
-        setStatus(slime::ui::tr(QStringLiteral("已展开地图面板")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.1ff3e451eaf3")));
     } else {
-        setStatus(slime::ui::tr(QStringLiteral("已收起地图面板（Ctrl+M 可再展开）")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.9e8c9184ca74")));
     }
     pinSizes();
     QTimer::singleShot(0, this, pinSizes);
@@ -5333,7 +5272,7 @@ void MainWindow::focusMapOnChunk(int chunkX, int chunkZ)
     if (m_map && !m_map->isVisible()) toggleMapPanel();   // v3.6.2：按内容可见性判断
     m_map->setView(chunkX * 16.0 + 8.0, chunkZ * 16.0 + 8.0, (std::max)(2.0, m_map->pxPerBlock()));
     m_map->refreshNow();
-    setStatus(slime::ui::tr(QStringLiteral("地图已定位到区块 (%1, %2)")).arg(chunkX).arg(chunkZ));
+    setStatus(slime::ui::tr(slime::ui::t("ui.8700ac6906d4")).arg(chunkX).arg(chunkZ));
     std::fprintf(stderr, "[地图面板] 定位：区块(%d,%d) → 方块(%d,%d)\n", chunkX, chunkZ, chunkX * 16 + 8,
                  chunkZ * 16 + 8);
 }
@@ -5352,7 +5291,7 @@ void MainWindow::focusAfkCandidate(int index)
     m_map->setView(static_cast<double>(cd.x) + 0.5, static_cast<double>(cd.z) + 0.5, zoom);
     m_map->setFocusedAfk(index);
     m_map->refreshNow();
-    setStatus(slime::ui::tr(QStringLiteral("已选中第 %1 个环心（%2,%3）：有效 %4 格 / 权重 %5 / %6 区块"))
+    setStatus(slime::ui::tr(slime::ui::t("ui.be49a883050c"))
                   .arg(index + 1)
                   .arg(cd.x)
                   .arg(cd.z)
@@ -5380,7 +5319,7 @@ void MainWindow::computeAfkForMap()
     const auto res = slime::AfkPlanner::plan(o, pred);
     m_map->setAfkCandidates(res);
     if (!res.empty()) m_map->fitToContent();
-    setStatus(slime::ui::tr(QStringLiteral("已在地图上标出 %1 个挂机点")).arg(res.size()));
+    setStatus(slime::ui::tr(slime::ui::t("ui.00028abeba59")).arg(res.size()));
 }
 
 // v3.5.2（任务 2）：地图预览 —— 把史莱姆区块、搜索结果、挂机点画在一张可缩放/平移的地图上
@@ -5391,9 +5330,9 @@ void MainWindow::showMapDialog()
     bool seedOk = false;
     if (m_w->seedEdit) ctx.seed = m_w->seedEdit->text().trimmed().toLongLong(&seedOk);
     if (ctx.version == 0 && !seedOk) {
-        QMessageBox::information(this, QStringLiteral("需要种子"),
-                                 QStringLiteral("Java 版的史莱姆区块与世界种子有关，请先在世界种子一栏填写种子。"));
-        setStatus(slime::ui::tr(QStringLiteral("地图预览：Java 版需要先填写世界种子")));
+        QMessageBox::information(this, slime::ui::t("ui.faea94c8b095"),
+                                 slime::ui::t("ui.64cd88da6b9d"));
+        setStatus(slime::ui::tr(slime::ui::t("ui.6616d54947cf")));
         return;
     }
     if (!m_lastOutcome.results.empty()) {
@@ -5406,11 +5345,11 @@ void MainWindow::showMapDialog()
         }
         ctx.minX = minX - 1; ctx.maxX = maxX + 1;
         ctx.minZ = minZ - 1; ctx.maxZ = maxZ + 1;
-        ctx.source = QStringLiteral("最近一次结果（%1 条）").arg(m_lastOutcome.results.size());
+        ctx.source = slime::ui::t("ui.491bd822f8b8").arg(m_lastOutcome.results.size());
     } else if (m_w->minX && m_w->maxX && m_w->minZ && m_w->maxZ) {
         ctx.minX = m_w->minX->value(); ctx.maxX = m_w->maxX->value();
         ctx.minZ = m_w->minZ->value(); ctx.maxZ = m_w->maxZ->value();
-        ctx.source = QStringLiteral("当前搜索范围");
+        ctx.source = slime::ui::t("ui.bba2e2e3b721");
     } else {
         return;
     }
@@ -5428,9 +5367,9 @@ void MainWindow::showAfkDialog()
     bool seedOk = false;
     if (m_w->seedEdit) ctx.seed = m_w->seedEdit->text().trimmed().toLongLong(&seedOk);
     if (ctx.version == 0 && !seedOk) {
-        QMessageBox::information(this, QStringLiteral("需要种子"),
-                                 QStringLiteral("Java 版的史莱姆区块与世界种子有关，请先在世界种子一栏填写种子。"));
-        setStatus(slime::ui::tr(QStringLiteral("挂机点：Java 版需要先填写世界种子")));
+        QMessageBox::information(this, slime::ui::t("ui.faea94c8b095"),
+                                 slime::ui::t("ui.64cd88da6b9d"));
+        setStatus(slime::ui::tr(slime::ui::t("ui.447c26e890a5")));
         return;
     }
 
@@ -5444,11 +5383,11 @@ void MainWindow::showAfkDialog()
         }
         ctx.minX = minX - 2; ctx.maxX = maxX + 2;
         ctx.minZ = minZ - 2; ctx.maxZ = maxZ + 2;
-        ctx.source = QStringLiteral("最近一次结果（%1 条，外扩 2 区块）").arg(m_lastOutcome.results.size());
+        ctx.source = slime::ui::t("ui.767c07630078").arg(m_lastOutcome.results.size());
     } else if (m_w->minX && m_w->maxX && m_w->minZ && m_w->maxZ) {
         ctx.minX = m_w->minX->value(); ctx.maxX = m_w->maxX->value();
         ctx.minZ = m_w->minZ->value(); ctx.maxZ = m_w->maxZ->value();
-        ctx.source = QStringLiteral("当前搜索范围");
+        ctx.source = slime::ui::t("ui.bba2e2e3b721");
     } else {
         return;
     }
@@ -5468,11 +5407,11 @@ void MainWindow::showGpuStatus()
     const QString text = Ok ? (QStringLiteral("✅ ") + body) : (QStringLiteral("❌ ") + body);
     updateGpuStatusUi(); // 同步左侧状态标签文字与主题色
     addFeedback(Ok ? 2 : 1, text);
-    setStatus(Ok ? QStringLiteral("GPU 可用") : QStringLiteral("GPU 不可用"));
+    setStatus(Ok ? slime::ui::t("ui.0a94c990a118") : slime::ui::t("ui.3be003594bed"));
     slime::LogBus::info("GPU 状态查询：" + text.toStdString());
     if (!m_uiQuiet) {
         QMessageBox box(this);
-        box.setWindowTitle(QStringLiteral("GPU 状态"));
+        box.setWindowTitle(slime::ui::t("ui.e4d209f2e621"));
         box.setTextFormat(Qt::PlainText);
         box.setText(text);
         box.setIcon(Ok ? QMessageBox::Information : QMessageBox::Warning);
@@ -5486,8 +5425,8 @@ void MainWindow::showGpuStatus()
 void MainWindow::updateLogMenuText()
 {
     if (!m_actLogToggle) return;
-    m_actLogToggle->setText(slime::LogBus::enabled() ? QStringLiteral("关闭日志")
-                                                     : QStringLiteral("启用日志…"));
+    m_actLogToggle->setText(slime::LogBus::enabled() ? slime::ui::t("ui.0aa53272a236")
+                                                     : slime::ui::t("ui.80005af43eec"));
 }
 
 void MainWindow::toggleLogging()
@@ -5498,8 +5437,8 @@ void MainWindow::toggleLogging()
         saveAlgorithmToConfig(); // 写回 config.json 的 log.mode = off
         if (m_logPanel) m_logPanel->refreshFromBus();
         updateLogMenuText();
-        addFeedback(2, slime::ui::tr(QStringLiteral("日志已关闭（不再写入日志文件）")));
-        setStatus(slime::ui::tr(QStringLiteral("日志已关闭")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.0035e24be638")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.564c665e22ef")));
         return;
     }
     showEnableLogDialog(); // 未启用：走原有的两级选项对话框
@@ -5573,13 +5512,11 @@ void MainWindow::startGpuBenchmark()
             const QString verdict =
                 ratio <= 0.0 ? QString()
                              : (ratio >= 1.0
-                                    ? QStringLiteral("实测：GPU 吞吐是本机 CPU 多核的 %1 倍（启用 GPU 更快）")
+                                    ? slime::ui::t("ui.e7f9b9c95f4d")
                                           .arg(ratio, 0, 'f', 2)
-                                    : QStringLiteral("实测：GPU 吞吐只有本机 CPU 多核的 %1 倍（建议保持关闭，省电且更快）")
+                                    : slime::ui::t("ui.6e86c3dc022d")
                                           .arg(ratio, 0, 'f', 2));
-            self->m_gpuBenchText = QStringLiteral(
-                                       "实测吞吐率（本机）：CPU（%1 线程）%2 亿区块/秒 ｜ GPU %3 亿区块/秒（含回读）\n"
-                                       "固定开销：CPU %4 ms ｜ GPU %5 ms\n%6")
+            self->m_gpuBenchText = slime::ui::t("ui.1ced5aa48bbb")
                                        .arg(cpuThreads)
                                        .arg(rCpu / 1e8, 0, 'f', 2)
                                        .arg(rGpu / 1e8, 0, 'f', 2)
@@ -5599,7 +5536,7 @@ void MainWindow::startGpuBenchmark()
 void MainWindow::updateGpuBenchmarkUi()
 {
     if (m_w->gpuStatus && m_gpuAvailable) {
-        m_w->gpuStatus->setText(QStringLiteral("GPU：可用（已启用）"));
+        m_w->gpuStatus->setText(slime::ui::t("ui.c0ba81d5e5b8"));
         m_w->gpuStatus->setToolTip(m_gpuBenchText);
     }
     if (m_w->gpuCheck) {
@@ -5667,7 +5604,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* ev)
             const int left = 380;
             const int right = 360;
             m_hSplit->setSizes(QList<int>{ left, (std::max)(360, w - left - right), right });
-            setStatus(slime::ui::tr(QStringLiteral("已恢复默认分栏（左栏 400）")));
+            setStatus(slime::ui::tr(slime::ui::t("ui.5a6665d65ea8")));
             return true;
         }
         if (m_rightSplit && m_rightSplit->count() > 1 && watched == m_rightSplit->handle(1)) {
@@ -5675,7 +5612,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* ev)
             const int hgt = m_rightSplit->height();
             const int bottom = (std::min)(400, (std::max)(200, hgt * 2 / 5));
             m_rightSplit->setSizes(QList<int>{ (std::max)(240, hgt - bottom), bottom });
-            setStatus(slime::ui::tr(QStringLiteral("已恢复默认分栏（结果 / 过程 240）")));
+            setStatus(slime::ui::tr(slime::ui::t("ui.f245741059aa")));
             return true;
         }
     }
@@ -5789,18 +5726,18 @@ void MainWindow::updateElapsedUi()
                                                       m_searchStartMs) /
                                   1000.0)
                                : 0.0;
-    m_w->progressElapsed->setText(QStringLiteral("已用时：%1 s").arg(elapsed, 0, 'f', 1));
+    m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(elapsed, 0, 'f', 1));
     // v3.5.28：工具栏状态面板的阶段文字（搜索中 / 匹配中 / 排序中）
     if (m_w->searchStage) {
         const bool matching = m_stageWasMatching || m_task.livePhase() >= 2;
-        m_w->searchStage->setText(matching ? QStringLiteral("阶段：匹配中")
-                                           : QStringLiteral("阶段：搜索中"));
+        m_w->searchStage->setText(matching ? slime::ui::t("ui.8f92264f67fa")
+                                           : slime::ui::t("ui.bd9dbc6fc1d9"));
     }
     if (m_etaSec > 0.0 && m_etaSec < 36000.0) {
         const int s = static_cast<int>(m_etaSec + 0.5);
-        m_w->progressEta->setText(QStringLiteral("预计剩余：%1:%2").arg(s / 60).arg(s % 60, 2, 10, QLatin1Char('0')));
+        m_w->progressEta->setText(slime::ui::t("ui.11f69d6c1387").arg(s / 60).arg(s % 60, 2, 10, QLatin1Char('0')));
     } else {
-        m_w->progressEta->setText(QStringLiteral("预计剩余：--:--"));
+        m_w->progressEta->setText(slime::ui::t("ui.f00785313fdc"));
     }
 }
 
@@ -5814,12 +5751,12 @@ void MainWindow::selectBottomCategory(int index)
 {
     if (!m_nav || !m_stack) return;
     if (index < 0 || index >= m_nav->count()) return;
-    static const char* const kNames[4] = { "进度", "反馈", "日志", "命令" };
+    static const char* const kNames[4] = { "ui.tab.progress", "ui.tab.feedback", "ui.tab.log", "ui.tab.command" };
     for (int i = 0; i < m_nav->count(); ++i) {
         QListWidgetItem* it = m_nav->item(i);
         if (!it) continue;
         const bool cur = (i == index);
-        QString text = QString::fromUtf8(cur ? "● " : "○ ") + QString::fromUtf8(kNames[i]);
+        QString text = QString::fromUtf8(cur ? "● " : "○ ") + slime::ui::t(kNames[i]);
         if (i == 1 && m_feedback) {
             const QString badge = FeedbackPanel::badgeText(m_feedback->warningCount(),
                                                            m_feedback->errorCount());
@@ -5832,7 +5769,7 @@ void MainWindow::selectBottomCategory(int index)
         it->setBackground(cur ? QBrush(QColor(0, 120, 215, 60)) : QBrush(Qt::NoBrush));
         it->setForeground(cur ? QBrush(QColor(0, 120, 215)) : QBrush(Qt::NoBrush));
     }
-    if (m_dockTitle) m_dockTitle->setText(QStringLiteral("过程 · %1").arg(QString::fromUtf8(kNames[index])));
+    if (m_dockTitle) m_dockTitle->setText(slime::ui::t("ui.cb45d50a89a3").arg(QString::fromUtf8(kNames[index])));
     for (int i = 0; i < static_cast<int>(m_dockHeadTabs.size()); ++i) {
         if (m_dockHeadTabs[static_cast<size_t>(i)]) m_dockHeadTabs[static_cast<size_t>(i)]->setChecked(i == index);
     }
@@ -5866,9 +5803,9 @@ void MainWindow::appendProgressStreamLine()
         const int64_t total = (std::max)(int64_t(1), buildTotalChunks());
         const double cps = elapsed > 0.05 ? static_cast<double>(recorded) / elapsed : 0.0;
         m_progressStream->appendRawLine(
-            QStringLiteral("[%1] %2：已记录 %3 区块(%4%)，记录速度为 %5 万区块/秒，已花费 %6 秒（已跳过 %7）")
+            slime::ui::t("ui.86577d8e48b4")
                 .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")))
-                .arg(m_task.livePhase() == 1 ? QStringLiteral("缓存扫描") : QStringLiteral("新区域扫描"))
+                .arg(m_task.livePhase() == 1 ? slime::ui::t("ui.6347233dd7dd") : slime::ui::t("ui.a8878877a9f5"))
                 .arg(recorded)
                 .arg(100.0 * static_cast<double>(recorded) / static_cast<double>(total), 0, 'f', 1)
                 .arg(cps / 10000.0, 0, 'f', 1)
@@ -5926,35 +5863,35 @@ QStringList MainWindow::commandNames() const
 QString MainWindow::commandHelp(const QString& cmd) const
 {
     static const QHash<QString, QString> aHelp = {
-        { QStringLiteral("help"), QStringLiteral("显示全部命令与用法") },
-        { QStringLiteral("version"), QStringLiteral("显示程序版本与路径") },
-        { QStringLiteral("seed"), QStringLiteral("seed [值]：查看/设置世界种子（Java 版）") },
-        { QStringLiteral("range"), QStringLiteral("range [X0 X1 Z0 Z1 | ±n]：查看/设置搜索范围") },
-        { QStringLiteral("center"), QStringLiteral("center [x z]：查看/设置查询起点（距离基准）") },
-        { QStringLiteral("preset"), QStringLiteral("preset near|local|global|world|bedrock：套用快速预设") },
-        { QStringLiteral("mode"), QStringLiteral("mode strict|density|exact|layered|sample|brute：查看/设置模式与算法") },
-        { QStringLiteral("search"), QStringLiteral("search：立即开始搜索（后台执行，不阻塞终端）") },
-        { QStringLiteral("cancel"), QStringLiteral("cancel：立即取消当前搜索") },
-        { QStringLiteral("status"), QStringLiteral("status：显示当前状态摘要") },
-        { QStringLiteral("gpu"), QStringLiteral("gpu [on|off]：查看/切换 GPU 加速并显示设备与实测吞吐率") },
-        { QStringLiteral("target"), QStringLiteral("target [n]：查看/设置目标数量（最近 N 个）") },
-        { QStringLiteral("result"), QStringLiteral("result list [n] | result copy <n>：列出结果 / 复制第 n 条命令") },
-        { QStringLiteral("log"), QStringLiteral("log [off|brief|detailed]：查看/切换日志模式（同步设置页）") },
-        { QStringLiteral("theme"), QStringLiteral("theme [light|dark|system]：查看/切换外观主题（同步设置页）") },
-        { QStringLiteral("stop"), QStringLiteral("stop [on|off]：达到目标数量即停止") },
-        { QStringLiteral("smart"), QStringLiteral("smart [on|off]：智能范围（由近及远）") },
-        { QStringLiteral("lock"), QStringLiteral("lock [on|off]：严格模式下的方向锁定") },
-        { QStringLiteral("grid"), QStringLiteral("grid [n]：密度搜索网格边长（1~512）") },
-        { QStringLiteral("density"), QStringLiteral("density [0~1]：密度搜索最小密度阈值") },
-        { QStringLiteral("threads"), QStringLiteral("threads [n]：线程数（0 = 自动）") },
-        { QStringLiteral("build"), QStringLiteral("build [on|off]：进入/退出缓存构建模式") },
-        { QStringLiteral("cache"), QStringLiteral("cache [status|clear|import <路径>|build]：缓存状态/清空/导入/构建") },
-        { QStringLiteral("copy"), QStringLiteral("copy <n>：复制第 n 条结果的 /tp 命令（越界会明确报错）") },
-        { QStringLiteral("open"), QStringLiteral("open logs|cache|crash：打开日志/缓存/崩溃目录") },
-        { QStringLiteral("about"), QStringLiteral("about：版本与联系信息") },
-        { QStringLiteral("clear"), QStringLiteral("clear：清空终端输出（终端内置）") },
+        { QStringLiteral("help"), slime::ui::t("ui.f4f64b027abd") },
+        { QStringLiteral("version"), slime::ui::t("ui.bd2fc88197ae") },
+        { QStringLiteral("seed"), slime::ui::t("ui.be84b2c5322f") },
+        { QStringLiteral("range"), slime::ui::t("ui.c9951d36a841") },
+        { QStringLiteral("center"), slime::ui::t("ui.14074052b097") },
+        { QStringLiteral("preset"), slime::ui::t("ui.d72ad001dcdf") },
+        { QStringLiteral("mode"), slime::ui::t("ui.7ef8de2a05a9") },
+        { QStringLiteral("search"), slime::ui::t("ui.6380f599e548") },
+        { QStringLiteral("cancel"), slime::ui::t("ui.dc7e8d7b8a9f") },
+        { QStringLiteral("status"), slime::ui::t("ui.9d871c556321") },
+        { QStringLiteral("gpu"), slime::ui::t("ui.9fc4bd1d3a96") },
+        { QStringLiteral("target"), slime::ui::t("ui.a08c4c8c3e3b") },
+        { QStringLiteral("result"), slime::ui::t("ui.8d2180f88471") },
+        { QStringLiteral("log"), slime::ui::t("ui.88e1078439f9") },
+        { QStringLiteral("theme"), slime::ui::t("ui.4ef62fa28d91") },
+        { QStringLiteral("stop"), slime::ui::t("ui.facc5e3a4732") },
+        { QStringLiteral("smart"), slime::ui::t("ui.1149d8a99ff3") },
+        { QStringLiteral("lock"), slime::ui::t("ui.0ed032ec9e84") },
+        { QStringLiteral("grid"), slime::ui::t("ui.f119374add58") },
+        { QStringLiteral("density"), slime::ui::t("ui.071d3bf971b4") },
+        { QStringLiteral("threads"), slime::ui::t("ui.e7258f9fd682") },
+        { QStringLiteral("build"), slime::ui::t("ui.d6769ff1ecde") },
+        { QStringLiteral("cache"), slime::ui::t("ui.98918284391b") },
+        { QStringLiteral("copy"), slime::ui::t("ui.60a473d46989") },
+        { QStringLiteral("open"), slime::ui::t("ui.e2bc2f6e629e") },
+        { QStringLiteral("about"), slime::ui::t("ui.b223e9759bc5") },
+        { QStringLiteral("clear"), slime::ui::t("ui.9db4f6f902f7") },
     };
-    return aHelp.value(cmd, QStringLiteral("未知命令（输入 help 查看全部命令）"));
+    return aHelp.value(cmd, slime::ui::t("ui.6535b7b34aa5"));
 }
 
 QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
@@ -5972,22 +5909,21 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
             QStringLiteral("lock"),    QStringLiteral("threads")
         };
         if (kSearchOnly.contains(c)) {
-            return QStringLiteral("当前是缓存构建模式：%1 不参与构建（构建只做判定 + 写缓存，不做匹配）。\n"
-                                  "如需修改搜索参数，请先执行 build off 回到搜索模式。")
+            return slime::ui::t("ui.2f1957578333")
                 .arg(c);
         }
     }
 
     if (c == QLatin1String("help")) {
-        QString out = QStringLiteral("可用命令（%1 条；命令会立即执行，可插队到正在运行的搜索）：\n").arg(commandNames().size());
+        QString out = slime::ui::t("ui.b43c9cc77dd4").arg(commandNames().size());
         for (const QString& n : commandNames()) {
             out += QStringLiteral("  %1  -  %2\n").arg(n, -8).arg(commandHelp(n));
         }
-        out += QStringLiteral("\n提示：↑/↓ 翻历史，Tab 补全；历史保存在 config.json（最多 100 条）。");
+        out += slime::ui::t("ui.e3335507e1df");
         return out;
     }
     if (c == QLatin1String("version")) {
-        return QStringLiteral("史莱姆区块查找器 %1\n程序目录：%2\nQt：%3\n构建日期文件：build_date.txt（已发布 %4 天）")
+        return slime::ui::t("ui.6a97f78c38df")
             .arg(QLatin1String(kAppVersion))
             .arg(QString::fromStdWString(appDirPath().wstring()))
             .arg(QStringLiteral(QT_VERSION_STR))
@@ -5996,11 +5932,10 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
     if (c == QLatin1String("clear")) {
         // clear 由终端自己处理（清空输出区）；这里给 API 调用方一个明确应答，
         // 也保证「命令表 ↔ 实现」一致性自检不会把它当成幽灵指令。
-        return QStringLiteral("clear 由终端自己处理：清空命令终端的输出区（不改变搜索/缓存状态）。");
+        return slime::ui::t("ui.5736a4b3d232");
     }
     if (c == QLatin1String("about")) {
-        return QStringLiteral("史莱姆区块查找器 %1\n程序目录：%2\n反馈邮箱：%3\n"
-                              "（帮助 → 关于 / 联系我们 里有完整信息）")
+        return slime::ui::t("ui.d29cc9aa2cb5")
             .arg(QLatin1String(kAppVersion))
             .arg(QString::fromStdWString(appDirPath().wstring()))
             .arg(QLatin1String(kContactEmail));
@@ -6008,91 +5943,91 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
     if (c == QLatin1String("help") && !args.isEmpty()) {
         const QString one = args[0].toLower();
         if (!commandNames().contains(one)) {
-            return QStringLiteral("没有命令 %1（执行 help 查看全部 %2 条）").arg(one).arg(commandNames().size());
+            return slime::ui::t("ui.e4f8211e4809").arg(one).arg(commandNames().size());
         }
         return QStringLiteral("%1 - %2").arg(one, commandHelp(one));
     }
     if (c == QLatin1String("theme")) {
         if (args.isEmpty()) {
-            return QStringLiteral("当前主题：%1（档位：%2）")
+            return slime::ui::t("ui.cc2fe33a16e2")
                 .arg(slime::ThemeManager::modeDisplayName(slime::ThemeManager::instance().mode()),
                      slime::ThemeManager::modeToString(slime::ThemeManager::instance().mode()));
         }
         const QString v = args[0].toLower();
         if (v != QLatin1String("light") && v != QLatin1String("dark") && v != QLatin1String("system")) {
-            return QStringLiteral("用法：theme [light|dark|system]");
+            return slime::ui::t("ui.491a4473817c");
         }
         AppSettings s = m_settings;
         s.theme = v;
         applyAppSettings(s);              // 含主题重放 + 设置页收敛
         flushPendingConfigWrite();        // 主题是显式操作，立即落盘
-        return QStringLiteral("主题已切换为 %1（设置页与 config.json 已同步）")
+        return slime::ui::t("ui.7b64f65aa5cb")
             .arg(slime::ThemeManager::modeDisplayName(slime::ThemeManager::instance().mode()));
     }
     if (c == QLatin1String("stop") || c == QLatin1String("smart") || c == QLatin1String("lock")) {
         QCheckBox* box = (c == QLatin1String("stop"))    ? m_w->stopAtTarget
                           : (c == QLatin1String("smart")) ? m_w->smartRange
                                                           : m_w->lockDir;
-        const QString label = (c == QLatin1String("stop"))    ? QStringLiteral("达到目标数量即停止")
-                               : (c == QLatin1String("smart")) ? QStringLiteral("智能范围")
-                                                               : QStringLiteral("方向锁定");
-        if (args.isEmpty()) return QStringLiteral("%1：%2").arg(label, box->isChecked() ? QStringLiteral("已开启")
-                                                                                        : QStringLiteral("已关闭"));
+        const QString label = (c == QLatin1String("stop"))    ? slime::ui::t("ui.166485d58cc3")
+                               : (c == QLatin1String("smart")) ? slime::ui::t("ui.9522c47b44f6")
+                                                               : slime::ui::t("ui.144f946f0e21");
+        if (args.isEmpty()) return QStringLiteral("%1：%2").arg(label, box->isChecked() ? slime::ui::t("ui.d78cde076b67")
+                                                                                        : slime::ui::t("ui.f628761bf56a"));
         const QString v = args[0].toLower();
         if (v != QLatin1String("on") && v != QLatin1String("off")) {
-            return QStringLiteral("用法：%1 [on|off]").arg(c);
+            return slime::ui::t("ui.f28af3ed51d6").arg(c);
         }
         box->setChecked(v == QLatin1String("on"));
         onModeChanged();
-        return QStringLiteral("%1 已%2").arg(label, box->isChecked() ? QStringLiteral("开启") : QStringLiteral("关闭"));
+        return slime::ui::t("ui.23935bb28c3c").arg(label, box->isChecked() ? slime::ui::t("ui.256783b7d4ea") : slime::ui::t("ui.6c14bd7f6f9e"));
     }
     if (c == QLatin1String("grid")) {
-        if (args.isEmpty()) return QStringLiteral("网格边长：%1（区块）").arg(m_w->gridSize->value());
+        if (args.isEmpty()) return slime::ui::t("ui.3b566a78f727").arg(m_w->gridSize->value());
         bool Ok = false;
         const int n = args[0].toInt(&Ok);
-        if (!Ok || n < 1 || n > 512) return QStringLiteral("用法：grid n（1~512）");
+        if (!Ok || n < 1 || n > 512) return slime::ui::t("ui.a81d88d7e1e9");
         m_w->gridSize->setValue(n);
-        return QStringLiteral("网格边长已设为 %1").arg(m_w->gridSize->value());
+        return slime::ui::t("ui.fae3f47b7eee").arg(m_w->gridSize->value());
     }
     if (c == QLatin1String("density")) {
-        if (args.isEmpty()) return QStringLiteral("最小密度：%1").arg(m_w->minDensity->value(), 0, 'f', 3);
+        if (args.isEmpty()) return slime::ui::t("ui.b55699ba275b").arg(m_w->minDensity->value(), 0, 'f', 3);
         bool Ok = false;
         const double v = args[0].toDouble(&Ok);
-        if (!Ok || v < 0.0 || v > 1.0) return QStringLiteral("用法：density 0~1（例如 density 0.28）");
+        if (!Ok || v < 0.0 || v > 1.0) return slime::ui::t("ui.7736eaf1585d");
         m_w->minDensity->setValue(v);
-        return QStringLiteral("最小密度已设为 %1").arg(m_w->minDensity->value(), 0, 'f', 3);
+        return slime::ui::t("ui.6fa36e115342").arg(m_w->minDensity->value(), 0, 'f', 3);
     }
     if (c == QLatin1String("threads")) {
         if (args.isEmpty()) {
-            return QStringLiteral("线程数：%1（0 = 自动）｜最近一次生效线程：%2")
+            return slime::ui::t("ui.58beee25a300")
                 .arg(m_w->threads->value()).arg(m_lastEffectiveThreads);
         }
         bool Ok = false;
         const int n = args[0].toInt(&Ok);
-        if (!Ok || n < 0) return QStringLiteral("用法：threads n（0 = 自动）");
+        if (!Ok || n < 0) return slime::ui::t("ui.a890971c8e76");
         m_w->threads->setValue(n);
-        return QStringLiteral("线程数已设为 %1").arg(m_w->threads->value());
+        return slime::ui::t("ui.a1297902c8e4").arg(m_w->threads->value());
     }
     if (c == QLatin1String("build")) {
         if (args.isEmpty()) {
-            return QStringLiteral("缓存构建模式：%1（构建页与之一致；离开请执行 build off）")
-                .arg(buildModeActive() ? QStringLiteral("已开启") : QStringLiteral("已关闭"));
+            return slime::ui::t("ui.1f501012d9cb")
+                .arg(buildModeActive() ? slime::ui::t("ui.d78cde076b67") : slime::ui::t("ui.f628761bf56a"));
         }
         const QString v = args[0].toLower();
         if (v != QLatin1String("on") && v != QLatin1String("off")) {
-            return QStringLiteral("用法：build [on|off]");
+            return slime::ui::t("ui.44b21e54a5d3");
         }
         const bool on = (v == QLatin1String("on"));
         showPage(on ? kPageBuild : kPageSearch); // 页面 = 构建模式（单一事实来源）
-        return QStringLiteral("缓存构建模式已%1%2")
-            .arg(on ? QStringLiteral("开启") : QStringLiteral("关闭"),
-                 on ? QStringLiteral("（本页只做判定 + 写缓存；cache build 可立即开始构建）") : QString());
+        return slime::ui::t("ui.41db64208732")
+            .arg(on ? slime::ui::t("ui.256783b7d4ea") : slime::ui::t("ui.6c14bd7f6f9e"),
+                 on ? slime::ui::t("ui.d4fe2a107b07") : QString());
     }
     if (c == QLatin1String("cache")) {
         const QString sub = argAt(0).toLower();
         if (sub.isEmpty() || sub == QLatin1String("status")) {
-            return QStringLiteral("缓存：%1 ｜ 条目 %2 ｜ 区域 %3 ｜ 文件 %4")
-                .arg(m_cache->hasData() ? QStringLiteral("已加载") : QStringLiteral("未加载"))
+            return slime::ui::t("ui.ca94b4a071fe")
+                .arg(m_cache->hasData() ? slime::ui::t("ui.b19bae5d1305") : slime::ui::t("ui.43e203c1de2c"))
                 .arg(static_cast<qlonglong>(m_cache->entryCount()))
                 .arg(static_cast<qlonglong>(m_cache->ranges().size()))
                 .arg(QString::fromStdWString(m_cacheFile.wstring()));
@@ -6102,40 +6037,40 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
             std::error_code ec;
             std::filesystem::remove(m_cacheFile, ec);
             updateCacheStatusUi();
-            return QStringLiteral("缓存已清空（含磁盘文件）");
+            return slime::ui::t("ui.20563af38637");
         }
         if (sub == QLatin1String("import")) {
             const QString path = args.mid(1).join(QLatin1Char(' ')).trimmed();
-            if (path.isEmpty()) return QStringLiteral("用法：cache import <缓存文件路径>");
+            if (path.isEmpty()) return slime::ui::t("ui.7a449b293047");
             const int64_t before = m_cache->entryCount();
             importCacheFromPath(path, /*showProgressDialog=*/!m_uiQuiet, /*showResultDialogs=*/!m_uiQuiet);
             const int64_t added = m_cache->entryCount() - before;
             updateCacheStatusUi();
-            return added > 0 ? QStringLiteral("缓存已导入：%1（新增 %2 条）").arg(path).arg(added)
-                             : QStringLiteral("导入未增加任何条目（路径无效 / 已取消 / 内容已存在）：%1").arg(path);
+            return added > 0 ? slime::ui::t("ui.06fa0ea0e616").arg(path).arg(added)
+                             : slime::ui::t("ui.f56a1563fe42").arg(path);
         }
         if (sub == QLatin1String("build")) {
             if (!buildModeActive()) showPage(kPageBuild); // 语义：切到构建模式并立即开始构建
-            if (m_running) return QStringLiteral("已有任务在运行；可先执行 cancel。");
+            if (m_running) return slime::ui::t("ui.cf0237994529");
             startSearch();
-            return QStringLiteral("已进入缓存构建模式并开始构建（进度见「进度」分类；build off 可退出）");
+            return slime::ui::t("ui.9c599c680242");
         }
-        return QStringLiteral("用法：cache [status|clear|import <路径>|build]");
+        return slime::ui::t("ui.549d8b43d0eb");
     }
     if (c == QLatin1String("copy")) {
-        if (args.isEmpty()) return QStringLiteral("用法：copy <n>（复制第 n 条结果的 /tp 命令）");
+        if (args.isEmpty()) return slime::ui::t("ui.2a56e37d4df1");
         bool Ok = false;
         const int n = args[0].toInt(&Ok);
         const int have = m_hasLastOutcome ? static_cast<int>(m_lastOutcome.results.size()) : 0;
-        if (!Ok || n < 1) return QStringLiteral("用法：copy <n>（n ≥ 1）");
+        if (!Ok || n < 1) return slime::ui::t("ui.afc8e8e9cff7");
         if (n > have) {
             // v3.4.11（用户拍板）：越界**明确报错**，不静默失败
-            return QStringLiteral("没有第 %1 条结果（当前 %2 条%s）")
-                .arg(n).arg(have).arg(have == 0 ? QStringLiteral("，先执行 search") : QString());
+            return slime::ui::t("ui.20327830ac39")
+                .arg(n).arg(have).arg(have == 0 ? slime::ui::t("ui.4d35ab452991") : QString());
         }
         const QString cmdText = cacheCommandFor(m_lastOutcome.results[static_cast<size_t>(n - 1)]);
         QApplication::clipboard()->setText(cmdText);
-        return QStringLiteral("已复制第 %1 条的命令：%2").arg(n).arg(cmdText);
+        return slime::ui::t("ui.d62ce9956d42").arg(n).arg(cmdText);
     }
     if (c == QLatin1String("open")) {
         const QString what = argAt(0).toLower();
@@ -6143,30 +6078,30 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         if (what == QLatin1String("logs")) dir = appDirPath() / m_settings.logSubDir.toStdWString();
         else if (what == QLatin1String("cache")) dir = m_cacheFile.parent_path();
         else if (what == QLatin1String("crash")) dir = slime::CrashDump::dumpDir();
-        else return QStringLiteral("用法：open logs|cache|crash");
+        else return slime::ui::t("ui.891847cfe310");
         std::error_code ec;
         std::filesystem::create_directories(dir, ec);
         if (!m_uiQuiet) QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdWString(dir.wstring())));
-        return QStringLiteral("已打开目录：%1").arg(QString::fromStdWString(dir.wstring()));
+        return slime::ui::t("ui.3754bdc64ee8").arg(QString::fromStdWString(dir.wstring()));
     }
     if (c == QLatin1String("seed")) {
         if (args.isEmpty()) {
-            return QStringLiteral("当前种子：\"%1\"（%2）")
+            return slime::ui::t("ui.1ce22a5622fb")
                 .arg(m_w->seedEdit->text(),
-                     m_w->seedEdit->text().trimmed().isEmpty() ? QStringLiteral("为空；Java 版搜索会被阻止")
-                                                               : QStringLiteral("Java 版使用"));
+                     m_w->seedEdit->text().trimmed().isEmpty() ? slime::ui::t("ui.7307b22f991b")
+                                                               : slime::ui::t("ui.ab6e15ae13ad"));
         }
         m_w->seedEdit->setText(args.join(QLatin1Char(' ')).trimmed());
         saveAlgorithmToConfig();
         bool Ok = true;
         m_w->seedEdit->text().trimmed().toLongLong(&Ok);
-        return QStringLiteral("种子已设置为 \"%1\"（%2）")
+        return slime::ui::t("ui.27a21d4c6a3f")
             .arg(m_w->seedEdit->text(),
-                 Ok ? QStringLiteral("合法整数") : QStringLiteral("注意：不是合法整数，Java 版搜索会提示去填写"));
+                 Ok ? slime::ui::t("ui.e994f7174177") : slime::ui::t("ui.3d24b2f34e0a"));
     }
     if (c == QLatin1String("range")) {
         if (args.isEmpty()) {
-            return QStringLiteral("当前范围：X(%1 ~ %2) Z(%3 ~ %4)，共 %5 区块")
+            return slime::ui::t("ui.8285db444fc5")
                 .arg(m_w->minX->value()).arg(m_w->maxX->value())
                 .arg(m_w->minZ->value()).arg(m_w->maxZ->value())
                 .arg(static_cast<qlonglong>(m_w->maxX->value() - m_w->minX->value() + 1) *
@@ -6175,44 +6110,44 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         if (args.size() == 1) {
             bool Ok = false;
             const int half = QString(args[0]).remove(QLatin1Char('+')).remove(QStringLiteral("±")).toInt(&Ok);
-            if (!Ok || half <= 0) return QStringLiteral("用法：range X0 X1 Z0 Z1 或 range ±n");
+            if (!Ok || half <= 0) return slime::ui::t("ui.e6702b5c2316");
             m_wholeMapConfirmed = false;
             applyPreset(half);
-            return QStringLiteral("范围已设为 ±%1（X(%2~%3) Z(%4~%5)）")
+            return slime::ui::t("ui.f72fd24b8e12")
                 .arg(half).arg(m_w->minX->value()).arg(m_w->maxX->value())
                 .arg(m_w->minZ->value()).arg(m_w->maxZ->value());
         }
         if (args.size() >= 4) {
             bool Ok[4] = { false, false, false, false };
             const int v[4] = { args[0].toInt(&Ok[0]), args[1].toInt(&Ok[1]), args[2].toInt(&Ok[2]), args[3].toInt(&Ok[3]) };
-            if (!Ok[0] || !Ok[1] || !Ok[2] || !Ok[3]) return QStringLiteral("用法：range X0 X1 Z0 Z1（四个整数）");
+            if (!Ok[0] || !Ok[1] || !Ok[2] || !Ok[3]) return slime::ui::t("ui.d76733482870");
             m_wholeMapConfirmed = false;
             m_w->minX->setValue(v[0]);
             m_w->maxX->setValue(v[1]);
             m_w->minZ->setValue(v[2]);
             m_w->maxZ->setValue(v[3]);
             clampRangeToBound();
-            return QStringLiteral("范围已设置：X(%1 ~ %2) Z(%3 ~ %4)")
+            return slime::ui::t("ui.494a57ad68b7")
                 .arg(m_w->minX->value()).arg(m_w->maxX->value())
                 .arg(m_w->minZ->value()).arg(m_w->maxZ->value());
         }
-        return QStringLiteral("用法：range X0 X1 Z0 Z1 或 range ±n");
+        return slime::ui::t("ui.e6702b5c2316");
     }
     if (c == QLatin1String("center")) {
         if (args.isEmpty()) {
-            return QStringLiteral("查询起点：(%1, %2)").arg(m_w->startX->value()).arg(m_w->startZ->value());
+            return slime::ui::t("ui.61dc0e802dcf").arg(m_w->startX->value()).arg(m_w->startZ->value());
         }
-        if (args.size() < 2) return QStringLiteral("用法：center x z");
+        if (args.size() < 2) return slime::ui::t("ui.e1046b29fcde");
         bool okx = false, okz = false;
         const int x = args[0].toInt(&okx);
         const int z = args[1].toInt(&okz);
-        if (!okx || !okz) return QStringLiteral("用法：center x z（两个整数）");
+        if (!okx || !okz) return slime::ui::t("ui.00373618f5f1");
         m_w->startX->setValue(x);
         m_w->startZ->setValue(z);
-        return QStringLiteral("查询起点已设为 (%1, %2)").arg(x).arg(z);
+        return slime::ui::t("ui.ccc1c03a364a").arg(x).arg(z);
     }
     if (c == QLatin1String("preset")) {
-        if (args.isEmpty()) return QStringLiteral("用法：preset near|local|global|world|bedrock");
+        if (args.isEmpty()) return slime::ui::t("ui.998dc8cd0df2");
         const QString p = args[0].toLower();
         m_wholeMapConfirmed = false;
         if (p == QLatin1String("near")) { applyPreset(20000); }
@@ -6220,39 +6155,39 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         else if (p == QLatin1String("global")) { applyPreset(1000000); }
         else if (p == QLatin1String("world")) { confirmWholeMapSearch(true, kJavaBoundChunk); }
         else if (p == QLatin1String("bedrock")) { confirmWholeMapSearch(true, kBedrockBoundChunk); }
-        else return QStringLiteral("未知预设：%1（可用 near/local/global/world/bedrock）").arg(p);
-        return QStringLiteral("已套用预设 %1：X(%2 ~ %3) Z(%4 ~ %5)")
+        else return slime::ui::t("ui.d93989638036").arg(p);
+        return slime::ui::t("ui.a6ef6f616459")
             .arg(p).arg(m_w->minX->value()).arg(m_w->maxX->value())
             .arg(m_w->minZ->value()).arg(m_w->maxZ->value());
     }
     if (c == QLatin1String("mode")) {
         if (args.isEmpty()) {
             QString alg = algorithmDisplayName(currentAlgorithm());
-            return QStringLiteral("当前模式：%1 ｜ 算法：%2 ｜ 网格 %3 ｜ 最小密度 %4 ｜ 线程 %5")
-                .arg(m_w->densityRadio->isChecked() ? QStringLiteral("密度搜索") : QStringLiteral("严格图案匹配"))
+            return slime::ui::t("ui.9b9c5e47b569")
+                .arg(m_w->densityRadio->isChecked() ? slime::ui::t("ui.c1ae1cee6679") : slime::ui::t("ui.bcf402e061a7"))
                 .arg(alg)
                 .arg(m_w->gridSize->value())
                 .arg(m_w->minDensity->value(), 0, 'f', 3)
                 .arg(m_w->threads->value());
         }
         const QString m = args[0].toLower();
-        if (m == QLatin1String("strict")) { m_w->strictRadio->setChecked(true); return QStringLiteral("已切换到严格图案匹配"); }
-        if (m == QLatin1String("density")) { m_w->densityRadio->setChecked(true); return QStringLiteral("已切换到密度搜索"); }
-        if (m == QLatin1String("exact")) { m_w->algExactRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return QStringLiteral("算法已设为精确模式"); }
-        if (m == QLatin1String("layered")) { m_w->algLayeredRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return QStringLiteral("算法已设为分层模式"); }
-        if (m == QLatin1String("sample")) { m_w->algSampleRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return QStringLiteral("算法已设为快速估算模式（结果为估算值）"); }
-        if (m == QLatin1String("brute")) { m_w->algBruteRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return QStringLiteral("算法已设为保守模式"); }
-        return QStringLiteral("未知模式：%1（可用 strict/density/exact/layered/sample/brute）").arg(m);
+        if (m == QLatin1String("strict")) { m_w->strictRadio->setChecked(true); return slime::ui::t("ui.11102a93f46d"); }
+        if (m == QLatin1String("density")) { m_w->densityRadio->setChecked(true); return slime::ui::t("ui.177ed434899d"); }
+        if (m == QLatin1String("exact")) { m_w->algExactRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return slime::ui::t("ui.ef9cef28a00b"); }
+        if (m == QLatin1String("layered")) { m_w->algLayeredRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return slime::ui::t("ui.11a64fcd4eb1"); }
+        if (m == QLatin1String("sample")) { m_w->algSampleRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return slime::ui::t("ui.b0b3d366b535"); }
+        if (m == QLatin1String("brute")) { m_w->algBruteRadio->setChecked(true); updateAlgorithmPanels(); saveAlgorithmToConfig(); return slime::ui::t("ui.06430fed9d13"); }
+        return slime::ui::t("ui.f165abcfb21a").arg(m);
     }
     if (c == QLatin1String("search")) {
-        if (m_running) return QStringLiteral("已有搜索正在运行；可先执行 cancel 再 search。");
+        if (m_running) return slime::ui::t("ui.c7ef04e0e586");
         startSearch(); // 立即返回（后台线程执行）
-        return QStringLiteral("已开始搜索（后台执行；进度见「进度」分类，status 可查看状态）。");
+        return slime::ui::t("ui.baac3862490e");
     }
     if (c == QLatin1String("cancel")) {
-        if (!m_running) return QStringLiteral("当前没有正在运行的搜索。");
+        if (!m_running) return slime::ui::t("ui.38f3015a3657");
         cancelSearch(); // 立即置位取消标志（引擎在扫描/匹配循环内检查）
-        return QStringLiteral("已请求取消（立即生效，不需等待搜索线程）。");
+        return slime::ui::t("ui.304ad94d91b1");
     }
     if (c == QLatin1String("status")) {
         const double elapsed = m_running && m_searchStartMs > 0
@@ -6262,74 +6197,68 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
                                                           m_searchStartMs) /
                                       1000.0)
                                    : 0.0;
-        return QStringLiteral(
-                   "状态摘要：\n"
-                   "  版本：%1 ｜ 运行中：%2 ｜ 已用时：%3 s\n"
-                   "  版本模式：%4 ｜ 搜索模式：%5 ｜ 算法：%6\n"
-                   "  范围：X(%7 ~ %8) Z(%9 ~ %10) ｜ 起点：(%11, %12) ｜ 目标数量：%13\n"
-                   "  线程：%14 ｜ GPU：%15 ｜ 缓存：%16\n"
-                   "  最近结果：%17 条")
+        return slime::ui::t("ui.77dc3da6e684")
             .arg(QLatin1String(kAppVersion))
-            .arg(m_running ? QStringLiteral("是") : QStringLiteral("否"))
+            .arg(m_running ? slime::ui::t("ui.30160a21b92a") : slime::ui::t("ui.8bf5c10ad937"))
             .arg(elapsed, 0, 'f', 1)
-            .arg(m_w->bedrockRadio->isChecked() ? QStringLiteral("基岩版") : QStringLiteral("Java 版"))
-            .arg(m_w->densityRadio->isChecked() ? QStringLiteral("密度搜索") : QStringLiteral("严格图案匹配"))
+            .arg(m_w->bedrockRadio->isChecked() ? slime::ui::t("ui.618fd37c0c01") : slime::ui::t("ui.8accf0fe2eed"))
+            .arg(m_w->densityRadio->isChecked() ? slime::ui::t("ui.c1ae1cee6679") : slime::ui::t("ui.bcf402e061a7"))
             .arg(algorithmDisplayName(currentAlgorithm()))
             .arg(m_w->minX->value()).arg(m_w->maxX->value())
             .arg(m_w->minZ->value()).arg(m_w->maxZ->value())
             .arg(m_w->startX->value()).arg(m_w->startZ->value())
             .arg(m_w->targetCount->value())
             .arg(m_w->threads->value())
-            .arg(m_gpuAvailable ? (m_w->gpuCheck->isChecked() ? QStringLiteral("可用（已启用）")
-                                                             : QStringLiteral("可用（未启用）"))
-                                : QStringLiteral("不可用"))
-            .arg(m_cache->hasData() ? QStringLiteral("已加载 %1 区块").arg(m_cache->entryCount())
-                                    : QStringLiteral("未加载"))
+            .arg(m_gpuAvailable ? (m_w->gpuCheck->isChecked() ? slime::ui::t("ui.1482b669e3b5")
+                                                             : slime::ui::t("ui.4cd139b66904"))
+                                : slime::ui::t("ui.beff4a1cd1a6"))
+            .arg(m_cache->hasData() ? slime::ui::t("ui.55b901c4820a").arg(m_cache->entryCount())
+                                    : slime::ui::t("ui.43e203c1de2c"))
             .arg(m_hasLastOutcome ? static_cast<int>(m_lastOutcome.results.size()) : 0);
     }
     if (c == QLatin1String("gpu")) {
         if (args.isEmpty()) {
             const QString dev = (m_gpuScan && !m_gpuScan->deviceName().empty())
                                     ? QString::fromStdString(m_gpuScan->deviceName())
-                                    : QStringLiteral("（未检测）");
-            return QStringLiteral("GPU：%1 ｜ 设备：%2\n%3")
-                .arg(m_gpuAvailable ? QStringLiteral("可用") : QStringLiteral("不可用"))
+                                    : slime::ui::t("ui.5a692b8d27dd");
+            return slime::ui::t("ui.24245a88eab7")
+                .arg(m_gpuAvailable ? slime::ui::t("ui.e91365cf9ed9") : slime::ui::t("ui.beff4a1cd1a6"))
                 .arg(dev, gpuReminderText());
         }
         const QString v = args[0].toLower();
         if (v == QLatin1String("on")) {
             if (!m_w->gpuCheck->isChecked()) m_w->gpuCheck->setChecked(true); // 触发检测（同步一次）
-            return QStringLiteral("GPU 已启用（%1）。\n%2")
-                .arg(m_gpuAvailable ? QStringLiteral("可用") : QStringLiteral("不可用，将回退 CPU"), gpuReminderText());
+            return slime::ui::t("ui.2b798dc73cf0")
+                .arg(m_gpuAvailable ? slime::ui::t("ui.e91365cf9ed9") : slime::ui::t("ui.b80b8286c79e"), gpuReminderText());
         }
         if (v == QLatin1String("off")) {
             if (m_w->gpuCheck->isChecked()) m_w->gpuCheck->setChecked(false);
-            return QStringLiteral("GPU 已关闭（搜索使用纯 CPU 路径）。");
+            return slime::ui::t("ui.ae900ee401e9");
         }
-        return QStringLiteral("用法：gpu [on|off]");
+        return slime::ui::t("ui.2ebe5eb911b5");
     }
     if (c == QLatin1String("target")) {
-        if (args.isEmpty()) return QStringLiteral("目标数量（最近 N 个）：%1").arg(m_w->targetCount->value());
+        if (args.isEmpty()) return slime::ui::t("ui.178488361336").arg(m_w->targetCount->value());
         bool Ok = false;
         const int n = args[0].toInt(&Ok);
-        if (!Ok || n < 1) return QStringLiteral("用法：target n（n ≥ 1）");
+        if (!Ok || n < 1) return slime::ui::t("ui.fcf3f575ff23");
         m_w->targetCount->setValue(n);
         saveAlgorithmToConfig();
-        return QStringLiteral("目标数量已设为 %1").arg(n);
+        return slime::ui::t("ui.bb5ec70c5ba6").arg(n);
     }
     if (c == QLatin1String("result")) {
         const QString sub = argAt(0).toLower();
         if (sub == QLatin1String("copy")) {
             bool Ok = false;
             const int n = argAt(1).toInt(&Ok);
-            if (!Ok || n < 1) return QStringLiteral("用法：result copy <n>");
+            if (!Ok || n < 1) return slime::ui::t("ui.5dfaa6c328d0");
             if (!m_hasLastOutcome || n > static_cast<int>(m_lastOutcome.results.size())) {
-                return QStringLiteral("没有第 %1 条结果（当前 %2 条）")
+                return slime::ui::t("ui.c88644b97058")
                     .arg(n).arg(m_hasLastOutcome ? static_cast<int>(m_lastOutcome.results.size()) : 0);
             }
             const QString cmdText = cacheCommandFor(m_lastOutcome.results[static_cast<size_t>(n - 1)]);
             QApplication::clipboard()->setText(cmdText);
-            return QStringLiteral("已复制第 %1 条的命令：%2").arg(n).arg(cmdText);
+            return slime::ui::t("ui.d62ce9956d42").arg(n).arg(cmdText);
         }
         // result list [n]（默认 10 条）
         int limit = 10;
@@ -6342,14 +6271,14 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
             const int n = sub.toInt(&Ok);
             if (Ok && n > 0) limit = n;
         }
-        if (!m_hasLastOutcome || m_lastOutcome.results.empty()) return QStringLiteral("当前没有结果（先执行 search）。");
-        QString out = QStringLiteral("结果共 %1 条，列出前 %2 条：\n")
+        if (!m_hasLastOutcome || m_lastOutcome.results.empty()) return slime::ui::t("ui.ff2587f7bcb9");
+        QString out = slime::ui::t("ui.e8976914d64f")
                           .arg(m_lastOutcome.results.size())
                           .arg(std::min<int>(limit, static_cast<int>(m_lastOutcome.results.size())));
         const size_t shown = std::min<size_t>(m_lastOutcome.results.size(), static_cast<size_t>(limit));
         for (size_t i = 0; i < shown; ++i) {
             const MatchResult& r = m_lastOutcome.results[i];
-            out += QStringLiteral("  %1) chunk(%2,%3) 尺寸 %4×%5  密度 %6%%  %7\n")
+            out += slime::ui::t("ui.d0e18567e89d")
                        .arg(i + 1)
                        .arg(r.minX).arg(r.minZ)
                        .arg(r.maxX - r.minX + 1).arg(r.maxZ - r.minZ + 1)
@@ -6360,16 +6289,16 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
     }
     if (c == QLatin1String("log")) {
         if (args.isEmpty()) {
-            return QStringLiteral("日志模式：%1 ｜ 文件：%2 ｜ 内存条目：%3 / %4")
+            return slime::ui::t("ui.8efc1728fb58")
                 .arg(QString::fromUtf8(slime::LogBus::modeName(slime::LogBus::mode())))
                 .arg(slime::LogBus::enabled() ? QString::fromStdString(slime::LogBus::currentFile())
-                                              : QStringLiteral("（关闭时不写文件）"))
+                                              : slime::ui::t("ui.817e809c70c7"))
                 .arg(slime::LogBus::snapshot().size())
                 .arg(slime::LogBus::kMaxEntries);
         }
         const QString v = args[0].toLower();
         if (v != QLatin1String("off") && v != QLatin1String("brief") && v != QLatin1String("detailed")) {
-            return QStringLiteral("用法：log [off|brief|detailed]");
+            return slime::ui::t("ui.d35ba202afd5");
         }
         // v3.4.11（用户要求：命令生效后设置状态及时更新）：日志模式同时写进设置项并同步设置页，
         // 否则设置页还显示旧值，下一次设置改动会把命令的结果覆盖掉。
@@ -6381,9 +6310,9 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         }
         flushPendingConfigWrite();
         if (m_logPanel) m_logPanel->refreshFromBus();
-        return QStringLiteral("日志模式已切换为 %1").arg(QString::fromUtf8(slime::LogBus::modeName(slime::LogBus::mode())));
+        return slime::ui::t("ui.034e8f26bb37").arg(QString::fromUtf8(slime::LogBus::modeName(slime::LogBus::mode())));
     }
-    return QStringLiteral("未知命令：%1（输入 help 查看全部命令）").arg(c);
+    return slime::ui::t("ui.8a5dc476ce19").arg(c);
 }
 
 // v3.3.7.2（任务书 1.2）：界面显示用的「总扫描量」—— 必须与引擎 liveScanned 同源。
@@ -6498,7 +6427,7 @@ void MainWindow::applyLanguage()
         a->setText(en ? slime::ui::tr(zh) : zh);
     }
     // 窗口标题单独处理（版本号是变量，不翻译）
-    setWindowTitle(QStringLiteral("史莱姆区块查找器 %1").arg(QLatin1String(kAppVersion)));
+    setWindowTitle(slime::ui::t("ui.8e056aa8f722").arg(QLatin1String(kAppVersion)));
 }
 
 void MainWindow::retranslateModeUi()
@@ -6592,9 +6521,9 @@ void MainWindow::toggleFullscreenMode()
     writeConfigFile(m_w->gpuCheck && m_w->gpuCheck->isChecked(),
                     m_terminal ? m_terminal->history() : QStringList());
     applyFullscreenMode();
-    setStatus(slime::ui::tr(QStringLiteral("已切换为%1"))
-                  .arg(m_settings.fullscreenMode == QLatin1String("windowed") ? QStringLiteral("窗口最大化")
-                                                                             : QStringLiteral("无边框全屏")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.e9fb9aec5e59"))
+                  .arg(m_settings.fullscreenMode == QLatin1String("windowed") ? slime::ui::t("ui.37c2545a642e")
+                                                                             : slime::ui::t("ui.2a0936486d4a")));
 }
 
 void MainWindow::setStatus(const QString& text)
@@ -6636,7 +6565,7 @@ void MainWindow::setRunningUi(bool running)
         m_w->progress->setValue(0);
         m_w->progress->setStyleSheet(QString());
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("…"));
-        m_w->progressInfo->setText(QStringLiteral("正在搜索…"));
+        m_w->progressInfo->setText(slime::ui::t("ui.455d8705421a"));
         // v3.6.1：重新搜索清空旧结果；v3.6.19：抽成 clearResultsForNewSearch()
         clearResultsForNewSearch();
         // v3.3.6（任务书 调整 3）：进度流水每 0.5 秒追加一条（仅在搜索中）
@@ -6679,17 +6608,16 @@ void MainWindow::applyVersionUi()
     m_w->presetGlobal->setEnabled(true);
     // v3.6.12：基岩版种子只影响地图上色，不影响判定 —— 文案要写清楚
     if (m_w->seedLabel) {
-        m_w->seedLabel->setText(bedrock ? QStringLiteral("世界种子（基岩版：仅用于地图）:")
-                                        : QStringLiteral("世界种子（Java）:"));
+        m_w->seedLabel->setText(bedrock ? slime::ui::t("ui.bdf0619ab5e7")
+                                        : slime::ui::t("ui.de5100998f74"));
     }
     if (m_w->seedEdit) {
         m_w->seedEdit->setToolTip(
-            bedrock ? QStringLiteral("基岩版判定与种子无关（每个世界的史莱姆区块分布都一样）；\n"
-                                     "这里填种子只是为了给地图上色（群系按 Java 同种子近似）。")
-                    : QStringLiteral("仅 Java 版参与判定，可为负数（64 位整数）；留空则无法搜索。"));
+            bedrock ? slime::ui::t("ui.82eec10674b6")
+                    : slime::ui::t("ui.acc16bb01871"));
     }
     if (!bedrock) {
-        m_w->cacheStatus->setText(QStringLiteral("仅基岩版可用"));
+        m_w->cacheStatus->setText(slime::ui::t("ui.705f907ae91f"));
     } else {
         updateCacheStatusUi();
     }
@@ -6754,9 +6682,9 @@ void MainWindow::onModeChanged(){
     updateStartEnabled();    // v3.6.6：模式/形状切换后同步按钮状态
     if (strict) {
         if (!m_patternSet) {
-            m_w->patternInfo->setText(QStringLiteral("未绘制"));
+            m_w->patternInfo->setText(slime::ui::t("ui.15d9e07ff847"));
         } else {
-            m_w->patternInfo->setText(QStringLiteral("已载入 %1 个有效格子 (%2×%3)")
+            m_w->patternInfo->setText(slime::ui::t("ui.81e8a258ab88")
                                           .arg(m_pattern.activeCount())
                                           .arg(m_pattern.rows())
                                           .arg(m_pattern.cols()));
@@ -6777,11 +6705,11 @@ Algorithm MainWindow::currentAlgorithm() const
 QString MainWindow::algorithmDisplayName(Algorithm a) const
 {
     switch (a) {
-    case Algorithm::Layered: return QStringLiteral("分层模式");
-    case Algorithm::Sample: return m_w->sampleExact->isChecked() ? QStringLiteral("快速估算模式（精算采样）")
-                                                                 : QStringLiteral("快速估算模式");
-    case Algorithm::Brute: return QStringLiteral("保守模式");
-    default: return QStringLiteral("精确模式");
+    case Algorithm::Layered: return slime::ui::t("ui.f18c79796e88");
+    case Algorithm::Sample: return m_w->sampleExact->isChecked() ? slime::ui::t("ui.144cdf9f8727")
+                                                                 : slime::ui::t("ui.dcee497c44dd");
+    case Algorithm::Brute: return slime::ui::t("ui.9e6092059b8f");
+    default: return slime::ui::t("ui.73b75d28b4b7");
     }
 }
 
@@ -6799,8 +6727,8 @@ void MainWindow::updateAlgorithmPanels()
 
     QString s;
     if (!density) {
-        s = QStringLiteral("严格图案匹配不使用搜索算法（图案匹配本身即精确判定）。");
-        m_w->modeHeader->setText(QStringLiteral("当前使用模式：严格图案匹配（精确）"));
+        s = slime::ui::t("ui.b71ec532ab48");
+        m_w->modeHeader->setText(slime::ui::t("ui.bae48f65f9fa"));
         m_w->modeWarn->setVisible(false);
         m_w->algSummary->setText(s);
         reserveWrappedHeight(m_w->algSummary);
@@ -6810,12 +6738,11 @@ void MainWindow::updateAlgorithmPanels()
     case Algorithm::Layered: {
         const int L = m_w->layerBlock->currentData().toInt();
         const double ratio = m_w->layerRatio->value();
-        s = QStringLiteral("分层：%1 粗块，阈值比例 %2。").arg(L).arg(ratio, 0, 'f', 2);
-        s += ratio <= 1.0 ? QStringLiteral("块级必要条件剪枝 → 结果与精确模式完全一致（无损）。")
-                          : QStringLiteral("比例 >1.00 → 剪枝更激进，可能漏检（结果区显示警告）。");
-        s += QStringLiteral(" 剪枝无效时自动改用滑动路径。");
-        m_w->modeWarn->setText(QStringLiteral("⚠️ 当前为分层模式（阈值比例 %1 > 1.00），结果可能不完整；"
-                                              "如需精确结果请切换到精确模式。")
+        s = slime::ui::t("ui.73f5c24734d4").arg(L).arg(ratio, 0, 'f', 2);
+        s += ratio <= 1.0 ? slime::ui::t("ui.6ea4024321e7")
+                          : slime::ui::t("ui.fd577c7fa771");
+        s += slime::ui::t("ui.feadac842a8d");
+        m_w->modeWarn->setText(slime::ui::t("ui.581cf6954a19")
                                    .arg(ratio, 0, 'f', 2));
         m_w->modeWarn->setVisible(ratio > 1.0);
         break;
@@ -6823,32 +6750,29 @@ void MainWindow::updateAlgorithmPanels()
     case Algorithm::Sample: {
         const int S = m_w->sampleStep->value();
         if (m_w->sampleExact->isChecked()) {
-            s = QStringLiteral("精算采样：间隔 %1，只扫描采样锚点窗口所需区块，逐窗精算密度；"
-                               "结果集中在采样网格上（覆盖率约 1/%2），报告密度与精确模式一致。")
+            s = slime::ui::t("ui.fe9d0cfe9720")
                     .arg(S).arg(S * S);
         } else {
-            s = QStringLiteral("快速估算：间隔 %1（约 1/%2 工作量），窗口密度按采样格点比例估计；"
-                               "估算值与真实密度的相关性上限约 1/%3，仅适合粗筛/整体密度概览。")
+            s = slime::ui::t("ui.b44e55bc1f8b")
                     .arg(S).arg(S * S).arg(S);
         }
-        m_w->modeWarn->setText(QStringLiteral("⚠️ 当前为快速估算模式，结果为估算值、不代表精确分布，"
-                                              "可能遗漏高密度区域；如需精确结果请切换到精确模式。"));
+        m_w->modeWarn->setText(slime::ui::t("ui.c96ac97198bb"));
         m_w->modeWarn->setVisible(true);
         break;
     }
     case Algorithm::Brute:
-        s = QStringLiteral("保守模式：逐窗逐格统计（v3.2.1 字面实现），不使用滑动/剪枝，结果与精确模式一致但最慢。");
+        s = slime::ui::t("ui.c32ad66a6dd5");
         m_w->modeWarn->setVisible(false);
         break;
     default:
-        s = QStringLiteral("精确模式：滑动窗口增量统计 + AVX2 位并行，结果 100% 完整。");
+        s = slime::ui::t("ui.6ac84b6b4c00");
         m_w->modeWarn->setVisible(false);
         break;
     }
     m_w->algSummary->setText(s);
     reserveWrappedHeight(m_w->algSummary);
     reserveWrappedHeight(m_w->modeWarn);
-    m_w->modeHeader->setText(QStringLiteral("当前使用模式：%1").arg(algorithmDisplayName(a)));
+    m_w->modeHeader->setText(slime::ui::t("ui.ff768c1de692").arg(algorithmDisplayName(a)));
 }
 
 // config.json 算法块读写（键名扁平，沿用本项目自写 JSON 的极简解析）
@@ -6944,7 +6868,7 @@ bool MainWindow::crossCheckExact(const SearchOptions& opt, int64_t sampleFound, 
 void MainWindow::applyPreset(int halfSpan)
 {
     setSearchRadius(halfSpan);
-    setStatus(slime::ui::tr(QStringLiteral("已应用预设范围 ±%1 区块")).arg(halfSpan));
+    setStatus(slime::ui::tr(slime::ui::t("ui.241d40e4e9d5")).arg(halfSpan));
     Logger::info("应用预设范围 ±" + std::to_string(halfSpan) + " 区块");
 }
 
@@ -6962,7 +6886,7 @@ void MainWindow::setSearchRadius(int r)
     if (m_w->rangeRadius && m_w->rangeRadius->value() != radius) m_w->rangeRadius->setValue(radius);
     if (m_w->bRadius && m_w->bRadius->value() != radius) m_w->bRadius->setValue(radius);
     if (m_w->rangeHint)
-        m_w->rangeHint->setText(QStringLiteral("范围 %1×%1 区块（X/Z 各 %2 ~ %3，以原点为中心）")
+        m_w->rangeHint->setText(slime::ui::t("ui.d25cd4d6bfc3")
                                     .arg(2 * radius + 1)
                                     .arg(lo)
                                     .arg(hi));
@@ -6983,7 +6907,7 @@ void MainWindow::syncRadiusFromRange()
     if (m_w->rangeRadius && m_w->rangeRadius->value() != radius) m_w->rangeRadius->setValue(radius);
     if (m_w->bRadius && m_w->bRadius->value() != radius) m_w->bRadius->setValue(radius);
     if (m_w->rangeHint)
-        m_w->rangeHint->setText(QStringLiteral("范围 %1×%2 区块（半径 %3）").arg(spanX).arg(spanZ).arg(radius));
+        m_w->rangeHint->setText(slime::ui::t("ui.871551b08684").arg(spanX).arg(spanZ).arg(radius));
     m_rangeSyncGuard = false;
 }
 
@@ -7065,8 +6989,8 @@ bool MainWindow::confirmWholeMapSearch(bool applyRange, int halfSpan)
         // 未绘制图案时按严格模式仍可估算扫描部分（匹配窗口按空图案估计不可靠 → 提示先绘制）
         // 实际进入 startSearch 时会报“请先绘制图案”，此处直接放行由 startSearch 处理。
         if (applyRange) {
-            QMessageBox::warning(this, QStringLiteral("提示"),
-                                 QStringLiteral("整图范围已填入，请先绘制目标图案再开始搜索。"));
+            QMessageBox::warning(this, slime::ui::t("ui.ab3656a956f5"),
+                                 slime::ui::t("ui.719d10c91481"));
             applyPreset(halfSpan);
         }
         return false;
@@ -7084,47 +7008,45 @@ bool MainWindow::confirmWholeMapSearch(bool applyRange, int halfSpan)
         hi = est.totalSec * 1.35;
     }
     const QString blocks = estOk
-                               ? QStringLiteral("约 %1 万亿区块")
+                               ? slime::ui::t("ui.53365ea16089")
                                      .arg(static_cast<double>(est.areaChunks) / wanYi, 0, 'f', 1)
-                               : QStringLiteral("超大规模区块");
+                               : slime::ui::t("ui.30d6b22e0eb7");
     QString dur;
     if (estOk) {
         dur = formatDurationRange(lo, hi);
     } else {
-        dur = QStringLiteral("无法实测估算");
+        dur = slime::ui::t("ui.16ffb883cad6");
     }
     QString extra;
     if (estOk) {
-        extra = QStringLiteral("\n（本机实测：扫描 %1 区块/秒；图案匹配 %2 窗口/秒；并行 %3 路）")
+        extra = slime::ui::t("ui.a67212609609")
                     .arg(static_cast<long long>(est.scanRate))
                     .arg(est.matchRate > 0 ? QStringLiteral("%1").arg(static_cast<long long>(est.matchRate))
                                            : QStringLiteral("—"))
                     .arg(est.chunkConcurrency);
         if (est.matchWallSec > est.scanWallSec * 2) {
-            extra += QStringLiteral("\n注：本模式图案匹配耗时占主导（窗口数≈区块数），总时长主要为匹配阶段。");
+            extra += slime::ui::t("ui.b3ee7232db57");
         } else {
-            extra += QStringLiteral("\n注：其中扫描约 %1，图案匹配约 %2。")
+            extra += slime::ui::t("ui.0a5778f3f8fa")
                          .arg(formatDurationRange(est.scanWallSec * 0.8, est.scanWallSec * 1.35))
                          .arg(est.matchWallSec > 0
                                   ? formatDurationRange(est.matchWallSec * 0.8, est.matchWallSec * 1.35)
-                                  : QStringLiteral("可忽略"));
+                                  : slime::ui::t("ui.c5eee9b92171"));
         }
     } else {
-        extra = QStringLiteral("\n（当前无法实测估算，请先完成图案等参数设置）");
+        extra = slime::ui::t("ui.caa562b17b3e");
     }
-    const QString ver = java ? QStringLiteral("Java 版") : QStringLiteral("基岩版");
+    const QString ver = java ? slime::ui::t("ui.8accf0fe2eed") : slime::ui::t("ui.618fd37c0c01");
     QString refNote;
     if (java) {
-        refNote = QStringLiteral("\n参考目标：整图扫描 ≤ 50 分钟（12 线程、≥60 亿区块/秒的高性能多核机器）；\n"
-                                 "普通机器请以“本机实测”为准，可随时取消。");
+        refNote = slime::ui::t("ui.7658cb7ec35c");
     } else {
-        refNote = QStringLiteral("\n基岩版判定为完整 MT19937（约慢 3000 倍），整图扫描按天计，强烈建议缩小范围或使用缓存。");
+        refNote = slime::ui::t("ui.6262634bbb31");
     }
 
     const auto ans = QMessageBox::question(
-        this, QStringLiteral("整图搜索确认"),
-        QStringLiteral("您正在尝试搜索整张地图（%1 版，%2）。\n"
-                       "本机预计耗时 %3。%4%5\n\n是否继续？")
+        this, slime::ui::t("ui.8be5939d9ce1"),
+        slime::ui::t("ui.8ea43b1d89a3")
             .arg(ver).arg(blocks).arg(dur).arg(extra).arg(refNote));
     if (ans != QMessageBox::Yes) {
         Logger::info("整图搜索被用户取消");
@@ -7154,14 +7076,13 @@ void MainWindow::clampRangeToBound()
         }
     }
     if (clamped) {
-        const QString ver = m_w->bedrockRadio->isChecked() ? QStringLiteral("基岩版") : QStringLiteral("Java");
+        const QString ver = m_w->bedrockRadio->isChecked() ? slime::ui::t("ui.618fd37c0c01") : QStringLiteral("Java");
         const int blocks = bound * 16;
-        setStatus(slime::ui::tr(QStringLiteral("输入超出 %1 世界边界，已自动截断到 ±%2 区块（±%3 方块）"))
+        setStatus(slime::ui::tr(slime::ui::t("ui.2e12306cd3ab"))
                       .arg(ver).arg(bound).arg(blocks));
         if (!m_uiQuiet) {
-            QMessageBox::information(this, QStringLiteral("已自动截断"),
-                                     QStringLiteral("%1 版世界边界为 ±%2 区块（±%3 方块）。\n"
-                                                    "超出部分已自动截断到边界值。")
+            QMessageBox::information(this, slime::ui::t("ui.a76951f982d6"),
+                                     slime::ui::t("ui.fb99a1d6fb34")
                                          .arg(ver).arg(bound).arg(blocks));
         }
         Logger::warning("搜索范围超出边界，已自动截断到 ±" + std::to_string(bound));
@@ -7191,11 +7112,11 @@ void MainWindow::updateCacheStatusUi()
     if (!m_w || !m_w->cacheStatus) return;
     const bool bedrock = m_w->bedrockRadio->isChecked();
     if (!bedrock) {
-        m_w->cacheStatus->setText(QStringLiteral("仅基岩版可用"));
+        m_w->cacheStatus->setText(slime::ui::t("ui.705f907ae91f"));
         return;
     }
     if (m_cache->hasData()) {
-        m_w->cacheStatus->setText(QStringLiteral("缓存已加载，共 %1 个区块（覆盖 %2 个区域，约 %3 MB）")
+        m_w->cacheStatus->setText(slime::ui::t("ui.a13898466222")
                                       .arg(m_cache->entryCount())
                                       .arg(m_cache->ranges().size())
                                       .arg(m_cache->sizeBytes() / (1024 * 1024)));
@@ -7204,10 +7125,10 @@ void MainWindow::updateCacheStatusUi()
     std::error_code ec;
     if (!m_cacheFile.empty() && std::filesystem::exists(m_cacheFile, ec)) {
         m_w->cacheStatus->setText(
-            QStringLiteral("未加载缓存（磁盘上已有 %1，可点「导入缓存」或重启程序载入）")
+            slime::ui::t("ui.1184ea9cb9f9")
                 .arg(QString::fromStdString(m_cacheFile.filename().string())));
     } else {
-        m_w->cacheStatus->setText(QStringLiteral("未加载缓存"));
+        m_w->cacheStatus->setText(slime::ui::t("ui.23c0ca294841"));
     }
 }
 
@@ -7219,7 +7140,7 @@ void MainWindow::importCache()
     // 保证「刚保存的缓存」不仅可见（过滤器匹配），而且已经选中（直接点“打开”即可加载）。
     // 修复前的实现（v3.1.1~v3.3.0）第三个参数为空 → 对话框落在进程工作目录/上次目录，
     // 缓存文件虽在程序目录却看不到，这正是任务书描述的「缓存文件存在但选不中」。
-    QFileDialog dlg(this, QStringLiteral("选择史莱姆缓存文件"),
+    QFileDialog dlg(this, slime::ui::t("ui.834c34e48ed2"),
                     QString::fromStdWString(appDirPath().wstring()));
     dlg.setFileMode(QFileDialog::ExistingFile);
     dlg.setNameFilters(cacheImportFilter().split(QStringLiteral(";;")));
@@ -7233,10 +7154,8 @@ void MainWindow::importCache()
 
     if (path.endsWith(QStringLiteral(".pkl"), Qt::CaseInsensitive) ||
         path.endsWith(QStringLiteral(".pickle"), Qt::CaseInsensitive)) {
-        QMessageBox::warning(this, QStringLiteral("旧版缓存"),
-                             QStringLiteral("检测到 Python 旧版 pickle 缓存（.pkl）。\n"
-                                            "请使用发布包中的 scripts/convert_pkl_cache.py 将其转换为 "
-                                            ".slimecache 二进制格式后再导入。"));
+        QMessageBox::warning(this, slime::ui::t("ui.a042ea99a76c"),
+                             slime::ui::t("ui.e4b8900b55f6"));
         return;
     }
 
@@ -7273,9 +7192,9 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
         runLoad();
     } else {
         QProgressDialog* pd = new QProgressDialog(
-            QStringLiteral("正在导入缓存…（文件 %1 MB）").arg(fileBytes / (1024.0 * 1024.0), 0, 'f', 1),
-            QStringLiteral("取消"), 0, 1000, this);
-        pd->setWindowTitle(QStringLiteral("导入缓存"));
+            slime::ui::t("ui.5153c1d9f401").arg(fileBytes / (1024.0 * 1024.0), 0, 'f', 1),
+            slime::ui::t("ui.4d0b4688c787"), 0, 1000, this);
+        pd->setWindowTitle(slime::ui::t("ui.00e905651e85"));
         pd->setWindowModality(Qt::WindowModal);
         pd->setMinimumDuration(0);
         pd->setAutoClose(false);
@@ -7296,7 +7215,7 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
             if (pd->wasCanceled()) {
                 cancelReq->store(true, std::memory_order_relaxed);
                 pd->setCancelButton(nullptr);
-                pd->setLabelText(QStringLiteral("正在导入缓存…（已请求取消：读取完成后不会合并）"));
+                pd->setLabelText(slime::ui::t("ui.8a98a48be088"));
             }
         }
         poll.stop();
@@ -7305,13 +7224,13 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
         pd->deleteLater();
     }
     if (cancelReq->load()) {
-        setStatus(slime::ui::tr(QStringLiteral("已取消导入缓存")));
-        addFeedback(2, slime::ui::tr(QStringLiteral("已取消导入缓存（未合并）")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.9d715e50a2c7")));
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.1bfb190be1fa")));
         return;
     }
     if (!loadOA->load()) {
         if (showResultDialogs) {
-            QMessageBox::critical(this, QStringLiteral("导入失败"), QString::fromStdString(*loadErr));
+            QMessageBox::critical(this, slime::ui::t("ui.a01a8d53938f"), QString::fromStdString(*loadErr));
         }
         Logger::error("缓存导入失败: " + *loadErr + "（来源 " + path.toStdString() + "）");
         return;
@@ -7324,7 +7243,7 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
     std::string serr;
     if (!m_cache->saveFile(m_cacheFile, serr)) {
         if (showResultDialogs) {
-            QMessageBox::warning(this, QStringLiteral("警告"), QStringLiteral("合并成功但保存默认缓存失败：%1").arg(QString::fromStdString(serr)));
+            QMessageBox::warning(this, slime::ui::t("ui.5521e368d87e"), slime::ui::t("ui.de895e437b0e").arg(QString::fromStdString(serr)));
         }
         Logger::warning("缓存导入后保存失败: " + serr + "（目标 " + m_cacheFile.string() + "）");
     } else {
@@ -7333,9 +7252,8 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
     }
     updateCacheStatusUi();
     if (showResultDialogs) {
-        QMessageBox::information(this, QStringLiteral("导入成功"),
-                                 QStringLiteral("缓存已导入并合并：新增 %1 个区域 / %2 个史莱姆区块。\n"
-                                                "当前共 %3 个区域 / %4 个史莱姆区块。")
+        QMessageBox::information(this, slime::ui::t("ui.425516b37306"),
+                                 slime::ui::t("ui.be215de45cd3")
                                      .arg(m_cache->ranges().size() - beforeR)
                                      .arg(m_cache->entryCount() - beforeE)
                                      .arg(m_cache->ranges().size())
@@ -7347,8 +7265,8 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
 
 void MainWindow::clearCache()
 {
-    if (QMessageBox::question(this, QStringLiteral("确认"),
-                              QStringLiteral("确定要清除所有缓存数据吗？")) != QMessageBox::Yes) {
+    if (QMessageBox::question(this, slime::ui::t("ui.b56d9ac6c5a0"),
+                              slime::ui::t("ui.b41f2a3ce538")) != QMessageBox::Yes) {
         return;
     }
     m_cache->clear();
@@ -7367,7 +7285,7 @@ void MainWindow::convertBlockCoords()
     const qlonglong bx = m_w->convX->text().trimmed().toLongLong(&okX);
     const qlonglong bz = m_w->convZ->text().trimmed().toLongLong(&okZ);
     if (!okX || !okZ) {
-        QMessageBox::warning(this, QStringLiteral("输入错误"), QStringLiteral("请输入有效的整数方块坐标。"));
+        QMessageBox::warning(this, slime::ui::t("ui.05118c2a651d"), slime::ui::t("ui.943b5f18375d"));
         return;
     }
     auto floorDiv16 = [](qlonglong v) {
@@ -7378,12 +7296,12 @@ void MainWindow::convertBlockCoords()
     const qlonglong cx = floorDiv16(bx);
     const qlonglong cz = floorDiv16(bz);
     if (cx < -2147483646LL || cx > 2147483646LL || cz < -2147483646LL || cz > 2147483646LL) {
-        QMessageBox::warning(this, QStringLiteral("输入错误"), QStringLiteral("转换结果超出区块坐标支持范围。"));
+        QMessageBox::warning(this, slime::ui::t("ui.05118c2a651d"), slime::ui::t("ui.84fbf99670a1"));
         return;
     }
     m_w->startX->setValue(static_cast<int>(cx));
     m_w->startZ->setValue(static_cast<int>(cz));
-    setStatus(slime::ui::tr(QStringLiteral("方块坐标 (%1, %2) → 区块坐标 (%3, %4)"))
+    setStatus(slime::ui::tr(slime::ui::t("ui.ea3440531233"))
                   .arg(bx).arg(bz).arg(cx).arg(cz));
     Logger::info("坐标转换: 方块(" + std::to_string(bx) + "," + std::to_string(bz) + ") -> 区块(" +
                  std::to_string(cx) + "," + std::to_string(cz) + ")");
@@ -7394,8 +7312,8 @@ void MainWindow::updateTelemetryNotice()
 {
     if (!m_telemetryNotice || !m_telemetry) return;
     const QString text = m_telemetry->enabled()
-                             ? QStringLiteral("匿名统计已开启 · 感谢帮助改进")
-                             : QStringLiteral("📣 匿名统计默认关闭 · 点此开启，帮助改进");
+                             ? slime::ui::t("ui.c3036df85648")
+                             : slime::ui::t("ui.ae50bb7256dc");
     m_telemetryNotice->setText(QStringLiteral("<a href=\"telemetry\">%1</a>").arg(text));
 }
 
@@ -7403,30 +7321,26 @@ void MainWindow::showTelemetryDialog()
 {
     if (!m_telemetry) return;
     if (m_uiQuiet) {
-        addFeedback(2, QStringLiteral("匿名统计：自检模式不弹出对话框"));
+        addFeedback(2, slime::ui::t("ui.6a59df88b543"));
         return;
     }
     QDialog dlg(this);
-    dlg.setWindowTitle(QStringLiteral("匿名统计（帮助改进）"));
+    dlg.setWindowTitle(slime::ui::t("ui.6034809d2f3b"));
     dlg.setMinimumWidth(560);
     auto* lay = new QVBoxLayout(&dlg);
 
     auto* intro = new QLabel(
-        QStringLiteral("匿名统计用于了解常用模式、硬件分布和失败情况，帮助改进 SlimeFinder。<b>默认关闭</b>，"
-                       "只有你主动勾选后才会发送。"), &dlg);
+        slime::ui::t("ui.ca9adb9a211a"), &dlg);
     intro->setWordWrap(true);
     lay->addWidget(intro);
 
     auto* data = new QLabel(
-        QStringLiteral("<b>会发送：</b>程序版本、Windows 平台、CPU 型号/线程/内存档位、GPU 名称、"
-                       "游戏平台、世界种子、搜索设置（范围/模式/算法/阈值等）、结果数量与最佳结果坐标、"
-                       "耗时/扫描速度、取消/早停/GPU 标记。<br>"
-                       "<b>不会发送：</b>存档路径、日志内容、账号或持久 ID；服务端不保存 IP。"), &dlg);
+        slime::ui::t("ui.19e2f2997722"), &dlg);
     data->setWordWrap(true);
     lay->addWidget(data);
 
     auto* privacy = new QLabel(
-        QStringLiteral("<a href=\"privacy\">查看完整隐私说明 docs/privacy.md</a>"), &dlg);
+        slime::ui::t("ui.95f20e8a62c3"), &dlg);
     privacy->setOpenExternalLinks(false);
     privacy->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
     connect(privacy, &QLabel::linkActivated, this, [](const QString&) {
@@ -7435,11 +7349,11 @@ void MainWindow::showTelemetryDialog()
     });
     lay->addWidget(privacy);
 
-    auto* enabled = new QCheckBox(QStringLiteral("我自愿开启匿名统计（帮助改进 SlimeFinder）"), &dlg);
+    auto* enabled = new QCheckBox(slime::ui::t("ui.2ac72064e5e4"), &dlg);
     enabled->setChecked(m_telemetry->enabled());
     lay->addWidget(enabled);
 
-    auto* epNote = new QLabel(QStringLiteral("服务端地址由程序内置，不可修改。"), &dlg);
+    auto* epNote = new QLabel(slime::ui::t("ui.af049acfc3f2"), &dlg);
     epNote->setStyleSheet(QStringLiteral("color:#808080;font-size:11px;"));
     lay->addWidget(epNote);
 
@@ -7451,67 +7365,45 @@ void MainWindow::showTelemetryDialog()
     if (dlg.exec() != QDialog::Accepted) return;
     m_telemetry->setSettings(enabled->isChecked(), m_telemetry->endpoint());
     updateTelemetryNotice();
-    addFeedback(2, enabled->isChecked() ? QStringLiteral("匿名统计已开启（仅发送匿名档位数据）")
-                                        : QStringLiteral("匿名统计已关闭"));
-    setStatus(enabled->isChecked() ? QStringLiteral("匿名统计已开启，感谢帮助改进")
-                                   : QStringLiteral("匿名统计已关闭"));
+    addFeedback(2, enabled->isChecked() ? slime::ui::t("ui.ce83b3fe513c")
+                                        : slime::ui::t("ui.b7b5afae98c6"));
+    setStatus(enabled->isChecked() ? slime::ui::t("ui.3c674829def4")
+                                   : slime::ui::t("ui.b7b5afae98c6"));
 }
 
 void MainWindow::showCredits()
 {
     QDialog dlg(this);
-    dlg.setWindowTitle(QStringLiteral("鸣谢"));
+    dlg.setWindowTitle(slime::ui::t("ui.c5583bc7e151"));
     dlg.setMinimumWidth(520);
     auto* lay = new QVBoxLayout(&dlg);
 
-    auto* intro = new QLabel(QStringLiteral("感谢以下朋友为本项目提供想法与帮助："), &dlg);
+    auto* intro = new QLabel(slime::ui::t("ui.cb55d487c124"), &dlg);
     intro->setWordWrap(true);
     lay->addWidget(intro);
 
     auto* list = new QTextBrowser(&dlg);
-    list->setHtml(QStringLiteral(
-        "<ul>"
-        "<li><b>B 站 @Farv18</b> —— 提出「模拟距离」设置想法"
-        "（按模拟距离自动收窄刷怪环带外沿）。</li>"
-        "</ul>"
-        "<p style=\"color:#888\">另有未具名的测试反馈与开源社区资料（Minecraft Wiki、cubiomes、"
-        "基岩版算法逆向 @protolambda / @jocopa3）一并致谢。</p>"));
+    list->setHtml(slime::ui::t("ui.b857b5d1e865"));
     list->setMinimumHeight(140);
     list->setOpenExternalLinks(false);
     lay->addWidget(list, 1);
 
     auto* btns = new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
-    if (QPushButton* ok = btns->button(QDialogButtonBox::Ok)) ok->setText(QStringLiteral("关闭"));
+    if (QPushButton* ok = btns->button(QDialogButtonBox::Ok)) ok->setText(slime::ui::t("ui.6c14bd7f6f9e"));
     QObject::connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
     lay->addWidget(btns);
     dlg.exec();
-    addFeedback(2, slime::ui::tr(QStringLiteral("已打开「鸣谢」")));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.00926703ef18")));
 }
 
 // ---------------- 联系我们（v3.7.5：只讲反馈渠道，与「关于」差异化） ----------------
 void MainWindow::showContact()
 {
     QDialog dlg(this);
-    dlg.setWindowTitle(QStringLiteral("联系我们"));
+    dlg.setWindowTitle(slime::ui::t("ui.152d3db75889"));
     dlg.setMinimumWidth(460);
     auto* lay = new QVBoxLayout(&dlg);
-    auto* info = new QLabel(QStringLiteral(
-        "遇到问题、想提建议，或想报告某个种子/坐标算错了，欢迎通过下面任一渠道联系：\n"
-        "\n"
-        "  邮箱：%1\n"
-        "  QQ 频道：pd47487890\n"
-        "  B 站主页：https://space.bilibili.com/1413251461\n"
-        "\n"
-        "为了让问题能一次定位，反馈时请尽量附上：\n"
-        "  1) 程序版本（帮助 → 关于 里能看到）；\n"
-        "  2) 版本类型（Java / 基岩）与种子、搜索范围、图案或密度参数；\n"
-        "  3) logs/ 目录里的日志文件；\n"
-        "  4) 复现步骤（点哪些按钮、期望结果与实际结果）。\n"
-        "\n"
-        "（以上均为纯文本展示，不会自动打开链接。）\n"
-        "\n"
-        "开启「匿名信息上传」后，程序可在一定程度上自动上报问题相关信息"
-        "（版本、硬件、搜索设置、结果与耗时；默认关闭，不含存档路径或日志内容），有助于定位问题。")
+    auto* info = new QLabel(slime::ui::t("ui.8be6653c4033")
                                 .arg(QLatin1String(kContactEmail)));
     info->setTextInteractionFlags(Qt::TextSelectableByMouse);
     info->setWordWrap(true);
@@ -7537,7 +7429,7 @@ QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
     const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
     if (patternMode) {
         if (!m_patternSet || m_pattern.empty()) {
-            return QStringLiteral("成功率预测：尚未绘制图案，无法估算");
+            return slime::ui::t("ui.f82967ddf109");
         }
         int green = 0, white = 0;
         for (int r = 0; r < m_pattern.rows(); ++r) {
@@ -7552,11 +7444,11 @@ QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
         if (lock) pMatch *= 0.25;   // 只允许 1 个方向 ⇒ 命中率降到约 1/4
         positions = (std::max)(int64_t{0}, areaX - m_pattern.cols() + 1) *
                     (std::max)(int64_t{0}, areaZ - m_pattern.rows() + 1);
-        basis = QStringLiteral("%1 个约束格（绿 %2 / 白 %3）%4")
+        basis = slime::ui::t("ui.659103792aff")
                     .arg(green + white)
                     .arg(green)
                     .arg(white)
-                    .arg(lock ? QStringLiteral("，方向锁定") : QString());
+                    .arg(lock ? slime::ui::t("ui.aec43f954535") : QString());
     } else {
         const int g = (std::max)(1, m_w->gridSize ? m_w->gridSize->value() : 5);
         const int64_t cells = static_cast<int64_t>(g) * g;
@@ -7574,23 +7466,23 @@ QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
             pMatch = 0.5 * std::erfc(z / std::sqrt(2.0));
         }
         positions = (std::max)(int64_t{0}, areaX - g + 1) * (std::max)(int64_t{0}, areaZ - g + 1);
-        basis = QStringLiteral("%1×%1 窗口、最小密度 %2").arg(g).arg(d, 0, 'f', 2);
+        basis = slime::ui::t("ui.1acf7f8f1396").arg(g).arg(d, 0, 'f', 2);
     }
 
-    if (positions <= 0) return QStringLiteral("成功率预测：范围小于图案/窗口尺寸，无法放置");
+    if (positions <= 0) return slime::ui::t("ui.e448e31ab0ac");
     const double pAny = (pMatch <= 0.0)
                             ? 0.0
                             : (pMatch >= 1.0 ? 1.0
                                              : -std::expm1(static_cast<double>(positions) * std::log1p(-pMatch)));
     const double pct = 100.0 * pAny;
     QString hint;
-    if (pct < 1.0) hint = QStringLiteral("（很低：建议扩大范围或减少约束）");
-    else if (pct < 20.0) hint = QStringLiteral("（偏低：可扩大范围或放宽条件）");
-    else if (pct > 99.5) hint = QStringLiteral("（几乎必定能找到）");
+    if (pct < 1.0) hint = slime::ui::t("ui.822cb673d8d6");
+    else if (pct < 20.0) hint = slime::ui::t("ui.402c20628dcf");
+    else if (pct > 99.5) hint = slime::ui::t("ui.7a0d7b3dfbd8");
     const QString pctText = (pct < 1.0) ? QStringLiteral("%1").arg(pct, 0, 'f', 2)
                                          : QStringLiteral("%1").arg(pct, 0, 'f', pct < 10.0 ? 1 : 0);
-    return QStringLiteral("成功率预测：约 ") + pctText + QStringLiteral("%") + hint +
-           QStringLiteral("\n  依据：范围内约 %1 个候选位置，单点命中率约 %2%%（%3）")
+    return slime::ui::t("ui.6ae8a00a69ce") + pctText + QStringLiteral("%") + hint +
+           slime::ui::t("ui.2507a5abfb92")
                .arg(static_cast<qlonglong>(positions))
                .arg(pMatch * 100.0, 0, 'f', pMatch < 0.001 ? 4 : 2)
                .arg(basis);
@@ -7602,10 +7494,10 @@ void MainWindow::startSearch()
         // v3.3.7（P0-2）：自检/自动化模式下**不能**用模态框（GUI 线程会被永久阻塞，
         // 实测导致自检挂死 600 秒以上）；这里只提示并忽略重复启动。
         if (m_uiQuiet) {
-            setStatus(slime::ui::tr(QStringLiteral("搜索正在进行中（自检模式：忽略重复启动）")));
+            setStatus(slime::ui::tr(slime::ui::t("ui.9bb8bee94e7b")));
             return;
         }
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("搜索正在进行中，请勿重复启动。"));
+        QMessageBox::warning(this, slime::ui::t("ui.ab3656a956f5"), slime::ui::t("ui.44969209326b"));
         return;
     }
 
@@ -7679,16 +7571,16 @@ void MainWindow::startSearch()
         const QString seedText = m_w->seedEdit->text().trimmed();
         if (seedText.isEmpty()) {
             // 弹窗 [去填写] [取消] + 反馈栏 ❌ + 日志记录（如已启用）+ 输入框高亮闪烁
-            addError(QStringLiteral("未填写世界种子：Java 版判定依赖种子，未填写无法搜索。"));
+            addError(slime::ui::t("ui.24599e00ffb7"));
             slime::LogBus::error("Java 版未填写世界种子，搜索被阻止");
             bool goFill = true;
             if (!m_uiQuiet) {
                 QMessageBox box(this);
                 box.setIcon(QMessageBox::Warning);
-                box.setWindowTitle(QStringLiteral("未填写种子"));
-                box.setText(QStringLiteral("未填写世界种子。Java 版判定依赖种子，未填写无法搜索。"));
-                QPushButton* fill = box.addButton(QStringLiteral("去填写"), QMessageBox::AcceptRole);
-                box.addButton(QStringLiteral("取消"), QMessageBox::RejectRole);
+                box.setWindowTitle(slime::ui::t("ui.02343987a852"));
+                box.setText(slime::ui::t("ui.d33428ef9569"));
+                QPushButton* fill = box.addButton(slime::ui::t("ui.919e5d650bfa"), QMessageBox::AcceptRole);
+                box.addButton(slime::ui::t("ui.4d0b4688c787"), QMessageBox::RejectRole);
                 box.exec();
                 goFill = (box.clickedButton() == fill);
             }
@@ -7697,15 +7589,15 @@ void MainWindow::startSearch()
         }
         opt.worldSeed = seedText.toLongLong(&seedOA);
         if (!seedOA) {
-            addError(QStringLiteral("世界种子格式非法：\"%1\"（必须是整数，支持负数）").arg(seedText));
+            addError(slime::ui::t("ui.2469f1297a2d").arg(seedText));
             slime::LogBus::error("世界种子非法: " + seedText.toStdString());
             if (!m_uiQuiet) {
                 QMessageBox box(this);
                 box.setIcon(QMessageBox::Warning);
-                box.setWindowTitle(QStringLiteral("种子非法"));
-                box.setText(QStringLiteral("世界种子必须是整数（支持负数），当前输入「%1」无效。").arg(seedText));
-                QPushButton* fill = box.addButton(QStringLiteral("去填写"), QMessageBox::AcceptRole);
-                box.addButton(QStringLiteral("取消"), QMessageBox::RejectRole);
+                box.setWindowTitle(slime::ui::t("ui.733bc78b8835"));
+                box.setText(slime::ui::t("ui.f36f9429a104").arg(seedText));
+                QPushButton* fill = box.addButton(slime::ui::t("ui.919e5d650bfa"), QMessageBox::AcceptRole);
+                box.addButton(slime::ui::t("ui.4d0b4688c787"), QMessageBox::RejectRole);
                 box.exec();
                 if (box.clickedButton() != fill) return;
             }
@@ -7719,7 +7611,7 @@ void MainWindow::startSearch()
     //   构建只做史莱姆判定 + 写缓存，**不使用搜索模式/图案**，因此跳过严格模式的图案校验。
     if (!buildModeActive() && opt.mode == Mode::Strict) {
         if (!m_patternSet || m_pattern.empty()) {
-            QMessageBox::warning(this, QStringLiteral("输入错误"), QStringLiteral("请先点击「绘制图案」并确认目标图案。"));
+            QMessageBox::warning(this, slime::ui::t("ui.05118c2a651d"), slime::ui::t("ui.bb9712c09a09"));
             return;
         }
         opt.pattern = m_pattern;
@@ -7741,16 +7633,12 @@ void MainWindow::startSearch()
             if (!m_uiQuiet) {
                 // v3.6.6（用户要求）：二次确认窗口重写，并给出「成功率预测」
                 const QString body =
-                    QStringLiteral("即将搜索的范围：%1 × %2 区块（共 %3 个区块）\n\n"
-                                   "%4\n\n"
-                                   "说明：成功率按「范围内所有候选位置逐一判定」估算，"
-                                   "只表示至少能找到 1 个目标的可能性，不代表结果数量。\n\n"
-                                   "是否开始搜索？")
+                    slime::ui::t("ui.c6ccb27bc3fa")
                         .arg(area)
                         .arg(areaZ)
                         .arg(total)
                         .arg(successProbabilityText(area, areaZ));
-                if (QMessageBox::question(this, QStringLiteral("确认搜索"), body) != QMessageBox::Yes) {
+                if (QMessageBox::question(this, slime::ui::t("ui.4973d000fee5"), body) != QMessageBox::Yes) {
                     return;
                 }
             }
@@ -7787,9 +7675,9 @@ void MainWindow::startSearch()
                 // v3.3.9（任务书 3.2）：弹窗内容必须写清三项 —— 即将扫描多少、超阈值多少、预计多少分钟
                 const QString body =
                     largeRangeConfirmText(total0, area, areaZ, estOk, est.totalSec, warnAt) +
-                    QStringLiteral("\n\n%1\n\n说明：成功率只表示至少找到 1 个目标的可能性，不代表结果数量。")
+                    slime::ui::t("ui.f3c740185215")
                         .arg(successProbabilityText(area, areaZ));
-                if (QMessageBox::question(this, QStringLiteral("范围较大"), body) != QMessageBox::Yes) {
+                if (QMessageBox::question(this, slime::ui::t("ui.54f83a642d7d"), body) != QMessageBox::Yes) {
                     return;
                 }
             }
@@ -7811,7 +7699,7 @@ void MainWindow::startSearch()
         if (!m_gpuProbeDone) {
             // v3.10.3（用户反馈：启动超大范围搜索时界面卡住）：首次 GPU 检测会同步初始化
             //   OpenCL（可达数秒）。这里给出等待光标与明确状态，让用户知道在做什么。
-            setStatus(slime::ui::tr(QStringLiteral("正在初始化 GPU（首次启用需要数秒，请稍候）…")));
+            setStatus(slime::ui::tr(slime::ui::t("ui.85e816a88b92")));
             if (!m_uiQuiet) QApplication::setOverrideCursor(Qt::WaitCursor);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
             ensureGpuScanOnce();
@@ -7839,7 +7727,7 @@ void MainWindow::startSearch()
     if (!verr.empty()) {
         // v3.4.12：无界面自检（m_uiQuiet）时只记录不弹窗（此前漏了保护，自检会被模态框挡住）
         if (!m_uiQuiet) {
-            QMessageBox::warning(this, QStringLiteral("参数错误"), QString::fromStdString(verr));
+            QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"), QString::fromStdString(verr));
         } else {
             std::fprintf(stderr, "[UI自检] 参数校验失败（quiet 模式不弹窗）：%s\n", verr.c_str());
         }
@@ -7884,14 +7772,14 @@ void MainWindow::startSearch()
     setInputsEnabled(false);
     // v3.3.4：结果区改为 QTextEdit，搜索开始时清空文本（等价于旧版清空结果卡片）
     if (m_w->resultView) m_w->resultView->clear();
-    if (m_w->infoStats) m_w->infoStats->setText(QStringLiteral("搜索进行中…"));
+    if (m_w->infoStats) m_w->infoStats->setText(slime::ui::t("ui.f9012afa40dc"));
     m_lastResultText.clear();
     m_hasLastOutcome = false;
     m_w->progress->setValue(0);
     m_searchStartMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                           std::chrono::system_clock::now().time_since_epoch())
                           .count();
-    setStatus(slime::ui::tr(QStringLiteral("正在搜索…")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.455d8705421a")));
     logSearchParams(opt);
     // v3.10.8：把全部有效参数写成一行指纹，写入日志（排查预设/自定义速度差异）
     slime::LogBus::info(std::string("搜索参数指纹: ") + searchOptionsFingerprint(opt).toStdString());
@@ -7899,8 +7787,8 @@ void MainWindow::startSearch()
         // v3.10.7：明确记录本次实际使用的版本（排查「界面 Java 实际基岩」类问题）
         const bool bedrockRun = (opt.version == Version::Bedrock);
         Logger::info(std::string("本次搜索实际版本: ") + (bedrockRun ? "基岩版" : "Java 版"));
-        addFeedback(3, QStringLiteral("本次搜索版本：%1")
-                           .arg(bedrockRun ? QStringLiteral("基岩版") : QStringLiteral("Java 版")));
+        addFeedback(3, slime::ui::t("ui.ba3a88efa949")
+                           .arg(bedrockRun ? slime::ui::t("ui.618fd37c0c01") : slime::ui::t("ui.8accf0fe2eed")));
     }
     m_etaSec = 0.0; // v3.3.8（任务 1）：新搜索重置 ETA（完成后保持清空，避免误以为还在跑）
     if (m_elapsedTimer) m_elapsedTimer->start(200); // v3.3.4：进度标签页刷新已用时/预计剩余
@@ -7981,7 +7869,7 @@ void MainWindow::startSearch()
         });
 
     if (m_w->threads->value() == 1) {
-        setStatus(slime::ui::tr(QStringLiteral("正在搜索（单线程）…")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.92cfd0503816")));
     }
 }
 
@@ -8032,8 +7920,7 @@ void MainWindow::updateBuildHintUi()
         const int64_t total = buildTotalChunks();
         const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
         m_w->buildHint->setText(
-            QStringLiteral("构建模式：只判定 + 写缓存（不产生匹配结果）。范围 %1 区块 ⇒ 位图约 %2 MB"
-                           "（旧坐标口径约 %3 MB）；算法自动（精确判定）。可中断续传，达到容量上限即停止。")
+            slime::ui::t("ui.ff92ea44ed7e")
                 .arg(total)
                 .arg(bitmapMB, 0, 'f', 1)
                 .arg(static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0), 0, 'f', 1));
@@ -8066,8 +7953,7 @@ void MainWindow::updateBuildHintUi()
                 w->setProperty("v3391tip", true);
                 w->setProperty("v3391oldTip", w->toolTip());
             }
-            w->setToolTip(QStringLiteral("缓存构建模式下不使用该选项（构建只做史莱姆判定并写缓存，"
-                                         "不做匹配，也不需要版本/种子/搜索模式）⇒ 已禁用"));
+            w->setToolTip(slime::ui::t("ui.29299675eb80"));
             w->setEnabled(false);
         } else if (w->property("v3391tip").toBool()) {
             // v3.4.9：只恢复**本函数禁用过**的项。原来无条件 setEnabled(true) 会把版本规则的
@@ -8161,7 +8047,7 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
 {
     const int64_t total = buildTotalChunks();
     if (total <= 0) {
-        QMessageBox::warning(this, QStringLiteral("范围无效"), QStringLiteral("请先填写有效的搜索范围。"));
+        QMessageBox::warning(this, slime::ui::t("ui.073cf8d38324"), slime::ui::t("ui.9d61509a4e27"));
         return false;
     }
     // ① 构建前预估（任务书 1.1）：范围面积 × 密度 10% × 每区块字节数（旧口径）+ 位图口径
@@ -8170,11 +8056,7 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
     const int64_t capMB = cacheMaxBytes() / (1024 * 1024);
     const bool overCap = cacheMaxBytes() > 0 && bitmapMB > static_cast<double>(capMB);
     if (!m_uiQuiet) {
-        QString body = QStringLiteral("即将构建缓存：\n"
-                                      "· 范围：X(%1 ~ %2) Z(%3 ~ %4) ⇒ %5 区块\n"
-                                      "· 预估体积：位图口径约 %6 MB（1 bit/区块）；"
-                                      "旧坐标口径约 %7 MB（密度 10% × 8 B/条）\n"
-                                      "· 当前缓存上限：%8 MB\n")
+        QString body = slime::ui::t("ui.be2e910d051e")
                            .arg(m_w->minX->value()).arg(m_w->maxX->value())
                            .arg(m_w->minZ->value()).arg(m_w->maxZ->value())
                            .arg(total)
@@ -8182,30 +8064,30 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
                            .arg(legacyMB, 0, 'f', 1)
                            .arg(capMB);
         if (overCap) {
-            body += QStringLiteral("\n⚠ 预估体积超过当前上限：建议把上限提高到 %1 MB。\n").arg(
+            body += slime::ui::t("ui.ad89a275f758").arg(
                 static_cast<int64_t>(bitmapMB * 1.2) + 1);
-            body += QStringLiteral("（选择「提高上限并继续」会把 cache.maxSizeMB 写入 config.json）");
+            body += slime::ui::t("ui.ec13fdb97145");
             QMessageBox box(this);
-            box.setWindowTitle(QStringLiteral("缓存构建预估"));
+            box.setWindowTitle(slime::ui::t("ui.9d43e3b73ab4"));
             box.setText(body);
-            QPushButton* raise = box.addButton(QStringLiteral("提高上限并继续"), QMessageBox::AcceptRole);
-            QPushButton* go = box.addButton(QStringLiteral("按当前上限继续"), QMessageBox::ActionRole);
-            box.addButton(QStringLiteral("取消"), QMessageBox::RejectRole);
+            QPushButton* raise = box.addButton(slime::ui::t("ui.9a81e2e81062"), QMessageBox::AcceptRole);
+            QPushButton* go = box.addButton(slime::ui::t("ui.c20257102d0b"), QMessageBox::ActionRole);
+            box.addButton(slime::ui::t("ui.4d0b4688c787"), QMessageBox::RejectRole);
             box.exec();
             if (box.clickedButton() == raise) {
                 const int64_t newMB = static_cast<int64_t>(bitmapMB * 1.2) + 64;
                 m_settings.cacheMaxMB = static_cast<int>(newMB);
                 applyAppSettings(m_settings); // 写回 config.json（cache.maxSizeMB）
                 Logger::info("缓存上限已按构建预估提高到 " + std::to_string(newMB) + " MB");
-                addFeedback(2, slime::ui::tr(QStringLiteral("缓存上限已提高到 %1 MB")).arg(newMB));
+                addFeedback(2, slime::ui::tr(slime::ui::t("ui.c3108a4edc5d")).arg(newMB));
             } else if (box.clickedButton() != go) {
                 return false;
             }
         } else {
-            body += QStringLiteral("\n是否开始构建？（可随时取消；已完成的区域会落盘，下次可续传）");
+            body += slime::ui::t("ui.7f8cd0261e31");
             // v3.4.12：无界面自检（m_uiQuiet）时自动放行 —— 与其它确认弹窗同一口径。
             //（此前漏了这层保护，自检走到构建流程时会被模态框挡住 => 挂起。）
-            if (!m_uiQuiet && QMessageBox::question(this, QStringLiteral("缓存构建预估"), body) != QMessageBox::Yes) {
+            if (!m_uiQuiet && QMessageBox::question(this, slime::ui::t("ui.9d43e3b73ab4"), body) != QMessageBox::Yes) {
                 return false;
             }
         }
@@ -8257,7 +8139,7 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
     m_buildRunInfo.region = m_buildBands.front();
     m_buildRunInfo.mode = opt.mode;
     m_buildRunInfo.algorithm = opt.algorithm;
-    addFeedback(2, slime::ui::tr(QStringLiteral("缓存构建开始：%1 区块 / %2 段（可达容量上限即停止）"))
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.9e975f02353a"))
                        .arg(total)
                        .arg(m_buildBands.size()));
     Logger::info("缓存构建开始：范围 X(" + std::to_string(minX) + "~" + std::to_string(maxX) + ") Z(" +
@@ -8318,18 +8200,18 @@ void MainWindow::updateBuildProgressUi(bool scanning)
     if (m_w->progress) m_w->progress->setValue(static_cast<int>((std::min)(100.0, pct) * 10.0));
     if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("%1%").arg(pct, 0, 'f', 1));
     if (m_w->progressStage) {
-        m_w->progressStage->setText(m_task.livePhase() == 1 ? QStringLiteral("缓存扫描（已覆盖区域）")
-                                                            : QStringLiteral("新区域扫描"));
+        m_w->progressStage->setText(m_task.livePhase() == 1 ? slime::ui::t("ui.4ea75e619af3")
+                                                            : slime::ui::t("ui.a8878877a9f5"));
     }
     if (m_w->progressInfo) {
         m_w->progressInfo->setText(
-            QStringLiteral("已记录 %1 区块(%2%)，记录速度为 %3 万区块/秒，已花费 %4 秒%5")
+            slime::ui::t("ui.e9f7fb6a1c88")
                 .arg(recorded)
                 .arg(pct, 0, 'f', 1)
                 .arg(wanPerSec, 0, 'f', 1)
                 .arg(secs, 0, 'f', 1)
                 .arg(m_buildSkippedTotal > 0 || m_task.liveSkippedCoveredCount() > 0
-                         ? QStringLiteral("（已跳过 %1 区块：缓存已覆盖）")
+                         ? slime::ui::t("ui.c82eec4ef45f")
                                .arg(m_buildSkippedTotal + m_task.liveSkippedCoveredCount())
                          : QString()));
     }
@@ -8376,8 +8258,8 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
         m_running = false;
         setRunningUi(false);
         setInputsEnabled(true);
-        setStatus(slime::ui::tr(QStringLiteral("缓存构建出错")));
-        QMessageBox::critical(this, QStringLiteral("缓存构建出错"), QString::fromStdString(out.error));
+        setStatus(slime::ui::tr(slime::ui::t("ui.1242b3d3624e")));
+        QMessageBox::critical(this, slime::ui::t("ui.1242b3d3624e"), QString::fromStdString(out.error));
         Logger::error("缓存构建出错：" + out.error);
         return;
     }
@@ -8391,7 +8273,7 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
         ++m_buildBandIndex;
         if (m_progressStream) {
             m_progressStream->appendRawLine(
-                QStringLiteral("[%1] 已完成第 %2/%3 段并落盘（可随时关闭程序，重跑自动续传）")
+                slime::ui::t("ui.12f5363fe49e")
                     .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")))
                     .arg(m_buildBandIndex)
                     .arg(m_buildBands.size()));
@@ -8413,24 +8295,23 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
                         1000.0;
     QString result;
     if (cancelled) {
-        result = QStringLiteral("已取消；本次已落盘（下次点「开始搜索」自动跳过已构建区域继续）");
-        setStatus(slime::ui::tr(QStringLiteral("缓存构建已取消（已落盘）")));
+        result = slime::ui::t("ui.8ff8db608a0a");
+        setStatus(slime::ui::tr(slime::ui::t("ui.9b7da6dcb967")));
     } else if (budgetHit) {
-        result = QStringLiteral("达到缓存容量上限 ⇒ 停止（已完成 %1 区块，共 %2 区块；"
-                                "可提高上限后再次构建继续）")
+        result = slime::ui::t("ui.75015f29358d")
                      .arg(m_buildDoneChunks)
                      .arg(total);
-        setStatus(slime::ui::tr(QStringLiteral("缓存构建达到容量上限")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.8986e95164b7")));
     } else {
-        result = QStringLiteral("构建完成：范围已全部记录（%1 区块，用时 %2 秒）")
+        result = slime::ui::t("ui.5a93958ec725")
                      .arg(m_buildDoneChunks)
                      .arg(secs, 0, 'f', 1);
-        setStatus(slime::ui::tr(QStringLiteral("缓存构建完成")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.68eb54822190")));
     }
-    if (m_w->progressStage) m_w->progressStage->setText(QStringLiteral("缓存构建结束"));
+    if (m_w->progressStage) m_w->progressStage->setText(slime::ui::t("ui.120cb0c8c8fa"));
     if (m_w->progressInfo) {
         m_w->progressInfo->setText(
-            QStringLiteral("已记录 %1 区块(%2%)，记录速度为 %3 万区块/秒，已花费 %4 秒")
+            slime::ui::t("ui.4b7c9b14e7ad")
                 .arg(m_buildDoneChunks)
                 .arg((std::min)(100.0, 100.0 * static_cast<double>(m_buildDoneChunks) /
                                             static_cast<double>(total)),
@@ -8439,11 +8320,11 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
                 .arg(secs, 0, 'f', 1));
     }
     if (m_progressStream) {
-        m_progressStream->appendRawLine(QStringLiteral("[%1] 缓存构建：%2")
+        m_progressStream->appendRawLine(slime::ui::t("ui.0a1ed290251d")
                                             .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")))
                                             .arg(result));
     }
-    addFeedback(2, result + QStringLiteral("（缓存：%1 区域 / %2 区块）")
+    addFeedback(2, result + slime::ui::t("ui.ed6566f75a34")
                            .arg(m_cache->ranges().size())
                            .arg(m_cache->entryCount()));
     Logger::info("缓存构建结束：" + result.toStdString() + " | 缓存 " +
@@ -8451,17 +8332,14 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
                  std::to_string(m_cache->entryCount()) + " 区块 | " +
                  slime::IncidentLog::memorySummary());
     if (!saved) {
-        addFeedback(1, slime::ui::tr(QStringLiteral("注意：缓存落盘失败（%1）—— 本次构建结果仍在内存中，"
-                                      "下次启动会丢失"))
+        addFeedback(1, slime::ui::tr(slime::ui::t("ui.37d56173be95"))
                            .arg(QString::fromStdString(serr)));
     }
     if (m_settings.soundOnComplete) slime::SoundPlayer::playCompletionChime(m_settings.soundVolume);
     updateNavBadges();
     updateCacheStatusUi();
     // 构建结束不弹「结果」对话框（构建模式不产生匹配结果）
-    m_w->resultView->setPlainText(QStringLiteral(
-        "（缓存构建模式：本次只做史莱姆判定并写入缓存，不产生匹配结果。\n"
-        "建筑/开挖请用普通搜索模式；构建完成后普通搜索会直接使用这些缓存数据。）"));
+    m_w->resultView->setPlainText(slime::ui::t("ui.27c62f740f6c"));
 }
 
 void MainWindow::cancelSearch()
@@ -8469,13 +8347,13 @@ void MainWindow::cancelSearch()
     if (m_ringSearching) {
         m_ringCancel.store(true, std::memory_order_relaxed);
         if (m_w && m_w->cancel) m_w->cancel->setEnabled(false);
-        setStatus(slime::ui::tr(QStringLiteral("正在取消环形搜索…")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
         return;
     }
     if (!m_running) return;
     m_task.cancel();
     m_w->cancel->setEnabled(false);
-    setStatus(slime::ui::tr(QStringLiteral("正在取消…")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.6bc0d687aeaa")));
     Logger::info("用户请求取消搜索");
     // v3.3.7（P1-6）：取消也写关键信息日志（不是崩溃，因此不标记 incident）
     slime::IncidentLog::note("用户取消搜索 | " + slime::IncidentLog::memorySummary());
@@ -8574,13 +8452,13 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
 
     if (out.cancelled) {
         m_w->progress->setValue(0);
-        m_w->progressInfo->setText(QStringLiteral("已取消（已扫描 %1 区块）").arg(m_streamScanned));
+        m_w->progressInfo->setText(slime::ui::t("ui.14c0ffe017c1").arg(m_streamScanned));
         if (m_w->progressStage) m_w->progressStage->setText(progressStageName(5, m_runMode, m_runAlg));
-        setStatus(slime::ui::tr(QStringLiteral("已取消")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.a5ffdc95eeb0")));
         Logger::info("搜索已取消");
         // v3.3.6（任务书 调整 3）：取消也留一条流水记录；并按设置播放结束提示音
         if (m_progressStream) {
-            m_progressStream->appendRawLine(QStringLiteral("[%1] 已取消（已扫描 %2 区块）")
+            m_progressStream->appendRawLine(slime::ui::t("ui.cfe9d8931fe1")
                                                 .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")))
                                                 .arg(m_streamScanned));
         }
@@ -8595,15 +8473,15 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         return;
     }
     if (!out.ok) {
-        m_w->progressInfo->setText(QStringLiteral("错误"));
+        m_w->progressInfo->setText(slime::ui::t("ui.b859c7be7501"));
         if (m_w->progressStage) m_w->progressStage->setText(progressStageName(6, m_runMode, m_runAlg));
-        setStatus(slime::ui::tr(QStringLiteral("搜索出错")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.72b0bb777554")));
         if (m_progressStream) {
-            m_progressStream->appendRawLine(QStringLiteral("[%1] 搜索出错：%2")
+            m_progressStream->appendRawLine(slime::ui::t("ui.a5514476787e")
                                                 .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")),
                                                      QString::fromStdString(out.error)));
         }
-        QMessageBox::critical(this, QStringLiteral("搜索错误"), QString::fromStdString(out.error));
+        QMessageBox::critical(this, slime::ui::t("ui.680a503add20"), QString::fromStdString(out.error));
         Logger::error("搜索错误: " + out.error);
         updateNavBadges();
         slime::IncidentLog::note("搜索错误：" + out.error + " | " + slime::IncidentLog::memorySummary());
@@ -8642,7 +8520,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
                          std::to_string(m_cache->entryCount()) + " 区块" +
                          (out.cacheHandledIncrementally ? "（分块增量合并）" : "") +
                          "（路径 " + m_cacheFile.string() + "）");
-            setStatus(slime::ui::tr(QStringLiteral("缓存已更新：共 %1 个区块")).arg(m_cache->entryCount()));
+            setStatus(slime::ui::tr(slime::ui::t("ui.769f8655bcd8")).arg(m_cache->entryCount()));
         }
         updateCacheStatusUi();
     } else if (info.cacheWasUsed && out.cacheHandledIncrementally) {
@@ -8652,7 +8530,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
 
     m_w->progress->setValue(1000);
     if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
-    if (m_w->searchStage) m_w->searchStage->setText(QStringLiteral("阶段：空闲"));
+    if (m_w->searchStage) m_w->searchStage->setText(slime::ui::t("ui.2437d377fef4"));
     // v3.5.26（用户要求）：0 结果时进度条变红，一眼看出「什么都没找到」
     {
         const bool empty = out.results.empty();
@@ -8665,9 +8543,9 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         const int got = static_cast<int>(out.results.size());
         const int want = (std::max)(1, m_w->targetCount ? m_w->targetCount->value() : 1);
         if (got == 0)
-            m_resultsNotice->setText(QStringLiteral("未找到任何结果：可扩大搜索范围、放宽条件或换用其他算法"));
+            m_resultsNotice->setText(slime::ui::t("ui.17533b453292"));
         else if (got < want)
-            m_resultsNotice->setText(QStringLiteral("未找到更多结果：只找到 %1 个（目标 %2 个），可扩大范围或放宽条件")
+            m_resultsNotice->setText(slime::ui::t("ui.a1e9abe326ce")
                                          .arg(got).arg(want));
         else
             m_resultsNotice->setText(QString());
@@ -8682,7 +8560,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         m_w->progressInfo->setText(progressStatsText(out.stats.scannedChunks, displayTotalChunks(), 0.0,
                                                      static_cast<int64_t>(out.results.size())));
     }
-    setStatus(slime::ui::tr(QStringLiteral("正在排序结果…")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.0133025c537b")));
     QApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 15);
     m_lastResultText = describeResultsText(out, info);
     // v3.6.7（用户反馈「搜索有结果但结果列表不显示」）：**必须先写入 m_lastOutcome 再刷新列表**。
@@ -8693,7 +8571,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
     m_hasLastOutcome = true;
     populateResultText(out, info); // v3.3.4：结果写入右侧 QTextEdit（信息栏 + QTextEdit）
     if (m_elapsedTimer) m_elapsedTimer->stop();
-    if (m_w->progressEta) m_w->progressEta->setText(QStringLiteral("预计剩余：--:--"));
+    if (m_w->progressEta) m_w->progressEta->setText(slime::ui::t("ui.f00785313fdc"));
     if (m_map) {
         m_map->setResults(out.results); // v3.5.4：结果同步到内嵌地图
         if (m_mapSyncTimer) m_mapSyncTimer->start();
@@ -8706,7 +8584,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         m_w->progressStage->setText(progressStageName(4, m_runMode, m_runAlg));
     }
     if (m_w->progressInfo) {
-        m_w->progressInfo->setText(QStringLiteral("搜索完成：共 %1 条（显示 %2 条）｜ %3")
+        m_w->progressInfo->setText(slime::ui::t("ui.1a9adb67ce4c")
                                        .arg(out.results.size())
                                        .arg(m_resultTextTotal)
                                        .arg(progressStatsText(out.stats.scannedChunks, displayTotalChunks(),
@@ -8737,11 +8615,11 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
                              std::to_string(out.stats.threadsUsed) +
                              (out.stoppedEarly ? " [提前停止]" : "") + " | " +
                              slime::IncidentLog::memorySummary());
-    setStatus(slime::ui::tr(QStringLiteral("搜索完成")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.8174d1168fce")));
     writePerformanceLog(out, info);
     // v3.3.4（任务书 2.2）：关键事件同时进入反馈栏与日志总线
     addFeedback(out.results.empty() ? 2 : 3,
-                QStringLiteral("搜索完成：共 %1 条结果（扫描 %2 区块，用时 %3 秒）")
+                slime::ui::t("ui.f6cc745d6f70")
                     .arg(out.results.size())
                     .arg(out.stats.scannedChunks)
                     .arg(out.stats.totalMs / 1000.0, 0, 'f', 3));
@@ -8753,7 +8631,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         addFeedback(3, summary);
         Logger::info("过程摘要 | " + summary.toStdString());
         if (!out.gpuFallbackReason.empty()) {
-            addFeedback(2, QStringLiteral("GPU 不可用，已回退 CPU：%1").arg(QString::fromStdString(out.gpuFallbackReason)));
+            addFeedback(2, slime::ui::t("ui.b32dcdccbfa4").arg(QString::fromStdString(out.gpuFallbackReason)));
         }
     }
 
@@ -8807,7 +8685,7 @@ QString MainWindow::processSummaryText(const SearchOutcome& out) const
     const double matchMs = out.stats.matchMs;
     const double totalMs = out.stats.totalMs;
     const double otherMs = (std::max)(0.0, totalMs - scanMs - matchMs);
-    lines << QStringLiteral("阶段：扫描 %1 ms · 匹配 %2 ms · 其它 %3 ms（总计 %4 ms）")
+    lines << slime::ui::t("ui.7b6c64d1e526")
                  .arg(scanMs, 0, 'f', 1)
                  .arg(matchMs, 0, 'f', 1)
                  .arg(otherMs, 0, 'f', 1)
@@ -8815,35 +8693,35 @@ QString MainWindow::processSummaryText(const SearchOutcome& out) const
 
     const QString fb = QString::fromStdString(out.gpuFallbackReason);
     if (out.gpuScanUsed || out.gpuMatchUsed) {
-        QString line = QStringLiteral("GPU：扫描 %1 · 匹配 %2")
+        QString line = slime::ui::t("ui.9a7b9ede7a62")
                            .arg(out.gpuScanUsed ? QStringLiteral("✓") : QStringLiteral("×"))
                            .arg(out.gpuMatchUsed ? QStringLiteral("✓") : QStringLiteral("×"));
-        if (!fb.isEmpty()) line += QStringLiteral("（部分回退：%1）").arg(fb);
+        if (!fb.isEmpty()) line += slime::ui::t("ui.126a68799ec1").arg(fb);
         lines << line;
     } else if (!fb.isEmpty()) {
-        lines << QStringLiteral("GPU：未使用（回退 CPU：%1）").arg(fb);
+        lines << slime::ui::t("ui.fa42483646f0").arg(fb);
     } else {
-        lines << QStringLiteral("GPU：未使用（CPU 路径）");
+        lines << slime::ui::t("ui.52d1da3d64f2");
     }
 
     if (out.cacheFirstStopped) {
-        lines << QStringLiteral("停止：缓存内够数即停（未扫描未覆盖区，不保证全局最近 N）");
+        lines << slime::ui::t("ui.c9e37c2e2f7f");
     } else if (out.chunksPruned > 0) {
-        lines << QStringLiteral("停止：已提前停止（无损剪枝：跳过 %1 个分块，结果仍为全局最近 N）")
+        lines << slime::ui::t("ui.26956b0f822a")
                      .arg(out.chunksPruned);
     } else if (out.stoppedEarly) {
-        lines << QStringLiteral("停止：已提前停止（无损：剩余区域不可能更近，结果为全局最近 N）");
+        lines << slime::ui::t("ui.4175c2419c3c");
     } else {
-        lines << QStringLiteral("停止：已扫描完整区域");
+        lines << slime::ui::t("ui.94166c628e2d");
     }
 
     if (out.windowsSkipped > 0) {
-        lines << QStringLiteral("窗口：剪枝/采样跳过 %1 个（非精确算法可能漏检）").arg(out.windowsSkipped);
+        lines << slime::ui::t("ui.3ca6b3650a98").arg(out.windowsSkipped);
     }
     if (out.ignoredThreshold) {
-        lines << QStringLiteral("模式：最优候选（已忽略密度阈值，按窗口密度排序）");
+        lines << slime::ui::t("ui.a123cba9d80e");
     }
-    lines << QStringLiteral("路径：%1").arg(out.chunkedPath ? QStringLiteral("分块（大区域）") : QStringLiteral("经典单次"));
+    lines << slime::ui::t("ui.ebbfde235d3f").arg(out.chunkedPath ? slime::ui::t("ui.617f9839463e") : slime::ui::t("ui.f9e4c844a573"));
     return lines.join(QLatin1Char('\n'));
 }
 
@@ -8854,8 +8732,8 @@ QString MainWindow::describeResultsText(const SearchOutcome& out, const RunInfo&
     const double totalS = out.stats.totalMs / 1000.0;
     const double cps = totalS > 0 ? out.stats.scannedChunks / totalS : 0.0;
 
-    text += QStringLiteral("过程摘要：\n%1\n").arg(processSummaryText(out));
-    text += QStringLiteral("性能基准：扫描区块 %1 个 ｜ 耗时 %2 秒（扫描 %3 秒 / 匹配 %4 秒） ｜ %5 线程 ｜ 速度 %6 万区块/秒\n")
+    text += slime::ui::t("ui.4588cdabce4f").arg(processSummaryText(out));
+    text += slime::ui::t("ui.3773f957acba")
                 .arg(out.stats.scannedChunks)
                 .arg(totalS, 0, 'f', 3)
                 .arg(out.stats.scanMs / 1000.0, 0, 'f', 3)
@@ -8865,29 +8743,29 @@ QString MainWindow::describeResultsText(const SearchOutcome& out, const RunInfo&
 
     // v3.3.0（4.2）：当前使用模式 + 非精确模式提示（复制文本同步标注）
     const bool nonExact = (info.mode == Mode::Density && info.algorithm != Algorithm::Exact);
-    text += QStringLiteral("【当前使用模式】%1").arg(algorithmDisplayName(info.algorithm));
+    text += slime::ui::t("ui.ffc148b2f7ea").arg(algorithmDisplayName(info.algorithm));
     if (nonExact) {
-        text += QStringLiteral("  ⚠️ 非精确结果，可能不完整");
+        text += slime::ui::t("ui.9fa83b53428b");
     }
     text += QLatin1Char('\n');
     if (nonExact && out.windowsSkipped > 0) {
         const double rate = 100.0 * static_cast<double>(out.windowsSkipped) /
                             static_cast<double>(out.windowsSkipped + out.stats.windowsEvaluated);
-        text += QStringLiteral("剪枝/采样跳过窗口 %1 个（占 %2%）\n")
+        text += slime::ui::t("ui.f1e3a7cbc2ce")
                     .arg(out.windowsSkipped)
                     .arg(rate, 0, 'f', 1);
     }
 
     if (out.results.empty()) {
-        text += QStringLiteral("未找到任何匹配的史莱姆区块图案。\n");
+        text += slime::ui::t("ui.967e134f508e");
         return text;
     }
 
     if (out.stoppedEarly) {
-        text += QStringLiteral("搜索结果 (达到目标数量提前停止，共确认 ≥%1 个，显示最近 %2 个)\n")
+        text += slime::ui::t("ui.d37244ae5c61")
                     .arg(out.results.size()).arg(out.results.size());
     } else {
-        text += QStringLiteral("搜索结果 (共找到 %1 个，显示最近 %2 个)\n").arg(out.totalFound).arg(out.results.size());
+        text += slime::ui::t("ui.26039c5b8223").arg(out.totalFound).arg(out.results.size());
     }
 
     int idx = 1;
@@ -8895,17 +8773,17 @@ QString MainWindow::describeResultsText(const SearchOutcome& out, const RunInfo&
         const double cx = (static_cast<double>(r.minX) + r.maxX) / 2.0;
         const double cz = (static_cast<double>(r.minZ) + r.maxZ) / 2.0;
         const double dist = std::hypot(cx - static_cast<double>(info.startX), cz - static_cast<double>(info.startZ));
-        text += QStringLiteral("第%1名 (距离 %2 区块):\n").arg(idx).arg(dist, 0, 'f', 2);
-        text += QStringLiteral("  覆盖范围: chunkX(%1 ~ %2)  chunkZ(%3 ~ %4)\n")
+        text += slime::ui::t("ui.186c31a50487").arg(idx).arg(dist, 0, 'f', 2);
+        text += slime::ui::t("ui.b657a9d6d6fd")
                     .arg(r.minX).arg(r.maxX).arg(r.minZ).arg(r.maxZ);
         const qlonglong bx0 = static_cast<qlonglong>(r.minX) * 16;
         const qlonglong bx1 = (static_cast<qlonglong>(r.maxX) + 1) * 16 - 1;
         const qlonglong bz0 = static_cast<qlonglong>(r.minZ) * 16;
         const qlonglong bz1 = (static_cast<qlonglong>(r.maxZ) + 1) * 16 - 1;
-        text += QStringLiteral("  方块坐标: X(%1 ~ %2)  Z(%3 ~ %4)\n")
+        text += slime::ui::t("ui.acd6c8073f08")
                     .arg(bx0).arg(bx1).arg(bz0).arg(bz1);
         if (info.mode == Mode::Density) {
-            text += QStringLiteral("  史莱姆密度: %1%\n").arg(r.density * 100.0, 0, 'f', 1);
+            text += slime::ui::t("ui.52777be41a72").arg(r.density * 100.0, 0, 'f', 1);
         }
         text += QLatin1Char('\n');
         ++idx;
@@ -8930,24 +8808,24 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
     QString text;
     const double totalS = out.stats.totalMs / 1000.0;
     const double cps = totalS > 0 ? out.stats.scannedChunks / totalS : 0.0;
-    text += QStringLiteral("性能基准：扫描 %1 区块 ｜ %2 秒 ｜ %3 线程 ｜ ") +
+    text += slime::ui::t("ui.a62aeabda435") +
             rateText(static_cast<double>(out.stats.scannedChunks) / (std::max)(1e-9, totalS),
                      m_settings.rateUnit) + QStringLiteral("\n")
                 .arg(out.stats.scannedChunks)
                 .arg(totalS, 0, 'f', 3)
                 .arg(out.stats.threadsUsed)
                 .arg(cps / 10000.0, 0, 'f', 1);
-    text += QStringLiteral("【当前使用模式】%1\n").arg(algorithmDisplayName(info.algorithm));
+    text += slime::ui::t("ui.7db8f96b7d21").arg(algorithmDisplayName(info.algorithm));
     if (info.mode == Mode::Density && info.algorithm != Algorithm::Exact) {
-        QString warn = QStringLiteral("⚠️ 当前为%1，结果可能不完整").arg(algorithmDisplayName(info.algorithm));
+        QString warn = slime::ui::t("ui.ecacdc495bdf").arg(algorithmDisplayName(info.algorithm));
         if (info.algorithm == Algorithm::Sample) {
-            warn += QStringLiteral("（结果为估算值，不代表精确分布；仅供粗筛参考）");
+            warn += slime::ui::t("ui.d8733f657313");
         }
-        warn += QStringLiteral("，如需精确结果请切换到精确模式。");
+        warn += slime::ui::t("ui.f6576484b989");
         if (out.windowsSkipped > 0) {
             const double rate = 100.0 * static_cast<double>(out.windowsSkipped) /
                                 static_cast<double>(out.windowsSkipped + out.stats.windowsEvaluated);
-            warn += QStringLiteral("（本次跳过 %1 个窗口，占 %2%）")
+            warn += slime::ui::t("ui.ea74b35a4457")
                         .arg(out.windowsSkipped)
                         .arg(rate, 0, 'f', 1);
         }
@@ -8956,12 +8834,12 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
     text += QLatin1Char('\n');
 
     if (out.results.empty()) {
-        text += QStringLiteral("未找到任何匹配的史莱姆区块图案。\n");
+        text += slime::ui::t("ui.967e134f508e");
         m_w->resultView->setPlainText(text);
         m_resultTextTotal = 0;
         // v3.6.19：空结果必须把列表/计数/地图标记一并清掉（此前只改了文本，列表会留着旧行）
         if (m_w->resultTable) m_w->resultTable->setRowCount(0);
-        if (m_resultCountLabel) m_resultCountLabel->setText(QStringLiteral("（无结果）"));
+        if (m_resultCountLabel) m_resultCountLabel->setText(slime::ui::t("ui.a535edb5149b"));
         if (m_map) {
             m_map->setResults({});
             m_map->setAfkCandidates({});
@@ -8971,10 +8849,10 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
             {
                 // v3.10.4（用户要求：GPU 只保留速度显示）：无结果时也给平均速度
                 const double avgCps = totalS > 1e-9 ? static_cast<double>(out.stats.scannedChunks) / totalS : 0.0;
-                QString txt = QStringLiteral("未找到匹配结果（扫描 %1 区块，用时 %2 秒）")
+                QString txt = slime::ui::t("ui.6fce8eadb15e")
                                   .arg(out.stats.scannedChunks)
                                   .arg(totalS, 0, 'f', 3);
-                if (avgCps > 0.0) txt += QStringLiteral(" ｜ 平均速度 ") + rateText(avgCps, m_settings.rateUnit);
+                if (avgCps > 0.0) txt += slime::ui::t("ui.1b1b7e5468a9") + rateText(avgCps, m_settings.rateUnit);
                 m_w->infoStats->setText(txt);
             }
         }
@@ -8982,13 +8860,13 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
     }
 
     if (out.stoppedEarly) {
-        text += QStringLiteral("搜索结果（达到目标数量提前停止，共确认 ≥%1 个，显示最近 %2 个）\n")
+        text += slime::ui::t("ui.f2d64e212362")
                     .arg(out.results.size()).arg(out.results.size());
     } else {
-        text += QStringLiteral("搜索结果（共找到 %1 个，显示最近 %2 个）\n")
+        text += slime::ui::t("ui.1bcc6f2367f2")
                     .arg(out.totalFound).arg(out.results.size());
     }
-    text += QStringLiteral("（右键菜单可复制某一条的 /tp 命令；「复制结果」含全部文本）\n\n");
+    text += slime::ui::t("ui.088bf658860a");
 
     const size_t shown = std::min<size_t>(out.results.size(), static_cast<size_t>(kResultDisplayCap));
     int idx = 1;
@@ -8997,23 +8875,23 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
         const double cx = (static_cast<double>(r.minX) + r.maxX) / 2.0;
         const double cz = (static_cast<double>(r.minZ) + r.maxZ) / 2.0;
         const double dist = std::hypot(cx - static_cast<double>(info.startX), cz - static_cast<double>(info.startZ));
-        text += QStringLiteral("第%1名 (距离 %2 区块)").arg(idx).arg(dist, 0, 'f', 2);
+        text += slime::ui::t("ui.2fcd12613ecd").arg(idx).arg(dist, 0, 'f', 2);
         text += QStringLiteral("  chunkX(%1~%2) chunkZ(%3~%4)")
                     .arg(r.minX).arg(r.maxX).arg(r.minZ).arg(r.maxZ);
-        text += QStringLiteral("  方块 X(%1~%2) Z(%3~%4)")
+        text += slime::ui::t("ui.f773d8edbfc4")
                     .arg(static_cast<qlonglong>(r.minX) * 16)
                     .arg((static_cast<qlonglong>(r.maxX) + 1) * 16 - 1)
                     .arg(static_cast<qlonglong>(r.minZ) * 16)
                     .arg((static_cast<qlonglong>(r.maxZ) + 1) * 16 - 1);
         if (info.mode == Mode::Density) {
-            text += QStringLiteral("  密度 %1%").arg(r.density * 100.0, 0, 'f', 1);
+            text += slime::ui::t("ui.415d894a9fa6").arg(r.density * 100.0, 0, 'f', 1);
         }
         // v3.3.8.1（任务书 3.6）：显示行不再附 /tp 命令（「复制结果」「复制全部命令」路径不受影响）
         text += QLatin1Char('\n');
         ++idx;
     }
     if (out.results.size() > static_cast<size_t>(kResultDisplayCap)) {
-        text += QStringLiteral("\n… 共 %1 条，文本仅显示前 %2 条；「复制结果」包含全部文本。\n")
+        text += slime::ui::t("ui.d1dfa3adee72")
                     .arg(out.results.size()).arg(kResultDisplayCap);
     }
     m_w->resultView->setPlainText(text);
@@ -9022,17 +8900,17 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
     {
         // v3.10.4（用户要求：GPU 只保留速度显示）：结果统计追加平均速度
         const double avgCps = totalS > 1e-9 ? static_cast<double>(out.stats.scannedChunks) / totalS : 0.0;
-        QString txt = QStringLiteral("结果 %1 条（显示前 %2 条）｜ 扫描 %3 区块 ｜ 用时 %4 秒 ｜ 模式：%5%6")
+        QString txt = slime::ui::t("ui.c9f1416974ec")
                           .arg(out.results.size())
                           .arg(shown)
                           .arg(out.stats.scannedChunks)
                           .arg(totalS, 0, 'f', 3)
-                          .arg(info.mode == Mode::Strict ? slime::ui::tr(QStringLiteral("严格图案"))
+                          .arg(info.mode == Mode::Strict ? slime::ui::tr(slime::ui::t("ui.b977e67d75f8"))
                                                          : algorithmDisplayName(info.algorithm))
                           .arg(out.ignoredThreshold
-                                   ? QStringLiteral("（最优候选：已忽略阈值，按密度排序）")
+                                   ? slime::ui::t("ui.1ba425cc935b")
                                    : QString());
-        if (avgCps > 0.0) txt += QStringLiteral(" ｜ 平均速度 ") + rateText(avgCps, m_settings.rateUnit);
+        if (avgCps > 0.0) txt += slime::ui::t("ui.1b1b7e5468a9") + rateText(avgCps, m_settings.rateUnit);
         m_w->infoStats->setText(txt);
     }
 }
@@ -9050,24 +8928,24 @@ void MainWindow::applyResultSort()
     std::stable_sort(sorted.results.begin(), sorted.results.end(),
                      [](const MatchResult& a, const MatchResult& b) { return a.density > b.density; });
     populateResultText(sorted, m_lastInfo);
-    setStatus(slime::ui::tr(QStringLiteral("结果已按密度（高 → 低）重新排列（共 %1 条）")).arg(sorted.results.size()));
+    setStatus(slime::ui::tr(slime::ui::t("ui.1c58ffbc4881")).arg(sorted.results.size()));
 }
 
 // v3.3.4：结果视图右键菜单（复制选中 / 复制该条命令 / 复制全部命令 / 清空结果）
 void MainWindow::showResultContextMenu(const QPoint& pos)
 {
     QMenu menu(this);
-    QAction* aCopySel = menu.addAction(QStringLiteral("复制选中"));
-    QAction* aCopyLineCmd = menu.addAction(QStringLiteral("复制光标所在行的命令"));
-    QAction* aCopyAllCmd = menu.addAction(QStringLiteral("复制全部命令"));
+    QAction* aCopySel = menu.addAction(slime::ui::t("ui.4584c49b2881"));
+    QAction* aCopyLineCmd = menu.addAction(slime::ui::t("ui.c9292f786187"));
+    QAction* aCopyAllCmd = menu.addAction(slime::ui::t("ui.b55b79e1c9e9"));
     menu.addSeparator();
-    QAction* aCopyAll = menu.addAction(QStringLiteral("复制结果（全部文本）"));
-    QAction* aClear = menu.addAction(QStringLiteral("清空结果"));
+    QAction* aCopyAll = menu.addAction(slime::ui::t("ui.07bc78ac5aef"));
+    QAction* aClear = menu.addAction(slime::ui::t("ui.0fe9f67f7f41"));
     QAction* chosen = menu.exec(m_w->resultView->mapToGlobal(pos));
     if (!chosen) return;
     if (chosen == aCopySel) {
         m_w->resultView->copy();
-        setStatus(slime::ui::tr(QStringLiteral("已复制选中文本")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.6bf48eb281e9")));
     } else if (chosen == aCopyLineCmd) {
         const QString line = m_w->resultView->textCursor().block().text();
         // v3.3.8.1（任务书 3.6）：显示行不再带 /tp 命令 ⇒ 改为从行内区块坐标推算命令
@@ -9081,10 +8959,10 @@ void MainWindow::showResultContextMenu(const QPoint& pos)
             cmd = QStringLiteral("/tp @s %1 64 %2").arg(x).arg(z);
         }
         if (cmd.isEmpty()) {
-            setStatus(slime::ui::tr(QStringLiteral("该行不是结果行（没有可复制的 /tp 命令）")));
+            setStatus(slime::ui::tr(slime::ui::t("ui.fa8bb54f3fbe")));
         } else {
             QApplication::clipboard()->setText(cmd);
-            setStatus(slime::ui::tr(QStringLiteral("已复制命令：%1")).arg(cmd));
+            setStatus(slime::ui::tr(slime::ui::t("ui.0ed61f8d953a")).arg(cmd));
         }
     } else if (chosen == aCopyAllCmd) {
         copyAllCommands();
@@ -9099,15 +8977,15 @@ void MainWindow::showResultContextMenu(const QPoint& pos)
 void MainWindow::copyAllCommands()
 {
     if (!m_hasLastOutcome || m_lastOutcome.results.empty()) {
-        setStatus(slime::ui::tr(QStringLiteral("当前没有可复制的命令")));
+        setStatus(slime::ui::tr(slime::ui::t("ui.40866ce4c457")));
         return;
     }
     QStringList cmds;
     const size_t shown = std::min<size_t>(m_lastOutcome.results.size(), kMaxCards);
     for (size_t i = 0; i < shown; ++i) cmds << cacheCommandFor(m_lastOutcome.results[i]);
     QApplication::clipboard()->setText(cmds.join(QLatin1Char('\n')));
-    setStatus(slime::ui::tr(QStringLiteral("已复制 %1 条 /tp 命令")).arg(cmds.size()));
-    addFeedback(2, slime::ui::tr(QStringLiteral("已复制 %1 条 /tp 命令到剪贴板")).arg(cmds.size()));
+    setStatus(slime::ui::tr(slime::ui::t("ui.aff1069e95b5")).arg(cmds.size()));
+    addFeedback(2, slime::ui::tr(slime::ui::t("ui.0b7f489d26c3")).arg(cmds.size()));
 }
 
 // v3.3.4（任务书 1.2）：编辑 → 清空结果（Ctrl+L）
@@ -9117,32 +8995,32 @@ void MainWindow::clearResults()
     m_lastResultText.clear();
     m_hasLastOutcome = false;
     m_resultTextTotal = 0;
-    if (m_w && m_w->infoStats) m_w->infoStats->setText(QStringLiteral("结果已清空。"));
-    setStatus(slime::ui::tr(QStringLiteral("结果已清空")));
+    if (m_w && m_w->infoStats) m_w->infoStats->setText(slime::ui::t("ui.6e6523a7593c"));
+    setStatus(slime::ui::tr(slime::ui::t("ui.ee1775e4f8d0")));
 }
 
 // v3.3.4（任务书 1.2）：文件 → 导出结果（Ctrl+S）
 void MainWindow::exportResultsToFile()
 {
     if (m_lastResultText.isEmpty()) {
-        if (!m_uiQuiet) QMessageBox::information(this, QStringLiteral("导出结果"), QStringLiteral("当前没有可导出的结果。"));
+        if (!m_uiQuiet) QMessageBox::information(this, slime::ui::t("ui.d733ad3e850d"), slime::ui::t("ui.72b97623bbfa"));
         return;
     }
     const QString def = QDir(QString::fromStdWString(appDirPath().wstring()))
                             .filePath(QStringLiteral("slime_results.txt"));
-    const QString path = QFileDialog::getSaveFileName(this, QStringLiteral("导出结果"), def,
-                                                      QStringLiteral("文本文件 (*.txt);;所有文件 (*.*)"));
+    const QString path = QFileDialog::getSaveFileName(this, slime::ui::t("ui.d733ad3e850d"), def,
+                                                      slime::ui::t("ui.227f93d5f60d"));
     if (path.isEmpty()) return;
     std::ofstream out(std::filesystem::path(path.toStdWString()), std::ios::binary | std::ios::trunc);
     if (!out) {
-        addError(QStringLiteral("导出失败：无法写入 %1").arg(path));
+        addError(slime::ui::t("ui.cfcd6b5bf187").arg(path));
         return;
     }
     const QByteArray utf8 = m_lastResultText.toUtf8();
     out.write(utf8.constData(), utf8.size());
     out.close();
-    setStatus(slime::ui::tr(QStringLiteral("结果已导出：%1")).arg(path));
-    addFeedback(3, slime::ui::tr(QStringLiteral("结果已导出到 %1")).arg(path));
+    setStatus(slime::ui::tr(slime::ui::t("ui.6caccae3bf9c")).arg(path));
+    addFeedback(3, slime::ui::tr(slime::ui::t("ui.10d76115f1dc")).arg(path));
     slime::LogBus::info("结果已导出: " + path.toStdString());
 }
 
@@ -9247,7 +9125,7 @@ void MainWindow::copyResults()
 {
     if (m_lastResultText.isEmpty()) return;
     QApplication::clipboard()->setText(m_lastResultText);
-    setStatus(slime::ui::tr(QStringLiteral("结果已复制到剪贴板")));
+    setStatus(slime::ui::tr(slime::ui::t("ui.a48bb5b20557")));
 }
 
 void MainWindow::closeEvent(QCloseEvent* ev)
@@ -9399,10 +9277,10 @@ int MainWindow::runSelfTest()
         info.startX = 0;
         info.startZ = 0;
         m_lastResultText = describeResultsText(out, info);
-        check(m_lastResultText.contains(QStringLiteral("第1名")), "文本渲染");
+        check(m_lastResultText.contains(slime::ui::t("ui.7a1fd8c33948")), "文本渲染");
         // v3.3.4：结果写入右侧 QTextEdit（信息栏 + QTextEdit 规范）
         populateResultText(out, info);
-        check(m_w->resultView && m_w->resultView->toPlainText().contains(QStringLiteral("第1名")),
+        check(m_w->resultView && m_w->resultView->toPlainText().contains(slime::ui::t("ui.7a1fd8c33948")),
               "结果已写入右侧结果视图");
         clearResults();
         check(m_w->resultView && m_w->resultView->toPlainText().isEmpty(), "结果视图可清空");
@@ -9513,14 +9391,14 @@ int MainWindow::runSelfTest()
             QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
             // v3.3.3（任务书 3.2）：采样进度文字（信息性记录；阶段文字的确定性断言见第 13 组）
             const QString pt = m_w->progressInfo->text();
-            if (pt.contains(QStringLiteral("正在扫描区块"))) sawScanning = true;
-            if (pt.contains(QStringLiteral("扫描完成，正在匹配图案"))) sawMatchingIntro = true;
-            if (pt.contains(QStringLiteral("正在匹配图案…"))) sawMatchingPct = true;
+            if (pt.contains(slime::ui::t("ui.4ee94f431863"))) sawScanning = true;
+            if (pt.contains(slime::ui::t("ui.dc8d4773e118"))) sawMatchingIntro = true;
+            if (pt.contains(slime::ui::t("ui.5b0b37bab0a8"))) sawMatchingPct = true;
             QThread::msleep(20);
             ++pumps;
         }
         check(!m_running, "真实搜索在 60s 内完成（未闪退/未挂起）");
-        check(m_w->progressInfo->text().contains(QStringLiteral("搜索完成")), "进度文字：完成后显示「搜索完成…」");
+        check(m_w->progressInfo->text().contains(slime::ui::t("ui.8174d1168fce")), "进度文字：完成后显示「搜索完成…」");
         std::fprintf(stderr, "[UI自检] 搜索冒烟结束 pumps=%d 结果文本=%lld 行 阶段采样(信息性): 扫描=%d 匹配引导=%d 匹配进度=%d\n",
                      pumps, static_cast<long long>(m_lastResultText.count('\n')), (int)sawScanning,
                      (int)sawMatchingIntro, (int)sawMatchingPct);
@@ -9534,7 +9412,7 @@ int MainWindow::runSelfTest()
         m_w->densityRadio->setChecked(true);
         updateSearchShapeEnabled();
         check(m_w->presetCombo && m_w->presetCombo->count() == 5, "密度模式方案数 = 4 + 自定义");
-        check(m_w->presetCombo->itemText(m_w->presetCombo->count() - 1) == QStringLiteral("自定义"),
+        check(m_w->presetCombo->itemText(m_w->presetCombo->count() - 1) == slime::ui::t("ui.c493338e8c33"),
               "方案列表最后一项是自定义");
 
         // 方案「找全部候选」（索引 1）：关闭停止方式，且不得改动 GPU 开关
@@ -9547,7 +9425,7 @@ int MainWindow::runSelfTest()
         check(m_w->ignoreThreshold && m_w->ignoreThreshold->isChecked(), "方案「最优 N 个」开启忽略阈值");
         check(!m_w->minDensity->isEnabled(), "最优候选模式禁用最小密度输入");
         check(!m_w->stopAtTarget->isEnabled() && !m_w->smartRange->isEnabled(), "最优候选模式禁用提前停止/智能范围");
-        check(m_w->presetHint && m_w->presetHint->text().contains(QStringLiteral("最优候选")), "最优候选模式提示文案");
+        check(m_w->presetHint && m_w->presetHint->text().contains(slime::ui::t("ui.4446620620fc")), "最优候选模式提示文案");
 
         // 切回默认方案：阈值恢复可用、忽略关闭
         m_w->presetCombo->setCurrentIndex(0);
@@ -9647,7 +9525,7 @@ int MainWindow::runSelfTest()
         std::fprintf(stderr, "[UI自检]   GPU 搜索完成：GPU匹配=%d 忙碌动画=%d 统计=%s\n",
                      (int)m_lastOutcome.gpuMatchUsed, (int)sawBusy, summary.toUtf8().constData());
         check(m_lastOutcome.ok && m_lastOutcome.gpuMatchUsed, "GPU 大区域搜索走 GPU 匹配并成功");
-        check(summary.contains(QStringLiteral("秒")) && summary.contains(QStringLiteral("区块")),
+        check(summary.contains(slime::ui::t("ui.eb6aaba1a1ca")) && summary.contains(slime::ui::t("ui.3da82d85c5de")),
               "GPU 搜索完成后统计显示区块数与用时");
     }
 
@@ -9688,7 +9566,7 @@ int MainWindow::runSelfTest()
         check(m_w->resultGroup->isVisible() && m_w->matchGroup->isVisible(),
               "自定义方案展开「结果要求/匹配方式」");
         check(m_w->presetDisclaimer->isVisible() &&
-                  m_w->presetDisclaimer->text().contains(QStringLiteral("速度")),
+                  m_w->presetDisclaimer->text().contains(slime::ui::t("ui.f2fdffbb9ed5")),
               "自定义方案显示「可能明显降低速度」声明");
         check(m_w->gpuAdvBtn && m_w->gpuAdvPanel && !m_w->gpuAdvPanel->isVisible(),
               "GPU「设置」入口默认收起");
@@ -9800,7 +9678,7 @@ int MainWindow::runSelfTest()
         onModeChanged();
         check(!m_w->algLayeredRadio->isEnabled() && !m_w->algSampleRadio->isEnabled(),
               "严格模式下算法选择禁用");
-        check(m_w->modeHeader->text().contains(QStringLiteral("严格图案")), "严格模式标注");
+        check(m_w->modeHeader->text().contains(slime::ui::t("ui.b977e67d75f8")), "严格模式标注");
 
         // 密度模式：分层 → 参数可用 + 警告条随比例联动
         m_w->densityRadio->setChecked(true);
@@ -9813,7 +9691,7 @@ int MainWindow::runSelfTest()
         if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
         saveWindowShot(shotPrefix, QStringLiteral("mode-layered"));
         check(m_w->layerBlock->isEnabled() && !m_w->sampleStep->isEnabled(), "分层参数可用/估算参数禁用");
-        check(m_w->modeHeader->text().contains(QStringLiteral("分层")), "分层模式标注");
+        check(m_w->modeHeader->text().contains(slime::ui::t("ui.752b56a4f270")), "分层模式标注");
         check(!m_w->modeWarn->isVisible(), "分层比例 1.00 → 无漏检警告（无损剪枝）");
         m_w->layerRatio->setValue(1.5);
         updateAlgorithmPanels();
@@ -9828,7 +9706,7 @@ int MainWindow::runSelfTest()
         saveWindowShot(shotPrefix, QStringLiteral("mode-sample"));
         check(m_w->sampleStep->isEnabled() && !m_w->layerBlock->isEnabled(), "估算参数可用/分层参数禁用");
         check(m_w->modeWarn->isVisible(), "估算模式显示估算警告条");
-        check(m_w->modeHeader->text().contains(QStringLiteral("估算")), "估算模式标注");
+        check(m_w->modeHeader->text().contains(slime::ui::t("ui.b73b8f52b049")), "估算模式标注");
 
         // config.json 往返：模式与参数持久化
         saveAlgorithmToConfig();
@@ -9868,7 +9746,7 @@ int MainWindow::runSelfTest()
             }
         }
         check(!m_running, "估算模式搜索在 60s 内完成");
-        check(m_lastResultText.contains(QStringLiteral("当前使用模式")), "结果文本含模式标注");
+        check(m_lastResultText.contains(slime::ui::t("ui.5496995eb999")), "结果文本含模式标注");
         if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
         saveWindowShot(shotPrefix, QStringLiteral("mode-sample-warn"));
         saveWindowShot(shotPrefix, QStringLiteral("full-window"));
@@ -9995,7 +9873,7 @@ int MainWindow::runSelfTest()
             check(QDir(dirQ).entryList(allGroup, QDir::Files).contains(QStringLiteral("readme.txt")),
                   "「所有文件」兜底可见任意文件");
 
-            QFileDialog dlgCheck(nullptr, QStringLiteral("选择史莱姆缓存文件"), dirQ);
+            QFileDialog dlgCheck(nullptr, slime::ui::t("ui.834c34e48ed2"), dirQ);
             dlgCheck.setFileMode(QFileDialog::ExistingFile);
             dlgCheck.setNameFilters(groups);
             dlgCheck.selectFile(QString::fromStdString(kCacheFileName));
@@ -10142,11 +10020,11 @@ int MainWindow::runSelfTest()
         // v3.3.7.2：热修版使用 4 段版本号（3.3.7.2），因此允许 2~3 个点
         const int dotCount = expectedVersion.count(QLatin1Char('.'));
         check(appVer.startsWith(QStringLiteral("v")) && (dotCount == 2 || dotCount == 3),
-              (QStringLiteral("应用版本常量为 %1").arg(appVer)).toUtf8().constData());
+              (slime::ui::t("ui.4842f3de5c9e").arg(appVer)).toUtf8().constData());
         check(windowTitle().contains(appVer),
-              (QStringLiteral("主窗口标题包含 %1").arg(appVer)).toUtf8().constData());
+              (slime::ui::t("ui.18aa9f5e039f").arg(appVer)).toUtf8().constData());
         check(QApplication::applicationVersion() == expectedVersion,
-              (QStringLiteral("QApplication 版本为 %1（与 kAppVersion 一致）").arg(expectedVersion))
+              (slime::ui::t("ui.1850e279ff8f").arg(expectedVersion))
                   .toUtf8()
                   .constData());
         {
@@ -10158,7 +10036,7 @@ int MainWindow::runSelfTest()
             const std::string cfg = ss.str();
             const std::string want = "\"version\": \"" + appVer.toStdString() + "\"";
             check(cfg.find(want) != std::string::npos,
-                  (QStringLiteral("config.json 写入 \"version\": \"%1\"").arg(appVer)).toUtf8().constData());
+                  (slime::ui::t("ui.9f9c9174298d").arg(appVer)).toUtf8().constData());
         }
 
         // 13.2 缓存状态标签（任务书 2.2）——首次搜索后必须显示条目数
@@ -10166,21 +10044,21 @@ int MainWindow::runSelfTest()
             m_w->bedrockRadio->setChecked(true);
             updateCacheStatusUi();
             const QString t = m_w->cacheStatus->text();
-            check(t.contains(QStringLiteral("缓存已加载，共")) && t.contains(QString::number(m_cache->entryCount())),
+            check(t.contains(slime::ui::t("ui.8b32159c6375")) && t.contains(QString::number(m_cache->entryCount())),
                   "缓存标签显示「缓存已加载，共 N 个区块」（N 与实际条目数一致）");
             std::fprintf(stderr, "[UI自检] 缓存标签文本: %s\n", t.toUtf8().constData());
             // 勾选变化也要刷新（取消勾选 → 文本仍在；重新载入后再次刷新）
             m_w->useCache->setChecked(false);
             updateCacheStatusUi();
             const QString t2 = m_w->cacheStatus->text();
-            check(t2.contains(QStringLiteral("缓存已加载，共")), "切换「使用缓存」勾选后标签仍为已加载状态");
+            check(t2.contains(slime::ui::t("ui.8b32159c6375")), "切换「使用缓存」勾选后标签仍为已加载状态");
             m_w->useCache->setChecked(true);
         }
 
         // 13.3 v3.3.6（任务书 Bug 2）：彻底移除「临界值」—— 全界面无该字样，提醒文案保留
         {
             // 递归扫描所有子控件的文本与 tooltip（含菜单/动作），确认没有残留
-            const QString banned = QStringLiteral("临界") + QStringLiteral("值");
+            const QString banned = slime::ui::t("ui.42419fe91fa9") + slime::ui::t("ui.321b9558401a");
             int hits = 0;
             QStringList hitWhere;
             const QList<QWidget*> widgets = findChildren<QWidget*>();
@@ -10208,7 +10086,7 @@ int MainWindow::runSelfTest()
                     hitWhere << QStringLiteral("QAction(%1)").arg(a->text().left(40));
                 }
             }
-            check(hits == 0, (QStringLiteral("全界面无「%1」字样（控件 + tooltip + 菜单动作）").arg(banned))
+            check(hits == 0, (slime::ui::t("ui.ce9d348d417a").arg(banned))
                                  .toUtf8()
                                  .constData());
             if (hits) {
@@ -10233,8 +10111,8 @@ int MainWindow::runSelfTest()
             }
             check(all, "帮助教程包含全部 7 个章节");
             check(m_w->helpBtn == nullptr, "右下角「帮助 / 使用教程」按钮已按任务书 3.3 移除（F1/菜单入口保留）");
-            check(help.contains(QStringLiteral("灰")) && help.contains(QStringLiteral("白")) &&
-                      help.contains(QStringLiteral("绿")),
+            check(help.contains(slime::ui::t("ui.c010838dd8fa")) && help.contains(slime::ui::t("ui.4a1ae3cda4be")) &&
+                      help.contains(slime::ui::t("ui.579625d5ac90")),
                   "帮助教程包含图案三色说明");
         }
 
@@ -10247,7 +10125,7 @@ int MainWindow::runSelfTest()
             showPage(kPageBuild); // v3.4.9：提示行随构建内容在构建页，先切页再判可见性
             QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
             check(m_w->buildHint && m_w->buildHint->isVisible() &&
-                      m_w->buildHint->text().contains(QStringLiteral("构建模式")),
+                      m_w->buildHint->text().contains(slime::ui::t("ui.f6bed4017481")),
                   "构建模式提示可见（预估体积 + 说明；任务书 1.1）");
             check(m_w->targetCount && !m_w->targetCount->isEnabled() && m_w->stopAtTarget &&
                       !m_w->stopAtTarget->isEnabled(),
@@ -10271,8 +10149,8 @@ int MainWindow::runSelfTest()
             check(m_cache->entryCount() > 0, "构建模式写入了缓存条目");
             // 覆盖声明 = 锚点行域（末 hMax-1 = 4 行为块间重叠行，属下一块数据但不属任何锚点域）
             const QString bInfo = m_w->progressInfo ? m_w->progressInfo->text() : QString();
-            check(bInfo.contains(QStringLiteral("已记录")) && bInfo.contains(QStringLiteral("%")) &&
-                      bInfo.contains(QStringLiteral("万区块/秒")) && bInfo.contains(QStringLiteral("已花费")),
+            check(bInfo.contains(slime::ui::t("ui.d94731eaa902")) && bInfo.contains(QStringLiteral("%")) &&
+                      bInfo.contains(slime::ui::t("ui.5be47a443458")) && bInfo.contains(slime::ui::t("ui.70654727169a")),
                   "构建进度文案含四项：已记录区块(百分比) / 记录速度 / 已花费（任务书 1.1）");
             std::fprintf(stderr, "[UI自检] 构建模式：缓存 %zu 区域 / %lld 区块；进度文案=[%s]\n",
                          m_cache->ranges().size(), static_cast<long long>(m_cache->entryCount()),
@@ -10314,7 +10192,7 @@ int MainWindow::runSelfTest()
             check(m_w->targetCount && !m_w->targetCount->isEnabled() && m_w->stopAtTarget &&
                       !m_w->stopAtTarget->isEnabled(),
                   "1.1：构建模式禁用「结果筛选（目标数量 / 达到即停）」");
-            check(m_w->strictRadio && m_w->strictRadio->toolTip().contains(QStringLiteral("缓存构建模式")),
+            check(m_w->strictRadio && m_w->strictRadio->toolTip().contains(slime::ui::t("ui.ef6376c8e19e")),
                   "1.1：被禁用的选项给出原因说明（tooltip）");
             check(m_w->minX->isEnabled() && m_w->maxX->isEnabled() && m_w->threads->isEnabled(),
                   "1.1：构建相关输入（范围 / 线程数）保持可用");
@@ -10347,7 +10225,7 @@ int MainWindow::runSelfTest()
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
                 QThread::msleep(15);
                 const QString info = m_w->progressInfo ? m_w->progressInfo->text() : QString();
-                const QRegularExpression re(QStringLiteral("已记录 (\\d+) 区块\\(([0-9.]+)%\\)"));
+                const QRegularExpression re(slime::ui::t("ui.8297e7c40bbb"));
                 const QRegularExpressionMatch mm = re.match(info);
                 if (mm.hasMatch()) {
                     const int64_t n = mm.captured(1).toLongLong();
@@ -10378,7 +10256,7 @@ int MainWindow::runSelfTest()
                 m_settings.autoCheckGpuAtStartup = false;
                 maybeAutoCheckGpuAtStartup(); // 关闭：不得探测
                 check(m_gpuProbeDone == probeBefore, "2.1：设置关闭 ⇒ 启动时不检测 GPU");
-                check(m_w->gpuStatus->text().contains(QStringLiteral("未检测")),
+                check(m_w->gpuStatus->text().contains(slime::ui::t("ui.90b74980e435")),
                       "2.1：设置关闭 ⇒ 状态显示「未检测」（并提示如何开启）");
                 m_settings.autoCheckGpuAtStartup = true;
                 maybeAutoCheckGpuAtStartup(); // 开启：探测一次并显示状态
@@ -10398,26 +10276,26 @@ int MainWindow::runSelfTest()
             const slime::Mode density = slime::Mode::Density;
             const slime::Algorithm exact = slime::Algorithm::Exact;
             const slime::Algorithm sample = slime::Algorithm::Sample;
-            check(progressStageName(0, strict, exact) == QStringLiteral("正在扫描区块…") &&
-                      progressStageName(1, strict, exact) == QStringLiteral("扫描完成，正在匹配图案…") &&
-                      progressStageName(2, strict, exact) == QStringLiteral("正在匹配图案…") &&
-                      progressStageName(3, strict, exact) == QStringLiteral("正在排序结果…") &&
-                      progressStageName(4, strict, exact) == QStringLiteral("搜索完成"),
+            check(progressStageName(0, strict, exact) == slime::ui::t("ui.b0894e1c9f9a") &&
+                      progressStageName(1, strict, exact) == slime::ui::t("ui.6df614a8dce8") &&
+                      progressStageName(2, strict, exact) == slime::ui::t("ui.5b0b37bab0a8") &&
+                      progressStageName(3, strict, exact) == slime::ui::t("ui.0133025c537b") &&
+                      progressStageName(4, strict, exact) == slime::ui::t("ui.8174d1168fce"),
                   "严格模式阶段短语映射正确（扫描/匹配引导/匹配/排序/完成）");
-            check(progressStageName(1, density, exact) == QStringLiteral("扫描完成，正在匹配密度…") &&
-                      progressStageName(2, density, exact) == QStringLiteral("正在匹配密度…"),
+            check(progressStageName(1, density, exact) == slime::ui::t("ui.c7709064a72b") &&
+                      progressStageName(2, density, exact) == slime::ui::t("ui.1e28c06fde93"),
                   "密度模式阶段短语为「匹配密度」（任务书 1.4：不得出现「匹配图案」）");
-            check(!progressStageName(1, density, exact).contains(QStringLiteral("图案")) &&
-                      !progressStageName(2, density, exact).contains(QStringLiteral("图案")),
+            check(!progressStageName(1, density, exact).contains(slime::ui::t("ui.d5b2aeac0692")) &&
+                      !progressStageName(2, density, exact).contains(slime::ui::t("ui.d5b2aeac0692")),
                   "密度模式阶段短语不含「图案」字样");
-            check(progressStageName(1, strict, sample) == QStringLiteral("扫描完成，正在估算…") &&
-                      progressStageName(2, strict, sample) == QStringLiteral("正在估算…"),
+            check(progressStageName(1, strict, sample) == slime::ui::t("ui.45a5facab1ca") &&
+                      progressStageName(2, strict, sample) == slime::ui::t("ui.6a6660d8c144"),
                   "快速估算模式阶段短语为「估算」（任务书 1.4）");
             const QString stats = progressStatsText(1234, 5678, 123456.0, 7);
-            check(stats.contains(QStringLiteral("扫描 1234/5678 区块")) &&
-                      stats.contains(QStringLiteral("万/秒")) && stats.contains(QStringLiteral("找到 7 个")),
+            check(stats.contains(slime::ui::t("ui.6457a952b16b")) &&
+                      stats.contains(slime::ui::t("ui.ee266fcea944")) && stats.contains(slime::ui::t("ui.6db0625ef054")),
                   "统计信息含 扫描 N/M 区块 + 速度 + 找到 K 个");
-            check(!stats.contains(QStringLiteral("预计剩余")), "统计信息不含「预计剩余」（避免与状态栏 ETA 重复）");
+            check(!stats.contains(slime::ui::t("ui.5886b1dac687")), "统计信息不含「预计剩余」（避免与状态栏 ETA 重复）");
             check(m_w->cancel != nullptr && m_w->progressInfo != nullptr, "进度/取消控件存在（阶段/统计已接入）");
             std::fprintf(stderr, "[UI自检] 阶段文字: 严格[%s][%s] 密度[%s][%s] 估算[%s] 统计: [%s]\n",
                          progressStageName(0, strict, exact).toUtf8().constData(),
@@ -10434,7 +10312,7 @@ int MainWindow::runSelfTest()
             if (m_hasLastOutcome && !m_lastOutcome.results.empty()) {
                 applyResultSort();
                 check(m_w->resultView && !m_w->resultView->toPlainText().isEmpty(), "重排后结果视图仍有内容");
-                check(m_w->resultView && m_w->resultView->toPlainText().contains(QStringLiteral("第1名")),
+                check(m_w->resultView && m_w->resultView->toPlainText().contains(slime::ui::t("ui.7a1fd8c33948")),
                       "结果视图含「第1名」标题行");
                 std::fprintf(stderr, "[UI自检] 结果排序切换正常（结果条数=%lld）\n",
                              static_cast<long long>(m_lastOutcome.results.size()));
@@ -10471,7 +10349,7 @@ int MainWindow::runSelfTest()
             check(!m_running && wasRunning, "取消后搜索立即停止（未闪退/未挂起）");
             check(stopMs < 1500.0, "取消到停止耗时 < 1.5s（实测见日志）");
             check(cancelCallMs < 200.0, "点击取消本身立即返回（不阻塞 UI 线程）");
-            check(m_w->progressInfo->text().contains(QStringLiteral("已取消")), "取消后进度文字为「已取消」");
+            check(m_w->progressInfo->text().contains(slime::ui::t("ui.a5ffdc95eeb0")), "取消后进度文字为「已取消」");
             std::fprintf(stderr, "[UI自检] 取消响应(立即): 调用 %.1f ms，停止 %.1f ms\n", cancelCallMs, stopMs);
 
             // 变体 B：先跑一小段再取消（尽量落在扫描/匹配过程中；信息性记录是否确实发生在运行中）
@@ -10587,7 +10465,7 @@ int MainWindow::runSelfTest()
                     check(all.contains(QStringLiteral("CU")) && all.contains(QStringLiteral("MB")),
                           "GPU 可用时显示显存与计算单元数");
                 } else {
-                    check(all.contains(QStringLiteral("未找到 OpenCL 设备")),
+                    check(all.contains(slime::ui::t("ui.a0215df67544")),
                           "GPU 不可用时显示「未找到 OpenCL 设备」");
                 }
             }
@@ -10596,21 +10474,21 @@ int MainWindow::runSelfTest()
             {
                 slime::LogBus::setMode(slime::LogMode::Off);
                 updateLogMenuText();
-                check(m_actLogToggle && m_actLogToggle->text().contains(QStringLiteral("启用日志")),
+                check(m_actLogToggle && m_actLogToggle->text().contains(slime::ui::t("ui.162640c04abd")),
                       "未启用时菜单项为「启用日志…」");
                 slime::LogBus::setMode(slime::LogMode::Brief);
                 updateLogMenuText();
-                check(m_actLogToggle->text().contains(QStringLiteral("关闭日志")),
+                check(m_actLogToggle->text().contains(slime::ui::t("ui.0aa53272a236")),
                       "启用后菜单项变为「关闭日志」");
                 if (m_logPanel) m_logPanel->refreshFromBus();
                 toggleLogging(); // 关闭
                 check(slime::LogBus::mode() == slime::LogMode::Off, "点击「关闭日志」后日志模式回到 Off");
-                check(m_actLogToggle->text().contains(QStringLiteral("启用日志")), "关闭后菜单项恢复为「启用日志…」");
+                check(m_actLogToggle->text().contains(slime::ui::t("ui.162640c04abd")), "关闭后菜单项恢复为「启用日志…」");
                 if (m_logPanel && m_logPanel->hintLabel()) {
                     // 日志标签页此刻可能不是当前页（其子控件 isVisible() 为 false），
                     // 因此用「是否处于关闭状态 + 提示文案」来判断
                     check(!m_logPanel->isLoggingEnabled() &&
-                              m_logPanel->hintLabel()->text().contains(QStringLiteral("日志未启用")),
+                              m_logPanel->hintLabel()->text().contains(slime::ui::t("ui.992278d3d9d7")),
                           "关闭后日志栏恢复默认提示（不再写文件）");
                 }
             }
@@ -10621,9 +10499,9 @@ int MainWindow::runSelfTest()
                 openReleasePage();
                 check(!m_updateBrowserOpened, "自检模式不打开浏览器（检查更新不联网）");
                 check(m_feedback && m_feedback->allText().contains(QStringLiteral("GitHub")) &&
-                          m_feedback->allText().contains(QStringLiteral("镜像")) &&
-                          m_feedback->allText().contains(QStringLiteral("网盘")) &&
-                          !m_feedback->allText().contains(QStringLiteral("密码")),
+                          m_feedback->allText().contains(slime::ui::t("ui.e64cd655788c")) &&
+                          m_feedback->allText().contains(slime::ui::t("ui.c48542499f03")) &&
+                          !m_feedback->allText().contains(slime::ui::t("ui.c839a8ff1788")),
                       "检查更新支持 GitHub/镜像/网盘来源（自检模式不联网）");
             }
             // v3.10.12.10：更新对话框可创建/显示；网盘页自检不启动浏览器
@@ -10636,7 +10514,7 @@ int MainWindow::runSelfTest()
                 m_updateBrowserOpened = false;
                 openPanPage();
                 check(!m_updateBrowserOpened, "自检模式打开网盘页不启动浏览器");
-                check(m_feedback && m_feedback->allText().contains(QStringLiteral("网盘")),
+                check(m_feedback && m_feedback->allText().contains(slime::ui::t("ui.c48542499f03")),
                       "网盘备用入口有反馈记录");
             }
 
@@ -10650,14 +10528,14 @@ int MainWindow::runSelfTest()
                     QThread::msleep(50);
                 }
                 check(m_gpuBenchCpuRate > 0.0 && m_gpuBenchGpuRate > 0.0, "实测基准完成（CPU/GPU 吞吐 > 0）");
-                check(m_gpuBenchText.contains(QStringLiteral("实测吞吐率")) &&
-                          m_gpuBenchText.contains(QStringLiteral("亿区块/秒")),
+                check(m_gpuBenchText.contains(slime::ui::t("ui.36da44344da2")) &&
+                          m_gpuBenchText.contains(slime::ui::t("ui.9013be8f01da")),
                       "基准结果显示实测吞吐率（CPU vs GPU）");
                 // v3.3.6（任务书 Bug 2）：不再给出任何交叉点/阈值结论
-                check(!m_gpuBenchText.contains(QStringLiteral("交叉点")) &&
-                          !m_gpuBenchText.contains(QStringLiteral("临界")),
+                check(!m_gpuBenchText.contains(slime::ui::t("ui.f381570247df")) &&
+                          !m_gpuBenchText.contains(slime::ui::t("ui.42419fe91fa9")),
                       "基准结果不含交叉点/阈值结论（按要求已移除）");
-                check(gpuStatusText().contains(QStringLiteral("亿区块/秒")),
+                check(gpuStatusText().contains(slime::ui::t("ui.9013be8f01da")),
                       "GPU 状态对话框显示实测吞吐率");
                 std::fprintf(stderr, "[UI自检] %s\n", m_gpuBenchText.toUtf8().constData());
             } else {
@@ -10709,9 +10587,9 @@ int MainWindow::runSelfTest()
                 if (dlg.tabs()) {
                     QStringList names;
                     for (int i = 0; i < dlg.tabs()->count(); ++i) names << dlg.tabs()->tabText(i);
-                    check(names == QStringList{ QStringLiteral("通用"), QStringLiteral("搜索"),
-                                                QStringLiteral("缓存"), QStringLiteral("日志"),
-                                                QStringLiteral("高级") },
+                    check(names == QStringList{ slime::ui::t("ui.1a0fdce8f88f"), slime::ui::t("ui.f04090805c6e"),
+                                                slime::ui::t("ui.6cdba4aad0c1"), slime::ui::t("ui.4de50894b8c1"),
+                                                slime::ui::t("ui.c009d0ab82f9") },
                           "标签页名称与顺序符合任务书");
                 }
                 const AppSettings f = SettingsDialog::factoryDefaults();
@@ -10730,7 +10608,7 @@ int MainWindow::runSelfTest()
 
             // --- 优化 3：查看菜单只剩「恢复默认布局」 ---
             check(m_menuView && m_menuView->actions().size() == 1 &&
-                      m_menuView->actions().first()->text().contains(QStringLiteral("恢复默认布局")),
+                      m_menuView->actions().first()->text().contains(slime::ui::t("ui.e003f209ca14")),
                   "查看菜单仅保留「恢复默认布局」");
 
             // --- 优化 2：QSplitter handle 可见（v3.3.6：样式统一由主题 QSS 提供 + 4px 宽） ---
@@ -10778,7 +10656,7 @@ int MainWindow::runSelfTest()
 
                     // 教程对话框内容（直接渲染 helpTutorialHtml，避免模态阻塞）
                     QDialog help(this);
-                    help.setWindowTitle(QStringLiteral("使用教程"));
+                    help.setWindowTitle(slime::ui::t("ui.e63e0a783b7d"));
                     help.resize(760, 600);
                     auto* lay = new QVBoxLayout(&help);
                     auto* browser = new QTextBrowser(&help);
@@ -10806,7 +10684,7 @@ int MainWindow::runSelfTest()
                 QStringList where;
                 const QList<QPushButton*> buttons = findChildren<QPushButton*>();
                 for (QPushButton* b : buttons) {
-                    if (b && b->text().contains(QStringLiteral("开始搜索"))) {
+                    if (b && b->text().contains(slime::ui::t("ui.8fdc065eda03"))) {
                         // v3.4.0：控件状态页（page4）的样张按钮不计入（设计交付用，非功能入口）
                         if (m_pageStack && m_pageStack->count() > 4 && m_pageStack->widget(4) &&
                             m_pageStack->widget(4)->isAncestorOf(b)) {
@@ -10814,13 +10692,13 @@ int MainWindow::runSelfTest()
                         }
                         ++count;
                         where << QStringLiteral("%1(parent=%2)")
-                                     .arg(b->objectName().isEmpty() ? QStringLiteral("(无对象名)") : b->objectName(),
+                                     .arg(b->objectName().isEmpty() ? slime::ui::t("ui.b85cbe3999ba") : b->objectName(),
                                           b->parentWidget() ? b->parentWidget()->metaObject()->className()
                                                             : QStringLiteral("?"));
                     }
                 }
                 // v3.4.0：主按钮文案随页面切换（构建范围页为「开始构建」）⇒ 断言「开始搜索」按钮唯一
-                check(count == 1, (QStringLiteral("全界面「开始搜索」按钮数量 = 1（实际 %1）").arg(count))
+                check(count == 1, (slime::ui::t("ui.0368ac8c7aae").arg(count))
                                       .toUtf8()
                                       .constData());
                 check(m_w->start && m_w->start->parentWidget() == m_toolBar, "唯一的搜索按钮位于工具栏内");
@@ -10832,7 +10710,7 @@ int MainWindow::runSelfTest()
                 int menuSearch = 0;
                 const QList<QAction*> acts = m_menuTools ? m_menuTools->actions() : QList<QAction*>();
                 for (QAction* a : acts) {
-                    if (a && a->text().contains(QStringLiteral("开始搜索"))) ++menuSearch;
+                    if (a && a->text().contains(slime::ui::t("ui.8fdc065eda03"))) ++menuSearch;
                 }
                 check(menuSearch == 0, "工具菜单没有重复的搜索入口");
             }
@@ -10840,14 +10718,14 @@ int MainWindow::runSelfTest()
             // 14.2 Bug 2：提醒文案保留（tooltip + 状态对话框），且不含被移除的阈值说法
             {
                 const QString reminder = gpuReminderText();
-                check(reminder.contains(QStringLiteral("逐位一致")) &&
-                          reminder.contains(QStringLiteral("设置")) &&
-                          !reminder.contains(QStringLiteral("交叉点")),
+                check(reminder.contains(slime::ui::t("ui.7a65013cfe11")) &&
+                          reminder.contains(slime::ui::t("ui.7debf9cb0372")) &&
+                          !reminder.contains(slime::ui::t("ui.f381570247df")),
                       "GPU 提醒文案符合 v3.10.12.8 口径（逐位一致 + 推荐开启 + 可回退）");
                 check(m_w->gpuCheck && m_w->gpuCheck->toolTip().contains(reminder),
                       "GPU 开关 tooltip 显示提醒文案");
                 check(gpuStatusText().contains(reminder), "GPU 状态对话框说明文字包含提醒文案");
-                check(gpuStatusText().contains(QStringLiteral("显存")) &&
+                check(gpuStatusText().contains(slime::ui::t("ui.fa76de8f15b0")) &&
                           gpuStatusText().contains(QStringLiteral("CU")),
                       "GPU 状态对话框仍显示设备/显存/计算单元");
             }
@@ -10905,9 +10783,9 @@ int MainWindow::runSelfTest()
                 }
                 // 造一条警告 + 一条错误 → 徽章应为「⚠️1❌1」；成功级不计数
                 m_feedback->clearAll();
-                addFeedback(1, slime::ui::tr(QStringLiteral("自检警告：范围较小")));
-                addError(QStringLiteral("自检错误：示例错误")); // 自检模式不弹窗
-                addFeedback(3, slime::ui::tr(QStringLiteral("自检成功：不应显示")));
+                addFeedback(1, slime::ui::tr(slime::ui::t("ui.ce8fc6509ffb")));
+                addError(slime::ui::t("ui.0b9ce23d9793")); // 自检模式不弹窗
+                addFeedback(3, slime::ui::tr(slime::ui::t("ui.e6fc30f6e73d")));
                 check(m_feedback->warningCount() == 1 && m_feedback->errorCount() == 1,
                       "反馈计数只统计警告与错误");
                 check(m_feedback->count(FeedbackLevel::Success) == 0, "成功级消息被过滤（不显示也不计数）");
@@ -10924,7 +10802,7 @@ int MainWindow::runSelfTest()
             {
                 // 先看真实搜索累积下来的流水（前面的搜索冒烟已写入），作为运行时证据
                 const int accumulated = m_progressStream->lineCount();
-                check(accumulated > 0, (QStringLiteral("真实搜索已向「进度」分类追加流水（%1 条）").arg(accumulated))
+                check(accumulated > 0, (slime::ui::t("ui.5868cc1ee046").arg(accumulated))
                                            .toUtf8()
                                            .constData());
                 {
@@ -10936,15 +10814,15 @@ int MainWindow::runSelfTest()
                     if (!lines.isEmpty()) {
                         std::fprintf(stderr, "[UI自检]   流水[末]: %s\n", lines.last().toUtf8().constData());
                     }
-                    check(m_progressStream->allText().contains(QStringLiteral("已完成：共扫描")) ||
-                              m_progressStream->allText().contains(QStringLiteral("已取消")),
+                    check(m_progressStream->allText().contains(slime::ui::t("ui.b9583d538c6f")) ||
+                              m_progressStream->allText().contains(slime::ui::t("ui.a5ffdc95eeb0")),
                           "流水包含完成/取消汇总行");
                 }
                 const QString line = ProgressStreamPanel::formatProgressLine(QTime(23, 4, 45), 0.2, 45397675, 1);
-                check(line == QStringLiteral("[23:04:45] 已用时 0.2 秒，扫描 45397675 区块，找到 1 个"),
+                check(line == slime::ui::t("ui.4d1ec72624aa"),
                       "流水行格式与任务书样例逐字一致");
                 const QString last = ProgressStreamPanel::formatFinalLine(QTime(23, 4, 45), 401234567, 10, 2.1);
-                check(last == QStringLiteral("[23:04:45] 已完成：共扫描 401234567 区块，找到 10 个结果，耗时 2.1 秒"),
+                check(last == slime::ui::t("ui.54c5d11f101f"),
                       "完成行格式与任务书样例逐字一致");
                 m_progressStream->clearAll();
                 const int before = m_progressStream->lineCount();
@@ -10953,7 +10831,7 @@ int MainWindow::runSelfTest()
                 check(before == 0 && m_progressStream->lineCount() == 2, "流水按追加方式累积（清空后从 0 开始）");
                 check(m_progressStream->clearButton() && m_progressStream->copyButton(),
                       "流水面板含 [清空] [复制全部] 按钮");
-                check(m_progressStream->allText().contains(QStringLiteral("已完成：共扫描 2000 区块")),
+                check(m_progressStream->allText().contains(slime::ui::t("ui.a2c5949cbe86")),
                       "复制全部内容包含完成行");
                 // 搜索中的 0.5 秒流水路径（真实搜索太快时不会产生中间行，这里直接调用定时器回调）
                 {
@@ -10971,9 +10849,9 @@ int MainWindow::runSelfTest()
                     check(m_progressStream->lineCount() == n0 + 1, "搜索中每 0.5 秒追加一条流水");
                     const QStringList after = m_progressStream->allText().split(QLatin1Char('\n'));
                     const QString lastLine = after.isEmpty() ? QString() : after.last();
-                    check(lastLine.contains(QStringLiteral("已用时")) &&
-                              lastLine.contains(QStringLiteral("/1000000 区块（")) &&
-                              lastLine.contains(QStringLiteral("找到 7 个")),
+                    check(lastLine.contains(slime::ui::t("ui.672e90a4e355")) &&
+                              lastLine.contains(slime::ui::t("ui.ded64c80b99c")) &&
+                              lastLine.contains(slime::ui::t("ui.6db0625ef054")),
                           "流水行含 已用时 / 扫描 N/M（xx%）/ 找到个数");
                     std::fprintf(stderr, "[UI自检]   0.5s 流水样例: %s\n", lastLine.toUtf8().constData());
                 }
@@ -10987,12 +10865,12 @@ int MainWindow::runSelfTest()
                 check(m_feedback->tree()->topLevelItemCount() == m_feedback->totalCount(),
                       "反馈为扁平列表（无分组节点）");
                 m_feedback->clearAll();
-                m_feedback->add(FeedbackLevel::Info, QStringLiteral("第一条"));
-                m_feedback->add(FeedbackLevel::Warning, QStringLiteral("第二条"));
+                m_feedback->add(FeedbackLevel::Info, slime::ui::t("ui.51c2745060cd"));
+                m_feedback->add(FeedbackLevel::Warning, slime::ui::t("ui.cbbf5857fdff"));
                 check(m_feedback->tree()->topLevelItemCount() == 2, "新条目追加为顶层行");
                 const QString firstRow = m_feedback->tree()->topLevelItem(0)->text(0);
                 const QString lastRow = m_feedback->tree()->topLevelItem(1)->text(0);
-                check(firstRow.contains(QStringLiteral("第一条")) && lastRow.contains(QStringLiteral("第二条")),
+                check(firstRow.contains(slime::ui::t("ui.51c2745060cd")) && lastRow.contains(slime::ui::t("ui.cbbf5857fdff")),
                       "按时间顺序排列（最新在下方）");
                 check(lastRow.contains(QStringLiteral("⚠️")) && firstRow.contains(QStringLiteral("ℹ️")),
                       "行首保留严重程度图标 ❌/⚠️/ℹ️");
@@ -11008,7 +10886,7 @@ int MainWindow::runSelfTest()
                 check(m_logPanel != nullptr && m_terminal != nullptr, "日志与命令分类均存在");
                 if (!slime::LogBus::enabled()) {
                     check(!m_logPanel->hintLabel()->text().isEmpty() &&
-                              m_logPanel->hintLabel()->text().contains(QStringLiteral("未启用")),
+                              m_logPanel->hintLabel()->text().contains(slime::ui::t("ui.8bb38ef00ccc")),
                           "日志关闭时显示「未启用」提示行");
                 } else {
                     check(m_logPanel->isLoggingEnabled(), "日志已启用（本次自检配置）");
@@ -11022,9 +10900,9 @@ int MainWindow::runSelfTest()
                           slime::ThemeManager::modeFromString(QStringLiteral("dark")) == slime::ThemeMode::Dark &&
                           slime::ThemeManager::modeFromString(QStringLiteral("system")) == slime::ThemeMode::System,
                       "主题三档字符串解析正确（light/dark/system）");
-                check(slime::ThemeManager::modeDisplayName(slime::ThemeMode::Light) == QStringLiteral("浅色") &&
-                          slime::ThemeManager::modeDisplayName(slime::ThemeMode::Dark) == QStringLiteral("深色") &&
-                          slime::ThemeManager::modeDisplayName(slime::ThemeMode::System) == QStringLiteral("跟随系统"),
+                check(slime::ThemeManager::modeDisplayName(slime::ThemeMode::Light) == slime::ui::t("ui.80ec9e2b1bc4") &&
+                          slime::ThemeManager::modeDisplayName(slime::ThemeMode::Dark) == slime::ui::t("ui.30b2c979ac87") &&
+                          slime::ThemeManager::modeDisplayName(slime::ThemeMode::System) == slime::ui::t("ui.f4bbd91f79ba"),
                       "主题显示名为 浅色/深色/跟随系统");
                 const QString lightQss = slime::ThemeManager::lightQss();
                 const QString darkQss = slime::ThemeManager::darkQss();
@@ -11080,8 +10958,8 @@ int MainWindow::runSelfTest()
                 probe.crashDump = false;
                 probe.debugMode = true;
                 // v3.4.12：路径类设置带反斜杠 + 中文 —— 覆盖「JSON 转义 / 读回还原」这条链
-                probe.cacheDir = QStringLiteral("C:\\Temp\\slime\\缓存");
-                probe.logSubDir = QStringLiteral("logs\\自检");
+                probe.cacheDir = slime::ui::t("ui.22d94a181e6a");
+                probe.logSubDir = slime::ui::t("ui.38f3a15c777b");
                 dlg.setValues(probe);
                 const AppSettings back = dlg.currentValues();
                 const bool rt = back.cacheDir == probe.cacheDir && back.logSubDir == probe.logSubDir &&
@@ -11200,11 +11078,11 @@ int MainWindow::runSelfTest()
                     const QString sb = statusBar()->currentMessage();
                     check(m_feedback->warningCount() > beforeWarn,
                           "线程数超过物理核心数 ⇒ 反馈栏给出一次警告");
-                    check(fb.contains(QStringLiteral("超过物理核心数")) &&
-                              sb.contains(QStringLiteral("超过物理核心数")),
+                    check(fb.contains(slime::ui::t("ui.950199904314")) &&
+                              sb.contains(slime::ui::t("ui.950199904314")),
                           "警告文案同时出现在反馈栏与状态栏（任务书 3.1）");
                     check(m_w->threadsHint->isVisible() &&
-                              m_w->threadsHint->text().contains(QStringLiteral("超过物理核心数")),
+                              m_w->threadsHint->text().contains(slime::ui::t("ui.950199904314")),
                           "线程数过大时常驻提示可见（v3.3.9：不再只闪一次状态栏）");
                     std::fprintf(stderr,
                                  "[UI自检] 线程数：物理核心=%d 逻辑核心=%d 上限=%d 默认=%d 阈值触发值=%d 提示=[%s]\n",
@@ -11222,15 +11100,15 @@ int MainWindow::runSelfTest()
             // 14.13 v3.3.9（任务书 3.2）：大范围确认弹窗必须写清「即将扫描/超阈值/预计分钟」
             {
                 const QString t1 = largeRangeConfirmText(4000000000LL, 100000, 40000, true, 1560.0, 1);
-                check(t1.contains(QStringLiteral("即将扫描")) && t1.contains(QStringLiteral("4000000000")),
+                check(t1.contains(slime::ui::t("ui.09af2058124e")) && t1.contains(QStringLiteral("4000000000")),
                       "大范围弹窗写明即将扫描多少区块");
-                check(t1.contains(QStringLiteral("预计耗时")) && t1.contains(QStringLiteral("26.0")) &&
-                          t1.contains(QStringLiteral("分钟")),
+                check(t1.contains(slime::ui::t("ui.22cbce215753")) && t1.contains(QStringLiteral("26.0")) &&
+                          t1.contains(slime::ui::t("ui.28bf227b9bf7")),
                       "大范围弹窗写明预计多少分钟（1560 秒 → 26.0 分钟）");
-                check(t1.contains(QStringLiteral("超出阈值")) && t1.contains(QStringLiteral("21.0")),
+                check(t1.contains(slime::ui::t("ui.5f85a94fb3e6")) && t1.contains(QStringLiteral("21.0")),
                       "大范围弹窗写明超出阈值多少（26.0 - 5 = 21.0 分钟）");
                 const QString t2 = largeRangeConfirmText(500000000LL, 100000, 5000, false, 0.0, 1000000);
-                check(t2.contains(QStringLiteral("无法估算")) && t2.contains(QStringLiteral("1000000")),
+                check(t2.contains(slime::ui::t("ui.73e2d8b8d12d")) && t2.contains(QStringLiteral("1000000")),
                       "无估算时弹窗回退区块数阈值并写明超出量");
             }
             // 14.14 v3.3.9（任务书 3.3）：进度条必须占满可用宽度（v3.3.8.1 实测无变化的根因修复）
@@ -11359,15 +11237,15 @@ int MainWindow::runSelfTest()
                 if (m_w->progressInfo) {
                     m_w->progressInfo->setText(progressStatsText(1000, 2000, 123456.0, 3));
                 }
-                if (m_w->progressEta) m_w->progressEta->setText(QStringLiteral("预计剩余：1:05"));
+                if (m_w->progressEta) m_w->progressEta->setText(slime::ui::t("ui.6cfedaa8bfdb"));
                 const QString rowText = m_w->progressPercent->text() + QLatin1Char('|') + m_w->progressStage->text();
                 check(rowText.count(QLatin1Char('%')) == 1, "进度行只显示 1 个百分比（百分比+阶段文字）");
-                check(!m_w->progressStage->text().contains(QStringLiteral("预计剩余")) &&
+                check(!m_w->progressStage->text().contains(slime::ui::t("ui.5886b1dac687")) &&
                           !m_w->progressStage->text().contains(QLatin1Char('%')),
                       "阶段短语不含百分比与预计剩余");
                 const QString barText = m_w->progressInfo->text() + QLatin1Char('|') + m_w->progressEta->text();
-                check(barText.count(QStringLiteral("预计剩余")) == 1, "状态栏只显示 1 个「预计剩余」");
-                check(m_w->progressInfo->text().contains(QStringLiteral("扫描 1000/2000 区块（50.0%）")),
+                check(barText.count(slime::ui::t("ui.5886b1dac687")) == 1, "状态栏只显示 1 个「预计剩余」");
+                check(m_w->progressInfo->text().contains(slime::ui::t("ui.7cf6235e2a87")),
                       "状态栏统计含「扫描 N/M 区块（xx%）」（与进度条同源）");
                 std::fprintf(stderr, "[UI自检]   进度行=[%s] 状态栏=[%s]\n",
                              rowText.toUtf8().constData(), barText.toUtf8().constData());
@@ -11449,11 +11327,11 @@ int MainWindow::runSelfTest()
                     if (worst2 < worstMs) { worstMs = worst2; wasRunning = wasRunning2; }
                     okCancels = (ok2 > okCancels) ? ok2 : okCancels;
                 }
-                check(wasRunning >= 8, (QStringLiteral("取消打在扫描中（10 次中 %1 次搜索仍在运行）").arg(wasRunning))
+                check(wasRunning >= 8, (slime::ui::t("ui.b01b8d42b8af").arg(wasRunning))
                                            .toUtf8()
                                            .constData());
                 check(okCancels == 10, "连续取消 10 次均正常结束（无崩溃、无卡死）");
-                check(worstMs < 1000.0, (QStringLiteral("取消响应 < 1 秒（最差 %1 ms）").arg(worstMs, 0, 'f', 1))
+                check(worstMs < 1000.0, (slime::ui::t("ui.6f52699a5f5a").arg(worstMs, 0, 'f', 1))
                                             .toUtf8()
                                             .constData());
                 check(m_w->start->isEnabled() && !m_running, "取消压力测试后界面恢复可用");
@@ -11502,7 +11380,7 @@ int MainWindow::runSelfTest()
                     check(m_running && m_runId == beforeRunId,
                           "陈旧结果事件被丢弃（新搜索未被误停、运行编号未变）");
                     check(!m_w->progressInfo || m_w->progressInfo->text() == beforeInfo ||
-                              m_w->progressInfo->text().contains(QStringLiteral("扫描")),
+                              m_w->progressInfo->text().contains(slime::ui::t("ui.998c9363771c")),
                           "陈旧事件未改写新搜索的状态文字");
                 }
                 cancelSearch();
@@ -11514,11 +11392,11 @@ int MainWindow::runSelfTest()
             // 15.3 P0-3：真实扫描计数与前缀（界面显示与引擎同源）
             {
                 const QString stats = progressStatsText(267596340, 314572500, 1.0e8, 1);
-                check(stats.contains(QStringLiteral("扫描 267596340/314572500 区块（85.1%）")),
+                check(stats.contains(slime::ui::t("ui.04ad2367d270")),
                       "统计前缀为「扫描 N/M 区块（xx%）」（真实计数）");
                 check(m_progressStream != nullptr, "进度流水面板存在（N/M 显示入口）");
                 const QString line = ProgressStreamPanel::formatProgressLineEx(QTime(23, 4, 45), 12.5, 250, 1000, 7);
-                check(line == QStringLiteral("[23:04:45] 已用时 12.5 秒，扫描 250/1000 区块（25.0%），找到 7 个"),
+                check(line == slime::ui::t("ui.49c776edd7b3"),
                       "流水行 N/M（xx%）格式逐字一致");
             }
 
@@ -11567,9 +11445,9 @@ int MainWindow::runSelfTest()
                 for (QGroupBox* g : groups) titles << g->title();
                 // v3.9.15：「游戏设置」分组上移到顶部全局设置栏（平台/版本/种子），左侧剩 5 组；
                 //   同时断言顶部栏包含平台 / 游戏版本 / 世界种子 三个控件。
-                const QStringList want = { QStringLiteral("搜索范围"), QStringLiteral("搜索模式"),
-                                           QStringLiteral("匹配方式"), QStringLiteral("性能设置"),
-                                           QStringLiteral("缓存管理") };
+                const QStringList want = { slime::ui::t("ui.2cacc1b74217"), slime::ui::t("ui.5483493bb0d8"),
+                                           slime::ui::t("ui.6a05dbdc884c"), slime::ui::t("ui.eb1f3e5ef69b"),
+                                           slime::ui::t("ui.c15668b86bc6") };
                 bool all = true;
                 for (const QString& t : want) {
                     if (!titles.contains(t)) {
@@ -11613,8 +11491,8 @@ int MainWindow::runSelfTest()
                     if (sp > 0) t = t.left(sp);
                     navNames << t;
                 }
-                check(navNames == QStringList{ QStringLiteral("进度"), QStringLiteral("反馈"),
-                                               QStringLiteral("日志"), QStringLiteral("命令") },
+                check(navNames == QStringList{ slime::ui::t("ui.acf014bff8d8"), slime::ui::t("ui.42a36e949784"),
+                                               slime::ui::t("ui.4de50894b8c1"), slime::ui::t("ui.b114b91547d7") },
                       "四个分类名称与顺序符合任务书");
                 std::fprintf(stderr, "[UI自检] 底部导航：%s\n", navNames.join(QStringLiteral(" / ")).toUtf8().constData());
             }
@@ -11718,7 +11596,7 @@ int MainWindow::runSelfTest()
                     }
                 }
                 check(pctLabels == 1,
-                      (QStringLiteral("进度行只有 1 个百分比标签（实际 %1 个）").arg(pctLabels))
+                      (slime::ui::t("ui.40ce33982716").arg(pctLabels))
                           .toUtf8()
                           .constData());
                 m_w->progress->setValue(0);
@@ -11796,7 +11674,7 @@ int MainWindow::runSelfTest()
                     if (!m_running) break;
                     const QString stage = m_w->progressStage ? m_w->progressStage->text() : QString();
                     if (!shotScan && m_w->progress->value() >= 50 &&
-                        stage.contains(QStringLiteral("扫描"))) {
+                        stage.contains(slime::ui::t("ui.998c9363771c"))) {
                         shotScan = true;
                         pctLabelAtScan = m_w->progressPercent ? m_w->progressPercent->text() : QString();
                         pctBarAtScan = QString::number(m_w->progress->value() / 10.0, 'f', 1);
@@ -11805,7 +11683,7 @@ int MainWindow::runSelfTest()
                             double v = 0.0;
                             if (parsePct(m_w->progressInfo->text(), &v)) {
                                 check(v <= 100.0,
-                                      (QStringLiteral("扫描中状态栏百分比不超过 100%（实际 %1%）").arg(v))
+                                      (slime::ui::t("ui.a6c72a289200").arg(v))
                                           .toUtf8()
                                           .constData());
                             }
@@ -11816,7 +11694,7 @@ int MainWindow::runSelfTest()
                             std::fprintf(stderr, "[UI自检]   搜索中 ETA：%s\n", etaText.toUtf8().constData());
                             check(etaText.contains(QLatin1Char(':')) &&
                                       !etaText.contains(QStringLiteral("--:--")),
-                                  (QStringLiteral("搜索中 ETA 有具体数值（实际 %1）").arg(etaText))
+                                  (slime::ui::t("ui.ae72d062c965").arg(etaText))
                                       .toUtf8()
                                       .constData());
                         }
@@ -11829,8 +11707,8 @@ int MainWindow::runSelfTest()
                             saveWindowShot(shotPrefix2, QStringLiteral("density-scanning"));
                         }
                     }
-                    if (!shotMatch && stage.contains(QStringLiteral("匹配")) &&
-                        !stage.contains(QStringLiteral("扫描完成"))) {
+                    if (!shotMatch && stage.contains(slime::ui::t("ui.c7127bb6eeea")) &&
+                        !stage.contains(slime::ui::t("ui.936420feb068"))) {
                         shotMatch = true;
                         stageAtMatch = stage;
                         msgAtMatch = statusBar()->currentMessage();
@@ -11856,16 +11734,16 @@ int MainWindow::runSelfTest()
                     const QString etaDone = m_w->progressEta->text();
                     std::fprintf(stderr, "[UI自检]   完成后 ETA：%s\n", etaDone.toUtf8().constData());
                     check(etaDone.contains(QStringLiteral("--:--")),
-                          (QStringLiteral("搜索完成后 ETA 已清空（实际 %1）").arg(etaDone)).toUtf8().constData());
+                          (slime::ui::t("ui.dcbe39514b6c").arg(etaDone)).toUtf8().constData());
                 }
                 // 任务书 1.4：密度模式下**不得**出现「匹配图案」字样
                 bool sawPatternWord = false;
-                if (stageAtMatch.contains(QStringLiteral("图案")) ||
-                    msgAtMatch.contains(QStringLiteral("图案"))) {
+                if (stageAtMatch.contains(slime::ui::t("ui.d5b2aeac0692")) ||
+                    msgAtMatch.contains(slime::ui::t("ui.d5b2aeac0692"))) {
                     sawPatternWord = true;
                 }
                 check(!sawPatternWord,
-                      (QStringLiteral("密度搜索匹配阶段不出现「图案」（阶段=%1 消息=%2）")
+                      (slime::ui::t("ui.ff6468498df0")
                            .arg(stageAtMatch, msgAtMatch))
                           .toUtf8()
                           .constData());
@@ -11882,11 +11760,11 @@ int MainWindow::runSelfTest()
                                  fin.toUtf8().constData(), static_cast<long long>(engTotal));
                     double pct = -1.0;
                     check(parsePct(fin, &pct) && pct <= 100.0,
-                          (QStringLiteral("完成后状态栏百分比不超过 100%（实际 %1%）").arg(pct))
+                          (slime::ui::t("ui.63811be297a8").arg(pct))
                               .toUtf8()
                               .constData());
                     // 分子 ≤ 分母（同源计数保证）
-                    const int sPos = fin.indexOf(QStringLiteral("扫描 "));
+                    const int sPos = fin.indexOf(slime::ui::t("ui.8caf38614bbf"));
                     const int slash = fin.indexOf(QLatin1Char('/'));
                     if (sPos >= 0 && slash > sPos) {
                         bool okN = false, okM = false;
@@ -11896,11 +11774,11 @@ int MainWindow::runSelfTest()
                                               ? fin.mid(slash + 1, sp2 - slash - 1).trimmed().toLongLong(&okM)
                                               : 0;
                         check(okN && okM && n > 0 && m > 0 && n <= m,
-                              (QStringLiteral("扫描分子 %1 ≤ 分母 %2（同源分母）").arg(n).arg(m))
+                              (slime::ui::t("ui.ee3e59ed3a21").arg(n).arg(m))
                                   .toUtf8()
                                   .constData());
                         check(m == engTotal,
-                              (QStringLiteral("状态栏分母 %1 == 引擎总量 %2").arg(m).arg(engTotal))
+                              (slime::ui::t("ui.75b961eb1a31").arg(m).arg(engTotal))
                                   .toUtf8()
                                   .constData());
                     }
@@ -11908,7 +11786,7 @@ int MainWindow::runSelfTest()
                         // 分块路径：进度条与状态栏同源（都来自 liveScanned/totalEvals）→ 应基本一致
                         const double barPct = m_w->progress->value() / 10.0;
                         check(std::fabs(barPct - pct) <= 1.0,
-                              (QStringLiteral("439 亿场景：进度条 %1% 与状态栏 %2% 一致（同源分母）")
+                              (slime::ui::t("ui.b271f8f86be5")
                                    .arg(barPct)
                                    .arg(pct))
                                   .toUtf8()
@@ -11941,7 +11819,7 @@ int MainWindow::runSelfTest()
                         check(logScanned >= 0 && logTotal > 0,
                               "日志含 search.summary 且带 scanned=<已扫描>/<总量> 字段");
                         // 与状态栏里显示的 N/M 比对（两者必须同源）
-                        const int sp3 = fin.indexOf(QStringLiteral("扫描 "));
+                        const int sp3 = fin.indexOf(slime::ui::t("ui.8caf38614bbf"));
                         const int slash3 = fin.indexOf(QLatin1Char('/'));
                         if (sp3 >= 0 && slash3 > sp3) {
                             const int64_t uiN = fin.mid(sp3 + 3, slash3 - sp3 - 3).trimmed().toLongLong();
@@ -11950,7 +11828,7 @@ int MainWindow::runSelfTest()
                                 (sp4 > slash3) ? fin.mid(slash3 + 1, sp4 - slash3 - 1).trimmed().toLongLong()
                                                : 0;
                             check(uiN == logScanned && uiM == logTotal,
-                                  (QStringLiteral("完成态状态栏 %1/%2 与日志 search.summary %3/%4 一致")
+                                  (slime::ui::t("ui.e2ebc10f4068")
                                        .arg(uiN)
                                        .arg(uiM)
                                        .arg(logScanned)
@@ -12069,13 +11947,13 @@ int MainWindow::runSelfTest()
                 }
                 const QAbstractButton* btn = qobject_cast<QAbstractButton*>(w);
                 // 禁用原因：v3391tip 是缓存构建模式打的设计性禁用标记；「取消」在无搜索时按设计禁用
-                QString why = QStringLiteral("当前模式下不使用该选项");
+                QString why = slime::ui::t("ui.7bd3b864b082");
                 if (w->property("v3391tip").toBool()) {
-                    why = QStringLiteral("缓存构建模式按设计禁用");
-                } else if (btn && btn->text().contains(QStringLiteral("取消"))) {
-                    why = QStringLiteral("当前没有进行中的搜索");
+                    why = slime::ui::t("ui.6e13090350fa");
+                } else if (btn && btn->text().contains(slime::ui::t("ui.4d0b4688c787"))) {
+                    why = slime::ui::t("ui.338f1f4ac68d");
                 } else if (!w->isVisibleTo(this)) {
-                    why = QStringLiteral("所在页面未显示");
+                    why = slime::ui::t("ui.d009f8c12b25");
                 }
                 disabled << QStringLiteral("%1[%2]（%3%4）← %5")
                                 .arg(QString::fromLatin1(w->metaObject()->className()),
@@ -12084,7 +11962,7 @@ int MainWindow::runSelfTest()
             }
             std::fprintf(stderr, "[UI自检]   可见但被禁用的交互控件 %lld 个%s%s\n",
                          static_cast<long long>(disabled.size()),
-                         disabled.isEmpty() ? QStringLiteral("（无）").toUtf8().constData() : "：",
+                         disabled.isEmpty() ? slime::ui::t("ui.6238bf9ad526").toUtf8().constData() : "：",
                          disabled.join(QStringLiteral(" | ")).toUtf8().constData());
         }
 
@@ -12291,7 +12169,7 @@ int MainWindow::runSelfTest()
                 const bool keepAuto = m_settings.logAutoScroll;
                 QCheckBox* box = nullptr;
                 for (QCheckBox* cb : m_settingsPage->findChildren<QCheckBox*>()) {
-                    if (cb->text().contains(QStringLiteral("自动滚动"))) { box = cb; break; }
+                    if (cb->text().contains(slime::ui::t("ui.9642fc88cdea"))) { box = cb; break; }
                 }
                 if (box) {
                     QElapsedTimer t1;
@@ -12527,7 +12405,7 @@ int MainWindow::runSelfTest()
             ctx.version = 0; // Java
             ctx.seed = 0;
             ctx.minX = -8; ctx.maxX = 8; ctx.minZ = -8; ctx.maxZ = 8;
-            ctx.source = QStringLiteral("自检范围 -8..8");
+            ctx.source = slime::ui::t("ui.7f6458c909de");
             AfkDialog dlg(ctx, this);
             dlg.setModal(false);
             const auto& res = dlg.results();
@@ -12561,7 +12439,7 @@ int MainWindow::runSelfTest()
             mc.version = 0;
             mc.seed = 0;
             mc.minX = -8; mc.maxX = 7; mc.minZ = -8; mc.maxZ = 7;
-            mc.source = QStringLiteral("自检范围");
+            mc.source = slime::ui::t("ui.28b7e41ee4b8");
             MapDialog md(mc, this);
             md.setModal(false);
             MatchResult mr;
@@ -12735,8 +12613,7 @@ int MainWindow::runSelfTest()
                              m_map->lastSampleMs(), m_map->lastSampleCells(), m_map->sampleCount());
                 check(m_map->lastSampleMs() < 500.0, "单次群系采样 < 500ms（交互帧率可用）");
                 // 点击结果定位：造一条带 chunkX/chunkZ 的结果行，真实投递一次左键点击
-                m_w->resultView->setPlainText(QStringLiteral(
-                    "第1名 (距离 0.00 区块)  chunkX(-16~-16) chunkZ(-16~-16)  方块 X(-256~-239) Z(-256~-239)\n"));
+                m_w->resultView->setPlainText(slime::ui::t("ui.01784ca08321"));
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
                 const QPointF before = m_map->centerBlock();
                 QTextCursor cur = m_w->resultView->textCursor();
@@ -13050,8 +12927,8 @@ int MainWindow::runSelfTest()
             check(actionTotal >= 15 && actionBad == 0, "菜单项全部有标题且数量合理（实测见日志）");
 
             check(m_navButtons.size() == kNavCount, "左侧导航为 3 项（搜索/缓存构建/设置）");
-            const QStringList wantNav = { QStringLiteral("搜索"), QStringLiteral("缓存构建"),
-                                          QStringLiteral("设置") };
+            const QStringList wantNav = { slime::ui::t("ui.f04090805c6e"), slime::ui::t("ui.45f11f06bce7"),
+                                          slime::ui::t("ui.7debf9cb0372") };
             int navTextOk = 0;
             for (int i = 0; i < m_navButtons.size() && i < wantNav.size(); ++i) {
                 if (m_navButtons[i] && m_navButtons[i]->text() == wantNav[i]) ++navTextOk;
@@ -13067,8 +12944,8 @@ int MainWindow::runSelfTest()
             {
                 int helpEntries = 0;
                 for (QAction* a : m_menuHelp->actions()) {
-                    if (a->text().contains(QStringLiteral("帮助")) ||
-                        a->text().contains(QStringLiteral("教程"))) {
+                    if (a->text().contains(slime::ui::t("ui.adf465ebf0e6")) ||
+                        a->text().contains(slime::ui::t("ui.b6edf34dbad7"))) {
                         ++helpEntries;
                     }
                 }
@@ -13110,10 +12987,10 @@ int MainWindow::runSelfTest()
             if (m_settingsPage) {
                 // 动作型按钮不进本清单（清空缓存 / 打开日志目录 / 浏览目录 / 恢复默认 / 应用取消确定）
                 const auto isAction = [](const QString& tx) {
-                    return tx.contains(QStringLiteral("清空")) || tx.contains(QStringLiteral("打开")) ||
-                           tx.contains(QStringLiteral("浏览")) || tx.contains(QStringLiteral("恢复")) ||
-                           tx.contains(QStringLiteral("重置")) || tx.contains(QStringLiteral("应用")) ||
-                           tx.contains(QStringLiteral("取消")) || tx.contains(QStringLiteral("确定"));
+                    return tx.contains(slime::ui::t("ui.84fcd70d4280")) || tx.contains(slime::ui::t("ui.65fc81e16119")) ||
+                           tx.contains(slime::ui::t("ui.ef23ea67b002")) || tx.contains(slime::ui::t("ui.79748ca1c6e5")) ||
+                           tx.contains(slime::ui::t("ui.3d81345303ab")) || tx.contains(slime::ui::t("ui.4562024ddec7")) ||
+                           tx.contains(slime::ui::t("ui.4d0b4688c787")) || tx.contains(slime::ui::t("ui.f526c89937e1"));
                 };
                 const QList<QWidget*> ctrls = [&]() {
                     QList<QWidget*> v;
@@ -13204,8 +13081,8 @@ int MainWindow::runSelfTest()
         {
             const QString prob = successProbabilityText(400, 400);
             std::fprintf(stderr, "[UI自检]   成功率预测：%s\n", prob.split(QLatin1Char('\\n')).first().toUtf8().constData());
-            check(prob.contains(QStringLiteral("成功率预测")), "成功率预测文案已生成");
-            check(prob.contains(QStringLiteral("%")) || prob.contains(QStringLiteral("无法")),
+            check(prob.contains(slime::ui::t("ui.6a1bd7512295")), "成功率预测文案已生成");
+            check(prob.contains(QStringLiteral("%")) || prob.contains(slime::ui::t("ui.bc9f0cc8da32")),
                   "成功率预测包含百分比或明确的无法估算说明");
             // 空图案（未绘制）时必须明确说明，而不是给个假数字
             // 密度模式同样要给出百分比（不允许空串）
@@ -13237,50 +13114,50 @@ int MainWindow::runSelfTest()
                     bad << name;
                 }
             };
-            probe(QStringLiteral("版本(基岩版)"), [&] { m_w->bedrockRadio->setChecked(true); },
+            probe(slime::ui::t("ui.1c500d1043c2"), [&] { m_w->bedrockRadio->setChecked(true); },
                   [&](const SearchOptions& o) { return o.version == Version::Bedrock; });
-            probe(QStringLiteral("版本(Java版)"), [&] { m_w->javaRadio->setChecked(true); },
+            probe(slime::ui::t("ui.4d80450f2449"), [&] { m_w->javaRadio->setChecked(true); },
                   [&](const SearchOptions& o) { return o.version == Version::Java; });
-            probe(QStringLiteral("搜索模式(密度)"), [&] { m_w->densityRadio->setChecked(true); },
+            probe(slime::ui::t("ui.6b7ae9e5460c"), [&] { m_w->densityRadio->setChecked(true); },
                   [&](const SearchOptions& o) { return o.mode == Mode::Density; });
-            probe(QStringLiteral("搜索模式(严格)"), [&] { m_w->strictRadio->setChecked(true); },
+            probe(slime::ui::t("ui.0c39a609af36"), [&] { m_w->strictRadio->setChecked(true); },
                   [&](const SearchOptions& o) { return o.mode == Mode::Strict; });
             m_w->strictRadio->setChecked(true);
-            probe(QStringLiteral("方向锁定"), [&] { m_w->lockDir->setChecked(!m_w->lockDir->isChecked()); },
+            probe(slime::ui::t("ui.144f946f0e21"), [&] { m_w->lockDir->setChecked(!m_w->lockDir->isChecked()); },
                   [&](const SearchOptions& o) { return o.directionLocked == m_w->lockDir->isChecked(); });
             m_w->densityRadio->setChecked(true);
-            probe(QStringLiteral("网格大小"), [&] { m_w->gridSize->setValue(m_w->gridSize->value() + 1); },
+            probe(slime::ui::t("ui.54226650fa9c"), [&] { m_w->gridSize->setValue(m_w->gridSize->value() + 1); },
                   [&](const SearchOptions& o) { return o.gridSize == m_w->gridSize->value(); });
             m_w->densityRadio->setChecked(true);
-            probe(QStringLiteral("最小密度"), [&] { m_w->minDensity->setValue(m_w->minDensity->value() + 0.05); },
+            probe(slime::ui::t("ui.d67b9dd37ebe"), [&] { m_w->minDensity->setValue(m_w->minDensity->value() + 0.05); },
                   [&](const SearchOptions& o) { return std::fabs(o.minDensity - m_w->minDensity->value()) < 1e-9; });
-            probe(QStringLiteral("查询起点X"), [&] { m_w->startX->setValue(m_w->startX->value() + 3); },
+            probe(slime::ui::t("ui.17c54e48456a"), [&] { m_w->startX->setValue(m_w->startX->value() + 3); },
                   [&](const SearchOptions& o) { return o.startX == m_w->startX->value(); });
-            probe(QStringLiteral("查询起点Z"), [&] { m_w->startZ->setValue(m_w->startZ->value() + 3); },
+            probe(slime::ui::t("ui.75faa33df5d1"), [&] { m_w->startZ->setValue(m_w->startZ->value() + 3); },
                   [&](const SearchOptions& o) { return o.startZ == m_w->startZ->value(); });
-            probe(QStringLiteral("目标数量"), [&] { m_w->targetCount->setValue(m_w->targetCount->value() + 1); },
+            probe(slime::ui::t("ui.41162519d223"), [&] { m_w->targetCount->setValue(m_w->targetCount->value() + 1); },
                   [&](const SearchOptions& o) { return o.targetCount == m_w->targetCount->value(); });
-            probe(QStringLiteral("达到即停"), [&] { m_w->stopAtTarget->setChecked(!m_w->stopAtTarget->isChecked()); },
+            probe(slime::ui::t("ui.d45b3e961b31"), [&] { m_w->stopAtTarget->setChecked(!m_w->stopAtTarget->isChecked()); },
                   [&](const SearchOptions& o) { return o.stopAtTarget == m_w->stopAtTarget->isChecked(); });
             m_w->densityRadio->setChecked(true);
-            probe(QStringLiteral("智能范围"), [&] { m_w->smartRange->setChecked(!m_w->smartRange->isChecked()); },
+            probe(slime::ui::t("ui.9522c47b44f6"), [&] { m_w->smartRange->setChecked(!m_w->smartRange->isChecked()); },
                   [&](const SearchOptions& o) { return o.smartRange == m_w->smartRange->isChecked(); });
-            probe(QStringLiteral("线程数"), [&] { m_w->threads->setValue(m_w->threads->value() + 1); },
+            probe(slime::ui::t("ui.1795484c760a"), [&] { m_w->threads->setValue(m_w->threads->value() + 1); },
                   [&](const SearchOptions& o) { return o.threads >= m_w->threads->value() || o.threads > 0; });
             // 算法只在密度模式参与判定（严格模式按设计恒为精确判定）⇒ 本项在密度模式下测
             m_w->densityRadio->setChecked(true);
             onModeChanged();
-            probe(QStringLiteral("算法(分层)"), [&] { m_w->algLayeredRadio->setChecked(true); updateAlgorithmPanels(); },
+            probe(slime::ui::t("ui.2cf9a3909370"), [&] { m_w->algLayeredRadio->setChecked(true); updateAlgorithmPanels(); },
                   [&](const SearchOptions& o) { return o.algorithm == Algorithm::Layered; });
-            probe(QStringLiteral("算法(采样)"), [&] { m_w->algSampleRadio->setChecked(true); updateAlgorithmPanels(); },
+            probe(slime::ui::t("ui.3505e83ba92d"), [&] { m_w->algSampleRadio->setChecked(true); updateAlgorithmPanels(); },
                   [&](const SearchOptions& o) { return o.algorithm == Algorithm::Sample; });
-            probe(QStringLiteral("算法(精确)"), [&] { m_w->algExactRadio->setChecked(true); updateAlgorithmPanels(); },
+            probe(slime::ui::t("ui.534ed0581208"), [&] { m_w->algExactRadio->setChecked(true); updateAlgorithmPanels(); },
                   [&](const SearchOptions& o) { return o.algorithm == Algorithm::Exact; });
-            probe(QStringLiteral("分层粗块"), [&] { m_w->algLayeredRadio->setChecked(true); updateAlgorithmPanels();
+            probe(slime::ui::t("ui.504a1cda87a5"), [&] { m_w->algLayeredRadio->setChecked(true); updateAlgorithmPanels();
                                                    m_w->layerBlock->setCurrentIndex((m_w->layerBlock->currentIndex() + 1) %
                                                                                     m_w->layerBlock->count()); },
                   [&](const SearchOptions& o) { return o.layerBlock == m_w->layerBlock->currentData().toInt(); });
-            probe(QStringLiteral("采样间隔"), [&] { m_w->algSampleRadio->setChecked(true); updateAlgorithmPanels();
+            probe(slime::ui::t("ui.01f122f48b58"), [&] { m_w->algSampleRadio->setChecked(true); updateAlgorithmPanels();
                                                  m_w->sampleStep->setValue(m_w->sampleStep->value() + 1); },
                   [&](const SearchOptions& o) { return o.sampleStep == m_w->sampleStep->value(); });
             (void)base;
@@ -13311,14 +13188,14 @@ int MainWindow::runSelfTest()
             QCoreApplication::processEvents(QEventLoop::AllEvents, 400);
             check(m_pageStack->currentIndex() == kPageBuild, "导航第 2 项切到「缓存构建」页");
             check(buildModeActive(), "进入缓存构建页自动开启构建模式");
-            check(m_w->start->text().contains(QStringLiteral("开始构建")), "构建页主按钮变为「开始构建」");
+            check(m_w->start->text().contains(slime::ui::t("ui.4d11cf9b4db5")), "构建页主按钮变为「开始构建」");
             QWidget* buildPage = m_pageStack->widget(kPageBuild);
             check(buildPage && buildPage->objectName() == QStringLiteral("buildPage"), "构建页存在且命名正确");
             QLabel* fixedFacts = findChild<QLabel*>(QStringLiteral("buildFixedFacts"));
             const QString facts = fixedFacts ? fixedFacts->text() : QString();
             std::fprintf(stderr, "[UI自检]   构建页固定选项说明：%s\n", facts.toUtf8().constData());
-            check(fixedFacts && facts.contains(QStringLiteral("种子")) && facts.contains(QStringLiteral("基岩版")) &&
-                      facts.contains(QStringLiteral("不适用")),
+            check(fixedFacts && facts.contains(slime::ui::t("ui.49e80966cfe8")) && facts.contains(slime::ui::t("ui.618fd37c0c01")) &&
+                      facts.contains(slime::ui::t("ui.eec46c136f61")),
                   "构建页写明「固定基岩版 / 不需要种子 / 搜索模式不适用」");
 
             // ③ 构建模式下：版本两个单选、种子输入、搜索模式、算法、目标数量等一律禁用（明显标灰）
@@ -13444,7 +13321,7 @@ int MainWindow::runSelfTest()
             int buildChecks = 0;
             if (m_w->mainScroll && m_w->mainScroll->widget()) {
                 for (QCheckBox* cb : m_w->mainScroll->widget()->findChildren<QCheckBox*>()) {
-                    if (cb->text().contains(QStringLiteral("缓存构建"))) ++buildChecks;
+                    if (cb->text().contains(slime::ui::t("ui.45f11f06bce7"))) ++buildChecks;
                 }
             }
             std::fprintf(stderr, "[UI自检]   搜索页含「缓存构建」字样的勾选框 = %d 个（应为 0）\n", buildChecks);
@@ -13452,7 +13329,7 @@ int MainWindow::runSelfTest()
             bool movedTip = false;
             if (m_w->mainScroll && m_w->mainScroll->widget()) {
                 for (QLabel* lb : m_w->mainScroll->widget()->findChildren<QLabel*>()) {
-                    if (lb->text().contains(QStringLiteral("缓存构建已移到"))) movedTip = true;
+                    if (lb->text().contains(slime::ui::t("ui.0e3d4869656e"))) movedTip = true;
                 }
             }
             check(movedTip, "搜索页给出一句「缓存构建已移到左侧页」的说明");
@@ -13626,7 +13503,7 @@ int MainWindow::runSelfTest()
             const bool early = m_hasLastOutcome && m_lastOutcome.stoppedEarly;
             const bool cacheFirst = m_hasLastOutcome && m_lastOutcome.cacheFirstStopped;
             const QString text = m_w->resultView ? m_w->resultView->toPlainText() : QString();
-            const bool textShown = text.contains(QStringLiteral("提前停止"));
+            const bool textShown = text.contains(slime::ui::t("ui.4384a304b3e5"));
             std::fprintf(stderr,
                          "[UI自检]   缓存优先即停：构建=%d 缓存条目=%lld 提前停止=%d 缓存内即停=%d 界面显示[提前停止]=%d\n",
                          built ? 1 : 0, static_cast<long long>(entriesKeep), early ? 1 : 0, cacheFirst ? 1 : 0,
@@ -13666,14 +13543,14 @@ int MainWindow::runSelfTest()
             int missingHelp = 0, unknownRun = 0, emptyOut = 0;
             for (const QString& n : names) {
                 const QString help = commandHelp(n);
-                if (help.isEmpty() || help.startsWith(QStringLiteral("未知命令"))) {
+                if (help.isEmpty() || help.startsWith(slime::ui::t("ui.a9b5bef3254f"))) {
                     ++missingHelp;
                     std::fprintf(stderr, "[UI自检]   缺少帮助：%s\n", n.toUtf8().constData());
                 }
                 // 每条命令都必须「可观测」：查询态返回非空文本，且不是「未知命令」
                 const QString out = runCommand(n, QStringList());
                 if (out.isEmpty()) ++emptyOut;
-                if (out.startsWith(QStringLiteral("未知命令"))) {
+                if (out.startsWith(slime::ui::t("ui.a9b5bef3254f"))) {
                     ++unknownRun;
                     std::fprintf(stderr, "[UI自检]   命令未实现：%s\n", n.toUtf8().constData());
                 }
@@ -13767,12 +13644,12 @@ int MainWindow::runSelfTest()
             const int gridBefore = m_w->gridSize->value();
             const QString r1 = runCommand(QStringLiteral("grid"), QStringList{ QStringLiteral("9") });
             const QString r2 = runCommand(QStringLiteral("target"), QStringList{ QStringLiteral("5") });
-            const bool refused = r1.contains(QStringLiteral("构建")) && r2.contains(QStringLiteral("构建")) &&
+            const bool refused = r1.contains(slime::ui::t("ui.81a94d85f01c")) && r2.contains(slime::ui::t("ui.81a94d85f01c")) &&
                                  m_w->gridSize->value() == gridBefore;
             std::fprintf(stderr, "[UI自检]   构建模式拒绝：grid → %s\n", r1.split('\n').first().toUtf8().constData());
             check(refused, "构建模式下参数命令被拒绝并说明原因（不静默失效）");
             const QString r3 = runCommand(QStringLiteral("build"), QStringList{ QStringLiteral("off") });
-            check(!buildModeActive() && r3.contains(QStringLiteral("关闭")), "build off 退出构建模式");
+            check(!buildModeActive() && r3.contains(slime::ui::t("ui.6c14bd7f6f9e")), "build off 退出构建模式");
             showPage(kPageSearch);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
         }
@@ -13780,12 +13657,12 @@ int MainWindow::runSelfTest()
         // ⑤ copy <n> 越界必须明确报错；cache status 可用
         {
             const QString r = runCommand(QStringLiteral("copy"), QStringList{ QStringLiteral("99999") });
-            check(r.contains(QStringLiteral("没有第")) || r.contains(QStringLiteral("用法")),
+            check(r.contains(slime::ui::t("ui.11a604e0fb59")) || r.contains(slime::ui::t("ui.2b6d0251df64")),
                   "copy <n> 越界时明确报错（不静默失败）");
             const QString cs = runCommand(QStringLiteral("cache"), QStringList{ QStringLiteral("status") });
-            check(cs.contains(QStringLiteral("缓存")), "cache status 可用");
+            check(cs.contains(slime::ui::t("ui.6cdba4aad0c1")), "cache status 可用");
             const QString o = runCommand(QStringLiteral("open"), QStringList{ QStringLiteral("bad") });
-            check(o.contains(QStringLiteral("用法")), "open 参数错误时给出用法");
+            check(o.contains(slime::ui::t("ui.2b6d0251df64")), "open 参数错误时给出用法");
         }
 
         // ⑥ Tab 候选框：Minecraft 风格 + **连续 10 次 Tab 焦点不跑**
@@ -13926,7 +13803,7 @@ int MainWindow::runSelfTest()
         // clear 命令（终端内置）必须清空输出
         {
             if (m_terminal && m_terminal->output()) {
-                m_terminal->appendLine(QStringLiteral("v3.4.11 clear 测试"));
+                m_terminal->appendLine(slime::ui::t("ui.08e2ade731ce"));
                 const bool had = !m_terminal->output()->toPlainText().isEmpty();
                 m_terminal->execute(QStringLiteral("clear"));
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
@@ -13982,7 +13859,7 @@ int MainWindow::runSelfTest()
             const QList<QLabel*> scope = m_settingsPage ? m_settingsPage->findChildren<QLabel*>()
                                                        : QList<QLabel*>();
             for (QLabel* lb : scope) {
-                if (lb->text().contains(QStringLiteral("恢复所有设置到出厂默认值"))) ++leftover;
+                if (lb->text().contains(slime::ui::t("ui.6b6350c805f9"))) ++leftover;
             }
             check(m_settingsPage != nullptr, "设置页存在（灰字检查范围正确）");
             check(leftover == 0, "已删除高级页的「恢复所有设置到出厂默认值」灰字");

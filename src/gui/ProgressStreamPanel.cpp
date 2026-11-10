@@ -12,6 +12,7 @@
 //   * 视图为只读 QPlainTextEdit：等宽字体、不换行、最多 20 万块（超出自动丢弃最旧的行），
 //     每次追加后把垂直滚动条固定在最大值（保持最底部）；
 //   * [清空] → clearAll()（清空 + 复位行计数）；[复制全部] → 把 allText() 写入剪贴板。
+#include "gui/UiText.h"
 #include "gui/ProgressStreamPanel.h"
 
 #include <QClipboard>
@@ -50,7 +51,7 @@ QString ProgressStreamPanel::formatProgressLine(const QTime& t, double elapsedSe
 {
     // 时间戳固定 [HH:MM:SS]（24 小时制，本地时间由调用方给出）；
     // 耗时保留 1 位小数（.arg(double, 0, 'f', 1)：fieldWidth=0 → 无千位分隔符）
-    return QStringLiteral("[%1] 已用时 %2 秒，扫描 %3 区块，找到 %4 个")
+    return slime::ui::t("ui.86789b77d7c2")
         .arg(t.toString(QStringLiteral("HH:mm:ss")))
         .arg(clampSeconds(elapsedSec), 0, 'f', 1)
         .arg(clampCount(scannedChunks))
@@ -67,7 +68,7 @@ QString ProgressStreamPanel::formatProgressLineEx(const QTime& t, double elapsed
         return formatProgressLine(t, elapsedSec, scanned, found);
     }
     const double pct = 100.0 * static_cast<double>(scanned) / static_cast<double>(total);
-    return QStringLiteral("[%1] 已用时 %2 秒，扫描 %3/%4 区块（%5%），找到 %6 个")
+    return slime::ui::t("ui.92ebbfbb83a0")
         .arg(t.toString(QStringLiteral("HH:mm:ss")))
         .arg(clampSeconds(elapsedSec), 0, 'f', 1)
         .arg(scanned)
@@ -78,7 +79,7 @@ QString ProgressStreamPanel::formatProgressLineEx(const QTime& t, double elapsed
 
 QString ProgressStreamPanel::formatFinalLine(const QTime& t, qint64 totalChunks, qint64 found, double elapsedSec)
 {
-    return QStringLiteral("[%1] 已完成：共扫描 %2 区块，找到 %3 个结果，耗时 %4 秒")
+    return slime::ui::t("ui.0ec5b94c3c8b")
         .arg(t.toString(QStringLiteral("HH:mm:ss")))
         .arg(clampCount(totalChunks))
         .arg(clampCount(found))
@@ -103,15 +104,15 @@ ProgressStreamPanel::ProgressStreamPanel(QWidget* parent) : QWidget(parent)
     toolRow->setSpacing(6);
     toolRow->addStretch(1);
 
-    m_clear = new QPushButton(QStringLiteral("清空"), this);
+    m_clear = new QPushButton(slime::ui::t("ui.84fcd70d4280"), this);
     m_clear->setAutoDefault(false);
-    m_clear->setToolTip(QStringLiteral("清空全部进度记录（不再询问）"));
+    m_clear->setToolTip(slime::ui::t("ui.4cb6c42279d7"));
     connect(m_clear, &QPushButton::clicked, this, &ProgressStreamPanel::clearAll);
     toolRow->addWidget(m_clear);
 
-    m_copy = new QPushButton(QStringLiteral("复制全部"), this);
+    m_copy = new QPushButton(slime::ui::t("ui.55f59bc2f0c3"), this);
     m_copy->setAutoDefault(false);
-    m_copy->setToolTip(QStringLiteral("把全部进度记录复制到剪贴板"));
+    m_copy->setToolTip(slime::ui::t("ui.dcf778659570"));
     connect(m_copy, &QPushButton::clicked, this, [this]() {
         QGuiApplication::clipboard()->setText(allText());
     });

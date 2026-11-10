@@ -6,6 +6,7 @@
 //   3. 「复制全部文字」只改写对话框内一个小标签做反馈，不弹任何模态框，
 //      以免阻塞自动化自检（自检会调用 showHelpDialog 并直接关掉对话框）；
 //   4. 本文件不定义 Q_OBJECT 类，故无需 include "HelpDialog.moc"。
+#include "gui/UiText.h"
 #include "gui/HelpDialog.h"
 #include "gui/UiStrings.h"
 
@@ -357,7 +358,7 @@ QString helpTutorialHtml()
 void showHelpDialog(QWidget* parent)
 {
     QDialog dlg(parent);
-    dlg.setWindowTitle(QStringLiteral("使用教程"));
+    dlg.setWindowTitle(slime::ui::t("ui.e63e0a783b7d"));
     dlg.setMinimumSize(720, 560); // 约 720×560：一屏能读完整段，又不会大到超出小屏
 
     auto* root = new QVBoxLayout(&dlg);
@@ -365,8 +366,7 @@ void showHelpDialog(QWidget* parent)
     root->setSpacing(8);
 
     auto* tip = new QLabel(
-        QStringLiteral("下面是面向新手的使用教程。正文可以用鼠标选中后按 Ctrl+C 复制，"
-                       "也可以点下面的「复制全部文字」一次性复制全部内容。"),
+        slime::ui::t("ui.7f6dfd1b22ad"),
         &dlg);
     tip->setWordWrap(true);
     root->addWidget(tip);
@@ -377,17 +377,17 @@ void showHelpDialog(QWidget* parent)
         const char* anchor;
     };
     static const TocEntry kToc[] = {
-        { "这是什么", "sec1" },       { "怎么用", "sec2" },
-        { "图案怎么画", "sec3" },     { "四种模式怎么选", "sec4" },
-        { "群系地图 ≠ 地形图", "sec5" }, { "GPU 加速", "sec6" },
-        { "结果怎么用", "sec7" },     { "基岩版为什么慢", "sec8" },
-        { "常见问题", "sec9" },
+        { "ui.help.toc.what", "sec1" },       { "ui.help.toc.how", "sec2" },
+        { "ui.help.toc.pattern", "sec3" },     { "ui.help.toc.modes", "sec4" },
+        { "ui.help.toc.biome", "sec5" }, { "ui.help.toc.gpu", "sec6" },
+        { "ui.help.toc.results", "sec7" },     { "ui.help.toc.bedrock", "sec8" },
+        { "ui.help.toc.faq", "sec9" },
     };
 
     auto* body = new QHBoxLayout();
     auto* toc = new QListWidget(&dlg);
     toc->setFixedWidth(148);
-    for (const TocEntry& e : kToc) toc->addItem(QString::fromUtf8(e.title));
+    for (const TocEntry& e : kToc) toc->addItem(slime::ui::t(e.title));
     toc->setCurrentRow(0);
     body->addWidget(toc);
 
@@ -408,8 +408,8 @@ void showHelpDialog(QWidget* parent)
     auto* btnRow = new QHBoxLayout();
     btnRow->setSpacing(8);
 
-    auto* copyBtn = new QPushButton(QStringLiteral("复制全部文字"), &dlg);
-    copyBtn->setToolTip(QStringLiteral("把教程的全部文字复制到剪贴板，便于保存或发给朋友。"));
+    auto* copyBtn = new QPushButton(slime::ui::t("ui.152731915eec"), &dlg);
+    copyBtn->setToolTip(slime::ui::t("ui.60a0960c6a64"));
     btnRow->addWidget(copyBtn);
 
     // 复制结果只在这里显示，不弹任何对话框（弹窗会打断自动化自检）
@@ -421,7 +421,7 @@ void showHelpDialog(QWidget* parent)
 
     auto* box = new QDialogButtonBox(QDialogButtonBox::Close, &dlg);
     if (QPushButton* closeBtn = box->button(QDialogButtonBox::Close)) {
-        closeBtn->setText(QStringLiteral("关闭"));
+        closeBtn->setText(slime::ui::t("ui.6c14bd7f6f9e"));
         closeBtn->setDefault(true);   // 回车即可关闭
         closeBtn->setAutoDefault(true);
     }
@@ -432,7 +432,7 @@ void showHelpDialog(QWidget* parent)
         if (QClipboard* clip = QApplication::clipboard()) {
             clip->setText(browser->toPlainText());
         }
-        copyState->setText(QStringLiteral("已复制到剪贴板"));
+        copyState->setText(slime::ui::t("ui.c2bb6d50aebe"));
     });
     QObject::connect(box, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
 

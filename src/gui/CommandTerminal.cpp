@@ -3,6 +3,7 @@
 // 关键约束（任务书 2.4）：命令必须「立即执行、可插队」。
 // 本控件不创建线程、不加锁、不做任何等待：它在 GUI 线程里同步调用
 // CommandHost::runCommand()，把「怎么插队到正在运行的搜索任务」完全交给宿主。
+#include "gui/UiText.h"
 #include "gui/CommandTerminal.h"
 
 #include <QAbstractItemView>
@@ -25,13 +26,13 @@ constexpr int kMaxHistory = 100;
 // 启动横幅
 QString bannerText()
 {
-    return QStringLiteral("史莱姆区块查找器 命令终端 —— 输入 help 查看命令；命令会立即执行，可插队到正在运行的搜索。");
+    return slime::ui::t("ui.373ab2270666");
 }
 
 // 输入行提示语
 QString inputPlaceholder()
 {
-    return QStringLiteral("输入命令后回车（help 查看全部命令，↑/↓ 历史，Tab 补全）");
+    return slime::ui::t("ui.ff816158c7e0");
 }
 
 // 取第一个空白之前的部分（Tab 补全只针对命令名）
@@ -246,7 +247,7 @@ struct CommandTerminal::Impl : public QObject {
             if (prefix.size() <= token.size()) {
                 // 公共前缀没有增长：列出候选（不改变输入、不改变焦点）
                 if (self)
-                    self->appendLine(QStringLiteral("候选：") + matches.join(QStringLiteral("  ")));
+                    self->appendLine(slime::ui::t("ui.7f489316c3a4") + matches.join(QStringLiteral("  ")));
                 return false;
             }
             replacement = prefix;
@@ -570,12 +571,12 @@ void CommandTerminal::execute(const QString& line)
         // 终端内置命令：清空输出区，不转发给宿主，也不打印任何内容
         d->clearOutput();
     } else if (!d->host) {
-        d->appendRaw(QStringLiteral("终端未连接到主窗口。"));
+        d->appendRaw(slime::ui::t("ui.10fd6cd9a986"));
     } else {
         // 同步执行：宿主内部自行决定如何插队，本控件不等待搜索线程
         QString text = d->host->runCommand(cmd, args);
         if (text.isEmpty())
-            text = QStringLiteral("（无输出）");
+            text = slime::ui::t("ui.c680da690a1f");
         d->appendRaw(text);
     }
 

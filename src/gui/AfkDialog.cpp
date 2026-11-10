@@ -1,4 +1,5 @@
 // v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
+#include "gui/UiText.h"
 #include "gui/AfkDialog.h"
 
 #include <QApplication>
@@ -30,7 +31,7 @@ QString AfkDialog::commandFor(const slime::AfkCandidate& c)
 
 QString AfkDialog::cellTextFor(const slime::AfkCandidate& c)
 {
-    return QStringLiteral("X=%1 Z=%2（区块 %3,%4）覆盖 %5 格 / %6 区块 / 覆盖率 %7%%")
+    return slime::ui::t("ui.d5a72d5948cc")
         .arg(c.x)
         .arg(c.z)
         .arg(c.chunkX)
@@ -42,38 +43,38 @@ QString AfkDialog::cellTextFor(const slime::AfkCandidate& c)
 
 AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_ctx(ctx)
 {
-    setWindowTitle(QStringLiteral("挂机点（环形覆盖 · 1/16 区块精度）"));
+    setWindowTitle(slime::ui::t("ui.b6de53b59039"));
     setMinimumSize(760, 460);
 
     auto* lay = new QVBoxLayout(this);
 
     auto* top = new QHBoxLayout();
-    top->addWidget(new QLabel(QStringLiteral("覆盖半径 R（格）："), this));
+    top->addWidget(new QLabel(slime::ui::t("ui.c6a32c203a5a"), this));
     m_radius = new QSpinBox(this);
     m_radius->setRange(16, 512);
     m_radius->setSingleStep(16);
     m_radius->setValue(128);
-    m_radius->setToolTip(QStringLiteral("生物生成半径通常取 128：半径内的史莱姆区块面积越大，可刷怪格数越多"));
+    m_radius->setToolTip(slime::ui::t("ui.ed1b4230d88b"));
     top->addWidget(m_radius);
     top->addSpacing(12);
-    top->addWidget(new QLabel(QStringLiteral("候选数："), this));
+    top->addWidget(new QLabel(slime::ui::t("ui.0fbc1a0a534e"), this));
     m_topN = new QSpinBox(this);
     m_topN->setRange(1, 20);
     m_topN->setValue(5);
     top->addWidget(m_topN);
     top->addSpacing(12);
     top->addSpacing(12);
-    top->addWidget(new QLabel(QStringLiteral("平台："), this));
+    top->addWidget(new QLabel(slime::ui::t("ui.3541a097fb69"), this));
     m_platform = new QComboBox(this);
-    m_platform->addItem(QStringLiteral("Java 版"), 0);
-    m_platform->addItem(QStringLiteral("基岩版"), 1);
+    m_platform->addItem(slime::ui::t("ui.8accf0fe2eed"), 0);
+    m_platform->addItem(slime::ui::t("ui.618fd37c0c01"), 1);
     top->addWidget(m_platform);
     top->addSpacing(12);
-    top->addWidget(new QLabel(QStringLiteral("群系版本："), this));
+    top->addWidget(new QLabel(slime::ui::t("ui.257d31e37e28"), this));
     m_version = new QComboBox(this);
     for (const auto& v : slime::javaVersionOptions()) m_version->addItem(QString::fromUtf8(v.label), v.id);
     top->addWidget(m_version);
-    auto* btnRe = new QPushButton(QStringLiteral("重新计算"), this);
+    auto* btnRe = new QPushButton(slime::ui::t("ui.3635d74e2884"), this);
     top->addWidget(btnRe);
     top->addStretch();
     lay->addLayout(top);
@@ -85,9 +86,9 @@ AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     m_table = new QTableWidget(this);
     m_table->setColumnCount(9);
     m_table->setHorizontalHeaderLabels({ QStringLiteral("#"), QStringLiteral("X"), QStringLiteral("Z"),
-                                         QStringLiteral("区块"), QStringLiteral("覆盖格数"),
-                                         QStringLiteral("覆盖区块"), QStringLiteral("覆盖率"),
-                                         QStringLiteral("加权覆盖"), QStringLiteral("平均权重") });
+                                         slime::ui::t("ui.3da82d85c5de"), slime::ui::t("ui.6e1a9b47c22b"),
+                                         slime::ui::t("ui.30c8ff494553"), slime::ui::t("ui.d5d366170935"),
+                                         slime::ui::t("ui.d5f4497fa38f"), slime::ui::t("ui.977c87ae5b09") });
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -95,9 +96,9 @@ AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     lay->addWidget(m_table, 1);
 
     auto* bottom = new QHBoxLayout();
-    auto* btnCopy = new QPushButton(QStringLiteral("复制选中点的 /tp 命令"), this);
-    auto* btnCopyAll = new QPushButton(QStringLiteral("复制全部命令"), this);
-    auto* btnClose = new QPushButton(QStringLiteral("关闭"), this);
+    auto* btnCopy = new QPushButton(slime::ui::t("ui.6ef6643d1733"), this);
+    auto* btnCopyAll = new QPushButton(slime::ui::t("ui.b55b79e1c9e9"), this);
+    auto* btnClose = new QPushButton(slime::ui::t("ui.6c14bd7f6f9e"), this);
     bottom->addWidget(btnCopy);
     bottom->addWidget(btnCopyAll);
     bottom->addStretch();
@@ -157,9 +158,9 @@ void AfkDialog::recompute()
         const int cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
         minX = cx - kMaxChunks / 2; maxX = minX + kMaxChunks - 1;
         minZ = cz - kMaxChunks / 2; maxZ = minZ + kMaxChunks - 1;
-        clampNote = QStringLiteral("（范围过大，已在中心 %1×%1 区块内查找%2）")
+        clampNote = slime::ui::t("ui.5d620800ad53")
                         .arg(kMaxChunks)
-                        .arg(m_weighted ? QStringLiteral("，加权模式窗口更小") : QString());
+                        .arg(m_weighted ? slime::ui::t("ui.ba3ffefed9ce") : QString());
     }
 
     slime::AfkPlanOptions o;
@@ -180,14 +181,14 @@ void AfkDialog::recompute()
         const int64_t totalBlocks = slime::AfkPlanner::slimeBlocksInArea(o.area, pred);
         const int64_t blocks = static_cast<int64_t>(o.area.maxX - o.area.minX + 1) * (o.area.maxZ - o.area.minZ + 1) * 256;
         if (m_results.empty()) {
-            m_summary->setText(QStringLiteral("范围内没有可用的史莱姆区块（%1 %2）。")
+            m_summary->setText(slime::ui::t("ui.a3dc656d9638")
                                    .arg(m_ctx.source, clampNote));
         } else {
             const QString mode = m_weighted
-                                     ? QStringLiteral("｜加权：Java %1（群系权重 0~1）")
+                                     ? slime::ui::t("ui.33f83b437991")
                                            .arg(QString::fromUtf8(slime::BiomeMap::labelForVersionId(versionId)))
-                                     : QStringLiteral("｜加权：未启用（基岩版无群系数据，按纯面积）");
-            m_summary->setText(QStringLiteral("来源：%1 %2%5｜范围内史莱姆占比 %3%%｜最优：%4")
+                                     : slime::ui::t("ui.c004ab47a6a1");
+            m_summary->setText(slime::ui::t("ui.92d2032a130f")
                                    .arg(m_ctx.source, clampNote)
                                    .arg(blocks > 0 ? QString::number(double(totalBlocks) * 100.0 / double(blocks), 'f', 1)
                                                    : QStringLiteral("-"))
@@ -228,7 +229,7 @@ void AfkDialog::fillTable()
         m_table->setItem(i, 7, new QTableWidgetItem(QString::number(c.coveredWeight, 'f', 0)));
         m_table->setItem(i, 8, new QTableWidgetItem(QString::number(c.avgWeight, 'f', 2)));
         if (c.onChunkCorner) {
-            m_table->item(i, 1)->setToolTip(QStringLiteral("该点正落在区块角点：同时覆盖 4 个区块的边缘"));
+            m_table->item(i, 1)->setToolTip(slime::ui::t("ui.c327477ff7e5"));
         }
     }
     if (!m_results.empty()) m_table->selectRow(0);

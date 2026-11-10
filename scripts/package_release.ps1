@@ -22,7 +22,7 @@
 
 param(
     [string]$Repo = "",
-    [string]$Version = "3.10.12.13",
+    [string]$Version = "3.11.0",
     [string]$QtDir = "C:\Qt\6.11.2\msvc2022_64",
     [switch]$SkipSelfTest
 )
@@ -67,7 +67,7 @@ foreach ($pl in @("qoffscreen.dll", "qminimal.dll")) {
 }
 
 # ---------------------------------------------------------------- 2) docs
-# v3.10.12.13：程序内更新历史已移除，更新日志只到 GitHub 查看，安装包不再附带 docs/。
+# v3.11.0：程序内更新历史已移除，更新日志只到 GitHub 查看，安装包不再附带 docs/。
 Write-Host "== 2) refresh bundled docs ==" -ForegroundColor Cyan
 $distDocs = Join-Path $distDir "docs"
 if (Test-Path $distDocs) { Remove-Item $distDocs -Recurse -Force -ErrorAction SilentlyContinue }
@@ -122,6 +122,13 @@ $cfgText = @"
 # v3.4.12: UTF-8 without BOM (Set-Content -Encoding UTF8 adds one under Windows PowerShell 5.1)
 [System.IO.File]::WriteAllText($cfg, $cfgText, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "  + config.json (defaults, version field)"
+
+# ---------------------------------------------------------------- 3b) languages
+Write-Host "== 3b) copy language pack ==" -ForegroundColor Cyan
+$distAssets = Join-Path $distDir "assets\i18n"
+New-Item -ItemType Directory -Force -Path $distAssets | Out-Null
+Copy-Item (Join-Path $Repo "assets\i18n\*.json") $distAssets -Force
+Write-Host ("  + assets/i18n: {0} files" -f (Get-ChildItem $distAssets -File).Count)
 
 # ---------------------------------------------------------------- 4) zip
 Write-Host "== 4) compress ==" -ForegroundColor Cyan

@@ -8,6 +8,7 @@
 //   3. 刷新策略：环形缓冲没有丢条目时只 append 新增行（避免每 500ms 重建上万行导致卡顿），
 //      一旦发生丢弃 / 过滤级别变化 / 清空，就整体重建；
 //   4. 提示文字与启用对话框的选项文案均与任务书逐字一致（UTF-8 源码 + QString::fromUtf8）。
+#include "gui/UiText.h"
 #include "gui/LogPanel.h"
 
 #include <QApplication>
@@ -59,7 +60,7 @@ LogPanel::LogPanel(QWidget* parent)
     root->setSpacing(4);
 
     // ---- 关闭模式唯一可见的一行提示（文案与任务书逐字一致）----
-    m_hint = new QLabel(QString::fromUtf8("日志未启用。如需启用，请到 [工具] 菜单 → [启用日志]"), this);
+    m_hint = new QLabel(slime::ui::t("ui.cddeb8b217d4"), this);
     m_hint->setWordWrap(true);
     m_hint->setTextInteractionFlags(Qt::TextSelectableByMouse);
     root->addWidget(m_hint);
@@ -76,32 +77,32 @@ LogPanel::LogPanel(QWidget* parent)
     bar->setContentsMargins(0, 0, 0, 0);
     bar->setSpacing(8);
 
-    bar->addWidget(new QLabel(QString::fromUtf8("级别："), m_toolbar));
+    bar->addWidget(new QLabel(slime::ui::t("ui.81ab1259cd16"), m_toolbar));
     m_level = new QComboBox(m_toolbar);
-    m_level->addItem(QString::fromUtf8("全部"), -1);
+    m_level->addItem(slime::ui::t("ui.778fc8f99453"), -1);
     m_level->addItem(QString::fromUtf8("TRACE"), static_cast<int>(slime::LogLevel::Trace));
     m_level->addItem(QString::fromUtf8("DEBUG"), static_cast<int>(slime::LogLevel::Debug));
     m_level->addItem(QString::fromUtf8("INFO"), static_cast<int>(slime::LogLevel::Info));
     m_level->addItem(QString::fromUtf8("WARN"), static_cast<int>(slime::LogLevel::Warning));
     m_level->addItem(QString::fromUtf8("ERROR"), static_cast<int>(slime::LogLevel::Error));
-    m_level->setToolTip(QString::fromUtf8("只显示不低于所选级别的日志（选「全部」则不过滤）"));
+    m_level->setToolTip(slime::ui::t("ui.3d2555d8be48"));
     bar->addWidget(m_level);
 
-    m_autoScroll = new QCheckBox(QString::fromUtf8("自动滚动"), m_toolbar);
+    m_autoScroll = new QCheckBox(slime::ui::t("ui.9642fc88cdea"), m_toolbar);
     m_autoScroll->setChecked(true); // 默认勾选
-    m_autoScroll->setToolTip(QString::fromUtf8("勾选后每次刷新都滚到最新一行"));
+    m_autoScroll->setToolTip(slime::ui::t("ui.283ff8e89574"));
     bar->addWidget(m_autoScroll);
 
-    m_clear = new QPushButton(QString::fromUtf8("清空"), m_toolbar);
-    m_clear->setToolTip(QString::fromUtf8("清空内存中的日志（不影响已写入的日志文件）"));
+    m_clear = new QPushButton(slime::ui::t("ui.84fcd70d4280"), m_toolbar);
+    m_clear->setToolTip(slime::ui::t("ui.da8cd7a11fab"));
     bar->addWidget(m_clear);
 
-    m_copy = new QPushButton(QString::fromUtf8("复制全部"), m_toolbar);
-    m_copy->setToolTip(QString::fromUtf8("把当前显示的日志复制到剪贴板"));
+    m_copy = new QPushButton(slime::ui::t("ui.55f59bc2f0c3"), m_toolbar);
+    m_copy->setToolTip(slime::ui::t("ui.6f8433872af3"));
     bar->addWidget(m_copy);
 
-    m_enable = new QPushButton(QString::fromUtf8("启用日志…"), m_toolbar);
-    m_enable->setToolTip(QString::fromUtf8("重新选择日志模式（简要 / 详细）"));
+    m_enable = new QPushButton(slime::ui::t("ui.80005af43eec"), m_toolbar);
+    m_enable->setToolTip(slime::ui::t("ui.d3c07e2e48e8"));
     bar->addWidget(m_enable);
 
     bar->addStretch(1);
@@ -321,21 +322,21 @@ void LogPanel::updateStatusLabel(size_t total, int64_t dropped)
 {
     QString modeText;
     switch (slime::LogBus::mode()) {
-    case slime::LogMode::Brief:    modeText = QString::fromUtf8("简要（仅 INFO 及以上）"); break;
-    case slime::LogMode::Detailed: modeText = QString::fromUtf8("详细（含 DEBUG / TRACE）"); break;
-    default:                       modeText = QString::fromUtf8("关闭"); break;
+    case slime::LogMode::Brief:    modeText = slime::ui::t("ui.5624c757ad48"); break;
+    case slime::LogMode::Detailed: modeText = slime::ui::t("ui.96ad4fda8a34"); break;
+    default:                       modeText = slime::ui::t("ui.6c14bd7f6f9e"); break;
     }
 
     QString file = QString::fromStdString(slime::LogBus::currentFile());
-    if (file.isEmpty()) file = QString::fromUtf8("（未设置日志目录）");
+    if (file.isEmpty()) file = slime::ui::t("ui.8789a07414e9");
 
-    QString text = QString::fromUtf8("当前模式：") + modeText
-                 + QString::fromUtf8("｜ 内存 ") + QString::number(static_cast<qulonglong>(total))
+    QString text = slime::ui::t("ui.8736a99d18f2") + modeText
+                 + slime::ui::t("ui.cadb63accea5") + QString::number(static_cast<qulonglong>(total))
                  + QString::fromUtf8(" / ") + QString::number(static_cast<qulonglong>(slime::LogBus::kMaxEntries))
-                 + QString::fromUtf8(" 条 ｜ 文件：") + file;
+                 + slime::ui::t("ui.8f4a18a6d5fc") + file;
     if (dropped > 0) {
-        text += QString::fromUtf8(" ｜ 已丢弃 ") + QString::number(static_cast<qlonglong>(dropped))
-              + QString::fromUtf8(" 条（仅保留最新 10000 条）");
+        text += slime::ui::t("ui.237e01e55ec4") + QString::number(static_cast<qlonglong>(dropped))
+              + slime::ui::t("ui.2824ca69fa6f");
     }
     m_status->setText(text);
 }
@@ -361,7 +362,7 @@ QString LogPanel::filteredText() const
 bool showEnableLogDialog(QWidget* parent, slime::LogMode* outMode)
 {
     QDialog dlg(parent);
-    dlg.setWindowTitle(QString::fromUtf8("启用日志"));
+    dlg.setWindowTitle(slime::ui::t("ui.162640c04abd"));
     dlg.setModal(true);
 
     auto* root = new QVBoxLayout(&dlg);
@@ -369,15 +370,15 @@ bool showEnableLogDialog(QWidget* parent, slime::LogMode* outMode)
     root->setSpacing(6);
 
     // 选项一：简要日志（默认选中）
-    auto* brief = new QRadioButton(QString::fromUtf8("简要日志（推荐）"), &dlg);
+    auto* brief = new QRadioButton(slime::ui::t("ui.7021a82c55a4"), &dlg);
     brief->setChecked(true);
-    auto* briefLine1 = new QLabel(QString::fromUtf8("记录关键事件（启动、搜索、错误）"), &dlg);
-    auto* briefLine2 = new QLabel(QString::fromUtf8("性能影响：可忽略"), &dlg);
+    auto* briefLine1 = new QLabel(slime::ui::t("ui.7fbab8dd958f"), &dlg);
+    auto* briefLine2 = new QLabel(slime::ui::t("ui.fa42d515a7e9"), &dlg);
 
     // 选项二：详细日志
-    auto* detailed = new QRadioButton(QString::fromUtf8("详细日志"), &dlg);
-    auto* detailLine1 = new QLabel(QString::fromUtf8("记录所有事件（含 DEBUG / TRACE）"), &dlg);
-    auto* detailLine2 = new QLabel(QString::fromUtf8("⚠️ 可能降低搜索速度 10~30%"), &dlg);
+    auto* detailed = new QRadioButton(slime::ui::t("ui.214cd30c683f"), &dlg);
+    auto* detailLine1 = new QLabel(slime::ui::t("ui.dbc0a1abbb77"), &dlg);
+    auto* detailLine2 = new QLabel(slime::ui::t("ui.db7100311105"), &dlg);
 
     // 说明文字缩进，视觉上从属于上面的单选项（同一个父窗口 → 两个单选项自动互斥）
     for (QLabel* line : { briefLine1, briefLine2, detailLine1, detailLine2 }) {
@@ -395,8 +396,8 @@ bool showEnableLogDialog(QWidget* parent, slime::LogMode* outMode)
     root->addSpacing(10);
 
     auto* box = new QDialogButtonBox(&dlg);
-    QPushButton* cancelBtn = box->addButton(QString::fromUtf8("取消"), QDialogButtonBox::RejectRole);
-    QPushButton* okBtn = box->addButton(QString::fromUtf8("启用"), QDialogButtonBox::AcceptRole);
+    QPushButton* cancelBtn = box->addButton(slime::ui::t("ui.4d0b4688c787"), QDialogButtonBox::RejectRole);
+    QPushButton* okBtn = box->addButton(slime::ui::t("ui.d4e9ca3dd494"), QDialogButtonBox::AcceptRole);
     okBtn->setDefault(true);
     QObject::connect(cancelBtn, &QPushButton::clicked, &dlg, &QDialog::reject);
     QObject::connect(okBtn, &QPushButton::clicked, &dlg, &QDialog::accept);
