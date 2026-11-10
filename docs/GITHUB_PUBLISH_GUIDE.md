@@ -1,7 +1,11 @@
 # GitHub 发布与自动更新准备指南（SlimeFinder）
 
+> ⚠️ **强制流程：2026-11-10 起以 [`release_process_decision.md`](release_process_decision.md) 为准。**
+> 核心规则：**Git 历史是唯一事实来源；`git push` 不成功就不发布。**
+> 禁止用 GitHub API 直接创建 tree/commit 替代 git push 上传源码。
+>
 > 本文档给「第一次用 GitHub」的人看：**源码进仓库，安装包进 Releases**，自动更新从 Releases 读取。
-> 当前源码版本：`3.10.12.8`；本机工具：Git 已安装（2.56），GitHub CLI 将放在
+> 当前源码版本：`3.10.12.11`；本机工具：Git 已安装（2.56），GitHub CLI 将放在
 > `D:\DeepSeek harness\史莱姆区块查找器\github_tools\gh_dir\bin\gh.exe`（下载/解压见文末）。
 
 ## 一、两个地方分别放什么
@@ -9,7 +13,7 @@
 | 位置 | 放什么 | 不要放什么 |
 |---|---|---|
 | **Repository（仓库）** | `src/`、`tests/`、`scripts/`、`tools/`、`third_party/`、`assets/`、`CMakeLists.txt`、`README.md`、`docs/`（不含大截图/视频）、`.gitignore`、`LICENSE` | `build/`、`dist/`、安装包、日志、缓存、`config.json` |
-| **Releases（发行版）** | 每个版本的 `SlimeFinder-X-win64.zip`、`Setup.exe`、`SHA256SUMS-X.txt` | 源码压缩包（GitHub 会根据 tag 自动生成源码包） |
+| **Releases（发行版）** | 每个版本的 `SlimeFinder-X-Setup.exe`、`SHA256SUMS-X.txt`（**只发 Setup，不再发便携 zip**） | 源码压缩包（GitHub 会根据 tag 自动生成源码包）、便携 zip（历史版本除外） |
 
 原因：Git 仓库适合存文本、要求体积小；Releases 专门放大文件，且自动更新程序就是访问
 `/releases/latest` 拿资产。
