@@ -1,16 +1,16 @@
 {
-  "version": "3.11.2",
-  "tag": "v3.11.2",
-  "notes": "# SlimeFinder v3.11.2\n\n## 本地化收尾\n\n- 帮助教程正文移出 C++，改为外部文件：\n  - `assets/help/tutorial-zh-CN.html`\n  - `assets/help/tutorial-zh-TW.html`\n  - `assets/help/tutorial-en-US.html`\n- 繁体中文教程由简体教程转换，英文教程保持现有译稿。\n- 安装包、构建输出均自动复制 `assets/help`。\n- 英语术语统一：preset / slime chunk / world seed 等关键术语修正。\n- `check_ui_text.py` 扩展为校验 zh-CN / zh-TW / en-US 三套 key 与帮助资源。\n- 语言包反馈入口继续保留。\n\n## 多语言布局\n\n- 英文/繁体下左栏最小宽度增大到 480，右侧结果栏最小 280，消除窄窗横向滚动截断；\n- GUI 自检固定用中文构建界面，避免用户语言配置导致结构断言假失败；\n- 多语言内容由 `check_ui_text.py`（三套 key + 帮助资源）和人工截图覆盖。\n\n\n## 验证\n\n- 三套语言 key 数量一致（1198）。\n- 帮助正文不再内嵌在源代码中。",
+  "version": "3.12.0",
+  "tag": "v3.12.0",
+  "notes": "# SlimeFinder v3.12.0\n\n## 结构工程化\n\n- 新增自包含 `SlimeFinder-Tree-2.0` 文件树；\n- 源码按 `app / core / gpu / gui / i18n / utils` 分层：\n  - `src/app`：入口与 Windows 资源；\n  - `src/gui/mainwindow`：主窗口；\n  - `src/gui/dialogs`：对话框；\n  - `src/gui/panels`：过程面板；\n  - `src/gui/widgets`：可复用控件；\n  - `src/gui/services`：更新、遥测等服务；\n  - `src/i18n`：语言包与文案 API。\n- `tools`、`tests`、`packaging` 分层；\n- 自包含构建：`third_party`、`assets`、`tests/reference` 均在新树内；\n- 打包脚本加入 `windeployqt`，新树可独立产出可运行安装包；\n- GUI 自检实现拆到 `MainWindowSelfTest.inc`，主文件从 13.9k 降到 9.2k 行；\n- 旧树冻结保留，未删除任何历史内容。\n\n## 说明\n\n- 本版以结构迁移为主，不改变搜索、匹配、缓存和界面行为；\n- 最终发布前需要用户验收。\n",
   "assets": [
     {
-      "name": "SlimeFinder-3.11.2-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.2/SlimeFinder-3.11.2-Setup.exe",
-      "size": 10941970
+      "name": "SlimeFinder-3.12.0-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.0/SlimeFinder-3.12.0-Setup.exe",
+      "size": 17649022
     },
     {
-      "name": "SHA256SUMS-3.11.2.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.11.2/SHA256SUMS-3.11.2.txt",
+      "name": "SHA256SUMS-3.12.0.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.0/SHA256SUMS-3.12.0.txt",
       "size": 202
     }
   ]
