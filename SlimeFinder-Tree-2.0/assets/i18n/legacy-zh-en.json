@@ -1074,7 +1074,7 @@
   "地图预览（群系 / 史莱姆区块 / 搜索结果 / 挂机点）": "Map preview (biomes / slime chunks / results / farm spots)",
   "地图预览：Java 版需要先填写世界种子": "Map preview: Java needs a world seed first",
   "块级必要条件剪枝 → 结果与精确模式完全一致（无损）。": "Block-level necessary-condition pruning → identical to exact mode (lossless).",
-  "基岩版世界边界：±1048576 区块（整图搜索，会先给出耗时估算确认）": "Bedrock world border: ±1048576 chunks (full map; you get an ETA first)",
+  "基岩版世界边界：±131072 区块（整图搜索，会先给出耗时估算确认）": "Bedrock world border: ±131072 chunks (full map; you get an ETA first)",
   "复位": "Reset",
   "复制光标所在行的命令": "Copy the command on the cursor line",
   "复制全部": "Copy all",

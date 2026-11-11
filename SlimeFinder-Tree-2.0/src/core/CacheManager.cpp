@@ -48,7 +48,7 @@ inline int64_t rectW(const Rect& r) noexcept { return static_cast<int64_t>(r.max
 inline int64_t rectH(const Rect& r) noexcept { return static_cast<int64_t>(r.maxZ) - r.minZ + 1; }
 inline int popcount64(uint64_t v) noexcept { return std::popcount(v); }
 inline int ctz64(uint64_t v) noexcept { return std::countr_zero(v); }
-// 单个 range 的规模上限（防御损坏文件导致的超大分配：26 位 ≈ 6700 万 > 世界边界 209715）
+// 单个 range 的规模上限（防御损坏文件导致的超大分配：26 位 ≈ 6700 万 > 缩减后的基岩边界 131072）
 constexpr int64_t kMaxRectSide = 1LL << 26;
 // 原子替换：新文件已写好且校验通过，用它替换旧文件（Windows 优先 ReplaceFileW）
 bool atomicReplace(const std::filesystem::path& target, const std::filesystem::path& fresh) noexcept

@@ -936,7 +936,7 @@
   "ui.cfe9d8931fe1": "[%1] cancelled (%2 chunks scanned)",
   "ui.d009f8c12b25": "Not shown on the current page",
   "ui.d0e18567e89d": "%1) chunk (%2, %3) size %4 × %5 density %6 %% %7",
-  "ui.d116c4a6c576": "Bedrock world border: ±1048576 chunks (full map; you get an ETA first)",
+  "ui.d116c4a6c576": "Bedrock world border: ±131072 chunks (full map; you get an ETA first)",
   "ui.d1712c9a5036": "Enable GPU pattern streaming matching ⭐(about 2-18x acceleration measured by AMD, unverified by NVIDIA/Intel)",
   "ui.d182dd65d780": "Columns:",
   "ui.d1dfa3adee72": "... a total of %1, the text only shows the first %2; \"Copy Result\" contains all the text.",

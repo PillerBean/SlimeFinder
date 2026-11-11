@@ -82,13 +82,13 @@ int MainWindow::runSelfTest()
     clampRangeToBound();
     check(m_w->maxZ->value() == kJavaBoundChunk, "Java 正边界截断");
 
-    // 3) 基岩版边界 ±1048576
+    // 3) 基岩版边界 ±131072
     m_w->bedrockRadio->setChecked(true);
     onVersionChanged();
-    check(m_w->maxX->value() == 1048576 && m_w->minX->value() == -1048576, "基岩默认=基岩边界");
+    check(m_w->maxX->value() == 131072 && m_w->minX->value() == -131072, "基岩默认=基岩边界");
     m_w->maxZ->setValue(123456789);
     clampRangeToBound();
-    check(m_w->maxZ->value() == 1048576, "基岩边界截断");
+    check(m_w->maxZ->value() == 131072, "基岩边界截断");
     check(m_w->seedEdit->isEnabled(), "基岩版种子框可用（仅用于地图上色，判定与种子无关）");
     check(m_w->presetWorld->isEnabled() == false && m_w->presetBedrock->isEnabled() == true,
           "基岩版预设可用性");
@@ -344,10 +344,10 @@ int MainWindow::runSelfTest()
         m_w->densityRadio->setChecked(true);
         m_w->javaRadio->setChecked(true);
         if (m_w->gpuCheck) m_w->gpuCheck->setChecked(true);
-        m_w->minX->setValue(-131072);
-        m_w->maxX->setValue(131071);
-        m_w->minZ->setValue(-131072);
-        m_w->maxZ->setValue(131071);
+        m_w->minX->setValue(-1048576);
+        m_w->maxX->setValue(1048575);
+        m_w->minZ->setValue(-1048576);
+        m_w->maxZ->setValue(1048575);
         m_w->gridSize->setValue(8);
         m_w->minDensity->setValue(0.6);
         m_w->targetCount->setValue(5);
