@@ -1209,5 +1209,9 @@
   "ui.cache.source.local": "Local",
   "ui.cache.source.downloaded": "Downloaded",
   "ui.cache.pack.summary": "%1 packs · %2",
-  "ui.cache.old.notice": "A legacy cache file was found; this version does not read or delete it."
+  "ui.cache.old.notice": "A legacy cache file was found; this version does not read or delete it.",
+  "ui.cache.map.title": "Cache coverage map",
+  "ui.cache.map.hint": "Darker areas have cache coverage; click a pack to locate it.",
+  "ui.cache.pack.selectAll": "Select all",
+  "ui.cache.pack.deleteSelected": "Delete selected"
 }

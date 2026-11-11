@@ -1,6 +1,7 @@
 // MainWindow.cpp - 主窗口实现（v3.2.1）
 #include "i18n/UiText.h"
 #include "gui/mainwindow/MainWindow.h"
+#include "gui/widgets/CacheCoverageMap.h"
 
 #include <QApplication>
 #include <QStyledItemDelegate>   // v3.5.5：结果列表数值显示

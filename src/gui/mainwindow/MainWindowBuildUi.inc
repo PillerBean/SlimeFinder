@@ -1638,9 +1638,23 @@ void MainWindow::buildV340Pages()
         // 填世界种子、选搜索模式/算法；这些在搜索页才需要。顶部用一行灰字说明固定下来的选项。
         auto* buildPage = new QWidget(m_pageStack);
         buildPage->setObjectName(QStringLiteral("buildPage"));
-        auto* buildPageLay = new QVBoxLayout(buildPage);
+        auto* buildPageLay = new QHBoxLayout(buildPage);
         buildPageLay->setContentsMargins(8, 8, 8, 8);
-        buildPageLay->setSpacing(8);
+        buildPageLay->setSpacing(10);
+        auto* leftCol = new QWidget(buildPage);
+        leftCol->setObjectName(QStringLiteral("cacheLeftCol"));
+        leftCol->setMinimumWidth(360);
+        leftCol->setMaximumWidth(480);
+        auto* leftLay = new QVBoxLayout(leftCol);
+        leftLay->setContentsMargins(0, 0, 0, 0);
+        leftLay->setSpacing(8);
+        auto* rightCol = new QWidget(buildPage);
+        rightCol->setObjectName(QStringLiteral("cacheRightCol"));
+        auto* rightLay = new QVBoxLayout(rightCol);
+        rightLay->setContentsMargins(0, 0, 0, 0);
+        rightLay->setSpacing(8);
+        buildPageLay->addWidget(leftCol, 0);
+        buildPageLay->addWidget(rightCol, 1);
         {
             // v3.12.3：缓存页优先展示下载缓存（本版为空状态，后续版本接入）
             auto* download = new QGroupBox(slime::ui::t("ui.cache.download.title"), buildPage);
@@ -1670,7 +1684,21 @@ void MainWindow::buildV340Pages()
             m_cacheDownloadTable->setSelectionMode(QAbstractItemView::NoSelection);
             m_cacheDownloadTable->setMaximumHeight(150);
             dlLay->addWidget(m_cacheDownloadTable);
-            buildPageLay->addWidget(download);
+            leftLay->addWidget(download);
+        }
+        {
+            auto* mapBox = new QGroupBox(slime::ui::t("ui.cache.map.title"), rightCol);
+            mapBox->setProperty("card", true);
+            auto* mapLay = new QVBoxLayout(mapBox);
+            mapLay->setContentsMargins(8, 4, 8, 6);
+            m_cacheCoverageMap = new CacheCoverageMap(mapBox);
+            m_cacheCoverageMap->setMinimumHeight(260);
+            mapLay->addWidget(m_cacheCoverageMap, 1);
+            auto* mapHint = new QLabel(slime::ui::t("ui.cache.map.hint"), mapBox);
+            mapHint->setObjectName(QStringLiteral("topSummary"));
+            mapHint->setWordWrap(true);
+            mapLay->addWidget(mapHint);
+            rightLay->addWidget(mapBox, 1);
         }
         {
             auto* local = new QGroupBox(slime::ui::t("ui.cache.local.title"), buildPage);
@@ -1693,7 +1721,7 @@ void MainWindow::buildV340Pages()
             m_cacheLocalTable->setSelectionMode(QAbstractItemView::NoSelection);
             m_cacheLocalTable->setMaximumHeight(150);
             localLay->addWidget(m_cacheLocalTable);
-            buildPageLay->addWidget(local);
+            rightLay->addWidget(local);
         }
         {
             auto* info = new QGroupBox(slime::ui::t("ui.55fdaa2e6652"), buildPage);
@@ -1715,7 +1743,7 @@ void MainWindow::buildV340Pages()
             fixedLine->setObjectName(QStringLiteral("buildFixedFacts"));
             fixedLine->setWordWrap(true);
             infoLay->addWidget(fixedLine);
-            buildPageLay->addWidget(info);
+            leftLay->addWidget(info);
         }
         // 原有卡片挂进滚动区（内容与搜索页共享同一份范围控件）
         auto* buildScroll = new QScrollArea(buildPage);
@@ -1728,12 +1756,12 @@ void MainWindow::buildV340Pages()
         lay->setSpacing(10);
         m_buildExtra = page;
         buildScroll->setWidget(page);
-        buildPageLay->addWidget(buildScroll, 1);
+        leftLay->addWidget(buildScroll, 1);
         m_cacheLegacyNotice = new QLabel(slime::ui::t("ui.cache.old.notice"), buildPage);
         m_cacheLegacyNotice->setObjectName(QStringLiteral("topSummary"));
         m_cacheLegacyNotice->setWordWrap(true);
         m_cacheLegacyNotice->setVisible(false);
-        buildPageLay->addWidget(m_cacheLegacyNotice);
+        leftLay->addWidget(m_cacheLegacyNotice);
         m_pageStack->addWidget(buildPage);
         auto* cap = new QLabel(slime::ui::t("ui.31dc91dcb1bc"), page);
         cap->setObjectName(QStringLiteral("colCaption"));

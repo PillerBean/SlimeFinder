@@ -1209,5 +1209,9 @@
   "ui.cache.source.local": "本機",
   "ui.cache.source.downloaded": "下載",
   "ui.cache.pack.summary": "%1 個包 · %2",
-  "ui.cache.old.notice": "偵測到舊格式快取檔案；本版本不讀取、不刪除該檔案。"
+  "ui.cache.old.notice": "偵測到舊格式快取檔案；本版本不讀取、不刪除該檔案。",
+  "ui.cache.map.title": "快取覆蓋地圖",
+  "ui.cache.map.hint": "顏色越深表示該區域已有快取；點快取包可定位。",
+  "ui.cache.pack.selectAll": "全選",
+  "ui.cache.pack.deleteSelected": "刪除選中"
 }

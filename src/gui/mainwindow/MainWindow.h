@@ -71,6 +71,7 @@ class FeedbackPanel; // v3.3.4：底部「反馈」分类（v3.3.6 改版：时�
 class LogPanel;      // v3.3.4：底部「日志」分类
 class ProgressStreamPanel; // v3.3.6：底部「进度」分类（累积式纯文字流水）
 class MapPreviewWidget;   // v3.5.4：搜索页内嵌地图（全局类，勿在 namespace slime 内重复声明）
+class CacheCoverageMap;   // v3.12.3：缓存覆盖地图
 
 namespace slime {
 
@@ -358,6 +359,7 @@ private:
     bool saveV3Cache();
     std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
     QTableWidget* m_cacheDownloadTable = nullptr;
+    CacheCoverageMap* m_cacheCoverageMap = nullptr;
     QTableWidget* m_cacheLocalTable = nullptr;
     QLabel* m_cacheDownloadSummary = nullptr;
     QLabel* m_cacheLocalSummary = nullptr;

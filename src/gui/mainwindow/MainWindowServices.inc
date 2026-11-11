@@ -841,6 +841,7 @@ void MainWindow::refreshCacheUi()
     int dn = 0, ln = 0;
     fill(m_cacheDownloadTable, "downloaded", m_cacheDownloadSummary, &dr, &dc, &dn);
     fill(m_cacheLocalTable, "local", m_cacheLocalSummary, &lr, &lc, &ln);
+    if (m_cacheCoverageMap) m_cacheCoverageMap->setPacks(m_cacheStore->packs());
     if (m_cacheLegacyNotice) {
         std::error_code ec;
         m_cacheLegacyNotice->setVisible(std::filesystem::exists(appDirPath() / kCacheFileName, ec));

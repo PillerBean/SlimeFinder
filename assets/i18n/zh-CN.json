@@ -1209,5 +1209,9 @@
   "ui.cache.source.local": "本地",
   "ui.cache.source.downloaded": "下载",
   "ui.cache.pack.summary": "%1 个包 · %2",
-  "ui.cache.old.notice": "检测到旧格式缓存文件；本版本不读取、不删除该文件。"
+  "ui.cache.old.notice": "检测到旧格式缓存文件；本版本不读取、不删除该文件。",
+  "ui.cache.map.title": "缓存覆盖地图",
+  "ui.cache.map.hint": "颜色越深表示该区域已有缓存；点缓存包可定位。",
+  "ui.cache.pack.selectAll": "全选",
+  "ui.cache.pack.deleteSelected": "删除选中"
 }
