@@ -325,12 +325,18 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
         int64_t wpr = 0, rows = 0;
         const uint64_t* words = source.rangeBitmap(ri, &wpr, &rows);
         if (!words || wpr <= 0 || rows <= 0) continue;
-        const int64_t tileX0 = ((static_cast<int64_t>(r.minX) + 1023) / 1024) * 1024;
-        const int64_t tileZ0 = ((static_cast<int64_t>(r.minZ) + 1023) / 1024) * 1024;
-        const int64_t tileX1 = (static_cast<int64_t>(r.maxX) + 1) / 1024 * 1024;
-        const int64_t tileZ1 = (static_cast<int64_t>(r.maxZ) + 1) / 1024 * 1024;
-        for (int64_t tz = tileZ0; tz + 1024 <= tileZ1; tz += 1024) {
-            for (int64_t tx = tileX0; tx + 1024 <= tileX1; tx += 1024) {
+        // 向外扩到 1024 对齐：边缘块不足 1024 的部分用 Bedrock 判定补齐，
+        // 这样 pack 总是完整的 1024 tile，同时不会留下未缓存边缘。
+        const int64_t tileX0 = (static_cast<int64_t>(r.minX) >= 0)
+            ? (static_cast<int64_t>(r.minX) / 1024) * 1024
+            : -(((-static_cast<int64_t>(r.minX)) + 1023) / 1024) * 1024;
+        const int64_t tileZ0 = (static_cast<int64_t>(r.minZ) >= 0)
+            ? (static_cast<int64_t>(r.minZ) / 1024) * 1024
+            : -(((-static_cast<int64_t>(r.minZ)) + 1023) / 1024) * 1024;
+        const int64_t tileX1 = ((static_cast<int64_t>(r.maxX) + 1 + 1023) / 1024) * 1024;
+        const int64_t tileZ1 = ((static_cast<int64_t>(r.maxZ) + 1 + 1023) / 1024) * 1024;
+        for (int64_t tz = tileZ0; tz < tileZ1; tz += 1024) {
+            for (int64_t tx = tileX0; tx < tileX1; tx += 1024) {
                 const PackRect pr{ static_cast<int32_t>(tx), static_cast<int32_t>(tx + 1023),
                                    static_cast<int32_t>(tz), static_cast<int32_t>(tz + 1023) };
                 std::vector<uint8_t> bits((1024 * 1024 + 7) / 8, 0);
@@ -340,7 +346,14 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
                     for (int col = 0; col < 1024; ++col) {
                         const int64_t x = tx + col;
                         const size_t srcBit = srcBitBase + static_cast<size_t>(x - r.minX);
-                        if ((words[srcBit / 64] >> (srcBit % 64)) & 1ull) {
+                        bool slime = false;
+                        if (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) {
+                            slime = (words[srcBit / 64] >> (srcBit % 64)) & 1ull;
+                        } else {
+                            // 对齐补齐的边缘：Bedrock 判定与种子无关，可安全直接计算。
+                            slime = slime::SlimeEngine::isSlimeChunkBedrockMT(static_cast<int>(x), static_cast<int>(z));
+                        }
+                        if (slime) {
                             const size_t dst = static_cast<size_t>(row) * 1024 + col;
                             bits[dst / 8] |= static_cast<uint8_t>(1u << (dst % 8));
                         }

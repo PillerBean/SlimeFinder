@@ -355,7 +355,7 @@ private:
     QSystemTrayIcon* m_tray = nullptr;
     std::filesystem::path m_cacheFile;
     std::filesystem::path m_cacheDir; // v3.12.3：新目录缓存
-    void saveV3Cache();
+    bool saveV3Cache();
     std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
     QTableWidget* m_cacheDownloadTable = nullptr;
     QTableWidget* m_cacheLocalTable = nullptr;

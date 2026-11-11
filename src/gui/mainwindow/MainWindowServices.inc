@@ -778,19 +778,20 @@ void MainWindow::editPattern()
 // v3.3.3（任务书 2.2）：状态标签在「缓存创建/增量合并/启动自动加载/导入/清除/勾选变化」后
 // 一律立即刷新；文案按要求统一为「缓存已加载，共 N 个区块」，并额外给出覆盖区域与体积。
 // 另外区分「磁盘上已有缓存文件但尚未载入内存」的情形，便于用户理解为何要重启/导入。
-void MainWindow::saveV3Cache()
+bool MainWindow::saveV3Cache()
 {
-    if (!m_cacheStore) return;
+    if (!m_cacheStore) return false;
     // 自检会反复创建/删除旧缓存，不把自检数据写入 v3 正式目录。
-    if (!qEnvironmentVariableIsEmpty("SLIME_SELFTEST")) return;
+    if (!qEnvironmentVariableIsEmpty("SLIME_SELFTEST")) return true;
     std::string err;
     if (!m_cacheStore->replaceLocalFromCacheManager(*m_cache, &err)) {
         Logger::warning("v3 local 缓存保存失败: " + err);
-        return;
+        return false;
     }
     Logger::info("v3 local 缓存已保存（" + m_cacheDir.string() + "）：" +
                  std::to_string(m_cacheStore->packs().size()) + " 个 pack");
     refreshCacheUi();
+    return true;
 }
 
 void MainWindow::refreshCacheUi()
@@ -980,15 +981,16 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
     loaded.reset();
     m_cache->pruneToFit(cacheMaxBytes()); // 容量限制
     std::string serr;
-    if (!m_cache->saveFile(m_cacheFile, serr)) {
+    const bool selftestMode = !qEnvironmentVariableIsEmpty("SLIME_SELFTEST");
+    const bool savedNow = selftestMode ? m_cache->saveFile(m_cacheFile, serr) : saveV3Cache();
+    if (!savedNow) {
         if (showResultDialogs) {
             QMessageBox::warning(this, slime::ui::t("ui.5521e368d87e"), slime::ui::t("ui.de895e437b0e").arg(QString::fromStdString(serr)));
         }
-        Logger::warning("缓存导入后保存失败: " + serr + "（目标 " + m_cacheFile.string() + "）");
+        Logger::warning("缓存导入后保存失败: " + serr);
     } else {
-        // v3.3.2：记录落盘路径，便于用户与排障时定位「缓存文件到底在哪」
-        saveV3Cache();
-        Logger::info("缓存已保存（导入合并）: " + m_cacheFile.string());
+        if (selftestMode) saveV3Cache();
+        Logger::info("缓存已保存（导入合并）");
     }
     updateCacheStatusUi();
     if (showResultDialogs) {
