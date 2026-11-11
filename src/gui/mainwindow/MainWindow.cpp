@@ -831,6 +831,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
     m_w = new Widgets;
     m_cache = std::make_unique<CacheManager>();
+    m_cacheDir = appDirPath() / "cache";
+    m_cacheStore = std::make_unique<slime::cache::CacheStore>(m_cacheDir);
+    {
+        std::string cErr;
+        if (!m_cacheStore->load(&cErr)) {
+            Logger::warning("加载 v3 缓存索引失败: " + cErr + "（" + m_cacheDir.string() + "）");
+        }
+    }
     m_telemetry = std::make_unique<slime::gui::TelemetryClient>();
 
     // v3.3.9（任务书 5.2）：窗口名称精简 —— 去掉「C++」「Qt」「重构」等技术词
@@ -1072,6 +1080,17 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
             } else {
                 Logger::warning("旧版缓存迁移失败（仍可正常使用内存中的缓存）: " + serr);
             }
+        }
+    }
+    // v3.12.3：新目录缓存优先于旧单文件缓存；旧文件只作为历史保留，不再读取。
+    if (m_cacheStore && !m_cacheStore->packs().empty()) {
+        std::string cErr;
+        if (m_cacheStore->fillCacheManager(*m_cache, &cErr)) {
+            Logger::info("启动加载 v3 缓存成功（" + m_cacheDir.string() + "）：" +
+                         std::to_string(m_cacheStore->packs().size()) + " 个 pack / " +
+                         std::to_string(m_cache->entryCount()) + " 区块");
+        } else {
+            Logger::warning("启动加载 v3 缓存失败: " + cErr);
         }
     }
     updateCacheStatusUi();

@@ -37,6 +37,7 @@ class QToolButton;     // v3.4.1：左导航（上图案下文字）
 #include <vector>
 
 #include "core/CacheManager.h"
+#include "cache/CacheStore.h"
 #include "core/SearchTask.h"
 #include "core/SlimeEngine.h"
 #include "gui/panels/CommandTerminal.h" // v3.3.4：命令宿主接口（CommandHost）
@@ -352,6 +353,8 @@ private:
     // v3.3.9（任务书 5.1）：托盘图标（图标与窗口/任务栏一致；系统无托盘时为 nullptr）
     QSystemTrayIcon* m_tray = nullptr;
     std::filesystem::path m_cacheFile;
+    std::filesystem::path m_cacheDir; // v3.12.3：新目录缓存
+    std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
     Pattern m_pattern;      // 当前绘制图案（strict 模式）
     bool m_patternSet = false;
     bool m_running = false;
