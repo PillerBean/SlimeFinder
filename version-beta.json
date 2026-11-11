@@ -1,16 +1,16 @@
 {
-  "version": "3.12.0",
-  "tag": "v3.12.0",
-  "notes": "# SlimeFinder v3.12.0\n\n## 结构工程化\n\n- 新增自包含 `SlimeFinder-Tree-2.0` 文件树；\n- 源码按 `app / core / gpu / gui / i18n / utils` 分层：\n  - `src/app`：入口与 Windows 资源；\n  - `src/gui/mainwindow`：主窗口；\n  - `src/gui/dialogs`：对话框；\n  - `src/gui/panels`：过程面板；\n  - `src/gui/widgets`：可复用控件；\n  - `src/gui/services`：更新、遥测等服务；\n  - `src/i18n`：语言包与文案 API。\n- `tools`、`tests`、`packaging` 分层；\n- 自包含构建：`third_party`、`assets`、`tests/reference` 均在新树内；\n- 打包脚本加入 `windeployqt`，新树可独立产出可运行安装包；\n- GUI 自检实现拆到 `MainWindowSelfTest.inc`，主文件从 13.9k 降到 9.2k 行；\n- 旧树冻结保留，未删除任何历史内容。\n\n## 说明\n\n- 本版以结构迁移为主，不改变搜索、匹配、缓存和界面行为；\n- 最终发布前需要用户验收。\n",
+  "version": "3.12.2",
+  "tag": "v3.12.2",
+  "notes": "# SlimeFinder v3.12.2\n\n## 基岩搜索边界\n\n- 基岩版搜索边界从 ±16,777,216 方块（±1,048,576 区块）\n  缩短为 **±2,097,152 方块（±131,072 区块）**；\n- 依据：float32 在 [2,097,152, 4,194,304) 区间内精度为 0.25 方块；\n  再远会降到 0.5 或更差，不再支持；\n- Java 版边界不变：±1,875,000 区块（世界边界）。\n\n## 缓存规模\n\n按 ±2,097,152 方块全图计算：\n\n- 原始位图：约 **8.59 GB**；\n- zlib 1.83×：约 **4.70 GB**；\n- zstd 估计：约 **4.3 GB**。\n\n## 验证\n\n- 单元测试：通过\n- 参考对拍：117/117\n- GUI 自检：0 FAIL\n- 未发布、未上传。\n",
   "assets": [
     {
-      "name": "SlimeFinder-3.12.0-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.0/SlimeFinder-3.12.0-Setup.exe",
-      "size": 17649022
+      "name": "SlimeFinder-3.12.2-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.2/SlimeFinder-3.12.2-Setup.exe",
+      "size": 17646230
     },
     {
-      "name": "SHA256SUMS-3.12.0.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.0/SHA256SUMS-3.12.0.txt",
+      "name": "SHA256SUMS-3.12.2.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.2/SHA256SUMS-3.12.2.txt",
       "size": 202
     }
   ]
