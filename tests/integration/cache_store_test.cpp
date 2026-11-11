@@ -115,6 +115,11 @@ int main()
         std::printf("written pack bitmap mismatch\n");
         return 1;
     }
+    const size_t beforeReplace = reloadStore.packs().size();
+    if (!reloadStore.replaceLocalFromCacheManager(srcCm, &err) || reloadStore.packs().size() != beforeReplace) {
+        std::printf("replaceLocalFromCacheManager failed: %s\n", err.c_str());
+        return 1;
+    }
     fs::remove_all(root2, ec);
     fs::remove_all(root, ec);
     std::printf("cache store test OK\n");

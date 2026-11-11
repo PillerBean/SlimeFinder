@@ -72,6 +72,10 @@ public:
     // 未对齐/不足一个 1024 块的边缘不会被写入（避免把未计算区域声明为已覆盖）。
     bool writeFromCacheManager(const CacheManager& source, std::string* err = nullptr);
 
+    // 用当前 CacheManager 全量替换 local packs（下载包不动）。
+    // 用于构建保存：避免每次保存都追加重复 pack。
+    bool replaceLocalFromCacheManager(const CacheManager& source, std::string* err = nullptr);
+
 private:
     bool ensureDirs(std::string* err);
     std::filesystem::path indexPath() const;

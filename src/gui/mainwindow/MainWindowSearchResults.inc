@@ -832,6 +832,7 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
     // 落盘（原子替换；失败不影响内存内容）—— 这就是「中断续传」的检查点
     std::string serr;
     const bool saved = m_cache->saveFile(m_cacheFile, serr);
+    if (saved) saveV3Cache();
     updateCacheStatusUi();
 
     if (failed) {
@@ -1096,6 +1097,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         if (!m_cache->saveFile(m_cacheFile, err)) {
             Logger::warning("缓存保存失败: " + err + "（目标 " + m_cacheFile.string() + "）");
         } else {
+            saveV3Cache();
             // v3.3.2：日志中明确写出落盘路径与文件名，用户可直接据此在「导入缓存」对话框中定位
             Logger::info("缓存已更新保存：" + std::to_string(m_cache->ranges().size()) + " 区域 / " +
                          std::to_string(m_cache->entryCount()) + " 区块" +

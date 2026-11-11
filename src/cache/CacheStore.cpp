@@ -373,6 +373,23 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
     return save(err);
 }
 
+bool CacheStore::replaceLocalFromCacheManager(const CacheManager& source, std::string* err)
+{
+    // 只清 local；downloaded 是只读外部缓存，不能因构建保存被删除。
+    for (auto it = m_packs.begin(); it != m_packs.end();) {
+        if (it->source == kLocalDir) {
+            std::error_code ec;
+            std::filesystem::remove(m_root / it->file, ec);
+            it = m_packs.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    if (!save(err)) return false;
+    if (source.ranges().empty()) return true;
+    return writeFromCacheManager(source, err);
+}
+
 const CachePackEntry* CacheStore::findContaining(int32_t x, int32_t z) const noexcept
 {
     for (const auto& e : m_packs) {

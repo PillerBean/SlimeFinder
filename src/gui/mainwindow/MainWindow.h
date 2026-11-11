@@ -354,6 +354,7 @@ private:
     QSystemTrayIcon* m_tray = nullptr;
     std::filesystem::path m_cacheFile;
     std::filesystem::path m_cacheDir; // v3.12.3：新目录缓存
+    void saveV3Cache();
     std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
     Pattern m_pattern;      // 当前绘制图案（strict 模式）
     bool m_patternSet = false;
