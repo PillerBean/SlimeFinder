@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存页方案 B+ - 覆盖地图</title>
+<link rel="stylesheet" href="cache-ui.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">缓存 <strong>本地 + 下载</strong></span>
+      <span class="pill">地图 <strong>区块覆盖</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+    <div class="content">
+      <div class="page-head">
+        <div><h1>缓存</h1><p>地图上直接看覆盖位置；点缓存包即可定位。</p></div>
+        <span class="spacer"></span>
+        <span class="tag gray">B+ · 可视化</span>
+      </div>
+
+      <div class="split">
+        <div class="stack">
+          <!-- 下载 -->
+          <section class="card card-pad" style="background:linear-gradient(150deg,#f0f8ef,#fff)">
+            <div class="card-head">
+              <h2>下载缓存</h2><span class="tag">推荐</span>
+            </div>
+            <div class="empty" id="downloadEmpty">
+              暂无下载缓存。<br>
+              <span class="note">官方缓存只读；可整包删除，不能修改内容或大小。</span>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" disabled>去下载缓存</button>
+              <button class="btn" disabled>刷新</button>
+            </div>
+          </section>
+
+          <!-- 构建 -->
+          <section class="card card-pad">
+            <div class="card-head"><h2>本地构建</h2><span class="spacer"></span><span class="tag gray">本地</span></div>
+            <label class="field" style="margin-bottom:10px">
+              <span class="label">范围半径（区块）</span>
+              <input class="input" id="radius" type="number" value="2048" min="1" max="131072">
+            </label>
+            <label class="field" style="margin-bottom:10px">
+              <span class="label">构建大小上限（MB）</span>
+              <input class="input" id="budget" type="number" value="1024" min="64" max="32768">
+            </label>
+            <div class="kpis" style="margin-bottom:10px">
+              <div class="kpi"><div class="v" id="packs">0</div><div class="k">当前 pack</div></div>
+              <div class="kpi"><div class="v" id="totalSize">0 MB</div><div class="k">压缩后总量</div></div>
+              <div class="kpi"><div class="v">0 MB</div><div class="k">本次构建</div></div>
+            </div>
+            <button class="btn primary" id="buildBtn" style="width:100%">开始构建</button>
+            <p class="note" id="hint" style="margin:8px 0 0">范围与预算有效，按钮可用。</p>
+          </section>
+
+          <div class="warn">旧格式缓存存在：本版本不读取、不删除。</div>
+        </div>
+
+        <div class="stack">
+          <!-- 覆盖地图：始终显示 -->
+          <section class="card map-card">
+            <div class="card-pad" style="padding-bottom:9px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>覆盖地图</h2>
+                <span class="hint">颜色越深表示该区域已有缓存</span>
+                <span class="spacer"></span>
+                <span class="tag gray" id="mapSummary">0 个区域</span>
+              </div>
+            </div>
+            <div class="map-wrap">
+              <canvas id="coverageMap" aria-label="缓存覆盖地图"></canvas>
+              <div class="map-tools">
+                <button class="btn small" id="zoomIn" title="放大">＋</button>
+                <button class="btn small" id="zoomOut" title="缩小">－</button>
+                <button class="btn small" id="fit" title="适配全部">适配</button>
+              </div>
+              <div class="map-readout" id="readout">区块 x / z</div>
+            </div>
+            <div class="map-legend">
+              <span><i class="legend-dot local"></i>本地缓存</span>
+              <span><i class="legend-dot downloaded"></i>下载缓存</span>
+              <span><i class="legend-dot selected"></i>当前选中</span>
+              <span class="note">悬停/点击列表或地图可互相定位</span>
+            </div>
+            <div class="map-note">地图坐标：区块；范围仅显示当前缓存包所在区域。滚轮缩放，拖动平移。</div>
+          </section>
+
+          <!-- 缓存库 -->
+          <section class="card">
+            <div class="card-pad" style="padding-bottom:10px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>缓存库</h2>
+                <span class="hint">点一行，地图高亮该区域</span>
+                <span class="spacer"></span>
+                <div class="tabbar" style="border:0;margin:0">
+                  <button class="tab active" data-tab="all">全部</button>
+                  <button class="tab" data-tab="downloaded">下载</button>
+                  <button class="tab" data-tab="local">本地</button>
+                </div>
+              </div>
+            </div>
+            <table class="table">
+              <thead><tr><th>来源</th><th>覆盖范围</th><th>大小</th><th>操作</th></tr></thead>
+              <tbody id="packRows"></tbody>
+            </table>
+            <div class="empty" id="packEmpty" style="margin:12px 14px;display:none">当前筛选下没有缓存包。</div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  // 示例缓存包：真实数据中坐标来自 index.json 的 pack rect。
+  let packs = [
+    { id:'d1', source:'downloaded', x0:-8192, x1:-4097, z0:-4096, z1:0, size:96.0 },
+    { id:'d2', source:'downloaded', x0:-4096, x1:-1, z0:-4096, z1:0, size:95.4 },
+    { id:'l1', source:'local', x0:-2048, x1:2047, z0:-2048, z1:2047, size:24.1 },
+    { id:'l2', source:'local', x0:2048, x1:4095, z0:-2048, z1:2047, size:23.8 },
+    { id:'l3', source:'local', x0:-2048, x1:2047, z0:2048, z1:4095, size:22.9 }
+  ];
+  let selected = null, hovered = null, filter = 'all';
+  let view = { x0:-10000, x1:10000, z0:-10000, z1:10000 };
+  const canvas = document.getElementById('coverageMap');
+  const ctx = canvas.getContext('2d');
+  const readout = document.getElementById('readout');
+
+  function sizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+  function worldToScreen(x, z) {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    return {
+      x: (x - view.x0) / (view.x1 - view.x0) * w,
+      y: h - (z - view.z0) / (view.z1 - view.z0) * h
+    };
+  }
+  function screenToWorld(sx, sy) {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    return {
+      x: view.x0 + sx / w * (view.x1 - view.x0),
+      z: view.z0 + (h - sy) / h * (view.z1 - view.z0)
+    };
+  }
+  function drawGrid() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#f7faf5'; ctx.fillRect(0, 0, w, h);
+    // 20x20 网格
+    ctx.strokeStyle = '#e3ece2'; ctx.lineWidth = 1;
+    for (let i = 0; i <= 20; ++i) {
+      const x = i / 20 * w, y = i / 20 * h;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    // 原点轴
+    const o = worldToScreen(0, 0);
+    ctx.strokeStyle = '#b7cbb9'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, o.y); ctx.lineTo(w, o.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(o.x, 0); ctx.lineTo(o.x, h); ctx.stroke();
+    ctx.setLineDash([]);
+    // 比例文字
+    ctx.fillStyle = '#8a998e'; ctx.font = '10px "Microsoft YaHei", sans-serif';
+    ctx.fillText('x ' + Math.round(view.x0) + ' … ' + Math.round(view.x1), 10, h - 10);
+    ctx.fillText('z ' + Math.round(view.z0) + ' … ' + Math.round(view.z1), 10, 14);
+  }
+  function drawPack(p, isSelected, isHover) {
+    const a = worldToScreen(p.x0, p.z0);
+    const b = worldToScreen(p.x1 + 1, p.z1 + 1);
+    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+    const w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+    const base = p.source === 'downloaded' ? [91,145,200] : [103,179,123];
+    const alpha = isSelected ? .55 : (isHover ? .42 : .26);
+    ctx.fillStyle = 'rgba(' + base.join(',') + ',' + alpha + ')';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = isSelected ? '#d8a33e' : 'rgba(' + base.join(',') + ',.75)';
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.strokeRect(x + .5, y + .5, Math.max(1, w - 1), Math.max(1, h - 1));
+    if (w > 58 && h > 20) {
+      ctx.fillStyle = isSelected ? '#7b5317' : (p.source === 'downloaded' ? '#345b83' : '#2e5d3d');
+      ctx.font = '10px "Microsoft YaHei", sans-serif';
+      const label = p.source === 'downloaded' ? '下载' : '本地';
+      ctx.fillText(label + ' ' + p.size.toFixed(1) + 'M', x + 5, y + 14);
+    }
+  }
+  function draw() {
+    drawGrid();
+    for (const p of packs) drawPack(p, p.id === selected, p.id === hovered);
+    const count = packs.length;
+    document.getElementById('mapSummary').textContent = count + ' 个区域';
+    const total = packs.reduce((s,p) => s + p.size, 0);
+    document.getElementById('totalSize').textContent = total.toFixed(1) + ' MB';
+    document.getElementById('packs').textContent = String(count);
+    const dl = packs.filter(p => p.source === 'downloaded');
+    document.getElementById('downloadEmpty').style.display = dl.length ? 'none' : '';
+  }
+  function renderRows() {
+    const rows = document.getElementById('packRows');
+    rows.innerHTML = '';
+    const shown = packs.filter(p => filter === 'all' || p.source === filter);
+    for (const p of shown) {
+      const tr = document.createElement('tr');
+      tr.className = 'pack-row' + (p.id === selected ? ' selected' : '');
+      tr.dataset.id = p.id;
+      const srcLabel = p.source === 'downloaded' ? '下载' : '本地';
+      tr.innerHTML = '<td><i class="source-dot ' + p.source + '"></i>' + srcLabel + '</td>' +
+        '<td class="range">' + p.x0 + '..' + p.x1 + ', ' + p.z0 + '..' + p.z1 + '</td>' +
+        '<td class="num">' + p.size.toFixed(1) + ' MB</td>' +
+        '<td><button class="btn small danger" data-del="' + p.id + '">删除</button></td>';
+      tr.addEventListener('click', () => { selected = p.id; renderRows(); draw(); });
+      tr.addEventListener('mouseenter', () => { hovered = p.id; draw(); });
+      tr.addEventListener('mouseleave', () => { hovered = null; draw(); });
+      tr.querySelector('[data-del]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        packs = packs.filter(x => x.id !== p.id);
+        if (selected === p.id) selected = null;
+        renderRows(); draw(); updateEmpty();
+      });
+      rows.appendChild(tr);
+    }
+    document.getElementById('packEmpty').style.display = shown.length ? 'none' : '';
+  }
+  function updateEmpty() { renderRows(); draw(); }
+  // 地图点击选择
+  canvas.addEventListener('click', (e) => {
+    const r = canvas.getBoundingClientRect();
+    const p = screenToWorld(e.clientX - r.left, e.clientY - r.top);
+    const hit = packs.slice().reverse().find(x => p.x >= x.x0 && p.x <= x.x1 && p.z >= x.z0 && p.z <= x.z1);
+    if (hit) { selected = hit.id; renderRows(); draw(); }
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    const p = screenToWorld(e.clientX - r.left, e.clientY - r.top);
+    readout.textContent = '区块 ' + Math.round(p.x) + ' / ' + Math.round(p.z);
+  });
+  // 滚轮缩放
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoom(e.deltaY < 0 ? 0.8 : 1.25);
+  }, { passive: false });
+  // 拖动平移
+  let drag = null;
+  canvas.addEventListener('mousedown', (e) => { drag = { x:e.clientX, y:e.clientY, view:{...view} }; });
+  window.addEventListener('mouseup', () => { drag = null; });
+  window.addEventListener('mousemove', (e) => {
+    if (!drag) return;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    const dx = (e.clientX - drag.x) / w * (drag.view.x1 - drag.view.x0);
+    const dz = -(e.clientY - drag.y) / h * (drag.view.z1 - drag.view.z0);
+    view = { x0:drag.view.x0 - dx, x1:drag.view.x1 - dx, z0:drag.view.z0 - dz, z1:drag.view.z1 - dz };
+    draw();
+  });
+  function zoom(f) {
+    const cx = (view.x0 + view.x1) / 2, cz = (view.z0 + view.z1) / 2;
+    const hw = (view.x1 - view.x0) / 2 * f, hh = (view.z1 - view.z0) / 2 * f;
+    view = { x0:cx - hw, x1:cx + hw, z0:cz - hh, z1:cz + hh };
+    draw();
+  }
+  document.getElementById('zoomIn').addEventListener('click', () => zoom(.75));
+  document.getElementById('zoomOut').addEventListener('click', () => zoom(1.33));
+  document.getElementById('fit').addEventListener('click', () => {
+    if (!packs.length) { view = { x0:-5000, x1:5000, z0:-5000, z1:5000 }; draw(); return; }
+    const x0 = Math.min(...packs.map(p=>p.x0)), x1 = Math.max(...packs.map(p=>p.x1));
+    const z0 = Math.min(...packs.map(p=>p.z0)), z1 = Math.max(...packs.map(p=>p.z1));
+    const padX = Math.max(512, (x1-x0) * .12), padZ = Math.max(512, (z1-z0) * .12);
+    view = { x0:x0-padX, x1:x1+padX, z0:z0-padZ, z1:z1+padZ }; draw();
+  });
+  // 标签切换
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active'); filter = t.dataset.tab; renderRows();
+  }));
+  // 构建按钮
+  const r = document.getElementById('radius'), b = document.getElementById('budget');
+  const btn = document.getElementById('buildBtn'), hint = document.getElementById('hint');
+  function syncBuild() {
+    const ok = Number(r.value) >= 1 && Number(b.value) >= 64;
+    btn.disabled = !ok; btn.style.opacity = ok ? '1' : '.4';
+    hint.textContent = ok ? '范围与预算有效，按钮可用。' : '请填写有效范围与预算。';
+  }
+  r.addEventListener('input', syncBuild); b.addEventListener('input', syncBuild);
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    btn.disabled = true; btn.textContent = '构建中…';
+    hint.textContent = '构建中：写入 cache/local/…';
+    setTimeout(() => { btn.textContent = '开始构建'; btn.disabled = false; hint.textContent = '已完成 · 地图中新增本地缓存区域'; }, 1200);
+  });
+  window.addEventListener('resize', sizeCanvas);
+  sizeCanvas(); renderRows(); syncBuild(); draw();
+</script>
+</body>
+</html>

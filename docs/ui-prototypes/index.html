@@ -9,7 +9,7 @@
   .index { width: 1080px; max-width: calc(100vw - 32px); margin: 28px auto; }
   .index h1 { margin: 0 0 4px; }
   .index .lead { color: var(--muted); margin: 0 0 20px; }
-  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .card a { color: inherit; text-decoration: none; display: block; }
   .card .preview { height: 130px; border-bottom: 1px solid var(--line); border-radius: 12px 12px 0 0; background: var(--green-50); padding: 14px; }
   .mini { background: #fff; border: 1px solid var(--line); border-radius: 8px; height: 100%; padding: 10px; }
@@ -27,7 +27,7 @@
 <body>
 <div class="index">
   <h1>缓存页 UI 方案</h1>
-  <p class="lead">三个布局方向，均使用同一套缓存功能语义；点击卡片打开可交互原型。</p>
+  <p class="lead">B+ 为当前推荐方案：在左右工作台基础上加入始终可见的覆盖地图。点击卡片打开可交互原型。</p>
   <div class="cards">
     <div class="card">
       <a href="scheme-a.html">
@@ -36,9 +36,15 @@
       </a>
     </div>
     <div class="card">
+      <a href="scheme-b-visual.html">
+        <div class="preview"><div class="mini" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div class="b g"></div><div class="b"></div></div><div><div style="height:38px;background:#e4efe4;border:1px solid #bdd4bf;border-radius:4px;position:relative"><div style="position:absolute;left:12px;top:8px;width:30px;height:16px;background:rgba(91,145,200,.45);border:1px solid #5b91c8"></div><div style="position:absolute;left:48px;top:18px;width:22px;height:12px;background:rgba(103,179,123,.5);border:1px solid #67b37b"></div></div><div class="b s"></div></div></div></div>
+        <div class="body"><h2>B+ · 覆盖地图</h2><p>在左右工作台基础上加入始终可见的缓存覆盖地图，点列表即可定位区域。</p><span class="badge">推荐：可视化操作</span></div>
+      </a>
+    </div>
+    <div class="card">
       <a href="scheme-b.html">
         <div class="preview"><div class="mini" style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><div class="b g"></div><div class="b"></div></div><div><div class="b"></div><div class="b"></div><div class="b s"></div></div></div></div>
-        <div class="body"><h2>B · 左右工作台</h2><p>左侧下载与构建，右侧缓存库；适合大屏和频繁操作。</p><span class="badge">推荐：桌面宽屏</span></div>
+        <div class="body"><h2>B · 原版左右工作台</h2><p>不带地图的左右工作台，保留作对照。</p><span class="badge">对照</span></div>
       </a>
     </div>
     <div class="card">
