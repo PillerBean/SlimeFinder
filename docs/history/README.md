@@ -4,7 +4,7 @@
 旧树完整源码与文档已封存为：
 
 ```text
-../archive/SlimeFinder-old-tree-v3.12.1-2026-11-11.zip
+../archive/SlimeFinder-old-tree-legacy-2026-11-11.zip
 ```
 
 包含：
