@@ -39,6 +39,7 @@ add_library(slime_core STATIC
     src/core/RandomGenerators.cpp
     src/core/SlimeEngine.cpp
     src/cache/CachePack.cpp
+    src/cache/CacheStore.cpp
     src/core/FastMatch.cpp
     src/core/FastMt.cpp
     src/core/FastJava.cpp   # v3.6.16：Java 版判定 AVX2（16 lane）
@@ -226,6 +227,12 @@ endif()
 
 # ---------------------------------------------------------------- E3.3.1：SIMD 内核独立自检（不依赖引擎/OpenCL）
 # 覆盖：基岩种子查表、跨步采样扫描、密度 g×g 窗口计数（均与独立教科书参考逐位比对）
+add_executable(slime_cache_store_tests
+    tests/integration/cache_store_test.cpp
+)
+target_include_directories(slime_cache_store_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_cache_store_tests PRIVATE slime_core)
+
 add_executable(slime_cache_pack_tests
     tests/integration/cache_pack_test.cpp
 )
