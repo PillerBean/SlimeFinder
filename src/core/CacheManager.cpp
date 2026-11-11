@@ -102,7 +102,6 @@ bool CacheManager::covers(const Rect& region) const noexcept
     }
     return false;
 }
-
 size_t CacheManager::findRange(int x, int z) const noexcept
 {
     // v3.3.8.1（任务书 二）：先用「上次命中的 range」做线程局部快查（顺序遍历时几乎总是命中），

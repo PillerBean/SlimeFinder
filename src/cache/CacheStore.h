@@ -68,6 +68,10 @@ public:
     // 把所有 pack 读入现有 CacheManager（供引擎复用；小样本阶段用）。
     bool fillCacheManager(CacheManager& target, std::string* err = nullptr) const;
 
+    // 把现有 CacheManager 的完整 1024 对齐子区域写成 local packs。
+    // 未对齐/不足一个 1024 块的边缘不会被写入（避免把未计算区域声明为已覆盖）。
+    bool writeFromCacheManager(const CacheManager& source, std::string* err = nullptr);
+
 private:
     bool ensureDirs(std::string* err);
     std::filesystem::path indexPath() const;

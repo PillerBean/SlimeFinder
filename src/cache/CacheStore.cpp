@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <set>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -308,6 +309,70 @@ bool CacheStore::removePack(const std::string& file, std::string* err)
     return save(err);
 }
 
+bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* err)
+{
+    if (!ensureDirs(err)) return false;
+    const auto& ranges = source.ranges();
+    if (ranges.empty()) {
+        if (err) *err = "没有可写入的缓存范围";
+        return false;
+    }
+    const auto epoch = nowUnix();
+    int64_t serial = 0;
+    bool wrote = false;
+    for (size_t ri = 0; ri < ranges.size(); ++ri) {
+        const Rect& r = ranges[ri];
+        int64_t wpr = 0, rows = 0;
+        const uint64_t* words = source.rangeBitmap(ri, &wpr, &rows);
+        if (!words || wpr <= 0 || rows <= 0) continue;
+        const int64_t tileX0 = ((static_cast<int64_t>(r.minX) + 1023) / 1024) * 1024;
+        const int64_t tileZ0 = ((static_cast<int64_t>(r.minZ) + 1023) / 1024) * 1024;
+        const int64_t tileX1 = (static_cast<int64_t>(r.maxX) + 1) / 1024 * 1024;
+        const int64_t tileZ1 = (static_cast<int64_t>(r.maxZ) + 1) / 1024 * 1024;
+        for (int64_t tz = tileZ0; tz + 1024 <= tileZ1; tz += 1024) {
+            for (int64_t tx = tileX0; tx + 1024 <= tileX1; tx += 1024) {
+                const PackRect pr{ static_cast<int32_t>(tx), static_cast<int32_t>(tx + 1023),
+                                   static_cast<int32_t>(tz), static_cast<int32_t>(tz + 1023) };
+                std::vector<uint8_t> bits((1024 * 1024 + 7) / 8, 0);
+                for (int row = 0; row < 1024; ++row) {
+                    const int64_t z = tz + row;
+                    const auto srcBitBase = static_cast<size_t>((z - r.minZ) * wpr * 64);
+                    for (int col = 0; col < 1024; ++col) {
+                        const int64_t x = tx + col;
+                        const size_t srcBit = srcBitBase + static_cast<size_t>(x - r.minX);
+                        if ((words[srcBit / 64] >> (srcBit % 64)) & 1ull) {
+                            const size_t dst = static_cast<size_t>(row) * 1024 + col;
+                            bits[dst / 8] |= static_cast<uint8_t>(1u << (dst % 8));
+                        }
+                    }
+                }
+                std::string name = "local/pack-" + std::to_string(epoch) + "-" + std::to_string(serial++) + ".slmz";
+                while (std::filesystem::exists(m_root / name)) {
+                    name = "local/pack-" + std::to_string(epoch) + "-" + std::to_string(serial++) + ".slmz";
+                }
+                const auto path = m_root / name;
+                if (!writePack(path, pr, bits.data(), bits.size(), err)) return false;
+                PackInfo info;
+                if (!peekPack(path, info, err)) return false;
+                CachePackEntry e;
+                e.file = name;
+                e.source = kLocalDir;
+                e.rect = info.rect;
+                e.rawBytes = info.rawBytes;
+                e.compressedBytes = info.compressedBytes;
+                e.createdAt = nowUnix();
+                m_packs.push_back(std::move(e));
+                wrote = true;
+            }
+        }
+    }
+    if (!wrote) {
+        if (err) *err = "缓存范围没有完整的 1024 对齐区块可写入";
+        return false;
+    }
+    return save(err);
+}
+
 const CachePackEntry* CacheStore::findContaining(int32_t x, int32_t z) const noexcept
 {
     for (const auto& e : m_packs) {
@@ -353,7 +418,26 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
             }
         }
     }
-    if (!ranges.empty()) target.mergeRaw(ranges, slimeChunks);
+    if (!ranges.empty()) {
+        // 若所有 pack 恰好拼成一个无重叠矩形，则合并为单个 range：
+        // 这样旧版 CacheManager::covers 的单 range 语义也能直接命中整个缓存区。
+        Rect merged = ranges.front();
+        for (const Rect& r : ranges) {
+            merged.minX = std::min(merged.minX, r.minX);
+            merged.maxX = std::max(merged.maxX, r.maxX);
+            merged.minZ = std::min(merged.minZ, r.minZ);
+            merged.maxZ = std::max(merged.maxZ, r.maxZ);
+        }
+        int64_t sumArea = 0;
+        for (const Rect& r : ranges) sumArea += (static_cast<int64_t>(r.maxX) - r.minX + 1) *
+                                                  (static_cast<int64_t>(r.maxZ) - r.minZ + 1);
+        if (sumArea == (static_cast<int64_t>(merged.maxX) - merged.minX + 1) *
+                           (static_cast<int64_t>(merged.maxZ) - merged.minZ + 1)) {
+            target.mergeRaw({ merged }, slimeChunks);
+        } else {
+            target.mergeRaw(ranges, slimeChunks);
+        }
+    }
     return true;
 }
 

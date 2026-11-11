@@ -82,6 +82,40 @@ int main()
         std::printf("CacheManager coverage mismatch\n");
         return 1;
     }
+    // CacheManager -> v3 local packs
+    slime::CacheManager srcCm;
+    slime::Rect srcRect{ 0, 2047, 0, 2047 };
+    std::vector<std::pair<int, int>> srcSlime;
+    for (int z = 0; z < 2048; ++z) {
+        for (int x = 0; x < 2048; ++x) {
+            if ((x + z) % 10 == 0) srcSlime.emplace_back(x, z);
+        }
+    }
+    srcCm.mergeRaw({ srcRect }, srcSlime);
+    const auto root2 = fs::temp_directory_path() / "slime_cache_store_test2";
+    fs::remove_all(root2, ec);
+    slime::cache::CacheStore outStore(root2);
+    if (!outStore.load(&err) || !outStore.writeFromCacheManager(srcCm, &err)) {
+        std::printf("writeFromCacheManager failed: %s\n", err.c_str());
+        return 1;
+    }
+    slime::cache::CacheStore reloadStore(root2);
+    if (!reloadStore.load(&err) || reloadStore.packs().empty()) {
+        std::printf("reload written store failed: %s\n", err.c_str());
+        return 1;
+    }
+    slime::CacheManager checkCm;
+    if (!reloadStore.fillCacheManager(checkCm, &err)) {
+        std::printf("written pack fill failed: %s\n", err.c_str());
+        return 1;
+    }
+    if (!checkCm.covers(srcRect) ||
+        checkCm.lookup(0, 0) != 1 || checkCm.lookup(1, 0) != 0 ||
+        checkCm.lookup(2040, 2040) != 1 || checkCm.lookup(2041, 2040) != 0) {
+        std::printf("written pack bitmap mismatch\n");
+        return 1;
+    }
+    fs::remove_all(root2, ec);
     fs::remove_all(root, ec);
     std::printf("cache store test OK\n");
     return 0;
