@@ -17,7 +17,7 @@ Unicode true
 
 !define APP_NAME "史莱姆区块查找器"
 !define APP_KEY "SlimeFinder"
-!define APP_VERSION "3.12.0"
+!define APP_VERSION "3.12.1"
 !define APP_EXE "SlimeFinder.exe"
 !define APP_PUBLISHER "SlimeFinder"
 !define SOURCE_DIR "..\..\dist\SlimeFinder"
@@ -30,7 +30,7 @@ InstallDirRegKey HKLM "Software\${APP_KEY}" "InstallDir"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 
-; v3.12.0：安装语言选择（也会作为程序首次启动语言）
+; v3.12.1：安装语言选择（也会作为程序首次启动语言）
 Page custom LanguageHintPageCreate LanguageHintPageLeave
 
 ; 页面：欢迎 → 选择安装目录 → 组件（桌面快捷方式可选） → 安装 → 完成
@@ -102,7 +102,7 @@ Section "$(SEC_MAIN)" SecMain
     ; ---- 程序本体 + 内置依赖（Qt 运行时 / OpenCL 加载器 / VC++ 运行时 / 平台插件）----
     File /r "${SOURCE_DIR}\*.*"
 
-    ; v3.12.0：安装语言 = 程序首次启动语言（仅全新安装，更新时保留用户配置）
+    ; v3.12.1：安装语言 = 程序首次启动语言（仅全新安装，更新时保留用户配置）
     ${If} $R1 != "1"
         ${If} $LANGUAGE == 1028
             CopyFiles /SILENT "$INSTDIR\config.zh-TW.json" "$INSTDIR\config.json"

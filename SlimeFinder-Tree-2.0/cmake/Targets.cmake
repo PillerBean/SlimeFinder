@@ -186,6 +186,18 @@ if(MSVC)
 endif()
 
 # ---------------------------------------------------------------- OpenCL 探测工具（E3.2.0 阶段一）
+add_executable(slime_cache_bench
+    tools/gpu/cache_bench.cpp
+)
+target_include_directories(slime_cache_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_cache_bench PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_cache_bench PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+if(WIN32)
+    target_link_libraries(slime_cache_bench PRIVATE dbghelp)
+endif()
+
 add_executable(slime_ocl_probe
     tools/gpu/ocl_probe.cpp
 )
