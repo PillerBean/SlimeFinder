@@ -4031,6 +4031,17 @@ int MainWindow::runSelfTest()
             check(m_pageStack->currentIndex() == kPageBuild, "导航第 2 项切到「缓存构建」页");
             check(buildModeActive(), "进入缓存构建页自动开启构建模式");
             check(m_w->start->text().contains(slime::ui::t("ui.4d11cf9b4db5")), "构建页主按钮变为「开始构建」");
+            // v3.12.3：构建页不需要种子；填写有效范围和预算后主按钮必须可用
+            {
+                const QString keepSeed = m_w->seedEdit->text();
+                m_w->seedEdit->clear();
+                if (m_w->bRadius) m_w->bRadius->setValue(2048);
+                if (m_w->bBudget) m_w->bBudget->setValue(1024);
+                updateStartEnabled();
+                check(m_w->start->isEnabled(), "构建页选好范围/预算后「开始构建」可用（不要求种子）");
+                m_w->seedEdit->setText(keepSeed);
+                updateStartEnabled();
+            }
             QWidget* buildPage = m_pageStack->widget(kPageBuild);
             check(buildPage && buildPage->objectName() == QStringLiteral("buildPage"), "构建页存在且命名正确");
             QLabel* fixedFacts = findChild<QLabel*>(QStringLiteral("buildFixedFacts"));

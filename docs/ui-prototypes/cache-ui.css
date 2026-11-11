@@ -253,3 +253,5 @@ button { cursor: pointer; }
 .download-state { color:var(--green-700); font-size:11px; }
 .download-state.pending { color:var(--muted); }
 .download-state.queued { color:var(--amber); }
+
+.range-btn.active { color:#27543a; border-color:#9fc8aa; background:#eaf6e8; font-weight:700; }

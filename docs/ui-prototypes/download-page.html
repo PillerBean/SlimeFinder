@@ -75,6 +75,13 @@
             <div class="catalog-tabs" style="border:0;margin:0;flex:1">
               <span class="note" id="viewHint">选择缓存包下载</span>
             </div>
+            <span class="note">快捷范围</span>
+            <div class="row" id="rangeQuick" style="gap:4px">
+              <button class="btn small range-btn active" data-range="0">全部</button>
+              <button class="btn small range-btn" data-range="2048">附近 ±2k</button>
+              <button class="btn small range-btn" data-range="8192">局部 ±8k</button>
+              <button class="btn small range-btn" data-range="32768">较大 ±32k</button>
+            </div>
             <input class="input search" id="search" placeholder="搜索范围，如 2048 / 4096">
             <button class="btn small" id="refresh">刷新</button>
           </div>
@@ -121,7 +128,7 @@
     const cz = Math.floor(i / 20) * 2048 - 12288;
     downloaded.push({ id:'d'+i, name:'pack-' + String(i+1).padStart(4,'0'), x0:cx, x1:cx+2047, z0:cz, z1:cz+2047, size:24.0 + (i%5)*.1, state:'已下载' });
   }
-  let view = 'available', page = 0, selected = null, filter = '';
+  let view = 'available', page = 0, selected = null, filter = '', rangeLimit = 0;
   const selectedSet = new Set();
   const canvas = document.getElementById('coverageMap');
   const ctx = canvas.getContext('2d');
@@ -130,7 +137,10 @@
   function list() { return view === 'available' ? available : downloaded; }
   function filtered() {
     const q = filter.trim();
-    return list().filter(p => !q || p.name.includes(q) || String(p.x0).includes(q) || String(p.x1).includes(q));
+    return list().filter(p => {
+      if (rangeLimit > 0 && Math.max(Math.abs(p.x0), Math.abs(p.x1), Math.abs(p.z0), Math.abs(p.z1)) > rangeLimit) return false;
+      return !q || p.name.includes(q) || String(p.x0).includes(q) || String(p.x1).includes(q);
+    });
   }
   function pageRows() { return filtered().slice(page*PAGE, page*PAGE + PAGE); }
   function fmt(n){ return n.toFixed(1) + ' MB'; }
@@ -223,6 +233,12 @@
     updateCounts(); draw();
   }
   document.querySelectorAll('.catalog-tab').forEach(t => t.addEventListener('click', () => setView(t.dataset.view)));
+  document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    rangeLimit = Number(b.dataset.range);
+    page = 0; selectedSet.clear(); render();
+  }));
   document.getElementById('search').addEventListener('input', e => { filter = e.target.value; page = 0; selectedSet.clear(); render(); });
   document.getElementById('prev').addEventListener('click', () => { if (page > 0) { page--; selectedSet.clear(); render(); } });
   document.getElementById('next').addEventListener('click', () => { if ((page+1)*PAGE < filtered().length) { page++; selectedSet.clear(); render(); } });

@@ -593,7 +593,8 @@ void MainWindow::updateStartEnabled()
 
     QString why;
     if (!bedrock && (seedText.isEmpty() || !ok)) why = slime::ui::t("ui.5344ca1e9e8b");
-    else if (buildMode && seedText.isEmpty()) why = slime::ui::t("ui.5344ca1e9e8b");
+    // v3.12.3：缓存构建页不需要种子；此前这里仍要求 seed，导致选好范围/预算后
+    // 「开始构建」一直灰掉。构建模式只依赖范围和预算。
     else if (patternMode && !hasPattern && !buildMode) why = slime::ui::t("ui.779966e118d2");
     const bool can = why.isEmpty();
     m_w->start->setEnabled(can);
