@@ -1,6 +1,8 @@
 ﻿#include "cache/CachePack.h"
 #include "cache/CacheStore.h"
 
+#include "core/CacheManager.h"
+
 #include <cstdio>
 #include <filesystem>
 #include <random>
@@ -69,6 +71,15 @@ int main()
     reopened.load(&err);
     if (reopened.packs().size() != 1) {
         std::printf("index persistence mismatch\n");
+        return 1;
+    }
+    slime::CacheManager cm;
+    if (!reopened.fillCacheManager(cm, &err)) {
+        std::printf("fillCacheManager failed: %s\n", err.c_str());
+        return 1;
+    }
+    if (!cm.covers(slime::Rect{ 0, kSide - 1, 0, kSide - 1 })) {
+        std::printf("CacheManager coverage mismatch\n");
         return 1;
     }
     fs::remove_all(root, ec);

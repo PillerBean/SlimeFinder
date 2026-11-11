@@ -16,6 +16,10 @@
 #include <string>
 #include <vector>
 
+namespace slime {
+class CacheManager;
+}
+
 namespace slime::cache {
 
 struct CachePackEntry {
@@ -56,6 +60,13 @@ public:
 
     // 按覆盖范围查找包含该坐标的 pack；返回 nullptr 表示没有缓存覆盖。
     const CachePackEntry* findContaining(int32_t x, int32_t z) const noexcept;
+
+    // 读取一个 pack 的完整位图（行主序，长度 ceil(area/8)）。
+    bool readPackBitmap(const CachePackEntry& entry, std::vector<uint8_t>& out,
+                        std::string* err = nullptr) const;
+
+    // 把所有 pack 读入现有 CacheManager（供引擎复用；小样本阶段用）。
+    bool fillCacheManager(CacheManager& target, std::string* err = nullptr) const;
 
 private:
     bool ensureDirs(std::string* err);

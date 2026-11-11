@@ -1,5 +1,16 @@
 ﻿#include "cache/CacheStore.h"
 
+#include <atomic>
+#include <cstdlib>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "core/CacheManager.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
@@ -305,6 +316,45 @@ const CachePackEntry* CacheStore::findContaining(int32_t x, int32_t z) const noe
         }
     }
     return nullptr;
+}
+
+bool CacheStore::readPackBitmap(const CachePackEntry& entry, std::vector<uint8_t>& out,
+                                std::string* err) const
+{
+    PackInfo info;
+    if (!readPack(m_root / entry.file, info, out, err)) return false;
+    if (info.rect.minX != entry.rect.minX || info.rect.maxX != entry.rect.maxX ||
+        info.rect.minZ != entry.rect.minZ || info.rect.maxZ != entry.rect.maxZ) {
+        if (err) *err = "pack 索引范围与文件头不一致";
+        return false;
+    }
+    return true;
+}
+
+bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
+{
+    target.clear();
+    std::vector<Rect> ranges;
+    std::vector<std::pair<int, int>> slimeChunks;
+    ranges.reserve(m_packs.size());
+    for (const auto& e : m_packs) {
+        std::vector<uint8_t> bits;
+        if (!readPackBitmap(e, bits, err)) return false;
+        ranges.push_back(Rect{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ });
+        const int64_t w = e.rect.width();
+        const int64_t h = e.rect.height();
+        for (int64_t z = 0; z < h; ++z) {
+            for (int64_t x = 0; x < w; ++x) {
+                const int64_t bit = z * w + x;
+                if ((bits[static_cast<size_t>(bit / 8)] >> (bit % 8)) & 1u) {
+                    slimeChunks.emplace_back(static_cast<int>(e.rect.minX + x),
+                                             static_cast<int>(e.rect.minZ + z));
+                }
+            }
+        }
+    }
+    if (!ranges.empty()) target.mergeRaw(ranges, slimeChunks);
+    return true;
 }
 
 } // namespace slime::cache

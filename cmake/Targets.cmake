@@ -232,6 +232,9 @@ add_executable(slime_cache_store_tests
 )
 target_include_directories(slime_cache_store_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_cache_store_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_cache_store_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
 
 add_executable(slime_cache_pack_tests
     tests/integration/cache_pack_test.cpp
