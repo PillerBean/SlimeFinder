@@ -223,3 +223,33 @@ button { cursor: pointer; }
 .map-note { padding: 8px 14px 12px; color: var(--muted); font-size: 11px; }
 .map-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 12px; pointer-events: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* download management / bulk operations */
+.bulkbar { display:none; align-items:center; gap:10px; background:#eef6ed; border:1px solid #cfe3d2; border-radius:9px; padding:7px 10px; font-size:12px; color:#365c42; }
+.bulkbar.show { display:flex; }
+.bulkbar .spacer { flex:1; }
+.check { width:14px; height:14px; accent-color:#3f8b59; cursor:pointer; }
+.toolstrip { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px; border-bottom:1px solid var(--line); background:#fbfcf9; }
+.toolstrip .spacer { flex:1; }
+.toolstrip .input { padding:6px 9px; font-size:12px; }
+.toolstrip .search { width:240px; }
+.pager { display:flex; align-items:center; gap:6px; justify-content:flex-end; padding:9px 14px; color:var(--muted); font-size:11px; }
+.pager .btn { padding:3px 8px; font-size:11px; }
+.download-page-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.download-page-head .back { color:var(--green-700); text-decoration:none; font-size:12px; border:1px solid #cfe4d3; padding:5px 9px; border-radius:7px; background:#f6fbf5; }
+.download-page-head .back:hover { background:#eaf5e8; }
+.catalog-tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:12px; }
+.catalog-tab { padding:9px 12px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); font-size:12px; }
+.catalog-tab.active { color:var(--green-700); border-bottom-color:var(--green-600); font-weight:700; }
+.catalog-tab .count { color:var(--muted); font-weight:400; margin-left:3px; }
+.dl-summary { display:flex; gap:14px; align-items:center; color:var(--muted); font-size:11px; }
+.dl-summary strong { color:var(--ink); font-variant-numeric:tabular-nums; }
+.map-wide #coverageMap { height:260px; }
+.row-actions { display:flex; gap:4px; }
+.row-actions .btn { white-space:nowrap; }
+.table.compact td { padding:7px 8px; }
+.table.compact th { padding:6px 8px; }
+.table input.check { margin:0 4px 0 0; vertical-align:-2px; }
+.download-state { color:var(--green-700); font-size:11px; }
+.download-state.pending { color:var(--muted); }
+.download-state.queued { color:var(--amber); }

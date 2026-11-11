@@ -42,8 +42,8 @@
               <span class="note">官方缓存只读；可整包删除，不能修改内容或大小。</span>
             </div>
             <div class="row" style="margin-top:10px">
-              <button class="btn primary" disabled>去下载缓存</button>
-              <button class="btn" disabled>刷新</button>
+              <a class="btn primary" href="download-page.html" style="text-decoration:none;display:inline-flex;align-items:center">打开下载界面</a>
+              <button class="btn">刷新</button>
             </div>
           </section>
 
@@ -113,8 +113,16 @@
                 </div>
               </div>
             </div>
-            <table class="table">
-              <thead><tr><th>来源</th><th>覆盖范围</th><th>大小</th><th>操作</th></tr></thead>
+            <div class="toolstrip">
+              <div class="bulkbar" id="bulkbar">
+                <span>已选 <strong id="selCount">0</strong> 个</span>
+                <span class="spacer"></span>
+                <button class="btn small danger" id="deleteSelected">删除选中</button>
+              </div>
+              <span class="note" style="margin-left:auto">共 <strong id="rowCount">0</strong> 个缓存包</span>
+            </div>
+            <table class="table compact">
+              <thead><tr><th style="width:30px"><input class="check" id="selectAll" type="checkbox" title="全选当前筛选"></th><th>来源</th><th>覆盖范围</th><th>大小</th><th>操作</th></tr></thead>
               <tbody id="packRows"></tbody>
             </table>
             <div class="empty" id="packEmpty" style="margin:12px 14px;display:none">当前筛选下没有缓存包。</div>
@@ -134,6 +142,7 @@
     { id:'l3', source:'local', x0:-2048, x1:2047, z0:2048, z1:4095, size:22.9 }
   ];
   let selected = null, hovered = null, filter = 'all';
+  const selectedSet = new Set();
   let view = { x0:-10000, x1:10000, z0:-10000, z1:10000 };
   const canvas = document.getElementById('coverageMap');
   const ctx = canvas.getContext('2d');
@@ -222,22 +231,44 @@
       tr.className = 'pack-row' + (p.id === selected ? ' selected' : '');
       tr.dataset.id = p.id;
       const srcLabel = p.source === 'downloaded' ? '下载' : '本地';
-      tr.innerHTML = '<td><i class="source-dot ' + p.source + '"></i>' + srcLabel + '</td>' +
+      tr.innerHTML = '<td><input class="check row-check" type="checkbox" ' + (selectedSet.has(p.id) ? 'checked' : '') + '></td>' +
+        '<td><i class="source-dot ' + p.source + '"></i>' + srcLabel + '</td>' +
         '<td class="range">' + p.x0 + '..' + p.x1 + ', ' + p.z0 + '..' + p.z1 + '</td>' +
         '<td class="num">' + p.size.toFixed(1) + ' MB</td>' +
         '<td><button class="btn small danger" data-del="' + p.id + '">删除</button></td>';
       tr.addEventListener('click', () => { selected = p.id; renderRows(); draw(); });
       tr.addEventListener('mouseenter', () => { hovered = p.id; draw(); });
       tr.addEventListener('mouseleave', () => { hovered = null; draw(); });
+      const cb = tr.querySelector('.row-check');
+      cb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (cb.checked) selectedSet.add(p.id); else selectedSet.delete(p.id);
+        updateSelectionUi(shown);
+      });
       tr.querySelector('[data-del]').addEventListener('click', (e) => {
         e.stopPropagation();
         packs = packs.filter(x => x.id !== p.id);
+        selectedSet.delete(p.id);
         if (selected === p.id) selected = null;
-        renderRows(); draw(); updateEmpty();
+        renderRows(); draw();
       });
       rows.appendChild(tr);
     }
-    document.getElementById('packEmpty').style.display = shown.length ? 'none' : '';
+    updateSelectionUi(shown);
+  }
+  function updateSelectionUi(shown) {
+    const all = document.getElementById('selectAll');
+    all.checked = shown.length > 0 && shown.every(p => selectedSet.has(p.id));
+    document.getElementById('selCount').textContent = String(selectedSet.size);
+    document.getElementById('bulkbar').classList.toggle('show', selectedSet.size > 0);
+    document.getElementById('rowCount').textContent = String(packs.length);
+  }
+  function deleteSelected() {
+    if (!selectedSet.size) return;
+    packs = packs.filter(p => !selectedSet.has(p.id));
+    if (selected && selectedSet.has(selected)) selected = null;
+    selectedSet.clear();
+    renderRows(); draw();
   }
   function updateEmpty() { renderRows(); draw(); }
   // 地图点击选择
@@ -284,6 +315,13 @@
     const padX = Math.max(512, (x1-x0) * .12), padZ = Math.max(512, (z1-z0) * .12);
     view = { x0:x0-padX, x1:x1+padX, z0:z0-padZ, z1:z1+padZ }; draw();
   });
+  document.getElementById('selectAll').addEventListener('change', (e) => {
+    const shown = packs.filter(p => filter === 'all' || p.source === filter);
+    selectedSet.clear();
+    if (e.target.checked) shown.forEach(p => selectedSet.add(p.id));
+    renderRows();
+  });
+  document.getElementById('deleteSelected').addEventListener('click', deleteSelected);
   // 标签切换
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));

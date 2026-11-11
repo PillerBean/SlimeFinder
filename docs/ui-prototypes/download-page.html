@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>下载缓存 - 批量管理原型</title>
+<link rel="stylesheet" href="cache-ui.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">来源 <strong>官方缓存</strong></span>
+      <span class="pill">只读 <strong>可删不可改</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+    <div class="content">
+      <div class="download-page-head">
+        <a class="back" href="scheme-b-visual.html">← 缓存页</a>
+        <div>
+          <h1 style="font-size:23px;margin:0">下载缓存</h1>
+          <p class="muted small" style="margin:2px 0 0">按区域挑选官方缓存包；下载后可随时整批删除，不能修改内容或大小。</p>
+        </div>
+      </div>
+
+      <div class="catalog-tabs">
+        <button class="catalog-tab active" data-view="available">可下载 <span class="count" id="availableCount"></span></button>
+        <button class="catalog-tab" data-view="downloaded">已下载 <span class="count" id="downloadedCount"></span></button>
+      </div>
+
+      <div class="split" style="grid-template-columns:400px minmax(0,1fr)">
+        <div class="stack">
+          <section class="card map-card map-wide">
+            <div class="card-pad" style="padding-bottom:8px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>覆盖预览</h2>
+                <span class="spacer"></span>
+                <span class="tag gray" id="mapMode">可下载</span>
+              </div>
+            </div>
+            <div class="map-wrap">
+              <canvas id="coverageMap" style="height:330px" aria-label="缓存覆盖地图"></canvas>
+              <div class="map-tools">
+                <button class="btn small" id="zoomIn">＋</button>
+                <button class="btn small" id="zoomOut">－</button>
+                <button class="btn small" id="fit">适配</button>
+              </div>
+              <div class="map-readout" id="readout">区块 x / z</div>
+            </div>
+            <div class="map-legend">
+              <span><i class="legend-dot downloaded"></i>可下载包</span>
+              <span><i class="legend-dot local"></i>已下载</span>
+              <span><i class="legend-dot selected"></i>当前选中</span>
+            </div>
+            <div class="map-note">点列表或地图选择缓存包；蓝色为可下载，绿色为已下载。</div>
+          </section>
+          <div class="summary-strip">
+            <span>已下载 <strong id="downloadedTotal">0</strong> 个</span>
+            <span>占用 <strong id="downloadedSize">0 MB</strong></span>
+            <span class="note">已下载缓存只读，可批量删除。</span>
+          </div>
+        </div>
+
+        <section class="card">
+          <div class="toolstrip">
+            <div class="catalog-tabs" style="border:0;margin:0;flex:1">
+              <span class="note" id="viewHint">选择缓存包下载</span>
+            </div>
+            <input class="input search" id="search" placeholder="搜索范围，如 2048 / 4096">
+            <button class="btn small" id="refresh">刷新</button>
+          </div>
+          <div class="toolstrip" style="padding-top:0;padding-bottom:0;border:0">
+            <div class="bulkbar" id="bulkbar">
+              <span>已选 <strong id="selCount">0</strong> 个</span>
+              <span class="spacer"></span>
+              <button class="btn small" id="bulkAction">下载选中</button>
+              <button class="btn small danger hidden" id="bulkDelete">删除选中</button>
+            </div>
+            <span class="note" style="margin-left:auto" id="pageInfo"></span>
+          </div>
+          <table class="table compact">
+            <thead>
+              <tr>
+                <th style="width:30px"><input class="check" id="selectAll" type="checkbox" title="全选当前页"></th>
+                <th>包名</th><th>覆盖范围</th><th>大小</th><th>状态</th><th style="width:78px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div class="pager">
+            <button class="btn" id="prev">上一页</button>
+            <span id="pageLabel">1 / 1</span>
+            <button class="btn" id="next">下一页</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  const PAGE = 20;
+  const available = [], downloaded = [];
+  // 生成 240 个可下载包 + 247 个已下载包（示例）
+  for (let i = 0; i < 240; i++) {
+    const cx = (i % 20) * 2048 - 20480;
+    const cz = Math.floor(i / 20) * 2048 - 12288;
+    available.push({ id:'a'+i, name:'pack-' + String(i+1).padStart(4,'0'), x0:cx, x1:cx+2047, z0:cz, z1:cz+2047, size:24.1 + (i%7)*.1, state:'未下载' });
+  }
+  for (let i = 0; i < 247; i++) {
+    const cx = (i % 20) * 2048 - 20480;
+    const cz = Math.floor(i / 20) * 2048 - 12288;
+    downloaded.push({ id:'d'+i, name:'pack-' + String(i+1).padStart(4,'0'), x0:cx, x1:cx+2047, z0:cz, z1:cz+2047, size:24.0 + (i%5)*.1, state:'已下载' });
+  }
+  let view = 'available', page = 0, selected = null, filter = '';
+  const selectedSet = new Set();
+  const canvas = document.getElementById('coverageMap');
+  const ctx = canvas.getContext('2d');
+  let mapView = { x0:-26000, x1:26000, z0:-18000, z1:18000 };
+
+  function list() { return view === 'available' ? available : downloaded; }
+  function filtered() {
+    const q = filter.trim();
+    return list().filter(p => !q || p.name.includes(q) || String(p.x0).includes(q) || String(p.x1).includes(q));
+  }
+  function pageRows() { return filtered().slice(page*PAGE, page*PAGE + PAGE); }
+  function fmt(n){ return n.toFixed(1) + ' MB'; }
+
+  function sizeCanvas() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(r.width*dpr));
+    canvas.height = Math.max(1, Math.round(r.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+  function w2s(x,z) {
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    return { x:(x-mapView.x0)/(mapView.x1-mapView.x0)*w, y:h-(z-mapView.z0)/(mapView.z1-mapView.z0)*h };
+  }
+  function s2w(sx,sy) {
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    return { x:mapView.x0+sx/w*(mapView.x1-mapView.x0), z:mapView.z0+(h-sy)/h*(mapView.z1-mapView.z0) };
+  }
+  function draw() {
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle='#f7faf5'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#e3ece2'; ctx.lineWidth=1;
+    for (let i=0;i<=20;i++) { const x=i/20*w,y=i/20*h; ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke(); }
+    const all = list();
+    for (const p of all) {
+      const a=w2s(p.x0,p.z0), b=w2s(p.x1+1,p.z1+1);
+      const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y), ww=Math.abs(b.x-a.x), hh=Math.abs(b.y-a.y);
+      if (x+ww<0||y+hh<0||x>w||y>h) continue;
+      const isSel = p.id === selected;
+      const isDown = view === 'downloaded';
+      ctx.fillStyle = isSel ? 'rgba(216,163,62,.55)' : (isDown ? 'rgba(103,179,123,.32)' : 'rgba(91,145,200,.28)');
+      ctx.fillRect(x,y,ww,hh);
+      ctx.strokeStyle = isSel ? '#d8a33e' : (isDown ? 'rgba(103,179,123,.55)' : 'rgba(91,145,200,.5)');
+      ctx.lineWidth = isSel ? 2 : .7;
+      ctx.strokeRect(x+.5,y+.5,Math.max(1,ww-1),Math.max(1,hh-1));
+    }
+    ctx.fillStyle='#8a998e';ctx.font='10px "Microsoft YaHei", sans-serif';
+    ctx.fillText('x ' + Math.round(mapView.x0) + ' … ' + Math.round(mapView.x1), 10, h-10);
+    ctx.fillText('z ' + Math.round(mapView.z0) + ' … ' + Math.round(mapView.z1), 10, 14);
+  }
+  function render() {
+    const rows = document.getElementById('rows');
+    rows.innerHTML = '';
+    const paged = pageRows();
+    for (const p of paged) {
+      const tr = document.createElement('tr');
+      tr.className = 'pack-row' + (p.id === selected ? ' selected' : '');
+      const isDown = view === 'downloaded';
+      tr.innerHTML = '<td><input class="check row-check" type="checkbox" ' + (selectedSet.has(p.id)?'checked':'') + '></td>' +
+        '<td>' + p.name + '</td><td class="range">' + p.x0 + '..' + p.x1 + ', ' + p.z0 + '..' + p.z1 + '</td>' +
+        '<td class="num">' + fmt(p.size) + '</td>' +
+        '<td><span class="download-state ' + (isDown?'':'pending') + '">' + (isDown?'已下载':'可下载') + '</span></td>' +
+        '<td>' + (isDown ? '<button class="btn small danger" data-del="'+p.id+'">删除</button>'
+                         : '<button class="btn small primary" data-dl="'+p.id+'">下载</button>') + '</td>';
+      tr.addEventListener('click', () => { selected = p.id; render(); draw(); });
+      const cb = tr.querySelector('.row-check');
+      cb.addEventListener('click', e => { e.stopPropagation(); if (cb.checked) selectedSet.add(p.id); else selectedSet.delete(p.id); updateSel(); });
+      const del = tr.querySelector('[data-del]');
+      if (del) del.addEventListener('click', e => { e.stopPropagation(); downloaded = downloaded.filter(x=>x.id!==p.id); selectedSet.delete(p.id); if(selected===p.id) selected=null; render(); draw(); updateCounts(); });
+      const dl = tr.querySelector('[data-dl]');
+      if (dl) dl.addEventListener('click', e => { e.stopPropagation(); dl.textContent='已加入'; dl.disabled=true; });
+      rows.appendChild(tr);
+    }
+    document.getElementById('pageLabel').textContent = (page+1) + ' / ' + Math.max(1, Math.ceil(filtered().length / PAGE));
+    document.getElementById('pageInfo').textContent = '共 ' + filtered().length + ' 个';
+    updateSel();
+  }
+  function updateSel() {
+    const paged = pageRows();
+    document.getElementById('selectAll').checked = paged.length > 0 && paged.every(p=>selectedSet.has(p.id));
+    document.getElementById('selCount').textContent = selectedSet.size;
+    document.getElementById('bulkbar').classList.toggle('show', selectedSet.size > 0);
+    const isDown = view === 'downloaded';
+    document.getElementById('bulkAction').classList.toggle('hidden', isDown);
+    document.getElementById('bulkDelete').classList.toggle('hidden', !isDown);
+  }
+  function updateCounts() {
+    document.getElementById('availableCount').textContent = available.length;
+    document.getElementById('downloadedCount').textContent = downloaded.length;
+    document.getElementById('downloadedTotal').textContent = downloaded.length;
+    document.getElementById('downloadedSize').textContent = fmt(downloaded.reduce((s,p)=>s+p.size,0));
+    document.getElementById('mapMode').textContent = view === 'downloaded' ? '已下载' : '可下载';
+    render();
+  }
+  function setView(v) {
+    view = v; page = 0; selected = null; selectedSet.clear();
+    document.querySelectorAll('.catalog-tab').forEach(x => x.classList.toggle('active', x.dataset.view === v));
+    updateCounts(); draw();
+  }
+  document.querySelectorAll('.catalog-tab').forEach(t => t.addEventListener('click', () => setView(t.dataset.view)));
+  document.getElementById('search').addEventListener('input', e => { filter = e.target.value; page = 0; selectedSet.clear(); render(); });
+  document.getElementById('prev').addEventListener('click', () => { if (page > 0) { page--; selectedSet.clear(); render(); } });
+  document.getElementById('next').addEventListener('click', () => { if ((page+1)*PAGE < filtered().length) { page++; selectedSet.clear(); render(); } });
+  document.getElementById('selectAll').addEventListener('change', e => {
+    selectedSet.clear(); if (e.target.checked) pageRows().forEach(p=>selectedSet.add(p.id)); render();
+  });
+  document.getElementById('bulkAction').addEventListener('click', () => { selectedSet.clear(); render(); });
+  document.getElementById('bulkDelete').addEventListener('click', () => {
+    downloaded = downloaded.filter(p => !selectedSet.has(p.id)); selectedSet.clear(); if (selected && !downloaded.some(p=>p.id===selected)) selected=null; updateCounts(); draw();
+  });
+  canvas.addEventListener('click', e => {
+    const r=canvas.getBoundingClientRect(), p=s2w(e.clientX-r.left,e.clientY-r.top);
+    const hit=list().slice().reverse().find(x=>p.x>=x.x0&&p.x<=x.x1&&p.z>=x.z0&&p.z<=x.z1);
+    if(hit){ selected=hit.id; render(); draw(); }
+  });
+  canvas.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(), p=s2w(e.clientX-r.left,e.clientY-r.top); document.getElementById('readout').textContent='区块 ' + Math.round(p.x) + ' / ' + Math.round(p.z); });
+  canvas.addEventListener('wheel', e => { e.preventDefault(); const f=e.deltaY<0?.8:1.25; const cx=(mapView.x0+mapView.x1)/2, cz=(mapView.z0+mapView.z1)/2; const hw=(mapView.x1-mapView.x0)/2*f, hh=(mapView.z1-mapView.z0)/2*f; mapView={x0:cx-hw,x1:cx+hw,z0:cz-hh,z1:cz+hh}; draw(); }, {passive:false});
+  document.getElementById('zoomIn').addEventListener('click',()=>{const cx=(mapView.x0+mapView.x1)/2,cz=(mapView.z0+mapView.z1)/2,hw=(mapView.x1-mapView.x0)*.375,hh=(mapView.z1-mapView.z0)*.375;mapView={x0:cx-hw,x1:cx+hw,z0:cz-hh,z1:cz+hh};draw();});
+  document.getElementById('zoomOut').addEventListener('click',()=>{const cx=(mapView.x0+mapView.x1)/2,cz=(mapView.z0+mapView.z1)/2,hw=(mapView.x1-mapView.x0)*.75,hh=(mapView.z1-mapView.z0)*.75;mapView={x0:cx-hw,x1:cx+hw,z0:cz-hh,z1:cz+hh};draw();});
+  document.getElementById('fit').addEventListener('click',()=>{mapView={x0:-26000,x1:26000,z0:-18000,z1:18000};draw();});
+  window.addEventListener('resize', sizeCanvas);
+  sizeCanvas(); updateCounts(); draw();
+</script>
+</body>
+</html>
