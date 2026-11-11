@@ -1,8 +1,0 @@
-name = "slimefinder-telemetry"
-pages_build_output_dir = "."
-compatibility_date = "2026-11-01"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "slimefinder-telemetry"
-database_id = "9abfe78f-2054-4621-9f25-1d09d417dc58"

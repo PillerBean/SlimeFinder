@@ -1,4 +1,4 @@
-# deploy_telemetry.ps1 — 使用 Cloudflare API Token 非交互部署匿名统计 Worker。
+﻿# deploy_telemetry.ps1 — 使用 Cloudflare API Token 非交互部署匿名统计 Worker。
 #
 # 用法（在你自己的终端里，不要发 Token 到聊天）：
 #   $env:CF_TOKEN = "你的 API Token"

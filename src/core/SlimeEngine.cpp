@@ -820,6 +820,13 @@ static int runGpuScanStage(const SearchOptions& opt,
                           (opt.cache != nullptr) && (opt.cacheReadMu == nullptr);
     const bool collectNew = useCache && !opt.cache->covers(opt.region());
 
+    // v3.12.1：缓存已经完整覆盖时不需要 GPU 重新判定；直接让经典 CPU 路径
+    //   走「缓存位图填充」快路径（实测 4.19M 区块约 0.2 ms 扫描，而不是 GPU 重算）。
+    if (useCache && !collectNew) {
+        errOut.clear();
+        return 0;
+    }
+
     // v3.2.1：空指针/不可用显式保护——未注入或探测失败一律立即回退 CPU 路径
     // （GUI 默认关闭 GPU，仅在用户勾选且可用时注入；此处是最后一道防线）。
     if (!opt.gpuScan) {

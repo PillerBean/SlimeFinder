@@ -114,7 +114,7 @@ set SLIME_GPU_MODULE=C:\path\to\icd64.dll   :: 强制指定 OpenCL 模块（排�
 > `#deps 0`，改头文件不重编译）。本项目已在 CMake 中把全部项目头文件（含生成的
 > `slime_kernel_embed.h`）声明为各目标源文件的 `OBJECT_DEPENDS`，任何语言环境都正确；
 > 若你自行新增头文件目录，请同步更新 `CMakeLists.txt` 末尾的 `SLIME_HEADERS` glob。
-> 交付前的正式验证请始终使用 `scripts\verify_release.ps1`（含 `--clean-first` 全量重建）。
+> 交付前的正式验证请始终使用 `scripts\release\verify_release.ps1`（含 `--clean-first` 全量重建）。
 
 ### 3.2 无界面 GUI 自检（v3.1.0；v3.3.0 增加算法模式组 [11] 与布局校验）
 ```bat
@@ -138,8 +138,7 @@ echo %ERRORLEVEL%   :: 0 = 通过（预设/边界截断/复制命令格式/结�
 
 ### 3.3 与参考实现交叉验证（需 Python 3；本机用 `py -3`）
 ```bat
-py -3 tests\verify_against_reference.py ^
-       "..\模板：原始文件\SlimeChecker.exe" ^
+py -3 tests\reference\verify_against_reference.py ^
        "build\slime_tests.exe"
 ```
 111 项对照：Java/基岩扫描坐标集合、严格/密度窗口集合与密度值、
@@ -153,7 +152,7 @@ bench_v321\slime_tests_v321.exe --bench          :: v3.2.1 归档二进制（同
 
 ### 3.5 一键发布验证（v3.3.1 新增；v3.3.2+ 沿用）
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\verify_release.ps1 `
+powershell -ExecutionPolicy Bypass -File scripts\release\verify_release.ps1 `
            -Zip dist\SlimeFinder-3.10.12.10-win64.zip
 ```
 依次执行并汇总：clean 全量重建（校验退出码与 error 行数）→ 单元测试 → 111 参考对照 →
@@ -170,7 +169,7 @@ OpenCL 探测 → SIMD 内核自检（含嵌入内核逐字节校验）→ GUI �
 
 ### 3.6 一键打包（v3.3.1 新增；`-Version 3.3.10.12.10` 可指定版本号）
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\package_release.ps1
+powershell -ExecutionPolicy Bypass -File scripts\release\package_release.ps1
 ```
 依次执行：复制 `build\` 产物（`SlimeFinder.exe`、`slime_tests.exe`、`slime_ocl_probe.exe`、
 `slime_kernel_tests.exe`）→ 刷新 `dist\SlimeFinder\docs\` 与 `README.md` → 清理运行期残留
@@ -226,10 +225,10 @@ C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release ^
   `vcruntime140_1.dll`、`msvcp140*.dll` 与
   `Microsoft.VC145.OpenMP\vcomp140.dll` 到同一目录；
 - 可分发目录另需附上 `slime_tests.exe`、`slime_ocl_probe.exe`、`slime_kernel_tests.exe` 与 `docs/`；
-  实际打包直接用 `scripts\package_release.ps1`（见 §3.6，自动完成复制/清理/压缩/校验/写哈希）；
+  实际打包直接用 `scripts\release\package_release.ps1`（见 §3.6，自动完成复制/清理/压缩/校验/写哈希）；
 - 交付目录结构即 `dist/SlimeFinder/`；压缩包 `dist/SlimeFinder-3.10.12.10-win64.zip`。
   （`platforms/` 目录另含 `qoffscreen.dll`/`qminimal.dll`，便于无桌面环境自检。）
-- **发布前必须校验**：直接运行上面的 `scripts\verify_release.ps1`（等价于下列手工步骤）：
+- **发布前必须校验**：直接运行上面的 `scripts\release\verify_release.ps1`（等价于下列手工步骤）：
   ```powershell
   cmake --build build --clean-first          # 干净全量重建（检查退出码）
   .\build\slime_tests.exe --unit             # 全部单元组通过

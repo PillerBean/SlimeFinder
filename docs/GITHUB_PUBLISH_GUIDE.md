@@ -6,7 +6,7 @@
 >
 > 本文档给「第一次用 GitHub」的人看：**源码进仓库，安装包进 Releases**，自动更新从 Releases 读取。
 > 当前源码版本：`3.10.12.11`；本机工具：Git 已安装（2.56），GitHub CLI 将放在
-> `D:\DeepSeek harness\史莱姆区块查找器\github_tools\gh_dir\bin\gh.exe`（下载/解压见文末）。
+> `<工作区>\gh`（下载/解压见文末）。
 
 ## 一、两个地方分别放什么
 
@@ -21,7 +21,7 @@
 ## 二、本机现状（已盘点）
 
 - 当前源码：**3.10.12.8**（本目录）；
-- 旧源码：**只有 V3.1.1**（`..\模板：原始文件\史莱姆区块查找器V3.1.1.zip` 与 `..\_v311_ref` 解压版）；
+- 旧源码：**只有 V3.1.1**（`..\旧树历史任务书\史莱姆区块查找器V3.1.1.zip` 与 `旧树归档` 解压版）；
   **3.2.1 ~ 3.10.12.7 的源码没有找到**（只有 dist 里的二进制包），无法补回；
 - 安装包：`dist/` 下 128 个 zip + 104 个 Setup，版本 3.2.1 → 3.10.12.8，合计约 3.4 GB；
 - 结论：**从现在开始用 Git 保存历史**；老版本只能作为历史 Releases 的二进制上传。
@@ -48,8 +48,8 @@ CMakeLists.txt  README.md  .gitignore  LICENSE
 ### 1. 登录 GitHub CLI
 
 ```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器"
-github_tools\gh_dir\bin\gh.exe auth login
+cd /d "<工作区>"
+gh auth login
 ```
 
 按提示选：
@@ -60,13 +60,13 @@ github_tools\gh_dir\bin\gh.exe auth login
 登录后设置 git 使用 gh 作为凭据：
 
 ```bat
-github_tools\gh_dir\bin\gh.exe auth setup-git
+gh auth setup-git
 ```
 
 ### 2. 本地仓库初始化并提交（源码）
 
 ```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+cd /d "<工作区>\SlimeFinder"
 git init -b main
 git config user.name  "你的GitHub用户名"
 git config user.email "你的GitHub邮箱"
@@ -81,8 +81,8 @@ git commit -m "chore: 初始提交（源码 3.10.12.8）"
 ### 3. 创建远程仓库并推送
 
 ```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器"
-github_tools\gh_dir\bin\gh.exe repo create SlimeFinder --public --source "SlimeFinder" --remote origin --push
+cd /d "<工作区>"
+gh repo create SlimeFinder --public --source "SlimeFinder" --remote origin --push
 ```
 
 （`--public` 改 `--private` 即私有；私有仓库自动更新需要额外 token，建议先用 Public。）
@@ -90,11 +90,11 @@ github_tools\gh_dir\bin\gh.exe repo create SlimeFinder --public --source "SlimeF
 ### 4. 给当前版本打 tag + 建 Release
 
 ```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+cd /d "<工作区>\SlimeFinder"
 git tag -a v3.10.12.8 -m "v3.10.12.8"
 git push origin v3.10.12.8
 
-github_tools\gh_dir\bin\gh.exe release create v3.10.12.8 ^
+gh release create v3.10.12.8 ^
   "dist\SlimeFinder-3.10.12.8-win64.zip" ^
   "dist\SlimeFinder-3.10.12.8-Setup.exe" ^
   "dist\SHA256SUMS-3.10.12.8.txt" ^
@@ -155,7 +155,7 @@ GET https://api.github.com/repos/<用户名>/SlimeFinder/releases/latest
 已完成：
 - Git：已安装（`git version 2.56.0.windows.4.niugit`）；
 - GitHub CLI：已下载并验证 `gh version 2.103.3`，路径
-  `..\github_tools\gh_dir\bin\gh.exe`（压缩包 `..\github_tools\gh.zip` 保留）；
+  `gh`（压缩包 `..\旧树归档的 gh 压缩包` 保留）；
 - 本地仓库已初始化：`SlimeFinder/` 已 `git init -b main`，当前 2 个提交，已创建本地 tag `v3.10.12.8`；
   仓库只跟踪源码/文档（452 个文件、约 7.6 MB），`build/`、`dist/`、`docs/screenshots/`、`docs/promo/` 等均已忽略；
 - `scripts/collect_release_assets.ps1` 已就绪并实测通过（3.10.12.8 三个资产已汇总到 `release/3.10.12.8/`）：
@@ -195,13 +195,13 @@ powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Ver
 ### 每次发版的固定流程
 
 ```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
+cd /d "<工作区>\SlimeFinder"
 :: 1) 改版本号（CMakeLists / main.cpp / app.rc / MainWindow / 脚本）；不再有内置更新历史
-cmd /c scripts\build_repo.cmd
+cmd /c scripts\build\build_repo.cmd
 build\slime_tests.exe --unit
 py -3 tests\verify_against_reference.py
 py -3 scripts\audit_corruption.py
-powershell -NoProfile -Command "& .\scripts\gui_selftest.ps1 -LogDir build\final -GpuOn"
+powershell -NoProfile -Command "& .\scripts\qa\gui_selftest.ps1 -LogDir build\final -GpuOn"
 :: 2) 提交并打 tag
 git add -A
 git commit -m "release: v3.10.12.9"
@@ -209,11 +209,11 @@ git tag -a v3.10.12.9 -m "SlimeFinder v3.10.12.9"
 git push origin main
 git push origin v3.10.12.9
 :: 3) 打包并汇总资产
-powershell -NoProfile -Command "& .\scripts\package_release.ps1 -Version 3.10.12.9 -SkipSelfTest"
-powershell -NoProfile -Command "& .\scripts\build_installer.ps1 -Version 3.10.12.9"
+powershell -NoProfile -Command "& .\scripts\release\package_release.ps1 -Version 3.10.12.9 -SkipSelfTest"
+powershell -NoProfile -Command "& .\scripts\release\build_installer.ps1 -Version 3.10.12.9"
 powershell -ExecutionPolicy Bypass -File scripts\collect_release_assets.ps1 -Version 3.10.12.9
 :: 4) 发布（正式版：不带 --prerelease；测试版：加 --prerelease）
-github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" --title "SlimeFinder v3.10.12.9" --notes-file docs\release_notes\v3.10.12.9.md
+gh release create v3.10.12.9 "release\3.10.12.9\*" --title "SlimeFinder v3.10.12.9" --notes-file docs\release_notes\v3.10.12.9.md
 ```
 
 ### 许可证与仓库展示（已定）
@@ -259,8 +259,8 @@ github_tools\gh_dir\bin\gh.exe release create v3.10.12.9 "release\3.10.12.9\*" -
 2. 生成并提交版本清单（检查更新的镜像回退依赖它）：
 
 ```bat
-cd /d "D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder"
-py -3 scripts\gen_version_manifest.py --version 3.10.12.10 --notes-file docs\release_notes\v3.10.12.10.md
+cd /d "<工作区>\SlimeFinder"
+py -3 scripts\release\gen_version_manifest.py --version 3.10.12.10 --notes-file docs\release_notes\v3.10.12.10.md
 git add version.json && git commit -m "release: version.json 3.10.12.10" && git push
 ```
 

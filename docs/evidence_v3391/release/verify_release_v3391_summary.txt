@@ -1,9 +1,0 @@
-﻿SlimeFinder v3.3.9.1 -- scripts\verify_release.ps1 结果摘要
-==========================================================
-命令: powershell -ExecutionPolicy Bypass -File scripts\verify_release.ps1 -Zip dist\SlimeFinder-3.3.9.1-win64.zip
-结果: total=16 pass=16 fail=0（clean rebuild / 单元 / 111 对照 / OCL 探针 / 内核 / GUI 开关 / 基准 / dist 自检 / 四组哈希 / zip 自检）
-
-最终发布包: dist\SlimeFinder-3.3.9.1-win64.zip
-  体积   : 29,149,819 B
-  SHA256 : B865BF1100AD05306D48EDD47EA0DEB9A8586B994586ED1D56E577F05C28B4D1
-  与 dist\SHA256SUMS-3.3.9.1.txt 一致

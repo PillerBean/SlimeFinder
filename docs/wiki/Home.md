@@ -13,7 +13,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 ## 这是什么
 
 - 输入种子和范围，快速找出史莱姆区块（密度、图案、环形覆盖）
-- 支持 Java 版与基岩版；Java 可搜到世界边界
+- 支持 Java 版与基岩版；Java 可搜到世界边界；基岩搜索缩至 ±131,072 区块（float32 0.25 精度边界）
 - GPU（OpenCL）加速，失败自动回退 CPU
 - Windows 10/11 x64；**只提供 Setup 安装包**（安装版支持自动更新）
 
@@ -34,7 +34,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 - 稳定版（Latest）：<https://github.com/PillerBean/SlimeFinder/releases/latest>
 - 测试版 / 历史版本：<https://github.com/PillerBean/SlimeFinder/releases>
   （带 `Pre-release` 标记的是测试版；历史版本为二进制归档）
-- **当前测试版：v3.12.0** → [直接打开 Release](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.12.0)
+- **当前测试版：v3.11.2** → [直接打开 Release](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.11.2)
 
 每个版本的 Assets 里只需要下载：
 

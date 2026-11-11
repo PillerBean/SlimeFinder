@@ -1,4 +1,0 @@
-﻿v2 位图缓存（由用户 1.02 GB v1 缓存升级而来，8 个有效声明 / 127,590,591 条目 / 一万点真值 100.00%）
-文件 159,812,920 B = 152.4 MiB；保存 389 ms；加载 251 ms
-完整文件在 C:\Temp\slimecache\real_cache_v2.slimecache（v1 原始备份 C:\Temp\slimecache\backup\real_cache_20260921.slimecache）
-
