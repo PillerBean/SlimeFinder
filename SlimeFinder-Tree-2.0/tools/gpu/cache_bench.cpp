@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-int main()
+int main(int argc, char** argv)
 {
     constexpr int half = 1024;
     const slime::Rect region{ -half, half - 1, -half, half - 1 };
@@ -55,9 +55,9 @@ int main()
     opt.minDensity = 0.5;
     opt.targetCount = 50;
     opt.threads = 0;
-    opt.useCache = true;
+    opt.useCache = !(argc > 1 && std::string(argv[1]) == "nocache");
     opt.cache = &cache;
-    opt.gpuScan = gpu.get();
+    opt.gpuScan = (argc > 1 && std::string(argv[1]) == "cpu") ? nullptr : gpu.get();
 
     std::atomic<bool> cancel{ false };
     slime::ProgressFn noop;
@@ -68,9 +68,10 @@ int main()
         eng.run(opt, cancel, noop, out);
         const auto t1 = std::chrono::steady_clock::now();
         const double total = std::chrono::duration<double, std::milli>(t1 - t0).count();
-        std::printf("run %d ok=%d gpu=%d scan=%.2f ms total=%.2f ms hits=%lld\n", i + 1, out.ok ? 1 : 0,
-                    out.gpuScanUsed ? 1 : 0, out.stats.scanMs, total,
-                    static_cast<long long>(out.totalFound));
+        std::printf("run %d ok=%d gpu=%d cacheSkipped=%d cacheHits=%lld scan=%.2f fill=%.2f total=%.2f ms hits=%lld\n",
+                    i + 1, out.ok ? 1 : 0, out.gpuScanUsed ? 1 : 0, out.cacheFillSkipped ? 1 : 0,
+                    static_cast<long long>(out.cacheHitPoints), out.stats.scanMs, out.stats.fillMs,
+                    total, static_cast<long long>(out.totalFound));
     }
     return 0;
 }

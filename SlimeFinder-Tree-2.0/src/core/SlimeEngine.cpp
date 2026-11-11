@@ -820,6 +820,13 @@ static int runGpuScanStage(const SearchOptions& opt,
                           (opt.cache != nullptr) && (opt.cacheReadMu == nullptr);
     const bool collectNew = useCache && !opt.cache->covers(opt.region());
 
+    // v3.12.1：缓存已经完整覆盖时不需要 GPU 重新判定；直接让经典 CPU 路径
+    //   走「缓存位图填充」快路径（实测 4.19M 区块约 0.2 ms 扫描，而不是 GPU 重算）。
+    if (useCache && !collectNew) {
+        errOut.clear();
+        return 0;
+    }
+
     // v3.2.1：空指针/不可用显式保护——未注入或探测失败一律立即回退 CPU 路径
     // （GUI 默认关闭 GPU，仅在用户勾选且可用时注入；此处是最后一道防线）。
     if (!opt.gpuScan) {
@@ -949,11 +956,9 @@ static int runGpuScanStage(const SearchOptions& opt,
     }
     // v3.7.3：Java 版优先走「打包字」扫描（回读量 1/8，且集成退化为按字 OR）。
     //   仅当瓦片在行内按 64 对齐、且宽度是 64 的整数倍时可用；否则该瓦片回退字节路径。
-    // v3.7.4：Java / 基岩都走打包字内核。
-    // v3.12.1：只读缓存时可以走打包字：GPU 仍然扫描整个区域，缓存位只是冗余的
-    //   已知结果，打包字 OR 全量位图与字节路径逐位一致；只有 collectNew（构建缓存
-    //   需要登记新命中）才必须走字节路径。
-    const bool wordsCapable = !collectNew;
+    // v3.7.4：Java / 基岩都走打包字内核；但**缓存路径必须走字节路径**，
+    //   因为逐行集成里包含「缓存覆盖段回读」与 collectNew 的记账，打包字快路径会绕过它们。
+    const bool wordsCapable = !useCache && !collectNew;
     const auto tileAlignOk = [&](const GpuTile& t) {
         return wordsCapable && (t.xs % 64 == 0) && (t.tw % 64 == 0);
     };
