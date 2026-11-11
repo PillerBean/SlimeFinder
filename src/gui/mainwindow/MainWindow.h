@@ -22,6 +22,7 @@
 #include <QStringList>
 
 class QSystemTrayIcon; // v3.3.9（任务书 5.1）：托盘图标
+class QTableWidget;    // v3.12.3：缓存包列表
 class QIcon;           // v3.4.0：左导航 / 停靠图标（QPainter 绘制）
 class QStackedWidget;  // v3.4.0：页面栈
 class QListWidget;     // v3.4.0：更新历史版本索引
@@ -356,6 +357,12 @@ private:
     std::filesystem::path m_cacheDir; // v3.12.3：新目录缓存
     void saveV3Cache();
     std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
+    QTableWidget* m_cacheDownloadTable = nullptr;
+    QTableWidget* m_cacheLocalTable = nullptr;
+    QLabel* m_cacheDownloadSummary = nullptr;
+    QLabel* m_cacheLocalSummary = nullptr;
+    QLabel* m_cacheLegacyNotice = nullptr;
+    void refreshCacheUi();
     Pattern m_pattern;      // 当前绘制图案（strict 模式）
     bool m_patternSet = false;
     bool m_running = false;

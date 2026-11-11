@@ -1199,5 +1199,15 @@
   "ui.lang.feedback": "翻譯品質不佳？試試聯絡我們！",
   "ui.cache.download.title": "下載快取（推薦）",
   "ui.cache.download.empty": "暫無下載快取。下載功能將在後續版本開放。",
-  "ui.cache.download.readonly": "下載快取唯讀，可整包刪除，不可修改內容或大小。"
+  "ui.cache.download.readonly": "下載快取唯讀，可整包刪除，不可修改內容或大小。",
+  "ui.cache.local.title": "本機快取包",
+  "ui.cache.pack.source": "來源",
+  "ui.cache.pack.range": "覆蓋範圍",
+  "ui.cache.pack.size": "壓縮後大小",
+  "ui.cache.pack.action": "操作",
+  "ui.cache.pack.delete": "刪除",
+  "ui.cache.source.local": "本機",
+  "ui.cache.source.downloaded": "下載",
+  "ui.cache.pack.summary": "%1 個包 · %2",
+  "ui.cache.old.notice": "偵測到舊格式快取檔案；本版本不讀取、不刪除該檔案。"
 }

@@ -790,6 +790,60 @@ void MainWindow::saveV3Cache()
     }
     Logger::info("v3 local 缓存已保存（" + m_cacheDir.string() + "）：" +
                  std::to_string(m_cacheStore->packs().size()) + " 个 pack");
+    refreshCacheUi();
+}
+
+void MainWindow::refreshCacheUi()
+{
+    if (!m_cacheStore) return;
+    const auto fmtBytes = [](uint64_t b) {
+        if (b >= 1024ull * 1024 * 1024) return QString::number(b / (1024.0 * 1024 * 1024), 'f', 2) + QStringLiteral(" GB");
+        if (b >= 1024ull * 1024) return QString::number(b / (1024.0 * 1024), 'f', 2) + QStringLiteral(" MB");
+        return QString::number(b / 1024.0, 'f', 1) + QStringLiteral(" KB");
+    };
+    auto fill = [&](QTableWidget* table, const char* source, QLabel* summary, int64_t* totalRaw, int64_t* totalComp, int* count) {
+        table->setRowCount(0);
+        int64_t raw = 0, comp = 0;
+        int n = 0;
+        for (const auto& e : m_cacheStore->packs()) {
+            if (e.source != source) continue;
+            const int row = table->rowCount();
+            table->insertRow(row);
+            table->setItem(row, 0, new QTableWidgetItem(
+                slime::ui::t(e.source == "local" ? "ui.cache.source.local" : "ui.cache.source.downloaded")));
+            table->setItem(row, 1, new QTableWidgetItem(QStringLiteral("%1..%2, %3..%4")
+                .arg(e.rect.minX).arg(e.rect.maxX).arg(e.rect.minZ).arg(e.rect.maxZ)));
+            table->setItem(row, 2, new QTableWidgetItem(fmtBytes(e.compressedBytes)));
+            auto* del = new QPushButton(slime::ui::t("ui.cache.pack.delete"), table);
+            del->setObjectName(QStringLiteral("miniButton"));
+            const std::string file = e.file;
+            connect(del, &QPushButton::clicked, this, [this, file]() {
+                std::string err;
+                if (!m_cacheStore->removePack(file, &err)) {
+                    QMessageBox::warning(this, slime::ui::t("ui.cache.pack.delete"),
+                                         QString::fromStdString(err));
+                }
+                refreshCacheUi();
+            });
+            table->setCellWidget(row, 3, del);
+            raw += static_cast<int64_t>(e.rawBytes);
+            comp += static_cast<int64_t>(e.compressedBytes);
+            ++n;
+        }
+        if (summary) summary->setText(slime::ui::t("ui.cache.pack.summary")
+                                          .arg(n).arg(fmtBytes(static_cast<uint64_t>(comp))));
+        if (totalRaw) *totalRaw = raw;
+        if (totalComp) *totalComp = comp;
+        if (count) *count = n;
+    };
+    int64_t dr = 0, dc = 0, lr = 0, lc = 0;
+    int dn = 0, ln = 0;
+    fill(m_cacheDownloadTable, "downloaded", m_cacheDownloadSummary, &dr, &dc, &dn);
+    fill(m_cacheLocalTable, "local", m_cacheLocalSummary, &lr, &lc, &ln);
+    if (m_cacheLegacyNotice) {
+        std::error_code ec;
+        m_cacheLegacyNotice->setVisible(std::filesystem::exists(appDirPath() / kCacheFileName, ec));
+    }
 }
 
 void MainWindow::updateCacheStatusUi()

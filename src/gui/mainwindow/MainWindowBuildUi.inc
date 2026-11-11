@@ -1654,7 +1654,46 @@ void MainWindow::buildV340Pages()
             dlRo->setObjectName(QStringLiteral("topSummary"));
             dlRo->setWordWrap(true);
             dlLay->addWidget(dlRo);
+            m_cacheDownloadSummary = new QLabel(QStringLiteral("0"), download);
+            m_cacheDownloadSummary->setObjectName(QStringLiteral("topSummary"));
+            dlLay->addWidget(m_cacheDownloadSummary);
+            m_cacheDownloadTable = new QTableWidget(0, 4, download);
+            m_cacheDownloadTable->setHorizontalHeaderLabels(
+                { slime::ui::t("ui.cache.pack.source"), slime::ui::t("ui.cache.pack.range"),
+                  slime::ui::t("ui.cache.pack.size"), slime::ui::t("ui.cache.pack.action") });
+            m_cacheDownloadTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+            m_cacheDownloadTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+            m_cacheDownloadTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+            m_cacheDownloadTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+            m_cacheDownloadTable->verticalHeader()->setVisible(false);
+            m_cacheDownloadTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+            m_cacheDownloadTable->setSelectionMode(QAbstractItemView::NoSelection);
+            m_cacheDownloadTable->setMaximumHeight(150);
+            dlLay->addWidget(m_cacheDownloadTable);
             buildPageLay->addWidget(download);
+        }
+        {
+            auto* local = new QGroupBox(slime::ui::t("ui.cache.local.title"), buildPage);
+            local->setProperty("card", true);
+            auto* localLay = new QVBoxLayout(local);
+            localLay->setContentsMargins(8, 4, 8, 6);
+            m_cacheLocalSummary = new QLabel(QStringLiteral("0"), local);
+            m_cacheLocalSummary->setObjectName(QStringLiteral("topSummary"));
+            localLay->addWidget(m_cacheLocalSummary);
+            m_cacheLocalTable = new QTableWidget(0, 4, local);
+            m_cacheLocalTable->setHorizontalHeaderLabels(
+                { slime::ui::t("ui.cache.pack.source"), slime::ui::t("ui.cache.pack.range"),
+                  slime::ui::t("ui.cache.pack.size"), slime::ui::t("ui.cache.pack.action") });
+            m_cacheLocalTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+            m_cacheLocalTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+            m_cacheLocalTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+            m_cacheLocalTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+            m_cacheLocalTable->verticalHeader()->setVisible(false);
+            m_cacheLocalTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+            m_cacheLocalTable->setSelectionMode(QAbstractItemView::NoSelection);
+            m_cacheLocalTable->setMaximumHeight(150);
+            localLay->addWidget(m_cacheLocalTable);
+            buildPageLay->addWidget(local);
         }
         {
             auto* info = new QGroupBox(slime::ui::t("ui.55fdaa2e6652"), buildPage);
@@ -1690,6 +1729,11 @@ void MainWindow::buildV340Pages()
         m_buildExtra = page;
         buildScroll->setWidget(page);
         buildPageLay->addWidget(buildScroll, 1);
+        m_cacheLegacyNotice = new QLabel(slime::ui::t("ui.cache.old.notice"), buildPage);
+        m_cacheLegacyNotice->setObjectName(QStringLiteral("topSummary"));
+        m_cacheLegacyNotice->setWordWrap(true);
+        m_cacheLegacyNotice->setVisible(false);
+        buildPageLay->addWidget(m_cacheLegacyNotice);
         m_pageStack->addWidget(buildPage);
         auto* cap = new QLabel(slime::ui::t("ui.31dc91dcb1bc"), page);
         cap->setObjectName(QStringLiteral("colCaption"));

@@ -1056,7 +1056,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
             });
         }
     }
-    if (std::filesystem::exists(m_cacheFile, ec) && !legacyDisabled) {
+    // v3.12.3：旧单文件缓存不再读取。GUI 自检仍保留旧路径，供历史回归测试使用；
+    // 正常运行时只提示旧文件存在，不迁移、不使用。
+    const bool selftestMode = !qEnvironmentVariableIsEmpty("SLIME_SELFTEST");
+    if (selftestMode && std::filesystem::exists(m_cacheFile, ec) && !legacyDisabled) {
         std::string err;
         if (!m_cache->loadFile(m_cacheFile, true, err)) {
             Logger::warning("启动加载缓存失败: " + err + "（" + m_cacheFile.string() + "）");
@@ -1065,7 +1068,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
                          std::to_string(m_cache->ranges().size()) + " 区域 / " +
                          std::to_string(m_cache->entryCount()) + " 区块");
         }
-    } else if (std::filesystem::exists(legacyCacheFile, ec) && !legacyDisabled) {
+    } else if (selftestMode && std::filesystem::exists(legacyCacheFile, ec) && !legacyDisabled) {
         std::string err;
         if (!m_cache->loadFile(legacyCacheFile, true, err)) {
             Logger::warning("启动加载旧版缓存失败（" + std::string(kCacheLegacyFileName) + "）: " + err);
@@ -1094,6 +1097,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         }
     }
     updateCacheStatusUi();
+    refreshCacheUi();
 
     // ---------------- v3.3.4（任务书 2/3）：日志总线、命令终端历史、更新提醒 ----------------
     // 1) 日志：默认关闭（不写文件、不记录）；模式来自 config.json 的 log.mode（缺省 off）

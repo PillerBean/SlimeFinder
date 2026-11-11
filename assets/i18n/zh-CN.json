@@ -1199,5 +1199,15 @@
   "ui.lang.feedback": "翻译质量不佳？试试联系我们！",
   "ui.cache.download.title": "下载缓存（推荐）",
   "ui.cache.download.empty": "暂无下载缓存。下载功能将在后续版本开放。",
-  "ui.cache.download.readonly": "下载缓存只读，可整包删除，不可修改内容或大小。"
+  "ui.cache.download.readonly": "下载缓存只读，可整包删除，不可修改内容或大小。",
+  "ui.cache.local.title": "本地缓存包",
+  "ui.cache.pack.source": "来源",
+  "ui.cache.pack.range": "覆盖范围",
+  "ui.cache.pack.size": "压缩后大小",
+  "ui.cache.pack.action": "操作",
+  "ui.cache.pack.delete": "删除",
+  "ui.cache.source.local": "本地",
+  "ui.cache.source.downloaded": "下载",
+  "ui.cache.pack.summary": "%1 个包 · %2",
+  "ui.cache.old.notice": "检测到旧格式缓存文件；本版本不读取、不删除该文件。"
 }

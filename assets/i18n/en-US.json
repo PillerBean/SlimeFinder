@@ -1199,5 +1199,15 @@
   "ui.lang.feedback": "Translation quality not good? Try contacting us!",
   "ui.cache.download.title": "Downloaded cache (recommended)",
   "ui.cache.download.empty": "No downloaded cache yet. Download support will be available in a later version.",
-  "ui.cache.download.readonly": "Downloaded cache is read-only; packs can be deleted, but contents and size cannot be modified."
+  "ui.cache.download.readonly": "Downloaded cache is read-only; packs can be deleted, but contents and size cannot be modified.",
+  "ui.cache.local.title": "Local cache packs",
+  "ui.cache.pack.source": "Source",
+  "ui.cache.pack.range": "Coverage",
+  "ui.cache.pack.size": "Compressed size",
+  "ui.cache.pack.action": "Action",
+  "ui.cache.pack.delete": "Delete",
+  "ui.cache.source.local": "Local",
+  "ui.cache.source.downloaded": "Downloaded",
+  "ui.cache.pack.summary": "%1 packs · %2",
+  "ui.cache.old.notice": "A legacy cache file was found; this version does not read or delete it."
 }
