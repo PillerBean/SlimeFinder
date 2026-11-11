@@ -207,7 +207,7 @@ constexpr const char* kVersion = "v3.12.2";
 
 namespace {
 
-// v3.3.9（任务书 5.1）：程序图标改为**资源文件**（素材：模板：原始文件/程序图标.png，
+// v3.3.9（任务书 5.1）：程序图标改为**资源文件**（多尺寸 ICO 资源，
 // 透明底史莱姆方块；assets/appicon.png 由 assets/appicon.qrc 编进 exe，exe 文件图标见 src/platform/windows/app.rc）。
 // 资源缺失时回退到下面「运行时绘制」的旧图标，保证任何构建方式下都有图标。
 QIcon makeAppIcon()

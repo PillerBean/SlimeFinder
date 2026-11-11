@@ -12,7 +12,7 @@
 #include <windows.h>
 
 // v3.3.9（任务书 5.1）：程序图标（exe 文件图标 / 资源管理器 / 任务栏 / 标题栏）。
-// 素材：模板：原始文件/程序图标.png（透明底），多尺寸 ICO（16/24/32/48/64/128/256）。
+// 素材：新树内 icons 资源（透明底），多尺寸 ICO（16/24/32/48/64/128/256）。
 // 图标所在目录由 CMake 传入 rc 的 /I 参数（见 CMakeLists.txt 的 RC 编译选项）。
 #define IDI_APPICON 101
 IDI_APPICON ICON "appicon.ico"

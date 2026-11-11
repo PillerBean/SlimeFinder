@@ -121,12 +121,7 @@ def harvest_sources():
     if msvc.is_dir():
         for inc in msvc.glob("*/include"):
             WORD_SOURCES.extend((p, 2) for p in inc.glob("*") if p.suffix in (".h", ".hpp"))
-    ref = ROOT / "_v311_ref"
-    if ref.is_dir():
-        WORD_SOURCES.extend((p, 3) for p in ref.rglob("*") if p.is_file() and p.suffix in (".txt", ".md"))
-    books = ROOT / "模板：原始文件"
-    if books.is_dir():
-        WORD_SOURCES.extend((p, 1) for p in books.glob("*") if p.is_file())
+    # 只使用新树内/系统工具提供的词汇源；旧树仅作历史归档，不参与构建或检查。
     for path, weight in WORD_SOURCES:
         try:
             text = path.read_text(encoding="utf-8", errors="ignore")

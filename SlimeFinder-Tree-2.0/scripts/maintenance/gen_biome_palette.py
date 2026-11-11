@@ -7,8 +7,8 @@ import io
 import os
 import re
 
-SRC = r'C:\Tools\cubiomes\cubiomes-master\biomes.h'
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC = os.path.join(ROOT, 'third_party', 'cubiomes', 'biomes.h')
 OUT = os.path.join(ROOT, 'src', 'core', 'BiomePalette.inc')
 
 txt = io.open(SRC, encoding='utf-8').read()

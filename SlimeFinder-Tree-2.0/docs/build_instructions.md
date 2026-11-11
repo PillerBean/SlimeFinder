@@ -138,8 +138,7 @@ echo %ERRORLEVEL%   :: 0 = 通过（预设/边界截断/复制命令格式/结�
 
 ### 3.3 与参考实现交叉验证（需 Python 3；本机用 `py -3`）
 ```bat
-py -3 tests\verify_against_reference.py ^
-       "..\模板：原始文件\SlimeChecker.exe" ^
+py -3 tests\reference\verify_against_reference.py ^
        "build\slime_tests.exe"
 ```
 111 项对照：Java/基岩扫描坐标集合、严格/密度窗口集合与密度值、
