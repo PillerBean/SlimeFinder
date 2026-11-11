@@ -1,5 +1,21 @@
 # v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
 
+# ---------------------------------------------------------------- zstd（BSD）：缓存块压缩
+# 自包含 vendored 源码，不依赖系统 zstd。
+file(GLOB ZSTD_COMMON_SRC CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zstd/lib/common/*.c)
+file(GLOB ZSTD_COMPRESS_SRC CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zstd/lib/compress/*.c)
+file(GLOB ZSTD_DECOMPRESS_SRC CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zstd/lib/decompress/*.c)
+add_library(zstd STATIC ${ZSTD_COMMON_SRC} ${ZSTD_COMPRESS_SRC} ${ZSTD_DECOMPRESS_SRC})
+target_include_directories(zstd PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zstd/lib)
+target_compile_definitions(zstd PRIVATE ZSTD_LEGACY_SUPPORT=0 ZSTD_MULTITHREAD=1)
+if(MSVC)
+    target_compile_options(zstd PRIVATE /W0)
+endif()
+
 # ---------------------------------------------------------------- cubiomes（MIT）：群系生成
 # 来源：https://github.com/Cubitect/cubiomes（MIT License，见 third_party/cubiomes/LICENSE）
 # 用途：v3.5.2 地图彩色预览（Java 1.0~1.21 群系）与后续「群系权重」数据基础。
@@ -22,6 +38,7 @@ endif()
 add_library(slime_core STATIC
     src/core/RandomGenerators.cpp
     src/core/SlimeEngine.cpp
+    src/cache/CachePack.cpp
     src/core/FastMatch.cpp
     src/core/FastMt.cpp
     src/core/FastJava.cpp   # v3.6.16：Java 版判定 AVX2（16 lane）
@@ -34,7 +51,7 @@ add_library(slime_core STATIC
     src/utils/IncidentLog.cpp   # E3.3.7.2：移入核心库 —— 引擎需要写关键信息日志（Qt 无关）
 )
 target_include_directories(slime_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(slime_core PUBLIC OpenMP::OpenMP_CXX cubiomes)
+target_link_libraries(slime_core PUBLIC OpenMP::OpenMP_CXX cubiomes zstd)
 target_compile_definitions(slime_core PUBLIC _CRT_SECURE_NO_WARNINGS)
 if(WIN32)
     # IncidentLog / PerfLog 用 GetProcessMemoryInfo 统计工作集与内存峰值
@@ -209,6 +226,12 @@ endif()
 
 # ---------------------------------------------------------------- E3.3.1：SIMD 内核独立自检（不依赖引擎/OpenCL）
 # 覆盖：基岩种子查表、跨步采样扫描、密度 g×g 窗口计数（均与独立教科书参考逐位比对）
+add_executable(slime_cache_pack_tests
+    tests/integration/cache_pack_test.cpp
+)
+target_include_directories(slime_cache_pack_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_cache_pack_tests PRIVATE slime_core)
+
 add_executable(slime_kernel_tests
     tests/integration/kernel_selftest.cpp
 )
