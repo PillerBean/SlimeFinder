@@ -1642,6 +1642,21 @@ void MainWindow::buildV340Pages()
         buildPageLay->setContentsMargins(8, 8, 8, 8);
         buildPageLay->setSpacing(8);
         {
+            // v3.12.3：缓存页优先展示下载缓存（本版为空状态，后续版本接入）
+            auto* download = new QGroupBox(slime::ui::t("ui.cache.download.title"), buildPage);
+            download->setProperty("card", true);
+            auto* dlLay = new QVBoxLayout(download);
+            dlLay->setContentsMargins(8, 4, 8, 6);
+            auto* dlEmpty = new QLabel(slime::ui::t("ui.cache.download.empty"), download);
+            dlEmpty->setWordWrap(true);
+            dlLay->addWidget(dlEmpty);
+            auto* dlRo = new QLabel(slime::ui::t("ui.cache.download.readonly"), download);
+            dlRo->setObjectName(QStringLiteral("topSummary"));
+            dlRo->setWordWrap(true);
+            dlLay->addWidget(dlRo);
+            buildPageLay->addWidget(download);
+        }
+        {
             auto* info = new QGroupBox(slime::ui::t("ui.55fdaa2e6652"), buildPage);
             info->setProperty("card", true);
             auto* infoLay = new QVBoxLayout(info);

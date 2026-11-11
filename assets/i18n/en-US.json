@@ -1181,7 +1181,7 @@
   "ui.key.TargetCount": "Result count:",
   "ui.key.TargetCountTip": "How many results to return at most.",
   "ui.key.TargetTip": "How many results to return at most.",
-  "ui.nav.build": "Cache build",
+  "ui.nav.build": "Cache",
   "ui.nav.search": "Search",
   "ui.nav.settings": "Settings",
   "ui.preset.all": "All candidates",
@@ -1196,5 +1196,8 @@
   "ui.tab.progress": "Progress",
   "ui.key.ModePattern": "Pattern",
   "ui.lang.zh_tw": "Traditional Chinese",
-  "ui.lang.feedback": "Translation quality not good? Try contacting us!"
+  "ui.lang.feedback": "Translation quality not good? Try contacting us!",
+  "ui.cache.download.title": "Downloaded cache (recommended)",
+  "ui.cache.download.empty": "No downloaded cache yet. Download support will be available in a later version.",
+  "ui.cache.download.readonly": "Downloaded cache is read-only; packs can be deleted, but contents and size cannot be modified."
 }

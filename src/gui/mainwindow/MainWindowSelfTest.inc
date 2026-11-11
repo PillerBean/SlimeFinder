@@ -3768,9 +3768,9 @@ int MainWindow::runSelfTest()
             check(menuOk == 5, "五个菜单齐备（文件/编辑/查看/工具/帮助）");
             check(actionTotal >= 15 && actionBad == 0, "菜单项全部有标题且数量合理（实测见日志）");
 
-            check(m_navButtons.size() == kNavCount, "左侧导航为 3 项（搜索/缓存构建/设置）");
-            const QStringList wantNav = { slime::ui::t("ui.f04090805c6e"), slime::ui::t("ui.45f11f06bce7"),
-                                          slime::ui::t("ui.7debf9cb0372") };
+            check(m_navButtons.size() == kNavCount, "左侧导航为 3 项（搜索/缓存/设置）");
+            const QStringList wantNav = { slime::ui::t("ui.nav.search"), slime::ui::t("ui.nav.build"),
+                                          slime::ui::t("ui.nav.settings") };
             int navTextOk = 0;
             for (int i = 0; i < m_navButtons.size() && i < wantNav.size(); ++i) {
                 if (m_navButtons[i] && m_navButtons[i]->text() == wantNav[i]) ++navTextOk;

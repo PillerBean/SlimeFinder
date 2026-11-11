@@ -1181,7 +1181,7 @@
   "ui.key.TargetCount": "目标数量:",
   "ui.key.TargetCountTip": "最多返回多少个结果。",
   "ui.key.TargetTip": "æå¤è¿åå¤å°ä¸ªç»æã",
-  "ui.nav.build": "缓存构建",
+  "ui.nav.build": "缓存",
   "ui.nav.search": "搜索",
   "ui.nav.settings": "设置",
   "ui.preset.all": "找全部候选",
@@ -1196,5 +1196,8 @@
   "ui.tab.progress": "进度",
   "ui.key.ModePattern": "图案搜索",
   "ui.lang.zh_tw": "中文（繁体）",
-  "ui.lang.feedback": "翻译质量不佳？试试联系我们！"
+  "ui.lang.feedback": "翻译质量不佳？试试联系我们！",
+  "ui.cache.download.title": "下载缓存（推荐）",
+  "ui.cache.download.empty": "暂无下载缓存。下载功能将在后续版本开放。",
+  "ui.cache.download.readonly": "下载缓存只读，可整包删除，不可修改内容或大小。"
 }
