@@ -1213,5 +1213,15 @@
   "ui.cache.map.title": "缓存覆盖地图",
   "ui.cache.map.hint": "颜色越深表示该区域已有缓存；点缓存包可定位。",
   "ui.cache.pack.selectAll": "全选",
-  "ui.cache.pack.deleteSelected": "删除选中"
+  "ui.cache.pack.deleteSelected": "删除选中",
+  "ui.cache.download.dialog.note": "下载缓存为只读外部缓存，可整包删除，不能修改内容或大小。",
+  "ui.cache.download.available": "可下载",
+  "ui.cache.download.downloaded": "已下载",
+  "ui.cache.download.available.empty": "官方缓存目录尚未接入。\n后续版本将在此提供下载入口。",
+  "ui.cache.download.quick.all": "全部",
+  "ui.cache.download.quick.near": "附近 ±2k",
+  "ui.cache.download.quick.local": "局部 ±8k",
+  "ui.cache.download.quick.large": "较大 ±32k",
+  "ui.cache.download.search": "搜索范围或包名",
+  "ui.cache.download.close": "关闭"
 }

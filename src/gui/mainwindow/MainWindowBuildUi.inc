@@ -1684,6 +1684,16 @@ void MainWindow::buildV340Pages()
             m_cacheDownloadTable->setSelectionMode(QAbstractItemView::NoSelection);
             m_cacheDownloadTable->setMaximumHeight(150);
             dlLay->addWidget(m_cacheDownloadTable);
+            auto* manage = new QPushButton(slime::ui::t("ui.cache.download.title"), download);
+            manage->setObjectName(QStringLiteral("cacheDownloadManage"));
+            dlLay->addWidget(manage);
+            QObject::connect(manage, &QPushButton::clicked, this, [this]() {
+                if (!m_cacheStore) return;
+                CacheDownloadDialog dlg(m_cacheStore.get(), this);
+                dlg.onChanged = [this]() { refreshCacheUi(); };
+                dlg.exec();
+                refreshCacheUi();
+            });
             leftLay->addWidget(download);
         }
         {

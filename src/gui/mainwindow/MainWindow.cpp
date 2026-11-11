@@ -2,6 +2,7 @@
 #include "i18n/UiText.h"
 #include "gui/mainwindow/MainWindow.h"
 #include "gui/widgets/CacheCoverageMap.h"
+#include "gui/dialogs/CacheDownloadDialog.h"
 
 #include <QApplication>
 #include <QStyledItemDelegate>   // v3.5.5：结果列表数值显示

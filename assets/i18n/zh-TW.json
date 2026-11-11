@@ -1213,5 +1213,15 @@
   "ui.cache.map.title": "快取覆蓋地圖",
   "ui.cache.map.hint": "顏色越深表示該區域已有快取；點快取包可定位。",
   "ui.cache.pack.selectAll": "全選",
-  "ui.cache.pack.deleteSelected": "刪除選中"
+  "ui.cache.pack.deleteSelected": "刪除選中",
+  "ui.cache.download.dialog.note": "下載快取為唯讀外部快取，可整包刪除，不能修改內容或大小。",
+  "ui.cache.download.available": "可下載",
+  "ui.cache.download.downloaded": "已下載",
+  "ui.cache.download.available.empty": "官方快取目錄尚未接入。\n後續版本將在此提供下載入口。",
+  "ui.cache.download.quick.all": "全部",
+  "ui.cache.download.quick.near": "附近 ±2k",
+  "ui.cache.download.quick.local": "局部 ±8k",
+  "ui.cache.download.quick.large": "較大 ±32k",
+  "ui.cache.download.search": "搜尋範圍或包名",
+  "ui.cache.download.close": "關閉"
 }

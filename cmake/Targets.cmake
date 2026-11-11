@@ -122,6 +122,7 @@ add_executable(SlimeFinder WIN32
     src/gui/dialogs/AfkDialog.cpp   # v3.5.2（任务 1）：挂机点（环形覆盖）对话框
     src/gui/widgets/MapPreviewWidget.cpp # v3.5.2（任务 2）：地图预览控件（缩放/平移/图层）
     src/gui/widgets/CacheCoverageMap.cpp # v3.12.3：缓存覆盖地图
+    src/gui/dialogs/CacheDownloadDialog.cpp
     src/gui/dialogs/MapDialog.cpp       # v3.5.2（任务 2）：地图预览对话框
     src/gui/mainwindow/MainWindow.cpp
     src/gui/widgets/PatternEditor.cpp
