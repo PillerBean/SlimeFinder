@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存页方案 A - 下载优先三段式</title>
+<link rel="stylesheet" href="cache-ui.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">算法 <strong>精确</strong></span>
+      <span class="pill">性能 <strong>GPU 可用</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h1>缓存</h1>
+          <p>官方下载缓存优先；也可以构建自己的本地缓存。</p>
+        </div>
+        <span class="spacer"></span>
+        <span class="tag gray">v3.12.3</span>
+      </div>
+
+      <!-- 1. 下载缓存 -->
+      <section class="download-hero section">
+        <div class="icon">↓</div>
+        <div>
+          <h2>下载缓存 <span class="tag">推荐</span></h2>
+          <p>官方缓存包只读，可直接使用；可删除整包，不能修改内容或大小。</p>
+        </div>
+        <span class="spacer"></span>
+        <div class="row">
+          <button class="btn" disabled>刷新列表</button>
+          <button class="btn" disabled>打开下载页</button>
+        </div>
+      </section>
+      <div class="empty section">
+        暂无下载缓存。下载功能将在后续版本开放。<br>
+        <span class="note">下载区优先显示；已下载包会出现在下方「缓存包」列表。</span>
+      </div>
+
+      <!-- 2. 本地构建 -->
+      <section class="card card-pad section">
+        <div class="card-head">
+          <h2>本地构建</h2>
+          <span class="hint">只判定 Bedrock 史莱姆区块，不生成搜索结果</span>
+          <span class="spacer"></span>
+          <span class="tag gray">本地 · 可删除</span>
+        </div>
+        <div class="form-row">
+          <label class="field">
+            <span class="label">范围半径（区块）</span>
+            <input class="input" id="radius" type="number" min="1" max="131072" value="2048" />
+          </label>
+          <label class="field">
+            <span class="label">构建大小上限</span>
+            <div class="row">
+              <input class="input" id="budget" type="number" min="64" max="32768" value="1024" />
+              <span class="muted small">MB</span>
+            </div>
+          </label>
+          <div class="field">
+            <span class="label">预计</span>
+            <div class="input" style="background:#f7faf6;color:#5f6d63">约 8 个 pack · 压缩后 96 MB</div>
+          </div>
+          <button class="btn primary" id="buildBtn">开始构建</button>
+        </div>
+        <div class="summary-strip" style="margin-top:14px">
+          <span>已用 <strong id="used">0 MB</strong></span>
+          <span>上限 <strong id="limit">1024 MB</strong></span>
+          <span>状态 <strong id="state">等待构建</strong></span>
+          <span class="note">达到上限会自动停止并提示，不会删除已有本地缓存。</span>
+        </div>
+        <div style="margin-top:12px">
+          <div class="progress"><i style="width:0%"></i></div>
+        </div>
+        <div class="actions">
+          <button class="btn small" disabled>暂停</button>
+          <button class="btn small" disabled>取消</button>
+          <span class="note" id="buildHint">范围已选好，构建按钮可用。</span>
+        </div>
+      </section>
+
+      <!-- 3. 缓存包列表 -->
+      <section class="card">
+        <div class="card-pad" style="padding-bottom:8px">
+          <div class="card-head" style="margin-bottom:0">
+            <h2>缓存包</h2>
+            <span class="hint">下载缓存只读；本地缓存可删除</span>
+            <span class="spacer"></span>
+            <div class="tabbar" style="border:0;margin:0">
+              <button class="tab active" data-tab="all">全部 3</button>
+              <button class="tab" data-tab="downloaded">下载 0</button>
+              <button class="tab" data-tab="local">本地 3</button>
+            </div>
+          </div>
+        </div>
+        <table class="table">
+          <thead><tr><th>来源</th><th>覆盖范围</th><th>压缩后大小</th><th>状态</th><th style="width:70px">操作</th></tr></thead>
+          <tbody id="packRows">
+            <tr data-source="local">
+              <td><span class="tag gray">本地</span></td>
+              <td class="range">-2048..2047, -2048..2047</td>
+              <td class="num">24.1 MB</td>
+              <td class="muted">可用</td>
+              <td><button class="btn small danger">删除</button></td>
+            </tr>
+            <tr data-source="local">
+              <td><span class="tag gray">本地</span></td>
+              <td class="range">2048..4095, -2048..2047</td>
+              <td class="num">23.8 MB</td>
+              <td class="muted">可用</td>
+              <td><button class="btn small danger">删除</button></td>
+            </tr>
+            <tr data-source="local">
+              <td><span class="tag gray">本地</span></td>
+              <td class="range">-2048..2047, 2048..4095</td>
+              <td class="num">22.9 MB</td>
+              <td class="muted">可用</td>
+              <td><button class="btn small danger">删除</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="warn" style="margin-top:14px">
+        检测到旧格式缓存文件；本版本不读取、不删除该文件。
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  const radius = document.getElementById('radius');
+  const budget = document.getElementById('budget');
+  const build = document.getElementById('buildBtn');
+  const hint = document.getElementById('buildHint');
+  const state = document.getElementById('state');
+  function sync() {
+    const ok = Number(radius.value) >= 1 && Number(budget.value) >= 64;
+    build.disabled = !ok;
+    build.style.opacity = ok ? '1' : '.5';
+    hint.textContent = ok ? '范围已选好，构建按钮可用。' : '请先填写有效的范围和预算。';
+    document.getElementById('limit').textContent = (budget.value || 0) + ' MB';
+  }
+  radius.addEventListener('input', sync);
+  budget.addEventListener('input', sync);
+  build.addEventListener('click', () => {
+    if (build.disabled) return;
+    state.textContent = '构建中 · 12%';
+    build.disabled = true;
+    hint.textContent = '构建中：会自动写入 local packs。';
+    const bar = document.querySelector('.progress > i');
+    let p = 12;
+    const timer = setInterval(() => {
+      p = Math.min(100, p + 7);
+      bar.style.width = p + '%';
+      state.textContent = p < 100 ? `构建中 · ${p}%` : '已完成';
+      if (p >= 100) { clearInterval(timer); build.disabled = false; }
+    }, 240);
+  });
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const f = t.dataset.tab;
+    document.querySelectorAll('#packRows tr').forEach(tr => {
+      tr.style.display = (f === 'all' || tr.dataset.source === f) ? '' : 'none';
+    });
+  }));
+  sync();
+</script>
+</body>
+</html>

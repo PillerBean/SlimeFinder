@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存页方案 C - 下载入口 + 构建步骤</title>
+<link rel="stylesheet" href="cache-ui.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">缓存 <strong>v3</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+    <div class="content">
+      <div class="page-head">
+        <div><h1>缓存</h1><p>先看官方下载，再按需补本地缺口。</p></div>
+        <span class="spacer"></span>
+        <span class="tag gray">步骤式</span>
+      </div>
+
+      <section class="download-hero section" style="padding:22px">
+        <div class="icon">⇩</div>
+        <div style="min-width:0">
+          <h2>官方缓存下载 <span class="tag">优先推荐</span></h2>
+          <p>只读缓存包，覆盖范围固定；可删除，不能修改内容或大小。</p>
+        </div>
+        <span class="spacer"></span>
+        <div style="text-align:right">
+          <div class="muted small">暂无已下载缓存</div>
+          <button class="btn" disabled style="margin-top:6px">即将开放</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="row" style="margin-bottom:9px">
+          <h2 style="font-size:15px;margin:0">本地构建</h2>
+          <span class="muted small">只构建自己的缓存，达到大小上限自动停止</span>
+        </div>
+        <div class="stepper">
+          <div class="step">
+            <div class="n">1</div><div class="t">选择范围</div>
+            <div class="d">基岩 ±131,072 区块内</div>
+            <input class="input" id="radius" type="number" value="2048" min="1" max="131072" style="margin-top:8px;width:100%">
+            <div class="note" style="margin-top:4px">半径，单位区块</div>
+          </div>
+          <div class="step">
+            <div class="n">2</div><div class="t">设置上限</div>
+            <div class="d">按压缩后磁盘占用计算</div>
+            <input class="input" id="budget" type="number" value="1024" min="64" max="32768" style="margin-top:8px;width:100%">
+            <div class="note" style="margin-top:4px">MB，达到后自动停止</div>
+          </div>
+          <div class="step">
+            <div class="n">3</div><div class="t">开始构建</div>
+            <div class="d">写入 cache/local/ 多包</div>
+            <button class="btn primary" id="buildBtn" style="margin-top:8px;width:100%">开始构建</button>
+            <div class="note" id="hint" style="margin-top:4px">范围与预算有效</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <div class="card-pad" style="padding-bottom:8px">
+          <div class="card-head" style="margin-bottom:0">
+            <h2>缓存包</h2>
+            <span class="tag gray">全部 3</span>
+            <span class="spacer"></span>
+            <div class="toolbar">
+              <button class="btn small">刷新</button>
+            </div>
+          </div>
+        </div>
+        <table class="table">
+          <thead><tr><th>来源</th><th>覆盖范围</th><th>压缩后大小</th><th>状态</th><th style="width:70px">操作</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag gray">本地</span></td><td class="range">-2048..2047, -2048..2047</td><td class="num">24.1 MB</td><td class="muted">可用</td><td><button class="btn small danger">删除</button></td></tr>
+            <tr><td><span class="tag gray">本地</span></td><td class="range">2048..4095, -2048..2047</td><td class="num">23.8 MB</td><td class="muted">可用</td><td><button class="btn small danger">删除</button></td></tr>
+            <tr><td><span class="tag gray">本地</span></td><td class="range">-2048..2047, 2048..4095</td><td class="num">22.9 MB</td><td class="muted">可用</td><td><button class="btn small danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="warn">检测到旧格式缓存；本版本不读取、不迁移、不删除。</div>
+    </div>
+  </main>
+</div>
+<script>
+  const r = document.getElementById('radius'), b = document.getElementById('budget');
+  const btn = document.getElementById('buildBtn'), hint = document.getElementById('hint');
+  function sync(){
+    const ok = Number(r.value) >= 1 && Number(b.value) >= 64;
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '.4';
+    hint.textContent = ok ? '范围与预算有效' : '请填写有效范围和预算';
+  }
+  r.addEventListener('input', sync); b.addEventListener('input', sync);
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    btn.disabled = true; btn.textContent = '构建中…';
+    hint.textContent = '构建中 · 12%';
+    setTimeout(() => { btn.textContent = '开始构建'; hint.textContent = '已完成 · 可继续构建缺口'; btn.disabled = false; }, 1600);
+  });
+  sync();
+</script>
+</body>
+</html>

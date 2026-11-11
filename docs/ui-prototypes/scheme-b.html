@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存页方案 B - 左右工作台</title>
+<link rel="stylesheet" href="cache-ui.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">缓存 <strong>本地 + 下载</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+    <div class="content">
+      <div class="page-head">
+        <div><h1>缓存</h1><p>下载优先；构建自己的能力范围内缓存。</p></div>
+        <span class="spacer"></span>
+        <span class="tag gray">左右工作台</span>
+      </div>
+      <div class="split">
+        <div class="stack">
+          <!-- 下载 -->
+          <section class="card card-pad" style="background:linear-gradient(150deg,#f0f8ef,#fff)">
+            <div class="card-head">
+              <h2>下载缓存</h2><span class="tag">推荐</span>
+            </div>
+            <div class="empty">
+              暂无下载缓存。<br>
+              <span class="note">官方缓存只读；可删除整包，不能修改内容或大小。</span>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" disabled>去下载缓存</button>
+              <button class="btn" disabled>刷新</button>
+            </div>
+          </section>
+
+          <!-- 构建 -->
+          <section class="card card-pad">
+            <div class="card-head"><h2>本地构建</h2><span class="spacer"></span><span class="tag gray">本地</span></div>
+            <label class="field" style="margin-bottom:10px">
+              <span class="label">范围半径（区块）</span>
+              <input class="input" id="radius" type="number" value="2048" min="1" max="131072">
+            </label>
+            <label class="field" style="margin-bottom:10px">
+              <span class="label">构建大小上限（MB）</span>
+              <input class="input" id="budget" type="number" value="1024" min="64" max="32768">
+            </label>
+            <div class="kpis" style="margin-bottom:10px">
+              <div class="kpi"><div class="v" id="packs">8</div><div class="k">预计 pack</div></div>
+              <div class="kpi"><div class="v" id="size">96 MB</div><div class="k">预计压缩</div></div>
+              <div class="kpi"><div class="v">0 MB</div><div class="k">当前已用</div></div>
+            </div>
+            <button class="btn primary" id="buildBtn" style="width:100%">开始构建</button>
+            <p class="note" id="hint" style="margin:8px 0 0">范围与预算有效，按钮可用。</p>
+          </section>
+
+          <div class="warn">旧格式缓存存在：本版本不读取、不删除。</div>
+        </div>
+
+        <div class="stack">
+          <section class="card">
+            <div class="card-pad" style="padding-bottom:10px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>缓存库</h2>
+                <span class="hint">下载包只读；本地包可删除</span>
+                <span class="spacer"></span>
+                <span class="tag gray">3 个包</span>
+              </div>
+            </div>
+            <table class="table">
+              <thead><tr><th>来源</th><th>覆盖范围</th><th>大小</th><th>操作</th></tr></thead>
+              <tbody id="rows">
+                <tr><td><span class="tag gray">本地</span></td><td class="range">-2048..2047, -2048..2047</td><td class="num">24.1 MB</td><td><button class="btn small danger">删除</button></td></tr>
+                <tr><td><span class="tag gray">本地</span></td><td class="range">2048..4095, -2048..2047</td><td class="num">23.8 MB</td><td><button class="btn small danger">删除</button></td></tr>
+                <tr><td><span class="tag gray">本地</span></td><td class="range">-2048..2047, 2048..4095</td><td class="num">22.9 MB</td><td><button class="btn small danger">删除</button></td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="card card-pad">
+            <div class="card-head"><h2>使用建议</h2></div>
+            <div class="summary-strip">
+              <span>官方下载包优先</span><span>本地构建只做缺口</span><span>下载包不可改大小</span>
+            </div>
+            <p class="footnote" style="margin:10px 0 0">下载缓存有版本校验；版本不匹配会明确提示，不会静默使用。</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  const r = document.getElementById('radius'), b = document.getElementById('budget');
+  const btn = document.getElementById('buildBtn'), hint = document.getElementById('hint');
+  function sync(){
+    const ok = Number(r.value) >= 1 && Number(b.value) >= 64;
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '.5';
+    hint.textContent = ok ? '范围与预算有效，按钮可用。' : '请填写有效范围与预算。';
+  }
+  r.addEventListener('input', sync); b.addEventListener('input', sync);
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    hint.textContent = '构建中：写入 cache/local/…';
+    btn.textContent = '构建中…'; btn.disabled = true;
+    setTimeout(() => { hint.textContent = '已完成 · 可继续构建缺口'; btn.textContent = '开始构建'; btn.disabled = false; }, 1400);
+  });
+  sync();
+</script>
+</body>
+</html>
