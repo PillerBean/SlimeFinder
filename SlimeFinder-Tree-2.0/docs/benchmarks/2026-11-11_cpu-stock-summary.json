@@ -1,0 +1,70 @@
+{
+  "java_10k_single": {
+    "n": 7,
+    "median_chunks_per_s": 881949000.0,
+    "min_chunks_per_s": 777688000.0,
+    "max_chunks_per_s": 897714000.0,
+    "median_scan_ms": 113.4,
+    "ns_per_chunk": 1.133852410967074,
+    "samples_m_s": [
+      873.089,
+      881.949,
+      889.105,
+      777.688,
+      866.215,
+      897.714,
+      890.645
+    ]
+  },
+  "java_10k_multi": {
+    "n": 7,
+    "median_chunks_per_s": 6156953000.0,
+    "min_chunks_per_s": 5562447000.0,
+    "max_chunks_per_s": 6669824000.0,
+    "median_scan_ms": 16.2,
+    "ns_per_chunk": 0.16241800124184805,
+    "samples_m_s": [
+      5950.752,
+      5562.447,
+      6241.301,
+      6147.982,
+      6156.953,
+      6634.687,
+      6669.824
+    ]
+  },
+  "bedrock_2k_single": {
+    "n": 7,
+    "median_chunks_per_s": 39353000.0,
+    "min_chunks_per_s": 38565000.0,
+    "max_chunks_per_s": 40332000.0,
+    "median_scan_ms": 101.6,
+    "ns_per_chunk": 25.41102330190837,
+    "samples_m_s": [
+      39.236,
+      38.565,
+      40.164,
+      39.306,
+      39.353,
+      40.317,
+      40.332
+    ]
+  },
+  "bedrock_2k_multi": {
+    "n": 7,
+    "median_chunks_per_s": 253741000.0,
+    "min_chunks_per_s": 248679000.0,
+    "max_chunks_per_s": 264524000.0,
+    "median_scan_ms": 15.8,
+    "ns_per_chunk": 3.9410264797569177,
+    "samples_m_s": [
+      262.185,
+      253.741,
+      248.679,
+      256.149,
+      253.29,
+      264.524,
+      252.28
+    ]
+  }
+}
