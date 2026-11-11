@@ -81,6 +81,7 @@
           <div class="toolstrip" style="padding-top:0;padding-bottom:0;border:0">
             <div class="bulkbar" id="bulkbar">
               <span>已选 <strong id="selCount">0</strong> 个</span>
+              <button class="btn small" id="selectAllFiltered">全选筛选结果</button>
               <span class="spacer"></span>
               <button class="btn small" id="bulkAction">下载选中</button>
               <button class="btn small danger hidden" id="bulkDelete">删除选中</button>
@@ -227,6 +228,11 @@
   document.getElementById('next').addEventListener('click', () => { if ((page+1)*PAGE < filtered().length) { page++; selectedSet.clear(); render(); } });
   document.getElementById('selectAll').addEventListener('change', e => {
     selectedSet.clear(); if (e.target.checked) pageRows().forEach(p=>selectedSet.add(p.id)); render();
+  });
+  document.getElementById('selectAllFiltered').addEventListener('click', () => {
+    selectedSet.clear();
+    filtered().forEach(p => selectedSet.add(p.id));
+    render();
   });
   document.getElementById('bulkAction').addEventListener('click', () => { selectedSet.clear(); render(); });
   document.getElementById('bulkDelete').addEventListener('click', () => {
