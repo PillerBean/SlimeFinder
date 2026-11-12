@@ -53,5 +53,8 @@ private:
     QLabel* m_availableStatus = nullptr;
     QPushButton* m_loadManifest = nullptr;
     QPushButton* m_downloadSelected = nullptr;
+    QLineEdit* m_availableSearch = nullptr;
     QVector<RemoteCachePack> m_availablePacks;
+    int m_availableRange = 0;
+    QString m_availableQuery;
 };

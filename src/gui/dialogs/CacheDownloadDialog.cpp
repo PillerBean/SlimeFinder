@@ -67,6 +67,25 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         m_availableStatus->setWordWrap(true);
         toolsLay->addWidget(m_loadManifest);
         toolsLay->addWidget(netdisk);
+        auto* rangeAll = new QPushButton(slime::ui::t("ui.cache.download.quick.all"), tools);
+        auto* rangeNear = new QPushButton(slime::ui::t("ui.cache.download.quick.near"), tools);
+        auto* rangeLocal = new QPushButton(slime::ui::t("ui.cache.download.quick.local"), tools);
+        auto* rangeLarge = new QPushButton(slime::ui::t("ui.cache.download.quick.large"), tools);
+        for (QPushButton* b : { rangeAll, rangeNear, rangeLocal, rangeLarge }) {
+            b->setCheckable(true);
+            toolsLay->addWidget(b);
+        }
+        rangeAll->setChecked(true);
+        auto* rangeGroup = new QButtonGroup(this);
+        rangeGroup->setExclusive(true);
+        rangeGroup->addButton(rangeAll, 0);
+        rangeGroup->addButton(rangeNear, 2048);
+        rangeGroup->addButton(rangeLocal, 8192);
+        rangeGroup->addButton(rangeLarge, 32768);
+        m_availableSearch = new QLineEdit(tools);
+        m_availableSearch->setPlaceholderText(slime::ui::t("ui.cache.download.search"));
+        m_availableSearch->setMaximumWidth(180);
+        toolsLay->addWidget(m_availableSearch);
         toolsLay->addWidget(m_availableStatus, 1);
         lay->addWidget(tools);
 
@@ -100,6 +119,14 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         connect(netdisk, &QPushButton::clicked, this, []() {
             const QString url = CacheDownloadClient::netdiskUrl();
             if (!url.isEmpty()) QDesktopServices::openUrl(QUrl(url));
+        });
+        connect(rangeGroup, &QButtonGroup::idClicked, this, [this](int id) {
+            m_availableRange = id;
+            refreshAvailable();
+        });
+        connect(m_availableSearch, &QLineEdit::textChanged, this, [this](const QString& text) {
+            m_availableQuery = text.trimmed();
+            refreshAvailable();
         });
         connect(selectAll, &QCheckBox::toggled, this, [this](bool on) {
             for (int r = 0; r < m_availableTable->rowCount(); ++r)
@@ -303,8 +330,18 @@ void CacheDownloadDialog::refreshAvailable()
         if (name.isEmpty() || name.contains(QStringLiteral(".."))) return QString();
         return name;
     };
+    int shown = 0;
     for (int i = 0; i < m_availablePacks.size(); ++i) {
         const RemoteCachePack& p = m_availablePacks[i];
+        if (m_availableRange > 0 &&
+            std::max({ std::abs(p.minX), std::abs(p.maxX), std::abs(p.minZ), std::abs(p.maxZ) }) > m_availableRange)
+            continue;
+        if (!m_availableQuery.isEmpty()) {
+            const QString range = QStringLiteral("%1..%2, %3..%4").arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ);
+            if (!p.name.contains(m_availableQuery, Qt::CaseInsensitive) &&
+                !range.contains(m_availableQuery))
+                continue;
+        }
         const int row = m_availableTable->rowCount();
         m_availableTable->insertRow(row);
         auto* check = new QTableWidgetItem();
@@ -345,11 +382,13 @@ void CacheDownloadDialog::refreshAvailable()
                 if (onChanged) onChanged();
             });
         });
+        ++shown;
     }
     m_availableTable->blockSignals(false);
     if (m_availableStatus) m_availableStatus->setText(
-        slime::ui::t("ui.cache.download.availableCount").arg(m_availablePacks.size()));
+        slime::ui::t("ui.cache.download.availableCount").arg(shown));
 }
+
 
 void CacheDownloadDialog::downloadSelected()
 {
