@@ -1216,7 +1216,7 @@
   "ui.cache.pack.deleteSelected": "刪除選中",
   "ui.cache.download.dialog.note": "下載快取為唯讀外部快取，可整包刪除，不能修改內容或大小。",
   "ui.cache.download.available": "可下載",
-  "ui.cache.download.downloaded": "已下載",
+  "ui.cache.download.downloaded": "%1 已下載",
   "ui.cache.download.available.empty": "官方快取目錄尚未接入。\n後續版本將在此提供下載入口。",
   "ui.cache.download.quick.all": "全部",
   "ui.cache.download.quick.near": "附近 ±2k",
@@ -1224,5 +1224,15 @@
   "ui.cache.download.quick.large": "較大 ±32k",
   "ui.cache.download.search": "搜尋範圍或包名",
   "ui.cache.download.close": "關閉",
-  "ui.cache.download.manage": "開啟下載介面"
+  "ui.cache.download.manage": "開啟下載介面",
+  "ui.cache.pack.name": "快取包",
+  "ui.cache.download.fetch": "取得清單",
+  "ui.cache.download.unconfigured": "未設定下載來源（SLIME_CACHE_MANIFEST）",
+  "ui.cache.download.loading": "正在取得清單…",
+  "ui.cache.download.availableCount": "%1 個可下載快取包",
+  "ui.cache.download.download": "下載",
+  "ui.cache.download.downloadSelected": "下載選取",
+  "ui.cache.download.downloading": "正在下載 %1…",
+  "ui.cache.download.failed": "%1 下載失敗：%2",
+  "ui.cache.download.downloadedCount": "已下載 %1 個快取包"
 }

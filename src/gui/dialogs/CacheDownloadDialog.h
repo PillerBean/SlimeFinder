@@ -7,6 +7,7 @@
 #pragma once
 
 #include "cache/CacheStore.h"
+#include "gui/services/CacheDownloadClient.h"
 
 #include <QDialog>
 
@@ -19,6 +20,7 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QTableWidget;
+class QTabWidget;
 
 class CacheDownloadDialog : public QDialog {
 public:
@@ -29,6 +31,9 @@ public:
 
 private:
     void refresh();
+    void refreshAvailable();
+    void loadAvailable();
+    void downloadSelected();
     void updateSelectionUi();
     bool matchesRange(const slime::cache::CachePackEntry& e) const;
     bool matchesSearch(const slime::cache::CachePackEntry& e) const;
@@ -41,4 +46,12 @@ private:
     QPushButton* m_deleteSelected = nullptr;
     int m_rangeLimit = 0;
     std::vector<slime::cache::CachePackEntry> m_visible;
+
+    // v3.12.3 联网下载
+    CacheDownloadClient* m_client = nullptr;
+    QTableWidget* m_availableTable = nullptr;
+    QLabel* m_availableStatus = nullptr;
+    QPushButton* m_loadManifest = nullptr;
+    QPushButton* m_downloadSelected = nullptr;
+    QVector<RemoteCachePack> m_availablePacks;
 };

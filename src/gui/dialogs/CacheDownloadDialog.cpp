@@ -8,6 +8,8 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QDir>
+#include <QFileInfo>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -17,6 +19,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <memory>
 
 namespace {
 QString mbText(uint64_t bytes)
@@ -28,6 +31,7 @@ QString mbText(uint64_t bytes)
 CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidget* parent)
     : QDialog(parent)
     , m_store(store)
+    , m_client(new CacheDownloadClient(this))
 {
     setWindowTitle(slime::ui::t("ui.cache.download.title"));
     resize(1000, 700);
@@ -44,18 +48,64 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
     tabs->setObjectName(QStringLiteral("cacheDownloadTabs"));
     root->addWidget(tabs, 1);
 
-    // 可下载页：等待官方缓存目录/下载器接入
+    // 可下载页：manifest + pack 下载
     {
         auto* page = new QWidget(tabs);
         auto* lay = new QVBoxLayout(page);
-        lay->setContentsMargins(10, 14, 10, 10);
-        auto* empty = new QLabel(slime::ui::t("ui.cache.download.available.empty"), page);
-        empty->setWordWrap(true);
-        empty->setAlignment(Qt::AlignCenter);
-        lay->addStretch(1);
-        lay->addWidget(empty);
-        lay->addStretch(1);
+        lay->setContentsMargins(10, 10, 10, 10);
+        lay->setSpacing(8);
+        auto* tools = new QWidget(page);
+        auto* toolsLay = new QHBoxLayout(tools);
+        toolsLay->setContentsMargins(0, 0, 0, 0);
+        m_loadManifest = new QPushButton(slime::ui::t("ui.cache.download.fetch"), tools);
+        m_availableStatus = new QLabel(tools);
+        m_availableStatus->setObjectName(QStringLiteral("topSummary"));
+        m_availableStatus->setWordWrap(true);
+        toolsLay->addWidget(m_loadManifest);
+        toolsLay->addWidget(m_availableStatus, 1);
+        lay->addWidget(tools);
+
+        m_availableTable = new QTableWidget(0, 5, page);
+        m_availableTable->setHorizontalHeaderLabels(
+            { QString(), slime::ui::t("ui.cache.pack.name"), slime::ui::t("ui.cache.pack.range"),
+              slime::ui::t("ui.cache.pack.size"), slime::ui::t("ui.cache.pack.action") });
+        m_availableTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        m_availableTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        m_availableTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+        m_availableTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+        m_availableTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+        m_availableTable->verticalHeader()->setVisible(false);
+        m_availableTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        m_availableTable->setSelectionMode(QAbstractItemView::SingleSelection);
+        lay->addWidget(m_availableTable, 1);
+
+        auto* bottom = new QWidget(page);
+        auto* bottomLay = new QHBoxLayout(bottom);
+        bottomLay->setContentsMargins(0, 0, 0, 0);
+        auto* selectAll = new QCheckBox(slime::ui::t("ui.cache.pack.selectAll"), bottom);
+        m_downloadSelected = new QPushButton(slime::ui::t("ui.cache.download.downloadSelected"), bottom);
+        m_downloadSelected->setEnabled(false);
+        bottomLay->addWidget(selectAll);
+        bottomLay->addStretch(1);
+        bottomLay->addWidget(m_downloadSelected);
+        lay->addWidget(bottom);
         tabs->addTab(page, slime::ui::t("ui.cache.download.available"));
+
+        connect(m_loadManifest, &QPushButton::clicked, this, [this]() { loadAvailable(); });
+        connect(selectAll, &QCheckBox::toggled, this, [this](bool on) {
+            for (int r = 0; r < m_availableTable->rowCount(); ++r)
+                if (auto* it = m_availableTable->item(r, 0))
+                    it->setCheckState(on ? Qt::Checked : Qt::Unchecked);
+            if (m_downloadSelected) m_downloadSelected->setEnabled(on && m_availableTable->rowCount() > 0);
+        });
+        connect(m_availableTable, &QTableWidget::itemChanged, this, [this]() {
+            int n = 0;
+            for (int r = 0; r < m_availableTable->rowCount(); ++r)
+                if (auto* it = m_availableTable->item(r, 0); it && it->checkState() == Qt::Checked) ++n;
+            if (m_downloadSelected) m_downloadSelected->setEnabled(n > 0);
+        });
+        connect(m_downloadSelected, &QPushButton::clicked, this, [this]() { downloadSelected(); });
+        loadAvailable();
     }
 
     // 已下载页
@@ -194,6 +244,143 @@ bool CacheDownloadDialog::matchesSearch(const slime::cache::CachePackEntry& e) c
     const QString range = QStringLiteral("%1..%2, %3..%4")
                               .arg(e.rect.minX).arg(e.rect.maxX).arg(e.rect.minZ).arg(e.rect.maxZ);
     return range.contains(q) || QString::fromStdString(e.file).contains(q, Qt::CaseInsensitive);
+}
+
+void CacheDownloadDialog::loadAvailable()
+{
+    if (!m_client || !m_availableStatus) return;
+    m_availablePacks.clear();
+    if (m_availableTable) m_availableTable->setRowCount(0);
+    const QString primary = CacheDownloadClient::primaryManifestUrl();
+    const QString fallback = CacheDownloadClient::fallbackManifestUrl();
+    if (primary.trimmed().isEmpty()) {
+        m_availableStatus->setText(slime::ui::t("ui.cache.download.unconfigured"));
+        return;
+    }
+    m_availableStatus->setText(slime::ui::t("ui.cache.download.loading"));
+    const auto apply = [this](bool ok, const QString& err, const QVector<RemoteCachePack>& packs) {
+        if (!m_availableStatus || !m_availableTable) return;
+        if (!ok) {
+            m_availableStatus->setText(err);
+            return;
+        }
+        m_availablePacks = packs;
+        refreshAvailable();
+    };
+    if (fallback.trimmed().isEmpty()) {
+        m_client->fetchManifest(QUrl(primary), apply);
+    } else {
+        m_client->fetchManifest(QUrl(primary), [this, apply, fallback](bool ok, const QString& err,
+                                                                       const QVector<RemoteCachePack>& packs) {
+            if (ok) {
+                apply(true, {}, packs);
+                return;
+            }
+            m_client->fetchManifest(QUrl(fallback), [apply](bool ok2, const QString& err2,
+                                                             const QVector<RemoteCachePack>& packs2) {
+                apply(ok2, err2, packs2);
+            });
+        });
+    }
+}
+
+void CacheDownloadDialog::refreshAvailable()
+{
+    if (!m_availableTable) return;
+    m_availableTable->blockSignals(true);
+    m_availableTable->setRowCount(0);
+    const auto destName = [](const RemoteCachePack& p) {
+        const QString name = QFileInfo(p.file).fileName();
+        if (name.isEmpty() || name.contains(QStringLiteral(".."))) return QString();
+        return name;
+    };
+    for (int i = 0; i < m_availablePacks.size(); ++i) {
+        const RemoteCachePack& p = m_availablePacks[i];
+        const int row = m_availableTable->rowCount();
+        m_availableTable->insertRow(row);
+        auto* check = new QTableWidgetItem();
+        check->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable);
+        check->setCheckState(Qt::Unchecked);
+        check->setData(Qt::UserRole, i);
+        m_availableTable->setItem(row, 0, check);
+        m_availableTable->setItem(row, 1, new QTableWidgetItem(p.name));
+        m_availableTable->setItem(row, 2, new QTableWidgetItem(QStringLiteral("%1..%2, %3..%4")
+                                                                  .arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ)));
+        m_availableTable->setItem(row, 3, new QTableWidgetItem(mbText(static_cast<uint64_t>(p.bytes))));
+        auto* dl = new QPushButton(slime::ui::t("ui.cache.download.download"), m_availableTable);
+        dl->setObjectName(QStringLiteral("miniButton"));
+        m_availableTable->setCellWidget(row, 4, dl);
+        connect(dl, &QPushButton::clicked, this, [this, p, destName]() {
+            const QString name = destName(p);
+            if (name.isEmpty() || !m_client) return;
+            QDir().mkpath(QString::fromStdWString((m_store->root() / "downloaded").wstring()));
+            const auto dest = m_store->root() / "downloaded" / name.toStdWString();
+            if (m_availableStatus) m_availableStatus->setText(
+                slime::ui::t("ui.cache.download.downloading").arg(p.name));
+            m_client->downloadPack(p.url, p, QString::fromStdWString(dest.wstring()),
+                                   [this, p, dest](bool ok, const QString& err) {
+                if (!ok) {
+                    if (m_availableStatus) m_availableStatus->setText(
+                        slime::ui::t("ui.cache.download.failed").arg(p.name, err));
+                    return;
+                }
+                std::string addErr;
+                if (!m_store->addPack(dest, slime::cache::CacheStore::kDownloadedDir, &addErr)) {
+                    if (m_availableStatus) m_availableStatus->setText(
+                        slime::ui::t("ui.cache.download.failed").arg(p.name, QString::fromStdString(addErr)));
+                    return;
+                }
+                if (m_availableStatus) m_availableStatus->setText(
+                    slime::ui::t("ui.cache.download.downloaded").arg(p.name));
+                refresh();
+                if (onChanged) onChanged();
+            });
+        });
+    }
+    m_availableTable->blockSignals(false);
+    if (m_availableStatus) m_availableStatus->setText(
+        slime::ui::t("ui.cache.download.availableCount").arg(m_availablePacks.size()));
+}
+
+void CacheDownloadDialog::downloadSelected()
+{
+    if (!m_client || !m_availableTable) return;
+    QVector<RemoteCachePack> chosen;
+    for (int r = 0; r < m_availableTable->rowCount(); ++r) {
+        if (auto* it = m_availableTable->item(r, 0); it && it->checkState() == Qt::Checked) {
+            const int idx = it->data(Qt::UserRole).toInt();
+            if (idx >= 0 && idx < m_availablePacks.size()) chosen.push_back(m_availablePacks[idx]);
+        }
+    }
+    if (chosen.isEmpty()) return;
+    m_downloadSelected->setEnabled(false);
+    const int totalCount = chosen.size();
+    auto pending = std::make_shared<int>(chosen.size());
+    auto failed = std::make_shared<int>(0);
+    for (const RemoteCachePack& p : chosen) {
+        const QString name = QFileInfo(p.file).fileName();
+        if (name.isEmpty() || name.contains(QStringLiteral(".."))) {
+            --*pending;
+            continue;
+        }
+        QDir().mkpath(QString::fromStdWString((m_store->root() / "downloaded").wstring()));
+        const auto dest = m_store->root() / "downloaded" / name.toStdWString();
+        m_client->downloadPack(p.url, p, QString::fromStdWString(dest.wstring()),
+                               [this, p, dest, pending, failed, totalCount](bool ok, const QString& err) {
+            if (!ok) {
+                ++*failed;
+            } else {
+                std::string addErr;
+                if (!m_store->addPack(dest, slime::cache::CacheStore::kDownloadedDir, &addErr)) ++*failed;
+            }
+            if (--*pending == 0) {
+                if (m_availableStatus) m_availableStatus->setText(
+                    slime::ui::t("ui.cache.download.downloadedCount").arg(totalCount));
+                refresh();
+                if (onChanged) onChanged();
+            }
+        });
+    }
 }
 
 void CacheDownloadDialog::refresh()

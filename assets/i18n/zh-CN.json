@@ -1216,7 +1216,7 @@
   "ui.cache.pack.deleteSelected": "删除选中",
   "ui.cache.download.dialog.note": "下载缓存为只读外部缓存，可整包删除，不能修改内容或大小。",
   "ui.cache.download.available": "可下载",
-  "ui.cache.download.downloaded": "已下载",
+  "ui.cache.download.downloaded": "%1 已下载",
   "ui.cache.download.available.empty": "官方缓存目录尚未接入。\n后续版本将在此提供下载入口。",
   "ui.cache.download.quick.all": "全部",
   "ui.cache.download.quick.near": "附近 ±2k",
@@ -1224,5 +1224,15 @@
   "ui.cache.download.quick.large": "较大 ±32k",
   "ui.cache.download.search": "搜索范围或包名",
   "ui.cache.download.close": "关闭",
-  "ui.cache.download.manage": "打开下载界面"
+  "ui.cache.download.manage": "打开下载界面",
+  "ui.cache.pack.name": "缓存包",
+  "ui.cache.download.fetch": "获取清单",
+  "ui.cache.download.unconfigured": "未配置下载源（SLIME_CACHE_MANIFEST）",
+  "ui.cache.download.loading": "正在获取清单…",
+  "ui.cache.download.availableCount": "%1 个可下载缓存包",
+  "ui.cache.download.download": "下载",
+  "ui.cache.download.downloadSelected": "下载选中",
+  "ui.cache.download.downloading": "正在下载 %1…",
+  "ui.cache.download.failed": "%1 下载失败：%2",
+  "ui.cache.download.downloadedCount": "已下载 %1 个缓存包"
 }
