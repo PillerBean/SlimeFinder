@@ -123,6 +123,10 @@ $cfgText = @"
   "gpu": {
     "enabled": false
   },
+  "cacheDownload": {
+    "primary": "",
+    "fallback": ""
+  },
   "algorithm": {
     "mode": "exact",
     "layerBlock": 16,

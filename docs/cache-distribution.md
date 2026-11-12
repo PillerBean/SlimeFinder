@@ -56,3 +56,23 @@ powershell -File scripts\release\publish_cache.ps1 `
 - 主源失败且备用源非空时尝试备用源。
 
 当前 v3.12.3 仍以本地缓存为主，联网下载为前置接入，未配置官方地址。
+
+## 客户端配置（无需改环境变量）
+
+在程序目录 `config.json` 中填写：
+
+```json
+{
+  "cacheDownload": {
+    "primary": "https://<R2 自定义域名>/v3.12.3/manifest.json",
+    "fallback": "https://<国内网盘占位>/manifest.json"
+  }
+}
+```
+
+环境变量优先级高于 `config.json`：
+
+```text
+SLIME_CACHE_MANIFEST
+SLIME_CACHE_MANIFEST_FALLBACK
+```

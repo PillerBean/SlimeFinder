@@ -1,6 +1,7 @@
 #include "gui/services/CacheDownloadClient.h"
 
 #include <QCryptographicHash>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -29,6 +30,15 @@ QUrl resolvePackUrl(const QUrl& manifestUrl, const QString& file, const QString&
     return base;
 }
 
+QString configValue(const QString& group, const QString& key)
+{
+    QFile f(QCoreApplication::applicationDirPath() + QStringLiteral("/config.json"));
+    if (!f.open(QIODevice::ReadOnly)) return {};
+    const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    if (!doc.isObject()) return {};
+    return doc.object().value(QStringLiteral("cacheDownload")).toObject().value(key).toString();
+}
+
 QString normalizedError(const QNetworkReply* reply)
 {
     if (!reply) return QStringLiteral("网络请求失败");
@@ -44,12 +54,16 @@ CacheDownloadClient::CacheDownloadClient(QObject* parent)
 
 QString CacheDownloadClient::primaryManifestUrl()
 {
-    return qEnvironmentVariable("SLIME_CACHE_MANIFEST");
+    const QString env = qEnvironmentVariable("SLIME_CACHE_MANIFEST");
+    if (!env.trimmed().isEmpty()) return env;
+    return configValue(QStringLiteral("cacheDownload"), QStringLiteral("primary"));
 }
 
 QString CacheDownloadClient::fallbackManifestUrl()
 {
-    return qEnvironmentVariable("SLIME_CACHE_MANIFEST_FALLBACK");
+    const QString env = qEnvironmentVariable("SLIME_CACHE_MANIFEST_FALLBACK");
+    if (!env.trimmed().isEmpty()) return env;
+    return configValue(QStringLiteral("cacheDownload"), QStringLiteral("fallback"));
 }
 
 void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallback done)
@@ -116,46 +130,68 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
     }
     const QString partPath = destPath + QStringLiteral(".part");
     QDir().mkpath(QFileInfo(destPath).absolutePath());
+    const qint64 offset = QFileInfo(partPath).size();
     QNetworkRequest req(packUrl);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    if (offset > 0) {
+        req.setRawHeader("Range", QByteArray("bytes=") + QByteArray::number(offset) + "-");
+    }
     auto* reply = m_net->get(req);
     QObject::connect(reply, &QNetworkReply::finished, this,
-                     [reply, partPath, destPath, pack, done]() {
+                     [reply, partPath, destPath, pack, offset, done]() {
                          reply->deleteLater();
                          if (reply->error() != QNetworkReply::NoError) {
-                             QFile::remove(partPath);
+                             // 保留 .part，下一次可继续断点下载。
                              done(false, normalizedError(reply));
                              return;
                          }
+                         const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
                          const QByteArray data = reply->readAll();
-                         if (pack.bytes > 0 && data.size() != pack.bytes) {
-                             QFile::remove(partPath);
-                             done(false, QStringLiteral("缓存包大小校验失败"));
-                             return;
-                         }
-                         if (!pack.sha256.isEmpty()) {
-                             const QString got = QString::fromLatin1(
-                                 QCryptographicHash::hash(data, QCryptographicHash::Sha256).toHex());
-                             if (got.compare(pack.sha256, Qt::CaseInsensitive) != 0) {
-                                 done(false, QStringLiteral("缓存包 SHA256 校验失败"));
+                         QFile part(partPath);
+                         if (offset > 0 && status == 206) {
+                             if (!part.open(QIODevice::Append)) {
+                                 done(false, QStringLiteral("无法追加缓存包临时文件"));
+                                 return;
+                             }
+                         } else {
+                             if (offset > 0 && status == 200) {
+                                 // 服务端不支持 Range：重新从头写。
+                                 part.close();
+                                 QFile::remove(partPath);
+                             }
+                             if (!part.open(QIODevice::WriteOnly)) {
+                                 done(false, QStringLiteral("无法写入缓存包临时文件"));
                                  return;
                              }
                          }
-                         QFile part(partPath);
-                         if (!part.open(QIODevice::WriteOnly)) {
-                             done(false, QStringLiteral("无法写入缓存包临时文件"));
-                             return;
-                         }
                          if (part.write(data) != data.size()) {
                              part.close();
-                             QFile::remove(partPath);
                              done(false, QStringLiteral("缓存包写入失败"));
                              return;
                          }
                          part.close();
+                         const qint64 total = QFileInfo(partPath).size();
+                         if (pack.bytes > 0 && total != pack.bytes) {
+                             done(false, QStringLiteral("缓存包大小校验失败"));
+                             return;
+                         }
+                         if (!pack.sha256.isEmpty()) {
+                             QFile verify(partPath);
+                             if (!verify.open(QIODevice::ReadOnly)) {
+                                 done(false, QStringLiteral("无法读取缓存包临时文件"));
+                                 return;
+                             }
+                             const QByteArray all = verify.readAll();
+                             const QString got = QString::fromLatin1(
+                                 QCryptographicHash::hash(all, QCryptographicHash::Sha256).toHex());
+                             if (got.compare(pack.sha256, Qt::CaseInsensitive) != 0) {
+                                 QFile::remove(partPath);
+                                 done(false, QStringLiteral("缓存包 SHA256 校验失败"));
+                                 return;
+                             }
+                         }
                          QFile::remove(destPath);
                          if (!QFile::rename(partPath, destPath)) {
-                             QFile::remove(partPath);
                              done(false, QStringLiteral("缓存包替换失败"));
                              return;
                          }
