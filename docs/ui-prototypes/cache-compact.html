@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>缓存页优化参考 - 紧凑版</title>
+<link rel="stylesheet" href="cache-ui.css">
+<style>
+  :root {
+    --cache-left: 372px;
+    --help-line: #d8e2d7;
+  }
+  .cache-content { padding-top: 18px; }
+  .cache-head { margin-bottom: 14px; }
+  .cache-head h1 { font-size: 23px; }
+  .cache-head p { font-size: 12px; }
+
+  .cache-layout {
+    display: grid;
+    grid-template-columns: var(--cache-left) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .cache-left, .cache-right { display: flex; flex-direction: column; gap: 12px; }
+  .cache-left { position: sticky; top: 10px; }
+
+  .cache-card { border-radius: 10px; }
+  .cache-card .card-head { margin-bottom: 9px; }
+  .cache-card .card-head h2 { font-size: 14px; }
+
+  /* 下载卡片收紧成一行，不再让空表格占高度 */
+  .download-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px dashed #cfe0cf;
+    background: #f7fbf6;
+    border-radius: 8px;
+    padding: 11px 12px;
+  }
+  .download-line .download-copy { min-width: 0; }
+  .download-line strong { display: block; font-size: 13px; }
+  .download-line .note { display: block; margin-top: 2px; line-height: 1.45; }
+  .download-line .btn { margin-left: auto; flex: none; }
+
+  /* 构建卡片：字段 + 主按钮，没有预估/进度等大块文字 */
+  .build-card .mode-line {
+    display: flex; align-items: center; gap: 7px;
+    margin: -2px 0 11px; color: var(--muted); font-size: 12px;
+  }
+  .build-card .fields { display: flex; flex-direction: column; gap: 9px; }
+  .build-card .field label { font-size: 12px; }
+  .input-unit { position: relative; }
+  .input-unit .input { padding-right: 40px; }
+  .input-unit .unit {
+    position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 11px; pointer-events: none;
+  }
+  .build-card .build-foot {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px;
+  }
+  .build-card .build-foot .btn { flex: 1; }
+  .build-card .build-foot .note { flex: none; }
+
+  /* 覆盖地图：固定高度，不再被表格拉伸 */
+  .coverage-card .map-wrap { border-top: 1px solid var(--line); }
+  #coverageMap { display: block; width: 100%; height: 350px; background: #f7faf5; }
+  .coverage-card .map-note {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 14px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 11px;
+  }
+  .coverage-card .map-note .spacer { flex: 1; }
+
+  /* 缓存库：占右侧剩下的高度，表头/空状态都紧凑 */
+  .library-card { flex: 1; min-height: 250px; }
+  .library-card .toolstrip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line); background: #fbfcfa;
+  }
+  .library-card .toolstrip .spacer { flex: 1; }
+  .library-card .table { font-size: 12px; }
+  .library-card .table th { padding: 7px 10px; }
+  .library-card .table td { padding: 7px 10px; }
+
+  /* ? 帮助：只保留一个小圆点，信息放悬停 */
+  .help {
+    display: inline-block; vertical-align: -2px;
+    width: 16px; height: 16px; flex: none;
+    border: 1px solid #bdcfbe; border-radius: 50%;
+    color: #58705b; background: #f7faf6;
+    font-size: 10px; line-height: 14px; font-weight: 700;
+    text-align: center; cursor: help; user-select: none;
+  }
+  .help:hover { background: var(--green-50); border-color: #88aa8c; }
+  .tooltip {
+    position: fixed; z-index: 100; max-width: 290px;
+    padding: 9px 11px; border: 1px solid #cfdccf; border-radius: 8px;
+    background: #ffffff; color: #38463a;
+    box-shadow: 0 8px 22px rgba(25, 50, 30, .14);
+    font-size: 12px; line-height: 1.55; pointer-events: none;
+    opacity: 0; transform: translateY(3px); transition: opacity .12s ease, transform .12s ease;
+  }
+  .tooltip.show { opacity: 1; transform: translateY(0); }
+  .tooltip strong { display: block; margin-bottom: 2px; font-size: 12px; }
+
+  .empty-soft {
+    border: 1px dashed #d6e2d6; border-radius: 8px;
+    color: var(--muted); background: #fafcf9;
+    padding: 14px; text-align: center; font-size: 12px;
+  }
+
+  @media (max-width: 1060px) {
+    .cache-layout { grid-template-columns: 1fr; }
+    .cache-left { position: static; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">缓存 <strong>本地 + 下载</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+
+    <div class="content cache-content">
+      <div class="page-head cache-head">
+        <div>
+          <h1>缓存</h1>
+          <p>下载、构建与覆盖管理</p>
+        </div>
+        <span class="spacer"></span>
+        <span class="tag gray">示例数据</span>
+      </div>
+
+      <div class="cache-layout">
+        <!-- 左列：下载 + 构建 -->
+        <div class="cache-left">
+          <section class="card card-pad cache-card">
+            <div class="card-head">
+              <h2>下载缓存</h2>
+              <span class="help" data-tip-title="下载缓存" data-tip="官方缓存只读，可整包删除，不能修改内容或大小；不占本地构建预算。">?</span>
+              <span class="spacer"></span>
+              <span class="tag">推荐</span>
+            </div>
+            <div class="download-line">
+              <div class="download-copy">
+                <strong>暂无下载缓存</strong>
+                <span class="note">可从官方源下载，或导入网盘缓存包。</span>
+              </div>
+              <a class="btn primary" href="download-page.html">打开下载界面</a>
+            </div>
+          </section>
+
+          <section class="card card-pad cache-card build-card">
+            <div class="card-head">
+              <h2>本地构建</h2>
+              <span class="help" data-tip-title="构建模式" data-tip="只判定史莱姆区块并写入缓存，不产生匹配结果。范围与「搜索」页共用同一份。">?</span>
+              <span class="spacer"></span>
+              <span class="tag gray">只写缓存</span>
+            </div>
+
+            <div class="fields">
+              <div class="field">
+                <label for="radius">范围半径
+                  <span class="help" data-tip-title="范围半径" data-tip="单位为区块。范围越大，构建越久、占用越高；默认与搜索页共用。">?</span>
+                </label>
+                <div class="input-unit">
+                  <input class="input" id="radius" type="number" value="2048" min="1" max="131072">
+                  <span class="unit">区块</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="budget">构建大小上限
+                  <span class="help" data-tip-title="构建大小上限" data-tip="达到上限后自动停止；已完成区域仍然有效，不会自动清理旧缓存。">?</span>
+                </label>
+                <div class="input-unit">
+                  <input class="input" id="budget" type="number" value="1024" min="64" max="32768">
+                  <span class="unit">MB</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="build-foot">
+              <button class="btn primary" type="button">开始构建</button>
+              <span class="note">可随时取消</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- 右列：地图 + 缓存库 -->
+        <div class="cache-right">
+          <section class="card map-card coverage-card">
+            <div class="card-pad" style="padding-bottom:9px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>覆盖地图</h2>
+                <span class="help" data-tip-title="覆盖地图" data-tip="绿色为本地缓存，蓝色为下载缓存，金色为当前选中。点击地图或列表可互相定位。">?</span>
+                <span class="spacer"></span>
+                <span class="tag gray" id="mapSummary">3 个缓存包</span>
+              </div>
+            </div>
+            <div class="map-wrap">
+              <canvas id="coverageMap" aria-label="缓存覆盖地图"></canvas>
+            </div>
+            <div class="map-note">
+              <span><i class="legend-dot local"></i>本地</span>
+              <span><i class="legend-dot downloaded"></i>下载</span>
+              <span><i class="legend-dot selected"></i>选中</span>
+              <span class="spacer"></span>
+              <span>点击列表或地图定位</span>
+            </div>
+          </section>
+
+          <section class="card cache-card library-card">
+            <div class="card-pad" style="padding-bottom:8px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>本地缓存</h2>
+                <span class="help" data-tip-title="本地缓存" data-tip="本地构建生成的 pack。删除只影响本地缓存，不会改动已下载的官方缓存。">?</span>
+                <span class="spacer"></span>
+                <span class="tag gray" id="packCount">3 个 pack</span>
+              </div>
+            </div>
+            <div class="toolstrip">
+              <span class="note">共 <strong id="rowCount">3</strong> 个缓存包</span>
+              <span class="spacer"></span>
+              <button class="btn small danger" type="button">删除选中</button>
+            </div>
+            <table class="table compact">
+              <thead>
+                <tr>
+                  <th style="width:28px"><input class="check" type="checkbox" aria-label="全选"></th>
+                  <th>来源</th><th>覆盖范围</th><th>大小</th><th style="width:70px">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input class="check" type="checkbox" aria-label="选择缓存包"></td>
+                  <td>本地</td><td class="range">-2048..2047, -2048..2047</td><td class="num">24.1 MB</td>
+                  <td><button class="btn small danger" type="button">删除</button></td>
+                </tr>
+                <tr>
+                  <td><input class="check" type="checkbox" aria-label="选择缓存包"></td>
+                  <td>本地</td><td class="range">2048..4095, -2048..2047</td><td class="num">23.8 MB</td>
+                  <td><button class="btn small danger" type="button">删除</button></td>
+                </tr>
+                <tr>
+                  <td><input class="check" type="checkbox" aria-label="选择缓存包"></td>
+                  <td>本地</td><td class="range">-2048..2047, 2048..4095</td><td class="num">22.9 MB</td>
+                  <td><button class="btn small danger" type="button">删除</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<script>
+  const packs = [
+    { x0:-2048, x1:2047, z0:-2048, z1:2047 },
+    { x0:2048, x1:4095, z0:-2048, z1:2047 },
+    { x0:-2048, x1:2047, z0:2048, z1:4095 }
+  ];
+  let selected = 0;
+  const canvas = document.getElementById('coverageMap');
+  const ctx = canvas.getContext('2d');
+  const view = { x0:-4096, x1:6144, z0:-4096, z1:6144 };
+
+  function sizeCanvas() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function w2s(x, z) {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    return { x:(x-view.x0)/(view.x1-view.x0)*w, y:h-(z-view.z0)/(view.z1-view.z0)*h };
+  }
+  function draw() {
+    sizeCanvas();
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#f7faf5'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = '#e1ebe0'; ctx.lineWidth = 1;
+    for (let i=0;i<=24;i++) {
+      const x=i/24*w, y=i/24*h;
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+    }
+    packs.forEach((p,i) => {
+      const a=w2s(p.x0,p.z0), b=w2s(p.x1+1,p.z1+1);
+      const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);
+      const ww=Math.abs(b.x-a.x), hh=Math.abs(b.y-a.y);
+      const sel = i === selected;
+      ctx.fillStyle = sel ? 'rgba(216,163,62,.26)' : 'rgba(103,179,123,.28)';
+      ctx.fillRect(x,y,ww,hh);
+      ctx.strokeStyle = sel ? '#d8a33e' : 'rgba(103,179,123,.65)';
+      ctx.lineWidth = sel ? 2 : 1;
+      ctx.strokeRect(x+.5,y+.5,Math.max(1,ww-1),Math.max(1,hh-1));
+    });
+    ctx.fillStyle='#90a094'; ctx.font='10px "Microsoft YaHei", sans-serif';
+    ctx.fillText('x ' + view.x0 + ' … ' + view.x1, 10, h-10);
+    ctx.fillText('z ' + view.z0 + ' … ' + view.z1, 10, 14);
+  }
+
+  // hover ? tooltip
+  const tip = document.getElementById('tooltip');
+  let tipTimer = null;
+  function showTip(el, x, y) {
+    const title = el.dataset.tipTitle || '说明';
+    const body = el.dataset.tip || '';
+    tip.innerHTML = '';
+    const b = document.createElement('strong'); b.textContent = title; tip.appendChild(b);
+    tip.appendChild(document.createTextNode(body));
+    tip.classList.add('show');
+    const pad = 10;
+    const rr = el.getBoundingClientRect();
+    let left = rr.left + rr.width/2 - 145;
+    let top = rr.bottom + 8;
+    if (left < pad) left = pad;
+    if (left + 300 > innerWidth - pad) left = innerWidth - 300 - pad;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.classList.remove('show'); }
+  document.querySelectorAll('.help').forEach(el => {
+    el.addEventListener('mouseenter', () => { clearTimeout(tipTimer); showTip(el); });
+    el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('focus', () => showTip(el));
+    el.addEventListener('blur', hideTip);
+  });
+
+  canvas.addEventListener('click', (e) => {
+    const r = canvas.getBoundingClientRect();
+    const sx = e.clientX-r.left, sy=e.clientY-r.top;
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    const x=view.x0+sx/w*(view.x1-view.x0), z=view.z0+(h-sy)/h*(view.z1-view.z0);
+    for (let i=packs.length-1;i>=0;i--) {
+      const p=packs[i];
+      if (x>=p.x0 && x<=p.x1 && z>=p.z0 && z<=p.z1) { selected=i; draw(); break; }
+    }
+  });
+  window.addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>
