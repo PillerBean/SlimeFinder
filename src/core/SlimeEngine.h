@@ -1,4 +1,4 @@
-// SlimeEngine.h - 史莱姆区块查找核心计算引擎（Qt 无关，可在任意线程运行）
+﻿// SlimeEngine.h - 史莱姆区块查找核心计算引擎（Qt 无关，可在任意线程运行）
 //
 // 职责：
 //   1. Java 版 / 基岩版区块判定（精确模拟游戏算法）
@@ -340,6 +340,11 @@ struct SearchOptions {
     int collectSkipZ0 = 0;
     int collectSkipZ1 = -1;
     const CacheManager* cache = nullptr; // 缓存只读句柄（生命周期由调用者保证）
+    // v3.12.3：基岩版搜索的分带缓存加载器。非空时引擎按 band 调用、
+    // 每次返回只包含该 band 相交 pack 的 CacheManager；band 结束即释放。
+    using CacheBandLoader = std::function<std::shared_ptr<CacheManager>(const Rect& band)>;
+    CacheBandLoader cacheBandLoader;
+    int cacheBandSize = 4096; // 每个核心 band 的边长（区块）
     // v3.1.2：分块路径的增量缓存写入（每块完成即合并，避免整图收集导致缓存为空/内存爆炸）
     CacheManager* cacheWrite = nullptr; // 可与 cache 为同一对象；仅分块路径使用
     int64_t cacheBudgetBytes = 0;       // >0：每次合并后按此预算丢弃最旧分块覆盖声明
@@ -463,6 +468,13 @@ public:
              const std::atomic<bool>& cancel,
              const ProgressFn& progress,
              SearchOutcome& out) const noexcept;
+
+    // v3.12.3：分带缓存搜索。按 cacheBandSize 切分区域，每带临时加载缓存，
+    // 用 halo 保证边界结果不丢，合并后按原排序/目标数截断。
+    void runBanded(const SearchOptions& options,
+                   const std::atomic<bool>& cancel,
+                   const ProgressFn& progress,
+                   SearchOutcome& out) const noexcept;
 
     // v3.1.1：估算一次搜索的耗时（含整图分块模式），不修改任何状态
     static bool estimateSearch(const SearchOptions& options, int threads, SearchEstimate& out) noexcept;

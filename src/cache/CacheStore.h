@@ -18,6 +18,7 @@
 
 namespace slime {
 class CacheManager;
+struct Rect;
 }
 
 namespace slime::cache {
@@ -43,7 +44,7 @@ public:
     const std::filesystem::path& root() const noexcept { return m_root; }
 
     // 加载 index.json；目录不存在时创建，索引不存在时视为空。
-    bool load(std::string* err = nullptr);
+    bool load(std::string* err = nullptr, bool scanOrphans = false);
     // 原子写 index.json。
     bool save(std::string* err = nullptr);
 
@@ -67,6 +68,8 @@ public:
 
     // 把所有 pack 读入现有 CacheManager（供引擎复用；小样本阶段用）。
     bool fillCacheManager(CacheManager& target, std::string* err = nullptr) const;
+    // 只把与 range 相交的 pack 读入 target；用于基岩搜索的分带缓存。
+    bool fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err = nullptr) const;
 
     // 把现有 CacheManager 的完整 1024 对齐子区域写成 local packs。
     // 未对齐/不足一个 1024 块的边缘不会被写入（避免把未计算区域声明为已覆盖）。

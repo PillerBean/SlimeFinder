@@ -140,7 +140,7 @@ std::string CacheStore::relativePath(const std::filesystem::path& p) const
     return rel.generic_string();
 }
 
-bool CacheStore::load(std::string* err)
+bool CacheStore::load(std::string* err, bool scanOrphans)
 {
     m_packs.clear();
     if (!ensureDirs(err)) return false;
@@ -202,7 +202,7 @@ bool CacheStore::load(std::string* err)
     }
     m_packs = std::move(deduped);
 
-    for (const char* source : { kLocalDir, kDownloadedDir }) {
+    if (scanOrphans) for (const char* source : { kLocalDir, kDownloadedDir }) {
         const auto dir = m_root / source;
         std::error_code ec;
         if (!std::filesystem::is_directory(dir, ec)) continue;
@@ -510,6 +510,56 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
         int64_t sumArea = 0;
         for (const Rect& r : ranges) sumArea += (static_cast<int64_t>(r.maxX) - r.minX + 1) *
                                                   (static_cast<int64_t>(r.maxZ) - r.minZ + 1);
+        if (sumArea == (static_cast<int64_t>(merged.maxX) - merged.minX + 1) *
+                           (static_cast<int64_t>(merged.maxZ) - merged.minZ + 1)) {
+            target.mergeRaw({ merged }, slimeChunks);
+        } else {
+            target.mergeRaw(ranges, slimeChunks);
+        }
+    }
+    return true;
+}
+
+bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err) const
+{
+    target.clear();
+    if (!range.valid()) return true;
+    std::vector<Rect> ranges;
+    std::vector<std::pair<int, int>> slimeChunks;
+    for (const auto& e : m_packs) {
+        const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
+        if (pr.maxX < range.minX || pr.minX > range.maxX ||
+            pr.maxZ < range.minZ || pr.minZ > range.maxZ) {
+            continue;
+        }
+        std::vector<uint8_t> bits;
+        if (!readPackBitmap(e, bits, err)) return false;
+        ranges.push_back(pr);
+        const int64_t w = e.rect.width();
+        const int64_t h = e.rect.height();
+        for (int64_t z = 0; z < h; ++z) {
+            for (int64_t x = 0; x < w; ++x) {
+                const int64_t bit = z * w + x;
+                if ((bits[static_cast<size_t>(bit / 8)] >> (bit % 8)) & 1u) {
+                    slimeChunks.emplace_back(static_cast<int>(e.rect.minX + x),
+                                             static_cast<int>(e.rect.minZ + z));
+                }
+            }
+        }
+    }
+    if (!ranges.empty()) {
+        Rect merged = ranges.front();
+        for (const Rect& r : ranges) {
+            merged.minX = (std::min)(merged.minX, r.minX);
+            merged.maxX = (std::max)(merged.maxX, r.maxX);
+            merged.minZ = (std::min)(merged.minZ, r.minZ);
+            merged.maxZ = (std::max)(merged.maxZ, r.maxZ);
+        }
+        int64_t sumArea = 0;
+        for (const Rect& r : ranges) {
+            sumArea += (static_cast<int64_t>(r.maxX) - r.minX + 1) *
+                       (static_cast<int64_t>(r.maxZ) - r.minZ + 1);
+        }
         if (sumArea == (static_cast<int64_t>(merged.maxX) - merged.minX + 1) *
                            (static_cast<int64_t>(merged.maxZ) - merged.minZ + 1)) {
             target.mergeRaw({ merged }, slimeChunks);

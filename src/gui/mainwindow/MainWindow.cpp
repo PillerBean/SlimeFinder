@@ -1088,17 +1088,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
             }
         }
     }
-    // v3.12.3：新目录缓存优先于旧单文件缓存；旧文件只作为历史保留，不再读取。
-    if (m_cacheStore && !m_cacheStore->packs().empty()) {
-        std::string cErr;
-        if (m_cacheStore->fillCacheManager(*m_cache, &cErr)) {
-            Logger::info("启动加载 v3 缓存成功（" + m_cacheDir.string() + "）：" +
-                         std::to_string(m_cacheStore->packs().size()) + " 个 pack / " +
-                         std::to_string(m_cache->entryCount()) + " 区块");
-        } else {
-            Logger::warning("启动加载 v3 缓存失败: " + cErr);
-        }
-    }
+    // v3.12.3：启动只加载 index.json，不展开任何 pack 位图。
+    // 基岩版搜索时才按分带加载；Java 搜索和构建页不读取缓存位图。
     updateCacheStatusUi();
     refreshCacheUi();
 

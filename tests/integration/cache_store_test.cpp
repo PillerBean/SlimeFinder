@@ -1,4 +1,4 @@
-#include "cache/CachePack.h"
+﻿#include "cache/CachePack.h"
 #include "cache/CacheStore.h"
 
 #include "core/CacheManager.h"
@@ -41,7 +41,7 @@ int main()
     }
 
     slime::cache::CacheStore store(root);
-    if (!store.load(&err)) {
+    if (!store.load(&err, true)) {
         std::printf("store load failed: %s\n", err.c_str());
         return 1;
     }
@@ -52,7 +52,7 @@ int main()
     }
 
     slime::cache::CacheStore reopened(root);
-    if (!reopened.load(&err)) {
+    if (!reopened.load(&err, true)) {
         std::printf("reload failed: %s\n", err.c_str());
         return 1;
     }
@@ -69,7 +69,7 @@ int main()
         std::printf("remove downloaded failed: %s\n", err.c_str());
         return 1;
     }
-    reopened.load(&err);
+    reopened.load(&err, true);
     if (reopened.packs().size() != 1) {
         std::printf("index persistence mismatch\n");
         return 1;
@@ -96,12 +96,12 @@ int main()
     const auto root2 = fs::temp_directory_path() / "slime_cache_store_test2";
     fs::remove_all(root2, ec);
     slime::cache::CacheStore outStore(root2);
-    if (!outStore.load(&err) || !outStore.writeFromCacheManager(srcCm, &err)) {
+    if (!outStore.load(&err, true) || !outStore.writeFromCacheManager(srcCm, &err)) {
         std::printf("writeFromCacheManager failed: %s\n", err.c_str());
         return 1;
     }
     slime::cache::CacheStore reloadStore(root2);
-    if (!reloadStore.load(&err) || reloadStore.packs().empty()) {
+    if (!reloadStore.load(&err, true) || reloadStore.packs().empty()) {
         std::printf("reload written store failed: %s\n", err.c_str());
         return 1;
     }
@@ -132,7 +132,7 @@ int main()
         return 1;
     }
     slime::cache::CacheStore dedupStore(root);
-    if (!dedupStore.load(&err) || dedupStore.packs().size() != 2) {
+    if (!dedupStore.load(&err, true) || dedupStore.packs().size() != 2) {
         std::printf("dedup/scan mismatch size=%zu err=%s\n", dedupStore.packs().size(), err.c_str());
         return 1;
     }

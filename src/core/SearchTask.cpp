@@ -43,7 +43,8 @@ void SearchTask::start(const SearchOptions& options, const ProgressFn& progress,
                             livePhase]() {
         SlimeEngine engine;
         SearchOutcome out;
-        engine.run(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
+        if (opt.cacheBandLoader) engine.runBanded(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
+        else engine.run(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
         m_running.store(false, std::memory_order_release);
         if (fn) fn(out);
         (void)liveCounter; // 保证计数对象活到引擎返回之后（防悬垂的最后一道保险）

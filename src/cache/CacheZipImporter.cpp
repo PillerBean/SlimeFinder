@@ -357,7 +357,7 @@ bool CacheZipImporter::importZip(const QString& zipPath, const std::filesystem::
 
     CacheStore store(cacheRoot);
     std::string loadErr;
-    if (!store.load(&loadErr)) {
+    if (!store.load(&loadErr, true)) {
         mz_zip_reader_end(&zip);
         return fail(QStringLiteral("缓存索引加载失败：%1").arg(QString::fromStdString(loadErr)));
     }
@@ -457,7 +457,7 @@ bool CacheZipImporter::importZip(const QString& zipPath, const std::filesystem::
     }
     // 用 CacheStore::load 扫描新文件并按范围去重（不依赖 zip 内 index）。
     std::string reloadErr;
-    if (!store.load(&reloadErr)) return fail(QStringLiteral("缓存索引重建失败：%1").arg(QString::fromStdString(reloadErr)));
+    if (!store.load(&reloadErr, true)) return fail(QStringLiteral("缓存索引重建失败：%1").arg(QString::fromStdString(reloadErr)));
     if (imported) *imported = added;
     if (skipped) *skipped = skippedCount;
     if (error) error->clear();

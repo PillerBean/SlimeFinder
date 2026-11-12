@@ -22,6 +22,7 @@ public:
 protected:
     void dragEnterEvent(QDragEnterEvent* ev) override;
     void dropEvent(QDropEvent* ev) override;
+    void reject() override;
 
 private:
     struct Item {
@@ -39,4 +40,5 @@ private:
     QLabel* m_hint = nullptr;
     QPushButton* m_start = nullptr;
     std::vector<Item> m_items;
+    bool m_importing = false;
 };

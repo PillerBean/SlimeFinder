@@ -1,4 +1,4 @@
-// SlimeEngine.cpp - 核心计算引擎实现
+﻿// SlimeEngine.cpp - 核心计算引擎实现
 //
 // 设计要点：
 //   * 扫描阶段：按行并行（OpenMP），行内分段（缓存覆盖段 / 计算段），
@@ -4750,5 +4750,189 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
     return est.ok;
 }
 
+
+// v3.12.3：基岩版缓存分带搜索。
+// 每个 band 只加载与该带（含 halo）相交的缓存 pack；band 结束立刻释放 CacheManager，
+// 避免把整图位图/条目展开进内存。halo 保证图案/密度窗口跨带时结果不丢失；
+// 只收集锚点落在核心 band 内的结果，避免相邻带重复。
+void SlimeEngine::runBanded(const SearchOptions& optIn,
+                            const std::atomic<bool>& cancel,
+                            const ProgressFn& progress,
+                            SearchOutcome& out) const noexcept
+{
+    out = SearchOutcome{};
+    if (!optIn.cacheBandLoader) {
+        run(optIn, cancel, progress, out);
+        return;
+    }
+    if (!optIn.region().valid()) {
+        out.error = "搜索范围非法";
+        return;
+    }
+
+    const int bandSize = std::max(16, optIn.cacheBandSize);
+    int halo = 1;
+    if (optIn.mode == Mode::Strict) {
+        halo = std::max({ optIn.pattern.rows(), optIn.pattern.cols(), 1 });
+    } else {
+        halo = std::max(optIn.gridSize, 1);
+    }
+    halo = std::max(2, halo + 1); // 安全余量：旋转/窗口边界都覆盖
+
+    const int64_t x0 = optIn.minX, x1 = optIn.maxX;
+    const int64_t z0 = optIn.minZ, z1 = optIn.maxZ;
+    const int64_t coreW = bandSize;
+    const int64_t nx = std::max<int64_t>(1, (x1 - x0 + coreW) / coreW);
+    const int64_t nz = std::max<int64_t>(1, (z1 - z0 + coreW) / coreW);
+    const int64_t totalBands = nx * nz;
+
+    const bool byDensity = optIn.ignoreThreshold; // 最优候选：结果按窗口史莱姆数排序
+    const auto dist2 = [&](const MatchResult& r) {
+        // 与引擎 TopNHeap 同口径：窗口中心的 2×偏移平方距离。
+        const int64_t wSize = static_cast<int64_t>(r.maxX) - r.minX + 1;
+        const int64_t hSize = static_cast<int64_t>(r.maxZ) - r.minZ + 1;
+        const int64_t off2x = static_cast<int64_t>(r.minX) * 2 + (wSize - 1) -
+                              2 * static_cast<int64_t>(optIn.startX);
+        const int64_t off2z = static_cast<int64_t>(r.minZ) * 2 + (hSize - 1) -
+                              2 * static_cast<int64_t>(optIn.startZ);
+        return off2x * off2x + off2z * off2z;
+    };
+    const auto better = [&](const MatchResult& a, const MatchResult& b) {
+        if (byDensity) {
+            if (a.density != b.density) return a.density > b.density;
+        }
+        const auto da = dist2(a), db = dist2(b);
+        if (da != db) return da < db;
+        // 与引擎光栅 rank 同口径：X 主序、Z 次序。
+        const auto rankOf = [&](const MatchResult& r) {
+            const int64_t hSize = static_cast<int64_t>(r.maxZ) - r.minZ + 1;
+            const int64_t anchorRows = static_cast<int64_t>(optIn.maxZ) - optIn.minZ + 2 - hSize;
+            return static_cast<int64_t>(r.minX - optIn.minX) * anchorRows +
+                   static_cast<int64_t>(r.minZ - optIn.minZ);
+        };
+        const auto ra = rankOf(a), rb = rankOf(b);
+        if (ra != rb) return ra < rb;
+        return false;
+    };
+
+    std::map<std::tuple<int, int, int, int>, MatchResult> merged;
+    int64_t totalFound = 0;
+    int64_t scanned = 0;
+    int64_t windows = 0;
+    int64_t chunksPruned = 0;
+    double scanMs = 0, matchMs = 0, totalMs = 0;
+    bool stoppedEarly = false;
+    bool anyOk = false;
+    int64_t bandIndex = 0;
+
+    for (int64_t bz = 0; bz < nz; ++bz) {
+        for (int64_t bx = 0; bx < nx; ++bx, ++bandIndex) {
+            if (cancel.load(std::memory_order_relaxed)) {
+                out.cancelled = true;
+                out.ok = false;
+                return;
+            }
+            const int64_t cx0 = x0 + bx * coreW;
+            const int64_t cx1 = std::min<int64_t>(x1, cx0 + coreW - 1);
+            const int64_t cz0 = z0 + bz * coreW;
+            const int64_t cz1 = std::min<int64_t>(z1, cz0 + coreW - 1);
+
+            Rect core{ static_cast<int>(cx0), static_cast<int>(cx1),
+                       static_cast<int>(cz0), static_cast<int>(cz1) };
+            Rect loaded{ static_cast<int>(cx0) - halo, static_cast<int>(cx1) + halo,
+                         static_cast<int>(cz0) - halo, static_cast<int>(cz1) + halo };
+
+            std::shared_ptr<CacheManager> bandCache = optIn.cacheBandLoader(loaded);
+            if (!bandCache) bandCache = std::make_shared<CacheManager>();
+
+            SearchOptions bandOpt = optIn;
+            bandOpt.cacheBandLoader = nullptr;
+            bandOpt.cache = bandCache.get();
+            bandOpt.cacheWrite = nullptr;
+            bandOpt.cacheReadMu = nullptr;
+            bandOpt.minX = loaded.minX;
+            bandOpt.maxX = loaded.maxX;
+            bandOpt.minZ = loaded.minZ;
+            bandOpt.maxZ = loaded.maxZ;
+            // 分带后由外层统一做全局 TopN；禁止每个 band 自行提前停止。
+            bandOpt.stopAtTarget = false;
+            bandOpt.smartRange = false;
+
+            const auto bandProgress = [&](double frac, bool scanning, double cps, double eta) {
+                if (progress) {
+                    const double total = static_cast<double>(totalBands);
+                    progress((static_cast<double>(bandIndex) + std::clamp(frac, 0.0, 1.0)) / total,
+                             scanning, cps, eta);
+                }
+            };
+
+            SearchOutcome bo;
+            run(bandOpt, cancel, bandProgress, bo);
+            if (cancel.load(std::memory_order_relaxed)) {
+                out.cancelled = true;
+                out.ok = false;
+                return;
+            }
+            if (!bo.ok) {
+                out.error = bo.error;
+                return;
+            }
+            anyOk = true;
+            scanned += bo.stats.scannedChunks;
+            windows += bo.stats.windowsEvaluated;
+            chunksPruned += bo.chunksPruned;
+            scanMs += bo.stats.scanMs;
+            matchMs += bo.stats.matchMs;
+            totalMs += bo.stats.totalMs;
+            if (bo.stoppedEarly) stoppedEarly = true;
+            totalFound += bo.totalFound;
+
+            for (const auto& r : bo.results) {
+                // 只接收锚点位于核心带内的结果；halo 只用于计算，不用于输出。
+                // 同时要求窗口完全落在原始搜索范围内，避免 halo 边界产生旧引擎不会返回的结果。
+                if (r.minX < optIn.minX || r.maxX > optIn.maxX ||
+                    r.minZ < optIn.minZ || r.maxZ > optIn.maxZ) continue;
+                if (!core.contains(r.minX, r.minZ)) continue;
+                const auto key = std::make_tuple(r.minX, r.maxX, r.minZ, r.maxZ);
+                auto it = merged.find(key);
+                if (it == merged.end() || better(r, it->second)) merged[key] = r;
+            }
+            // bandCache 在此作用域结束即释放。
+        }
+    }
+
+    if (cancel.load(std::memory_order_relaxed)) {
+        out.cancelled = true;
+        out.ok = false;
+        return;
+    }
+    if (!anyOk) {
+        out.error = "缓存分带搜索失败";
+        return;
+    }
+
+    std::vector<MatchResult> results;
+    results.reserve(merged.size());
+    for (auto& [key, r] : merged) {
+        (void)key;
+        results.push_back(r);
+    }
+    std::sort(results.begin(), results.end(), better);
+    if (optIn.targetCount > 0 && static_cast<int64_t>(results.size()) > optIn.targetCount) {
+        results.resize(static_cast<size_t>(optIn.targetCount));
+    }
+
+    out.ok = true;
+    out.results = std::move(results);
+    out.totalFound = totalFound;
+    out.stoppedEarly = stoppedEarly;
+    out.stats.scannedChunks = scanned;
+    out.stats.windowsEvaluated = windows;
+    out.stats.scanMs = scanMs;
+    out.stats.matchMs = matchMs;
+    out.stats.totalMs = totalMs;
+    out.chunksPruned = chunksPruned;
+    out.chunkedPath = true;
+}
 } // namespace slime
 

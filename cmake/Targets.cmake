@@ -246,6 +246,15 @@ endif()
 
 # ---------------------------------------------------------------- E3.3.1：SIMD 内核独立自检（不依赖引擎/OpenCL）
 # 覆盖：基岩种子查表、跨步采样扫描、密度 g×g 窗口计数（均与独立教科书参考逐位比对）
+add_executable(slime_cache_band_tests
+    tests/integration/cache_band_test.cpp
+)
+target_include_directories(slime_cache_band_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_cache_band_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_cache_band_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_zip_tests
     tests/integration/cache_zip_import_test.cpp
     src/cache/CacheZipImporter.cpp

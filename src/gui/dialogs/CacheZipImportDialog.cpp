@@ -19,8 +19,10 @@
 #include <QTableWidget>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QMetaObject>
 
 #include <algorithm>
+#include <thread>
 
 CacheZipImportDialog::CacheZipImportDialog(slime::cache::CacheStore* store, QWidget* parent)
     : QDialog(parent)
@@ -167,43 +169,57 @@ void CacheZipImportDialog::refresh()
 
 void CacheZipImportDialog::startImport()
 {
+    if (m_importing) return;
     std::vector<Item> valid;
-    for (const auto& item : m_items) {
-        if (item.info.ok) valid.push_back(item);
-    }
+    for (const auto& item : m_items) if (item.info.ok) valid.push_back(item);
     if (valid.empty()) return;
 
-    QProgressDialog progress(QStringLiteral("正在校验、解压并合并缓存…"), QStringLiteral("取消"),
-                             0, static_cast<int>(valid.size()), this);
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(0);
-    int imported = 0, skipped = 0, failed = 0;
-    QStringList errors;
-    for (int i = 0; i < static_cast<int>(valid.size()); ++i) {
-        if (progress.wasCanceled()) break;
-        progress.setValue(i);
-        progress.setLabelText(QStringLiteral("正在导入：%1").arg(QFileInfo(valid[i].path).fileName()));
-        QApplication::processEvents();
-        int add = 0, skip = 0;
-        QString err;
-        if (slime::cache::CacheZipImporter::importZip(valid[i].path, m_store->root(), &err, &add, &skip)) {
-            imported += add;
-            skipped += skip;
-        } else {
-            ++failed;
-            errors << QStringLiteral("%1：%2").arg(QFileInfo(valid[i].path).fileName(), err);
+    m_importing = true;
+    m_start->setEnabled(false);
+    setWindowFlag(Qt::WindowCloseButtonHint, false);
+    m_hint->setText(QStringLiteral("后台导入中，请稍候…"));
+
+    // 导入在后台线程执行；主线程只接收进度并刷新，避免大 zip 卡死界面。
+    std::thread([this, valid]() {
+        int imported = 0, skipped = 0, failed = 0;
+        QStringList errors;
+        for (size_t i = 0; i < valid.size(); ++i) {
+            int add = 0, skip = 0;
+            QString err;
+            const QString name = QFileInfo(valid[i].path).fileName();
+            QMetaObject::invokeMethod(this, [this, i, name, total = valid.size()]() {
+                if (m_hint) m_hint->setText(QStringLiteral("正在导入 %1 / %2：%3")
+                                                .arg(static_cast<int>(i + 1)).arg(static_cast<int>(total)).arg(name));
+            }, Qt::QueuedConnection);
+            if (slime::cache::CacheZipImporter::importZip(valid[i].path, m_store->root(), &err, &add, &skip)) {
+                imported += add;
+                skipped += skip;
+            } else {
+                ++failed;
+                errors << QStringLiteral("%1：%2").arg(name, err);
+            }
         }
-    }
-    progress.setValue(static_cast<int>(valid.size()));
-    if (!errors.isEmpty()) {
-        QMessageBox::warning(this, QStringLiteral("导入结果"),
-                             QStringLiteral("导入完成。\n新增 %1 个 pack，跳过 %2 个，失败 %3 个。\n\n%4")
-                                 .arg(imported).arg(skipped).arg(failed).arg(errors.join(QLatin1Char('\n'))));
-    } else {
-        QMessageBox::information(this, QStringLiteral("导入结果"),
-                                 QStringLiteral("导入完成。\n新增 %1 个 pack，跳过重复 %2 个。")
-                                     .arg(imported).arg(skipped));
-    }
-    if (onImported) onImported();
-    refresh();
+        QMetaObject::invokeMethod(this, [this, imported, skipped, failed, errors]() {
+            m_importing = false;
+            m_start->setEnabled(true);
+            setWindowFlag(Qt::WindowCloseButtonHint, true);
+            if (!errors.isEmpty()) {
+                QMessageBox::warning(this, QStringLiteral("导入结果"),
+                                     QStringLiteral("导入完成。\n新增 %1 个 pack，跳过 %2 个，失败 %3 个。\n\n%4")
+                                         .arg(imported).arg(skipped).arg(failed).arg(errors.join(QChar('\n'))));
+            } else {
+                QMessageBox::information(this, QStringLiteral("导入结果"),
+                                         QStringLiteral("导入完成。\n新增 %1 个 pack，跳过重复 %2 个。")
+                                             .arg(imported).arg(skipped));
+            }
+            if (onImported) onImported();
+            refresh();
+        }, Qt::QueuedConnection);
+    }).detach();
+}
+
+void CacheZipImportDialog::reject()
+{
+    if (m_importing) return; // 后台导入时禁止关闭，避免悬垂回调
+    QDialog::reject();
 }

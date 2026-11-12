@@ -1,4 +1,4 @@
-// v3.12.0：搜索、构建与结果处理逻辑。
+﻿// v3.12.0：搜索、构建与结果处理逻辑。
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {
@@ -228,7 +228,20 @@ void MainWindow::startSearch()
 
     const bool cacheEnabled = (opt.version == Version::Bedrock) && m_w->useCache->isChecked();
     opt.useCache = cacheEnabled;
-    opt.cache = cacheEnabled ? m_cache.get() : nullptr;
+    // v3.12.3：普通搜索不再一次性持有全量 m_cache；按 band 从 CacheStore 懒加载。
+    opt.cache = nullptr;
+    opt.cacheBandLoader = nullptr;
+    if (cacheEnabled && !buildModeActive() && m_cacheStore) {
+        opt.cacheBandLoader = [this](const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
+            auto cm = std::make_shared<slime::CacheManager>();
+            if (!m_cacheStore) return cm;
+            std::string err;
+            if (!m_cacheStore->fillCacheManagerRange(*cm, band, &err) && !err.empty()) {
+                // 失败时返回空缓存继续计算，结果不受影响。
+            }
+            return cm;
+        };
+    }
     // v3.3.9（任务书 1.2）：**普通搜索不再写缓存** —— 写入路径整体移除（只有缓存构建模式能写）
     opt.cacheWrite = nullptr;
     opt.cacheBudgetBytes = 0;
@@ -330,8 +343,8 @@ void MainWindow::startSearch()
     info.targetCount = opt.targetCount;
     info.startX = opt.startX;
     info.startZ = opt.startZ;
-    info.cacheWasUsed = cacheEnabled;
-    info.mergeCacheAfter = cacheEnabled && !(m_cache->covers(info.region));
+    info.cacheWasUsed = cacheEnabled && m_cacheStore && !m_cacheStore->packs().empty();
+    info.mergeCacheAfter = false; // 普通搜索不再写缓存；分带缓存只在本次运行内使用
 
 
     // v3.3.9（任务书 1.1）：缓存构建模式 —— 预估/上限确认/分段（用户放弃则直接返回）
