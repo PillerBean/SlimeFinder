@@ -61,14 +61,10 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         auto* toolsLay = new QHBoxLayout(tools);
         toolsLay->setContentsMargins(0, 0, 0, 0);
         m_loadManifest = new QPushButton(slime::ui::t("ui.cache.download.fetch"), tools);
-        auto* netdisk = new QPushButton(slime::ui::t("ui.cache.download.netdisk"), tools);
-        netdisk->setEnabled(!CacheDownloadClient::netdiskUrl().trimmed().isEmpty());
-        netdisk->setToolTip(CacheDownloadClient::netdiskUrl());
         m_availableStatus = new QLabel(tools);
         m_availableStatus->setObjectName(QStringLiteral("topSummary"));
         m_availableStatus->setWordWrap(true);
         toolsLay->addWidget(m_loadManifest);
-        toolsLay->addWidget(netdisk);
         auto* rangeAll = new QPushButton(slime::ui::t("ui.cache.download.quick.all"), tools);
         auto* rangeNear = new QPushButton(slime::ui::t("ui.cache.download.quick.near"), tools);
         auto* rangeLocal = new QPushButton(slime::ui::t("ui.cache.download.quick.local"), tools);
@@ -118,10 +114,6 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         tabs->addTab(page, slime::ui::t("ui.cache.download.r2tab"));
 
         connect(m_loadManifest, &QPushButton::clicked, this, [this]() { loadAvailable(); });
-        connect(netdisk, &QPushButton::clicked, this, []() {
-            const QString url = CacheDownloadClient::netdiskUrl();
-            if (!url.isEmpty()) QDesktopServices::openUrl(QUrl(url));
-        });
         connect(rangeGroup, &QButtonGroup::idClicked, this, [this](int id) {
             m_availableRange = id;
             refreshAvailable();
@@ -197,8 +189,13 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
 
         QObject::connect(importBtn, &QPushButton::clicked, this, [this]() {
             CacheZipImportDialog dlg(m_store, this);
-            dlg.onImported = [this]() { refresh(); if (onChanged) onChanged(); };
+            dlg.onImported = [this]() {
+                if (m_store) m_store->load();
+                refresh();
+                if (onChanged) onChanged();
+            };
             dlg.exec();
+            if (m_store) m_store->load();
             refresh();
         });
         tabs->addTab(ndPage, slime::ui::t("ui.cache.download.netdisktab"));

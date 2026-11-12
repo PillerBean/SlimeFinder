@@ -1216,7 +1216,7 @@
   "ui.cache.pack.deleteSelected": "刪除選中",
   "ui.cache.download.dialog.note": "下載快取為唯讀外部快取，可整包刪除，不能修改內容或大小。",
   "ui.cache.download.available": "可下載",
-  "ui.cache.download.downloaded": "%1 已下載",
+  "ui.cache.download.downloaded": "已下載",
   "ui.cache.download.available.empty": "官方快取目錄尚未接入。\n後續版本將在此提供下載入口。",
   "ui.cache.download.quick.all": "全部",
   "ui.cache.download.quick.near": "附近 ±2k",
@@ -1254,5 +1254,6 @@
   "ui.cache.download.openFolder": "開啟資料夾 ↗",
   "ui.cache.download.netdisk.drop": "下載 zip 後，拖入匯入視窗批次匯入",
   "ui.cache.download.netdisk.import": "開啟匯入視窗",
-  "ui.cache.download.netdisk.note": "程式不會搜尋網盤檔案，也不會顯示網盤下載進度；只顯示已選 zip 和匯入/解壓進度。"
+  "ui.cache.download.netdisk.note": "程式不會搜尋網盤檔案，也不會顯示網盤下載進度；只顯示已選 zip 和匯入/解壓進度。",
+  "ui.cache.download.import": "匯入網盤快取"
 }

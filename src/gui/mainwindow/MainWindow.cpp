@@ -1,8 +1,9 @@
-// MainWindow.cpp - 主窗口实现（v3.2.1）
+﻿// MainWindow.cpp - 主窗口实现（v3.2.1）
 #include "i18n/UiText.h"
 #include "gui/mainwindow/MainWindow.h"
 #include "gui/widgets/CacheCoverageMap.h"
 #include "gui/dialogs/CacheDownloadDialog.h"
+#include "gui/dialogs/CacheZipImportDialog.h"
 
 #include <QApplication>
 #include <QStyledItemDelegate>   // v3.5.5：结果列表数值显示
@@ -886,14 +887,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     buildUi();
     // v3.4.11：设置页在这里是「默认值」状态，等 loadAppSettings() 之后统一收敛一次（见下）
 
-    // v3.1.0：缓存容量配置 config.json（不存在则创建默认值 1024 MB）
+    // v3.1.0：缓存容量配置 config.json（不存在则创建默认值 10240 MB）
     // v3.2.1：GPU 开关（默认关闭——避免无 OpenCL 驱动环境自动触发 GPU 初始化）
     const std::filesystem::path cfgPath = appDirPath() / kConfigFileName;
     std::error_code ec;
     if (!std::filesystem::exists(cfgPath, ec)) {
         std::ofstream out(cfgPath);
         if (out) {
-            out << "{\n  \"cache\": {\n    \"maxSizeMB\": 1024\n  },\n  \"gpu\": {\n    \"enabled\": false\n  },\n"
+            out << "{\n  \"cache\": {\n    \"maxSizeMB\": 10240\n  },\n  \"gpu\": {\n    \"enabled\": false\n  },\n"
                    "  \"algorithm\": {\n    \"mode\": \"exact\",\n    \"layerBlock\": 16,\n"
                    "    \"layerRatio\": 1.0,\n    \"sampleStep\": 8,\n    \"sampleExact\": false\n  }\n}\n";
         }

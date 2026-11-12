@@ -86,7 +86,7 @@ void MainWindow::startSearch()
     //   修复：从环形切到图案后，shapeRingRadio 仍保持 checked（面板只是隐藏），
     //   旧逻辑会继续调用 runRingSearch，导致图案模式搜出环形结果。
     const bool patternModeNow = m_w && m_w->strictRadio && m_w->strictRadio->isChecked();
-    if (!patternModeNow && m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
+    if (!buildModeActive() && !patternModeNow && m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
         runRingSearch();
         return;
     }
@@ -146,7 +146,7 @@ void MainWindow::startSearch()
     opt.maxZ = m_w->maxZ->value();
 
     bool seedOA = true;
-    if (opt.version == Version::Java) {
+    if (!buildModeActive() && opt.version == Version::Java) {
         // v3.3.4（任务书 4.2）：Java 版必须填写合法种子 —— 种子默认空；
         // "0" 是合法种子；纯空格视为空；"123abc" 视为非法；基岩版完全不受影响。
         const QString seedText = m_w->seedEdit->text().trimmed();

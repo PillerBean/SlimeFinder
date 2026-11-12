@@ -794,6 +794,17 @@ bool MainWindow::saveV3Cache()
     return true;
 }
 
+void MainWindow::reloadV3CacheAfterImport()
+{
+    if (!m_cacheStore) return;
+    // 重新读取 index.json 并扫描导入的 pack；只刷新界面和覆盖地图，
+    // 不在此处展开全部下载 pack（那会在大量导入时造成新的内存峰值）。
+    std::string err;
+    m_cacheStore->load(&err);
+    refreshCacheUi();
+    updateCacheStatusUi();
+}
+
 void MainWindow::refreshCacheUi()
 {
     if (!m_cacheStore) return;

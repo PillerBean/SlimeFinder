@@ -1216,7 +1216,7 @@
   "ui.cache.pack.deleteSelected": "Delete selected",
   "ui.cache.download.dialog.note": "Downloaded caches are read-only; packs can be deleted, but contents and size cannot be modified.",
   "ui.cache.download.available": "Available",
-  "ui.cache.download.downloaded": "Downloaded %1",
+  "ui.cache.download.downloaded": "Downloaded",
   "ui.cache.download.available.empty": "Official cache catalog is not connected yet.\nDownload support will appear here in a later version.",
   "ui.cache.download.quick.all": "All",
   "ui.cache.download.quick.near": "Near ±2k",
@@ -1254,5 +1254,6 @@
   "ui.cache.download.openFolder": "Open folder ↗",
   "ui.cache.download.netdisk.drop": "Drag downloaded zips into the import window",
   "ui.cache.download.netdisk.import": "Open import window",
-  "ui.cache.download.netdisk.note": "The app does not scan netdisk or show netdisk download progress; it only shows selected zips and import/extract progress."
+  "ui.cache.download.netdisk.note": "The app does not scan netdisk or show netdisk download progress; it only shows selected zips and import/extract progress.",
+  "ui.cache.download.import": "Import netdisk cache"
 }

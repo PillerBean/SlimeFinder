@@ -58,7 +58,7 @@ struct AppSettings {
     // ---- 缓存 ----
     bool autoLoadCache = true;          // 启动时自动加载缓存
     QString cacheDir;                   // 空 = 程序目录（默认）
-    int cacheMaxMB = 1024;
+    int cacheMaxMB = 10240;
     // ---- 日志 ----
     bool logAtStartup = false;          // 启动时启用日志（默认关闭）
     int logLevel = 0;                   // 0 = 简要，1 = 详细

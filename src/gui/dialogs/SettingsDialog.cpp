@@ -803,7 +803,7 @@ AppSettings SettingsDialog::factoryDefaults()
     // ---- 缓存 ----
     s.autoLoadCache = true;
     s.cacheDir.clear(); // 空 = 程序目录
-    s.cacheMaxMB = 1024;
+    s.cacheMaxMB = 10240;
     // ---- 日志 ----
     s.logAtStartup = false;
     s.logLevel = 0; // 简要

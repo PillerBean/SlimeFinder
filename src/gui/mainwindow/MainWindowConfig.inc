@@ -1,4 +1,4 @@
-// v3.12.0：配置/GPU 探测/主题/菜单与工具栏等基础逻辑。
+﻿// v3.12.0：配置/GPU 探测/主题/菜单与工具栏等基础逻辑。
 
 int MainWindow::versionBound() const noexcept
 {
@@ -8,7 +8,7 @@ int MainWindow::versionBound() const noexcept
 int64_t MainWindow::cacheMaxBytes() const
 {
     // config.json: { "cache": { "maxSizeMB": 1024 } }
-    int64_t mb = 1024;
+    int64_t mb = 10240;
     std::ifstream in(appDirPath() / kConfigFileName);
     if (in) {
         std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
@@ -115,7 +115,7 @@ static std::string jsonEscapeUtf8(const QString& s)
 void MainWindow::writeConfigFile(bool gpuEnabled, const QStringList& terminalHistory)
 {
     const auto path = appDirPath() / kConfigFileName;
-    const int cacheMB = cfgInt(path, "cache.maxSizeMB", 1024);
+    const int cacheMB = cfgInt(path, "cache.maxSizeMB", 10240);
     const char* mode = "exact";
     if (m_w && m_w->algLayeredRadio && m_w->algLayeredRadio->isChecked()) mode = "layered";
     else if (m_w && m_w->algSampleRadio && m_w->algSampleRadio->isChecked()) mode = "sample";

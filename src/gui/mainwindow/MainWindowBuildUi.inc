@@ -1701,15 +1701,30 @@ QWidget* MainWindow::buildCachePageV2()
         m_cacheDownloadSummary->setObjectName(QStringLiteral("topSummary"));
         lay->addWidget(m_cacheDownloadSummary);
 
-        auto* open = new QPushButton(slime::ui::t("ui.cache.download.manage"), box);
+        auto* actions = new QWidget(box);
+        auto* actionsLay = new QHBoxLayout(actions);
+        actionsLay->setContentsMargins(0, 0, 0, 0);
+        actionsLay->setSpacing(6);
+        auto* open = new QPushButton(slime::ui::t("ui.cache.download.manage"), actions);
         open->setObjectName(QStringLiteral("cacheDownloadManage"));
-        lay->addWidget(open);
+        auto* import = new QPushButton(slime::ui::t("ui.cache.download.import"), actions);
+        import->setObjectName(QStringLiteral("cacheImport"));
+        actionsLay->addWidget(open, 1);
+        actionsLay->addWidget(import, 1);
+        lay->addWidget(actions);
         QObject::connect(open, &QPushButton::clicked, this, [this]() {
             if (!m_cacheStore) return;
             CacheDownloadDialog dlg(m_cacheStore.get(), this);
-            dlg.onChanged = [this]() { refreshCacheUi(); };
+            dlg.onChanged = [this]() { reloadV3CacheAfterImport(); };
             dlg.exec();
-            refreshCacheUi();
+            reloadV3CacheAfterImport();
+        });
+        QObject::connect(import, &QPushButton::clicked, this, [this]() {
+            if (!m_cacheStore) return;
+            CacheZipImportDialog dlg(m_cacheStore.get(), this);
+            dlg.onImported = [this]() { reloadV3CacheAfterImport(); };
+            dlg.exec();
+            reloadV3CacheAfterImport();
         });
         leftLay->addWidget(box);
     }
