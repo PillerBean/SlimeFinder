@@ -24,16 +24,11 @@ def pack_abs(p):
     return max(abs(p['minX']), abs(p['maxX']), abs(p['minZ']), abs(p['maxZ']))
 
 
-def classify(p, nearby, local):
-    a = pack_abs(p)
-    if a <= nearby:
-        return 'nearby'
-    if a <= local:
-        return 'local'
-    return 'large'
+def in_range(p, limit):
+    return pack_abs(p) <= limit
 
 
-def write_zip(out_path, subset, manifest, source_root, label):
+def write_zip(out_path, subset, manifest, source_root, label, serial, limits):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     tmp = out_path + '.tmpdir'
     shutil.rmtree(tmp, ignore_errors=True)
@@ -41,6 +36,23 @@ def write_zip(out_path, subset, manifest, source_root, label):
     sub_manifest = dict(manifest)
     sub_manifest['packs'] = subset
     sub_manifest['totalPacks'] = len(subset)
+    bounds = {
+        'minX': min(p['minX'] for p in subset),
+        'maxX': max(p['maxX'] for p in subset),
+        'minZ': min(p['minZ'] for p in subset),
+        'maxZ': max(p['maxZ'] for p in subset),
+    }
+    batch = {
+        'range': label,
+        'rangeLabel': RANGE_LABELS.get(label, label),
+        'serial': serial,
+        'packCount': len(subset),
+        'fileLimitBytes': limits,
+        **bounds,
+    }
+    with open(os.path.join(tmp, 'batch.json'), 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(batch, f, ensure_ascii=False, indent=2)
+        f.write('\n')
     with open(os.path.join(tmp, 'manifest.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump(sub_manifest, f, ensure_ascii=False, indent=2)
         f.write('\n')
@@ -58,8 +70,10 @@ def write_zip(out_path, subset, manifest, source_root, label):
                 raise FileNotFoundError(src)
     with open(os.path.join(tmp, 'README.txt'), 'w', encoding='utf-8', newline='\n') as f:
         f.write(f'SlimeFinder v3.12.3 官方缓存\n\n范围：{RANGE_LABELS.get(label, label)}\n'
-                f'包数：{len(subset)}\n\n'
-                '解压后把 local 目录合并到程序目录的 cache/local。\n'
+                f'序列号：{serial}\n包数：{len(subset)}\n'
+                f'覆盖：X {bounds["minX"]}..{bounds["maxX"]} / Z {bounds["minZ"]}..{bounds["maxZ"]}\n\n'
+                '解压后把 local 目录合并到程序目录的 cache/local；\n'
+                '程序启动时会自动扫描并去重，不需要手工改 index.json。\n'
                 '网盘地址：https://wwben.lanzoul.com/b01d7e4lre\n')
     with zipfile.ZipFile(out_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for root, _, files in os.walk(tmp):
@@ -75,30 +89,34 @@ def main():
     ap.add_argument('--manifest', default='cache-official/manifest.json')
     ap.add_argument('--source-root', default='cache-official')
     ap.add_argument('--out-dir', default='dist/netdisk-batches')
-    ap.add_argument('--nearby', type=int, default=1024)
-    ap.add_argument('--local', type=int, default=2048)
+    ap.add_argument('--nearby', type=int, default=2048)
+    ap.add_argument('--local', type=int, default=8192)
+    ap.add_argument('--large', type=int, default=32768)
+    ap.add_argument('--all', type=int, default=131072)
+    ap.add_argument('--labels', default='nearby,local,large,all')
     ap.add_argument('--batch-packs', type=int, default=16)
     ap.add_argument('--max-bytes', type=int, default=100 * 1024 * 1024)
     args = ap.parse_args()
 
     with open(args.manifest, encoding='utf-8') as f:
         manifest = json.load(f)
-    groups = {'nearby': [], 'local': [], 'large': []}
-    for p in manifest.get('packs', []):
-        groups[classify(p, args.nearby, args.local)].append(p)
-
+    limits = {'nearby': args.nearby, 'local': args.local, 'large': args.large, 'all': args.all}
+    wanted = [x.strip() for x in args.labels.split(',') if x.strip()]
+    packs = manifest.get('packs', [])
     shutil.rmtree(args.out_dir, ignore_errors=True)
     os.makedirs(args.out_dir, exist_ok=True)
     written = []
-    for label in ('nearby', 'local', 'large'):
-        subset = groups[label]
+    for label in wanted:
+        if label not in RANGE_LABELS:
+            continue
+        subset = [p for p in packs if in_range(p, limits[label])]
         if not subset:
             continue
         batches = [subset[i:i + args.batch_packs] for i in range(0, len(subset), args.batch_packs)]
         for i, batch in enumerate(batches, 1):
             name = f'基岩版区块缓存-{RANGE_LABELS[label]}-{i}.zip'
             out = os.path.join(args.out_dir, name)
-            size = write_zip(out, batch, manifest, args.source_root, label)
+            size = write_zip(out, batch, manifest, args.source_root, label, i, limits[label])
             if size > args.max_bytes:
                 print('WARN: over max size', out, size)
             written.append((name, len(batch), size))

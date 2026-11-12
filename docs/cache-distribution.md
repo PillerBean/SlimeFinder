@@ -149,3 +149,13 @@ py -3 scripts/release/package_netdisk_batches.py `
   --source-root cache-official `
   --out-dir dist/netdisk-batches
 ```
+
+## v3.12.3 当前网盘分卷（已确认方案）
+
+- 每个范围独立完整覆盖；
+- `附近`：±2,048 区块，16 packs，`基岩版区块缓存-附近-1.zip`
+- `局部`：±8,192 区块，256 packs，`基岩版区块缓存-局部-1.zip`
+- `较大` / `全部` 后续按同样规则递增序列号；
+- 本地加载时自动扫描 `local/downloaded`，按覆盖矩形去重，重复范围不会产生重复 index 记录。
+
+清除旧临时样例后，目前只保留这两份。

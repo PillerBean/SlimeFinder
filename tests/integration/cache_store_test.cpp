@@ -1,4 +1,4 @@
-﻿#include "cache/CachePack.h"
+#include "cache/CachePack.h"
 #include "cache/CacheStore.h"
 
 #include "core/CacheManager.h"
@@ -30,11 +30,12 @@ int main()
         bits[i] = v;
     }
     const slime::cache::PackRect rect{ 0, kSide - 1, 0, kSide - 1 };
+    const slime::cache::PackRect downloadedRect{ 4096, 5119, 0, 1023 };
     const auto localPath = root / "local" / "pack-000001.slmz";
     const auto downloadedPath = root / "downloaded" / "pack-000002.slmz";
     std::string err;
     if (!slime::cache::writePack(localPath, rect, bits.data(), bits.size(), &err) ||
-        !slime::cache::writePack(downloadedPath, rect, bits.data(), bits.size(), &err)) {
+        !slime::cache::writePack(downloadedPath, downloadedRect, bits.data(), bits.size(), &err)) {
         std::printf("write pack failed: %s\n", err.c_str());
         return 1;
     }
@@ -118,6 +119,29 @@ int main()
     const size_t beforeReplace = reloadStore.packs().size();
     if (!reloadStore.replaceLocalFromCacheManager(srcCm, &err) || reloadStore.packs().size() != beforeReplace) {
         std::printf("replaceLocalFromCacheManager failed: %s\n", err.c_str());
+        return 1;
+    }
+    // v3.12.3：同范围副本去重 + 手动放入 local 的包自动扫描入索引
+    fs::create_directories(root / "local", ec);
+    const auto duplicatePath = root / "local" / "pack-duplicate.slmz";
+    fs::copy_file(localPath, duplicatePath, ec);
+    const slime::cache::PackRect orphanRect{ 8192, 9215, 0, 1023 };
+    const auto orphanPath = root / "local" / "pack-orphan.slmz";
+    if (!slime::cache::writePack(orphanPath, orphanRect, bits.data(), bits.size(), &err)) {
+        std::printf("write orphan failed: %s\n", err.c_str());
+        return 1;
+    }
+    slime::cache::CacheStore dedupStore(root);
+    if (!dedupStore.load(&err) || dedupStore.packs().size() != 2) {
+        std::printf("dedup/scan mismatch size=%zu err=%s\n", dedupStore.packs().size(), err.c_str());
+        return 1;
+    }
+    bool sawOrphan = false;
+    for (const auto& pe : dedupStore.packs()) {
+        if (pe.rect.minX == orphanRect.minX && pe.rect.minZ == orphanRect.minZ) sawOrphan = true;
+    }
+    if (!sawOrphan) {
+        std::printf("orphan scan missing\n");
         return 1;
     }
     fs::remove_all(root2, ec);

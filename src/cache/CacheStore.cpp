@@ -1,4 +1,4 @@
-﻿#include "cache/CacheStore.h"
+#include "cache/CacheStore.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -184,7 +184,59 @@ bool CacheStore::load(std::string* err)
         if (err) *err = "index.json 版本不匹配";
         return false;
     }
+    in.close(); // Windows：后续去重保存前必须先释放 index.json 句柄
     m_packs = std::move(loaded);
+
+    // v3.12.3：本地去重 + 手动导入扫描。
+    // 独立范围包会重复包含边缘 pack；用户把多个 zip 解压到 local 后，不能
+    // 在 index 里产生同范围的重复记录。这里按 rect 去重，并扫描未被索引的
+    // .slmz，确保网盘人工下载的包也能直接使用。
+    bool changed = false;
+    std::set<std::tuple<int32_t, int32_t, int32_t, int32_t>> seen;
+    std::vector<CachePackEntry> deduped;
+    deduped.reserve(m_packs.size());
+    for (auto& e : m_packs) {
+        const auto key = std::make_tuple(e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ);
+        if (!seen.insert(key).second) {
+            changed = true;
+            continue;
+        }
+        deduped.push_back(std::move(e));
+    }
+    m_packs = std::move(deduped);
+
+    for (const char* source : { kLocalDir, kDownloadedDir }) {
+        const auto dir = m_root / source;
+        std::error_code ec;
+        if (!std::filesystem::is_directory(dir, ec)) continue;
+        for (std::filesystem::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec)) {
+            if (!it->is_regular_file()) continue;
+            if (it->path().extension() != ".slmz") continue;
+            std::error_code relEc;
+            const std::string relStr = std::filesystem::relative(it->path(), m_root, relEc).generic_string();
+            if (relEc || relStr.rfind(std::string(source) + "/", 0) != 0) continue;
+            if (std::any_of(m_packs.begin(), m_packs.end(), [&](const CachePackEntry& e) {
+                    return e.file == relStr;
+                })) {
+                continue;
+            }
+            PackInfo info;
+            std::string packErr;
+            if (!peekPack(it->path(), info, &packErr)) continue;
+            const auto key = std::make_tuple(info.rect.minX, info.rect.maxX, info.rect.minZ, info.rect.maxZ);
+            if (!seen.insert(key).second) continue; // 同范围副本不重复入索引
+            CachePackEntry e;
+            e.file = relStr;
+            e.source = source;
+            e.rect = info.rect;
+            e.rawBytes = info.rawBytes;
+            e.compressedBytes = info.compressedBytes;
+            e.createdAt = 0;
+            m_packs.push_back(std::move(e));
+            changed = true;
+        }
+    }
+    if (changed && !save(err)) return false;
     return true;
 }
 
