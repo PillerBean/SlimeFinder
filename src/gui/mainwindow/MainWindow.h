@@ -360,6 +360,7 @@ private:
     std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
     QTableWidget* m_cacheDownloadTable = nullptr;
     CacheCoverageMap* m_cacheCoverageMap = nullptr;
+    QPushButton* m_cacheBuildBtn = nullptr;
     QTableWidget* m_cacheLocalTable = nullptr;
     QLabel* m_cacheDownloadSummary = nullptr;
     QLabel* m_cacheLocalSummary = nullptr;

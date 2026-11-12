@@ -599,6 +599,10 @@ void MainWindow::updateStartEnabled()
     const bool can = why.isEmpty();
     m_w->start->setEnabled(can);
     m_w->start->setToolTip(can ? slime::ui::t("ui.8fdc065eda03") : why);
+    if (m_cacheBuildBtn) {
+        m_cacheBuildBtn->setEnabled(can);
+        m_cacheBuildBtn->setToolTip(can ? slime::ui::t("ui.8fdc065eda03") : why);
+    }
     // 提示只放在 tooltip 里（左栏已经有线程/GPU 提示，避免再占一行）
 }
 

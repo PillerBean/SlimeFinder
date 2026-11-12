@@ -1223,5 +1223,6 @@
   "ui.cache.download.quick.local": "局部 ±8k",
   "ui.cache.download.quick.large": "較大 ±32k",
   "ui.cache.download.search": "搜尋範圍或包名",
-  "ui.cache.download.close": "關閉"
+  "ui.cache.download.close": "關閉",
+  "ui.cache.download.manage": "開啟下載介面"
 }

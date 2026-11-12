@@ -309,6 +309,12 @@ QPushButton[dockIcon="true"]:checked { background-color: #4CAF50; border-left: 2
 QPushButton[mini="true"] { min-height: 16px; max-height: 18px; padding: 0px 5px; font-size: 11px; }
 QPushButton[tabBtn="true"] { min-height: 24px; max-height: 26px; border: 0px; border-right: 1px solid #c9c9c9; border-bottom: 2px solid transparent; background-color: #f2f2f2; color: #555555; padding: 0px 12px; }
 #primaryBtn { font-weight: bold; min-width: 96px; }
+QPushButton#cacheBuildStart { background-color: #2E7D32; color: #ffffff; border: 1px solid #2E7D32; font-weight: bold; min-height: 30px; max-height: 34px; }
+QPushButton#cacheBuildStart:hover:!disabled { background-color: #3D8B40; border-color: #3D8B40; }
+QPushButton#cacheBuildStart:disabled { background-color: #161616; color: #5e5e5e; border-color: #2e2e2e; }
+QPushButton#cacheBuildStart { background-color: #2E7D32; color: #ffffff; border: 1px solid #2E7D32; font-weight: bold; min-height: 30px; max-height: 34px; }
+QPushButton#cacheBuildStart:hover:!disabled { background-color: #3D8B40; border-color: #3D8B40; }
+QPushButton#cacheBuildStart:disabled { background-color: #e4e4e4; color: #b0b0b0; border-color: #e4e4e4; }
 /* 输入类 */
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QAbstractSpinBox {
     background-color: #ffffff; color: #111111; border: 1px solid #c9c9c9;

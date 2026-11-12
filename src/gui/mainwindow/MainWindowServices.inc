@@ -810,8 +810,10 @@ void MainWindow::refreshCacheUi()
             if (e.source != source) continue;
             const int row = table->rowCount();
             table->insertRow(row);
-            table->setItem(row, 0, new QTableWidgetItem(
-                slime::ui::t(e.source == "local" ? "ui.cache.source.local" : "ui.cache.source.downloaded")));
+            auto* srcItem = new QTableWidgetItem(
+                slime::ui::t(e.source == "local" ? "ui.cache.source.local" : "ui.cache.source.downloaded"));
+            srcItem->setData(Qt::UserRole, QString::fromStdString(e.file));
+            table->setItem(row, 0, srcItem);
             table->setItem(row, 1, new QTableWidgetItem(QStringLiteral("%1..%2, %3..%4")
                 .arg(e.rect.minX).arg(e.rect.maxX).arg(e.rect.minZ).arg(e.rect.maxZ)));
             table->setItem(row, 2, new QTableWidgetItem(fmtBytes(e.compressedBytes)));
@@ -842,6 +844,7 @@ void MainWindow::refreshCacheUi()
     fill(m_cacheDownloadTable, "downloaded", m_cacheDownloadSummary, &dr, &dc, &dn);
     fill(m_cacheLocalTable, "local", m_cacheLocalSummary, &lr, &lc, &ln);
     if (m_cacheCoverageMap) m_cacheCoverageMap->setPacks(m_cacheStore->packs());
+    if (m_cacheDownloadTable) m_cacheDownloadTable->setVisible(dn > 0);
     if (m_cacheLegacyNotice) {
         std::error_code ec;
         m_cacheLegacyNotice->setVisible(std::filesystem::exists(appDirPath() / kCacheFileName, ec));

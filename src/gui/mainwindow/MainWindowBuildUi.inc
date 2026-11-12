@@ -1681,10 +1681,10 @@ void MainWindow::buildV340Pages()
             m_cacheDownloadTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
             m_cacheDownloadTable->verticalHeader()->setVisible(false);
             m_cacheDownloadTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-            m_cacheDownloadTable->setSelectionMode(QAbstractItemView::NoSelection);
+            m_cacheDownloadTable->setSelectionMode(QAbstractItemView::SingleSelection);
             m_cacheDownloadTable->setMaximumHeight(150);
             dlLay->addWidget(m_cacheDownloadTable);
-            auto* manage = new QPushButton(slime::ui::t("ui.cache.download.title"), download);
+            auto* manage = new QPushButton(slime::ui::t("ui.cache.download.manage"), download);
             manage->setObjectName(QStringLiteral("cacheDownloadManage"));
             dlLay->addWidget(manage);
             QObject::connect(manage, &QPushButton::clicked, this, [this]() {
@@ -1702,13 +1702,14 @@ void MainWindow::buildV340Pages()
             auto* mapLay = new QVBoxLayout(mapBox);
             mapLay->setContentsMargins(8, 4, 8, 6);
             m_cacheCoverageMap = new CacheCoverageMap(mapBox);
-            m_cacheCoverageMap->setMinimumHeight(260);
+            m_cacheCoverageMap->setMinimumHeight(250);
+            m_cacheCoverageMap->setMaximumHeight(300);
             mapLay->addWidget(m_cacheCoverageMap, 1);
             auto* mapHint = new QLabel(slime::ui::t("ui.cache.map.hint"), mapBox);
             mapHint->setObjectName(QStringLiteral("topSummary"));
             mapHint->setWordWrap(true);
             mapLay->addWidget(mapHint);
-            rightLay->addWidget(mapBox, 1);
+            rightLay->addWidget(mapBox, 0);
         }
         {
             auto* local = new QGroupBox(slime::ui::t("ui.cache.local.title"), buildPage);
@@ -1728,10 +1729,34 @@ void MainWindow::buildV340Pages()
             m_cacheLocalTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
             m_cacheLocalTable->verticalHeader()->setVisible(false);
             m_cacheLocalTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-            m_cacheLocalTable->setSelectionMode(QAbstractItemView::NoSelection);
-            m_cacheLocalTable->setMaximumHeight(150);
+            m_cacheLocalTable->setSelectionMode(QAbstractItemView::SingleSelection);
+            m_cacheLocalTable->setMaximumHeight(240);
             localLay->addWidget(m_cacheLocalTable);
-            rightLay->addWidget(local);
+            local->setMaximumHeight(320);
+            rightLay->addWidget(local, 0);
+            // v3.12.3：列表 ↔ 地图联动
+            if (m_cacheCoverageMap) {
+                m_cacheCoverageMap->onSelected = [this](const std::string& file) {
+                    const QString qfile = QString::fromStdString(file);
+                    for (QTableWidget* table : { m_cacheDownloadTable, m_cacheLocalTable }) {
+                        if (!table) continue;
+                        for (int r = 0; r < table->rowCount(); ++r) {
+                            if (auto* it = table->item(r, 0); it && it->data(Qt::UserRole).toString() == qfile) {
+                                table->selectRow(r);
+                                return;
+                            }
+                        }
+                    }
+                };
+                for (QTableWidget* table : { m_cacheDownloadTable, m_cacheLocalTable }) {
+                    if (!table) continue;
+                    QObject::connect(table, &QTableWidget::cellClicked, this, [this, table](int row, int) {
+                        if (auto* it = table->item(row, 0); it && m_cacheCoverageMap)
+                            m_cacheCoverageMap->setSelected(it->data(Qt::UserRole).toString().toStdString());
+                    });
+                }
+            }
+            rightLay->addStretch(1);
         }
         {
             auto* info = new QGroupBox(slime::ui::t("ui.55fdaa2e6652"), buildPage);
@@ -1746,14 +1771,21 @@ void MainWindow::buildV340Pages()
             m_w->buildHint = new QLabel(QString(), info);
             m_w->buildHint->setWordWrap(true);
             m_w->buildHint->setVisible(false);
-            infoLay->addWidget(m_w->buildHint);
+            // v3.12.3：buildHint 放到左列可见位置（info 组整体隐藏），保证构建提示仍可见。
             auto* fixedLine = new QLabel(
                 slime::ui::tr(slime::ui::t("ui.8f50bddd8b88")),
                 info);
             fixedLine->setObjectName(QStringLiteral("buildFixedFacts"));
             fixedLine->setWordWrap(true);
             infoLay->addWidget(fixedLine);
+            // v3.12.3：B+ 布局只保留紧凑构建表单；说明文字保留对象供自检/无障碍读取，但不占首屏。
+            info->setVisible(false);
             leftLay->addWidget(info);
+            if (m_w->buildHint) {
+                m_w->buildHint->setParent(leftCol);
+                m_w->buildHint->setObjectName(QStringLiteral("buildHintCompact"));
+                leftLay->addWidget(m_w->buildHint);
+            }
         }
         // 原有卡片挂进滚动区（内容与搜索页共享同一份范围控件）
         auto* buildScroll = new QScrollArea(buildPage);
@@ -1775,6 +1807,7 @@ void MainWindow::buildV340Pages()
         m_pageStack->addWidget(buildPage);
         auto* cap = new QLabel(slime::ui::t("ui.31dc91dcb1bc"), page);
         cap->setObjectName(QStringLiteral("colCaption"));
+        cap->setVisible(false);
         lay->addWidget(cap);
         // 范围与预算（与搜索页同一份：编辑后同步回搜索页控件 → 引擎只读搜索页那份）
         auto* card = new QGroupBox(slime::ui::t("ui.918bc4a13f88"), page);
@@ -1835,6 +1868,20 @@ void MainWindow::buildV340Pages()
         // 开始与中断统一走工具栏主按钮（进入本页后主按钮自动变成「开始构建」，取消即中断）；
         // 预估改为下面的「构建预估（实时）」卡片，不再需要按钮与弹窗。
         lay->addWidget(card);
+        {
+            auto* startRow = new QWidget(page);
+            auto* startLay = new QHBoxLayout(startRow);
+            startLay->setContentsMargins(0, 2, 0, 0);
+            m_cacheBuildBtn = new QPushButton(slime::ui::t("ui.4d11cf9b4db5"), startRow);
+            m_cacheBuildBtn->setObjectName(QStringLiteral("cacheBuildStart"));
+            m_cacheBuildBtn->setMinimumHeight(34);
+            startLay->addWidget(m_cacheBuildBtn, 1);
+            lay->addWidget(startRow);
+            connect(m_cacheBuildBtn, &QPushButton::clicked, this, [this]() {
+                setBuildModeActive(true);
+                startSearch();
+            });
+        }
 
         // v3.4.12（用户黄框要求）：预估信息单独成卡片，**实时**跟着范围/预算更新（不再以弹窗形式显示）
         auto* estCard = new QGroupBox(slime::ui::t("ui.1ca7f1347d3a"), page);

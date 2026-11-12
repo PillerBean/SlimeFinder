@@ -1223,5 +1223,6 @@
   "ui.cache.download.quick.local": "Local ±8k",
   "ui.cache.download.quick.large": "Large ±32k",
   "ui.cache.download.search": "Search range or pack name",
-  "ui.cache.download.close": "Close"
+  "ui.cache.download.close": "Close",
+  "ui.cache.download.manage": "Open download page"
 }
