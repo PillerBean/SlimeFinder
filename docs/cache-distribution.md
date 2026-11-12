@@ -89,3 +89,26 @@ https://wwben.lanzoul.com/b01d7e4lre
 - 客户端通过“国内网盘备用”按钮打开；
 - 需要手动下载文件后放入 `cache/downloaded/`；
 - 后续如果网盘目录提供可直链 manifest，再接入自动回退。
+
+## 国内网盘上传规则
+
+网盘只接受部分后缀（zip/rar/7z 等），不要直接上传 `.slmz`。
+
+当前样例包：
+
+```text
+dist/SlimeFinder-Cache-v3.12.3-sample-64packs.zip
+```
+
+内容：
+
+```text
+manifest.json
+local/pack-*.slmz  (64 个 pack，覆盖 X/Z -4096..4095)
+README.txt
+```
+
+上传到网盘文件夹后，用户下载 zip、解压，把 `local` 合并到程序目录的 `cache/local`；
+或先放入 `cache/downloaded` 让程序重建索引。
+
+R2 不受后缀限制，仍可直接上传 `.slmz` 与 manifest.json。

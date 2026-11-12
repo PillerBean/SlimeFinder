@@ -20,7 +20,7 @@ import os
 import struct
 import sys
 
-HEADER = struct.Struct('<8sIiiiiIIIIQQ')
+HEADER = struct.Struct('<8sIiiiiIIIIIQQ')
 MAGIC = b'SLM3PKG\x00'  # 8 bytes: S L M 3 P K G NUL
 
 
@@ -57,6 +57,7 @@ def main():
     ap.add_argument('--out', default='dist/cache/manifest.json')
     ap.add_argument('--base-url', default='')
     ap.add_argument('--fallback-url', default='')
+    ap.add_argument('--manual-fallback-url', default='')
     ap.add_argument('--app-version', default='v3.12.3')
     ap.add_argument('--algorithm-version', default='1')
     args = ap.parse_args()
@@ -107,6 +108,7 @@ def main():
         'generatedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'baseUrl': args.base_url,
         'fallbackBaseUrl': args.fallback_url,
+        'manualFallbackUrl': args.manual_fallback_url,
         'totalPacks': len(packs),
         'packs': packs,
     }

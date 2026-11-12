@@ -50,3 +50,6 @@ desktop.ini
 *.bak
 *.orig
 *.rej
+
+# 本地构建的官方缓存样例（只上传网盘/R2，不提交仓库）
+/cache-official/

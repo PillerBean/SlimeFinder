@@ -4,6 +4,7 @@
     [string]$OutDir = "dist/cache-v3.12.3",
     [string]$BaseUrl = "",
     [string]$FallbackUrl = "",
+    [string]$ManualFallbackUrl = "",
     [string]$R2Bucket = "",
     [string]$R2Prefix = "",
     [switch]$Upload
@@ -18,6 +19,7 @@ py -3 scripts/release/build_cache_manifest.py `
     --out $manifest `
     --base-url $BaseUrl `
     --fallback-url $FallbackUrl `
+    --manual-fallback-url $ManualFallbackUrl `
     --app-version ("v" + $Version)
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
