@@ -112,3 +112,40 @@ README.txt
 或先放入 `cache/downloaded` 让程序重建索引。
 
 R2 不受后缀限制，仍可直接上传 `.slmz` 与 manifest.json。
+
+## 网盘分批命名
+
+规则：
+
+```text
+基岩版区块缓存-<范围>-<序列号>.zip
+```
+
+当前样例：
+
+```text
+基岩版区块缓存-附近-1.zip      4 packs
+基岩版区块缓存-局部-1.zip     12 packs
+基岩版区块缓存-较大-1.zip     16 packs
+基岩版区块缓存-较大-2.zip     16 packs
+基岩版区块缓存-较大-3.zip     16 packs
+```
+
+每份内含：
+
+```text
+manifest.json
+local/*.slmz
+README.txt
+```
+
+单文件远低于网盘 100 MB 限制；后续更大的全部缓存按 16 个 pack/批继续递增序列号。
+
+重新生成命令：
+
+```powershell
+py -3 scripts/release/package_netdisk_batches.py `
+  --manifest cache-official/manifest.json `
+  --source-root cache-official `
+  --out-dir dist/netdisk-batches
+```
