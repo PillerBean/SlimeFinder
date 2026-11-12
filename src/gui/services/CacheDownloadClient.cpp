@@ -24,7 +24,9 @@ QUrl resolvePackUrl(const QUrl& manifestUrl, const QString& file, const QString&
     if (file.startsWith(QStringLiteral("http://")) || file.startsWith(QStringLiteral("https://")))
         return QUrl(file);
     QUrl base = manifestUrl;
-    base.setPath(QFileInfo(manifestUrl.path()).path() + QLatin1Char('/') + file);
+    QString dir = QFileInfo(manifestUrl.path()).path();
+    if (!dir.endsWith(QLatin1Char('/'))) dir += QLatin1Char('/');
+    base.setPath(dir + file);
     base.setQuery(QString());
     base.setFragment(QString());
     return base;
