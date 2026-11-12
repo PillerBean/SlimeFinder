@@ -70,7 +70,9 @@ QString CacheDownloadClient::netdiskUrl()
 {
     const QString env = qEnvironmentVariable("SLIME_CACHE_NETDISK");
     if (!env.trimmed().isEmpty()) return env;
-    return configValue(QStringLiteral("cacheDownload"), QStringLiteral("netdisk"));
+    const QString cfg = configValue(QStringLiteral("cacheDownload"), QStringLiteral("netdisk"));
+    if (!cfg.trimmed().isEmpty()) return cfg;
+    return QStringLiteral("https://wwben.lanzoul.com/b01d7e4lre");
 }
 
 void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallback done)
