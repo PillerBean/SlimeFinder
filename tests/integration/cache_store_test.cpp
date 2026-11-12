@@ -45,9 +45,9 @@ int main()
         std::printf("store load failed: %s\n", err.c_str());
         return 1;
     }
-    if (!store.addPack(localPath, "local", &err) ||
-        !store.addPack(downloadedPath, "downloaded", &err)) {
-        std::printf("add pack failed: %s\n", err.c_str());
+    // v3.12.3：load 会扫描未索引的 local/downloaded 文件，两个 pack 应自动入索引。
+    if (store.packs().size() != 2) {
+        std::printf("unindexed scan mismatch size=%zu\n", store.packs().size());
         return 1;
     }
 

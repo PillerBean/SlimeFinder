@@ -276,6 +276,7 @@ private:
     void showPage(int page);            // 切换页面（标签页与左导航同源）
     void showDock(int index);           // 展开底部停靠面板并切到第 index 类
     void hideDock();                    // 收起停靠面板（高度归 0）
+    QWidget* buildCachePageV2();        // v3.12.3：缓存页紧凑重构
     void buildV340Pages();              // 构建范围 / 设置 / 更新历史 / 控件状态 四页
     void showBuildEstimate();           // 构建预估（构建范围页「预估」按钮）
     QColor themedIconColor() const;                  // v3.4.8：自绘图案的当前主题取色（切主题立即重绘）

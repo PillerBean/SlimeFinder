@@ -35,6 +35,18 @@ else()
     target_compile_options(cubiomes PRIVATE -w)
 endif()
 
+add_library(miniz STATIC
+    third_party/miniz/miniz.c
+    third_party/miniz/miniz_zip.c
+    third_party/miniz/miniz_tdef.c
+    third_party/miniz/miniz_tinfl.c
+)
+target_include_directories(miniz PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/miniz)
+target_compile_definitions(miniz PUBLIC MINIZ_NO_ZLIB_COMPATIBLE_NAMES)
+if(MSVC)
+    target_compile_options(miniz PRIVATE /W0)
+endif()
+
 add_library(slime_core STATIC
     src/core/RandomGenerators.cpp
     src/core/SlimeEngine.cpp
@@ -123,6 +135,7 @@ add_executable(SlimeFinder WIN32
     src/gui/widgets/MapPreviewWidget.cpp # v3.5.2（任务 2）：地图预览控件（缩放/平移/图层）
     src/gui/widgets/CacheCoverageMap.cpp # v3.12.3：缓存覆盖地图
     src/gui/dialogs/CacheDownloadDialog.cpp
+    src/gui/dialogs/CacheZipImportDialog.cpp
     src/gui/dialogs/MapDialog.cpp       # v3.5.2（任务 2）：地图预览对话框
     src/gui/mainwindow/MainWindow.cpp
     src/gui/widgets/PatternEditor.cpp
@@ -130,6 +143,7 @@ add_executable(SlimeFinder WIN32
     src/gui/dialogs/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
     src/gui/services/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
     src/gui/services/CacheDownloadClient.cpp # v3.12.3：缓存联网下载
+    src/cache/CacheZipImporter.cpp # v3.12.3：网盘 zip 严格校验/导入
     src/i18n/UiText.cpp # v3.11.0：外部 JSON 语言包
     src/i18n/UiStrings.cpp # v3.11.0：兼容语言 API（数据在 JSON）
     src/gui/dialogs/HelpDialog.cpp
@@ -155,6 +169,7 @@ endif()
 target_include_directories(SlimeFinder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(SlimeFinder PRIVATE
     slime_core
+    miniz
     slime_gpu
     Qt6::Widgets
     Qt6::Network
@@ -231,6 +246,19 @@ endif()
 
 # ---------------------------------------------------------------- E3.3.1：SIMD 内核独立自检（不依赖引擎/OpenCL）
 # 覆盖：基岩种子查表、跨步采样扫描、密度 g×g 窗口计数（均与独立教科书参考逐位比对）
+add_executable(slime_cache_zip_tests
+    tests/integration/cache_zip_import_test.cpp
+    src/cache/CacheZipImporter.cpp
+)
+target_include_directories(slime_cache_zip_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/miniz
+)
+target_link_libraries(slime_cache_zip_tests PRIVATE slime_core miniz Qt6::Core)
+if(MSVC)
+    target_compile_options(slime_cache_zip_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_build
     tools/cache/cache_build.cpp
 )

@@ -191,3 +191,14 @@ py -3 scripts/release/package_netdisk_batches.py `
 - `SHA256SUMS-全部.txt` 与 zip 放在同一目录。
 
 源缓存位于 `cache-build/全部/`，manifest 为 `cache-build/全部/manifest.json`。
+
+### 四个网盘范围链接（已配置）
+
+```text
+附近：https://wwben.lanzoul.com/b01d7e5jyf
+局部：https://wwben.lanzoul.com/b01d7e5k0h
+较大：https://wwben.lanzoul.com/b01d7e5kah
+全部：https://wwben.lanzoul.com/b01d7e5l9c
+```
+
+客户端网盘手动页只提供这四个入口；程序不扫描网盘、不跟踪浏览器下载。

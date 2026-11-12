@@ -1,4 +1,4 @@
-﻿#include "cache/CacheStore.h"
+#include "cache/CacheStore.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -145,10 +145,7 @@ bool CacheStore::load(std::string* err)
     m_packs.clear();
     if (!ensureDirs(err)) return false;
     std::ifstream in(indexPath(), std::ios::binary);
-    if (!in) {
-        // 无索引 = 空缓存
-        return true;
-    }
+    // 无索引时仍继续：手动导入/直接放入 downloaded 的 pack 需要在启动时扫描入索引。
     std::string line;
     int64_t format = 0;
     std::vector<CachePackEntry> loaded;

@@ -38,6 +38,8 @@ public:
     static QString fallbackManifestUrl();
     // 国内网盘人工备用地址（文件夹；不是 manifest JSON）。
     static QString netdiskUrl();
+    // index: 0=附近 1=局部 2=较大 3=全部；未单独配置时回退 netdisk
+    static QString netdiskRangeUrl(int index);
 
     // manifestUrl 为空时直接返回失败“未配置下载源”。
     void fetchManifest(const QUrl& manifestUrl, ManifestCallback done);

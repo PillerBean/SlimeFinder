@@ -1,4 +1,5 @@
 #include "gui/dialogs/CacheDownloadDialog.h"
+#include "gui/dialogs/CacheZipImportDialog.h"
 
 #include "gui/widgets/CacheCoverageMap.h"
 #include "i18n/UiText.h"
@@ -6,6 +7,7 @@
 #include <QCheckBox>
 #include <QButtonGroup>
 #include <QGroupBox>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QDesktopServices>
@@ -113,7 +115,7 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         bottomLay->addStretch(1);
         bottomLay->addWidget(m_downloadSelected);
         lay->addWidget(bottom);
-        tabs->addTab(page, slime::ui::t("ui.cache.download.available"));
+        tabs->addTab(page, slime::ui::t("ui.cache.download.r2tab"));
 
         connect(m_loadManifest, &QPushButton::clicked, this, [this]() { loadAvailable(); });
         connect(netdisk, &QPushButton::clicked, this, []() {
@@ -142,6 +144,64 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         });
         connect(m_downloadSelected, &QPushButton::clicked, this, [this]() { downloadSelected(); });
         loadAvailable();
+    }
+
+    // 网盘手动页：只给 4 个范围链接 + 导入窗口，不做自动扫描/下载
+    {
+        auto* ndPage = new QWidget(tabs);
+        auto* ndLay = new QVBoxLayout(ndPage);
+        ndLay->setContentsMargins(10, 10, 10, 10);
+        ndLay->setSpacing(8);
+
+        auto* hint = new QLabel(slime::ui::t("ui.cache.download.netdisk.hint"), ndPage);
+        hint->setWordWrap(true);
+        hint->setObjectName(QStringLiteral("topSummary"));
+        ndLay->addWidget(hint);
+
+        auto* grid = new QGridLayout();
+        grid->setHorizontalSpacing(8);
+        grid->setVerticalSpacing(8);
+        const char* keys[] = { "ui.cache.download.quick.near",
+                               "ui.cache.download.quick.local",
+                               "ui.cache.download.quick.large",
+                               "ui.cache.download.quick.all" };
+        for (int i = 0; i < 4; ++i) {
+            auto* box = new QGroupBox(slime::ui::t(keys[i]), ndPage);
+            box->setProperty("card", true);
+            auto* boxLay = new QVBoxLayout(box);
+            boxLay->setContentsMargins(8, 6, 8, 8);
+            auto* open = new QPushButton(slime::ui::t("ui.cache.download.openFolder"), box);
+            const int rangeIndex = i;
+            open->setEnabled(!CacheDownloadClient::netdiskRangeUrl(rangeIndex).trimmed().isEmpty());
+            QObject::connect(open, &QPushButton::clicked, this, [rangeIndex]() {
+                const QString url = CacheDownloadClient::netdiskRangeUrl(rangeIndex);
+                if (!url.isEmpty()) QDesktopServices::openUrl(QUrl(url));
+            });
+            boxLay->addWidget(open);
+            grid->addWidget(box, i / 2, i % 2);
+        }
+        ndLay->addLayout(grid);
+
+        auto* importRow = new QWidget(ndPage);
+        auto* importLay = new QHBoxLayout(importRow);
+        importLay->setContentsMargins(0, 0, 0, 0);
+        importLay->addWidget(new QLabel(slime::ui::t("ui.cache.download.netdisk.drop"), importRow), 1);
+        auto* importBtn = new QPushButton(slime::ui::t("ui.cache.download.netdisk.import"), importRow);
+        importLay->addWidget(importBtn);
+        ndLay->addWidget(importRow);
+        auto* note = new QLabel(slime::ui::t("ui.cache.download.netdisk.note"), ndPage);
+        note->setWordWrap(true);
+        note->setObjectName(QStringLiteral("topSummary"));
+        ndLay->addWidget(note);
+        ndLay->addStretch(1);
+
+        QObject::connect(importBtn, &QPushButton::clicked, this, [this]() {
+            CacheZipImportDialog dlg(m_store, this);
+            dlg.onImported = [this]() { refresh(); if (onChanged) onChanged(); };
+            dlg.exec();
+            refresh();
+        });
+        tabs->addTab(ndPage, slime::ui::t("ui.cache.download.netdisktab"));
     }
 
     // 已下载页

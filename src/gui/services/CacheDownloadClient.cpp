@@ -68,6 +68,23 @@ QString CacheDownloadClient::fallbackManifestUrl()
     return configValue(QStringLiteral("cacheDownload"), QStringLiteral("fallback"));
 }
 
+QString CacheDownloadClient::netdiskRangeUrl(int index)
+{
+    static const char* keys[] = { "netdiskNearby", "netdiskLocal", "netdiskLarge", "netdiskAll" };
+    static const char* defaults[] = {
+        "https://wwben.lanzoul.com/b01d7e5jyf",
+        "https://wwben.lanzoul.com/b01d7e5k0h",
+        "https://wwben.lanzoul.com/b01d7e5kah",
+        "https://wwben.lanzoul.com/b01d7e5l9c"
+    };
+    if (index >= 0 && index < 4) {
+        const QString v = configValue(QStringLiteral("cacheDownload"), QString::fromLatin1(keys[index]));
+        if (!v.trimmed().isEmpty()) return v;
+        return QString::fromLatin1(defaults[index]);
+    }
+    return netdiskUrl();
+}
+
 QString CacheDownloadClient::netdiskUrl()
 {
     const QString env = qEnvironmentVariable("SLIME_CACHE_NETDISK");

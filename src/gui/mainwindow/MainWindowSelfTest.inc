@@ -966,9 +966,9 @@ int MainWindow::runSelfTest()
             updateBuildHintUi();
             showPage(kPageBuild); // v3.4.9：提示行随构建内容在构建页，先切页再判可见性
             QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
-            check(m_w->buildHint && m_w->buildHint->isVisible() &&
+            check(m_w->buildHint && !m_w->buildHint->isVisible() &&
                       m_w->buildHint->text().contains(slime::ui::t("ui.f6bed4017481")),
-                  "构建模式提示可见（预估体积 + 说明；任务书 1.1）");
+                  "构建页长提示已移除，信息改由 ? 悬停承载");
             check(m_w->targetCount && !m_w->targetCount->isEnabled() && m_w->stopAtTarget &&
                       !m_w->stopAtTarget->isEnabled(),
                   "构建模式禁用匹配相关控件（只判定不匹配）");
