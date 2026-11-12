@@ -165,6 +165,14 @@
   .download-actions { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
   .download-actions .note { margin-left: auto; }
 
+  .download-state-line {
+    display: flex; align-items: center; gap: 7px;
+    margin-top: 9px; color: var(--muted); font-size: 11px;
+  }
+  .download-state-line .spacer { flex: 1; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #b8c7b8; flex: none; }
+  .download-state-line.active .status-dot { background: #4e9a5a; box-shadow: 0 0 0 3px #e5f1e5; }
+
   .empty-soft {
     border: 1px dashed #d6e2d6; border-radius: 8px;
     color: var(--muted); background: #fafcf9;
@@ -223,56 +231,11 @@
               <a class="btn primary" href="download-page.html">打开下载界面</a>
             </div>
 
-            <div class="source-row">
-              <span class="source-label">下载源</span>
-              <div class="source-tabs" id="sourceTabs">
-                <button class="source-tab active" type="button" data-source="auto">自动</button>
-                <button class="source-tab" type="button" data-source="r2">R2 主源</button>
-                <button class="source-tab" type="button" data-source="netdisk">国内网盘</button>
-              </div>
-              <span class="help" data-tip-title="下载源选择" data-tip="自动：优先 R2，失败后提示网盘备用；R2：只走网络源；网盘：手动下载 zip 后由程序导入并校验。">?</span>
-              <button class="btn small demo-btn" type="button" id="demoBtn">模拟下载</button>
-            </div>
-            <div class="source-note" id="sourceNote">自动选择：R2 主源优先，失败时提示国内网盘备用。</div>
-
-            <div class="download-task hidden" id="downloadTask">
-              <div class="task-head">
-                <strong>缓存包下载</strong>
-                <span class="task-state" id="taskState">下载中</span>
-                <span class="spacer"></span>
-                <button class="btn small" type="button" id="pauseBtn">暂停</button>
-                <button class="btn small danger" type="button" id="cancelBtn">取消</button>
-              </div>
-
-              <div class="progress-block">
-                <div class="progress-label"><span>总下载进度</span><span class="pct" id="totalPct">0%</span></div>
-                <div class="track"><div class="fill" id="totalBar"></div></div>
-                <div class="progress-meta"><span id="totalBytes">0 MB / 4.78 GB</span><span class="right" id="speed">0 MB/s</span></div>
-              </div>
-
-              <div class="progress-block">
-                <div class="progress-label"><span>分文件下载进度</span><span class="pct" id="filePct">0%</span></div>
-                <div class="file-name" id="fileName">等待第一个文件…</div>
-                <div class="track thin"><div class="fill blue" id="fileBar"></div></div>
-              </div>
-
-              <div class="file-count-line">
-                <span class="note">文件数</span>
-                <div class="track"><div class="fill" id="countBar"></div></div>
-                <span class="note" id="fileCount">0 / 64</span>
-              </div>
-
-              <div class="progress-block unzip-block hidden" id="unzipBlock" style="margin-top:9px">
-                <div class="progress-label"><span>解压进度</span><span class="pct" id="unzipPct">0%</span></div>
-                <div class="track thin amber"><div class="fill amber" id="unzipBar"></div></div>
-                <div class="progress-meta"><span id="unzipName">等待解压…</span><span class="right" id="unzipCount">0 / 64</span></div>
-              </div>
-            </div>
-
-            <div class="download-actions">
-              <span class="note" id="downloadHint">未开始下载</span>
+            <div class="download-state-line">
+              <span class="status-dot"></span>
+              <span id="downloadStateText">暂无进行中的下载</span>
               <span class="spacer"></span>
-              <button class="btn small" type="button" id="resetBtn">重置</button>
+              <span class="note">进度在下载页查看</span>
             </div>
           </section>
 
@@ -471,98 +434,10 @@
   });
   window.addEventListener('resize', draw);
   draw();
-
-  // ---- 下载源选择与下载进度示意 ----
-  const sourceTabs = document.querySelectorAll('.source-tab');
-  const sourceNote = document.getElementById('sourceNote');
-  const task = document.getElementById('downloadTask');
-  const unzipBlock = document.getElementById('unzipBlock');
-  const demoBtn = document.getElementById('demoBtn');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  let source = 'auto';
-  let demoTimer = null;
-  let paused = false;
-  let state = { total: 0, files: 0, unzip: 0 };
-  const TOTAL_FILES = 64;
-  const TOTAL_MB = 4778;
-
-  function sourceLabel() {
-    if (source === 'r2') return 'R2 主源';
-    if (source === 'netdisk') return '国内网盘';
-    return '自动选择';
-  }
-  function setSource(v) {
-    source = v;
-    sourceTabs.forEach(b => b.classList.toggle('active', b.dataset.source === v));
-    if (v === 'r2') sourceNote.textContent = '只使用 R2 主源；不会自动切换到网盘。';
-    else if (v === 'netdisk') sourceNote.textContent = '国内网盘为人工备用：下载 zip 后由程序导入、校验、去重。';
-    else sourceNote.textContent = '自动选择：R2 主源优先，失败时提示国内网盘备用。';
-    if (task && !task.classList.contains('hidden')) {
-      document.getElementById('taskState').textContent = v === 'netdisk' ? '导入中' : '下载中';
-      unzipBlock.classList.toggle('hidden', v !== 'netdisk');
-    }
-  }
-  function updateProgress() {
-    const pct = Math.min(100, state.total / TOTAL_MB * 100);
-    const filePct = state.files >= TOTAL_FILES ? 100 : Math.round((state.total % (TOTAL_MB/TOTAL_FILES)) / (TOTAL_MB/TOTAL_FILES) * 100);
-    document.getElementById('totalPct').textContent = pct.toFixed(1) + '%';
-    document.getElementById('totalBar').style.width = pct + '%';
-    document.getElementById('totalBytes').textContent = (state.total).toFixed(0) + ' MB / ' + TOTAL_MB + ' MB';
-    document.getElementById('speed').textContent = (8.4 + (state.files % 5) * .7).toFixed(1) + ' MB/s';
-    document.getElementById('filePct').textContent = filePct + '%';
-    document.getElementById('fileBar').style.width = filePct + '%';
-    document.getElementById('fileName').textContent = state.files >= TOTAL_FILES ? '全部文件下载完成' : '基岩版区块缓存-全部-' + (state.files + 1) + '.zip';
-    document.getElementById('countBar').style.width = (state.files / TOTAL_FILES * 100) + '%';
-    document.getElementById('fileCount').textContent = state.files + ' / ' + TOTAL_FILES;
-    if (source === 'netdisk') {
-      const up = Math.min(100, state.unzip / TOTAL_FILES * 100);
-      document.getElementById('unzipPct').textContent = up.toFixed(1) + '%';
-      document.getElementById('unzipBar').style.width = up + '%';
-      document.getElementById('unzipCount').textContent = state.unzip + ' / ' + TOTAL_FILES;
-      document.getElementById('unzipName').textContent = state.unzip >= TOTAL_FILES ? '解压完成' : '正在解压 · 基岩版区块缓存-全部-' + (state.unzip + 1) + '.zip';
-    }
-    if (state.files >= TOTAL_FILES) {
-      document.getElementById('taskState').textContent = source === 'netdisk' ? '已完成' : '已完成';
-      document.getElementById('downloadHint').textContent = source === 'netdisk' ? '全部文件已导入并去重' : '全部文件已下载并校验';
-      if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-    }
-  }
-  function startDemo() {
-    if (demoTimer) clearInterval(demoTimer);
-    demoTimer = null; paused = false;
-    task.classList.remove('hidden');
-    unzipBlock.classList.toggle('hidden', source !== 'netdisk');
-    state = { total: 0, files: 0, unzip: 0 };
-    document.getElementById('downloadHint').textContent = '示例：' + sourceLabel();
-    updateProgress();
-    const step = TOTAL_MB / TOTAL_FILES / 8;
-    demoTimer = setInterval(() => {
-      if (paused) return;
-      state.total = Math.min(TOTAL_MB, state.total + step);
-      state.files = Math.min(TOTAL_FILES, Math.floor(state.total / (TOTAL_MB / TOTAL_FILES)));
-      if (source === 'netdisk') {
-        state.unzip = state.files >= TOTAL_FILES ? TOTAL_FILES
-                                                 : Math.min(TOTAL_FILES, Math.max(state.unzip, state.files - 1));
-      }
-      updateProgress();
-    }, 120);
-  }
-  sourceTabs.forEach(b => b.addEventListener('click', () => setSource(b.dataset.source)));
-  demoBtn.addEventListener('click', startDemo);
-  pauseBtn.addEventListener('click', () => { paused = !paused; pauseBtn.textContent = paused ? '继续' : '暂停'; });
-  cancelBtn.addEventListener('click', () => { if (demoTimer) clearInterval(demoTimer); demoTimer=null; task.classList.add('hidden'); document.getElementById('downloadHint').textContent='已取消'; });
-  resetBtn.addEventListener('click', () => { task.classList.add('hidden'); document.getElementById('downloadHint').textContent='未开始下载'; });
-  const qs = new URLSearchParams(location.search);
-  if (qs.get('demo') === '1') {
-    setSource(qs.get('source') || 'auto');
-    startDemo();
-    if (qs.get('snapshot') === '1') {
-      if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-      state = { total: 2820, files: 38, unzip: 30 };
-      updateProgress();
-    }
+  const active = new URLSearchParams(location.search).get('active') === '1';
+  if (active) {
+    const line = document.querySelector('.download-state-line');
+    if (line) { line.classList.add('active'); document.getElementById('downloadStateText').textContent = '3 个任务下载中 · 总进度 59%'; }
   }
 
 </script>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>下载缓存 - 下载源与并发任务</title>
+<link rel="stylesheet" href="cache-ui.css">
+<style>
+  :root { --download-left: 390px; }
+  .download-content { padding-top: 18px; }
+  .download-head { margin-bottom: 14px; }
+  .download-head h1 { font-size: 23px; }
+  .download-head .back { margin-right: 4px; }
+
+  .source-card { margin-bottom: 12px; }
+  .source-card .card-head { margin-bottom: 8px; }
+  .source-line { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .source-label { color: var(--muted); font-size: 11px; }
+  .segmented { display: inline-flex; gap: 3px; }
+  .seg {
+    border: 1px solid var(--line); background: #fff; color: #5f6e61;
+    border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+  }
+  .seg:hover { background: var(--green-50); border-color: #b8d0ba; }
+  .seg.active { background: var(--green-700); border-color: var(--green-700); color: #fff; }
+  .source-line .spacer { flex: 1; }
+  .source-note { margin-top: 6px; color: var(--muted); font-size: 10.5px; }
+  .source-line .concurrency { color: var(--muted); font-size: 10.5px; }
+
+  .task-board { margin-bottom: 12px; }
+  .task-board .card-head { margin-bottom: 9px; }
+  .task-board .card-head .spacer { flex: 1; }
+  .aggregate {
+    border: 1px solid #dce8da; border-radius: 8px;
+    background: #f8fbf7; padding: 9px 11px 8px;
+  }
+  .agg-line { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .agg-line strong { font-size: 11px; color: #455447; }
+  .agg-line .pct { margin-left: auto; color: var(--green-700); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .agg-meta { display: flex; align-items: center; gap: 12px; margin-top: 4px; color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .agg-meta .right { margin-left: auto; }
+  .agg-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 14px; margin-top: 7px; }
+  .mini-line { display: flex; align-items: center; gap: 7px; }
+  .mini-line .mini-label { width: 30px; color: var(--muted); font-size: 9.5px; flex: none; }
+  .mini-line .track { flex: 1; height: 4px; }
+  .mini-line .mini-value { width: 48px; text-align: right; color: var(--muted); font-size: 9.5px; font-variant-numeric: tabular-nums; flex: none; }
+  .track { height: 6px; border-radius: 3px; background: #e6eee4; overflow: hidden; }
+  .track.thin { height: 5px; }
+  .track.amber { background: #f1ead9; }
+  .fill { height: 100%; background: #4e9a5a; border-radius: inherit; }
+  .fill.blue { background: #5b91c8; }
+  .fill.amber { background: #d8a33e; }
+  .task-list { margin-top: 9px; display: flex; flex-direction: column; gap: 7px; }
+  .task-row {
+    display: flex; align-items: center; gap: 9px;
+    border: 1px solid #e0e9de; border-radius: 8px;
+    background: #fff; padding: 7px 9px;
+  }
+  .task-row.queued { background: #fbfcfa; border-style: dashed; }
+  .source-badge {
+    flex: none; width: 38px; text-align: center;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
+    border-radius: 4px; padding: 3px 0;
+  }
+  .source-badge.r2 { color: #315e88; background: #eaf2fb; border: 1px solid #cfe0f2; }
+  .source-badge.netdisk { color: #8a621c; background: #fbf3e1; border: 1px solid #edddb9; }
+  .source-badge.queued { color: #7b877d; background: #f2f5f1; border: 1px solid #e0e7de; }
+  .task-main { flex: 1; min-width: 0; }
+  .task-line { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .task-line strong { font-size: 11.5px; font-weight: 600; }
+  .task-meta { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .task-line .pct { margin-left: auto; color: var(--green-700); font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .task-row .btn { flex: none; padding: 2px 7px; font-size: 10px; }
+  .task-sub { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
+  .task-sub .note { font-size: 9.5px; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-sub .track { flex: 1; height: 4px; }
+  .task-sub .pct { font-size: 9.5px; color: #8a6b2b; font-variant-numeric: tabular-nums; }
+  .task-status { flex: none; color: var(--muted); font-size: 9.5px; width: 48px; text-align: right; }
+
+  .download-split {
+    display: grid; grid-template-columns: var(--download-left) minmax(0,1fr);
+    gap: 14px; align-items: start;
+  }
+  .download-split .stack { display: flex; flex-direction: column; gap: 12px; }
+  .download-split .card { border-radius: 10px; }
+  .map-preview { height: 300px; background: #f7faf5; display: block; width: 100%; }
+  .map-card .map-note {
+    display: flex; align-items: center; gap: 10px; padding: 7px 12px;
+    border-top: 1px solid var(--line); color: var(--muted); font-size: 10px;
+  }
+  .map-card .map-note .spacer { flex: 1; }
+  .catalog-card { min-width: 0; }
+  .catalog-toolbar {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    padding: 8px 12px; border-bottom: 1px solid var(--line); background: #fbfcfa;
+  }
+  .catalog-toolbar .spacer { flex: 1; }
+  .catalog-toolbar .search { width: 150px; height: 26px; font-size: 11px; }
+  .catalog-toolbar .btn { font-size: 11px; padding: 3px 8px; }
+  .catalog-card .table { font-size: 11.5px; }
+  .catalog-card .table th { padding: 6px 9px; }
+  .catalog-card .table td { padding: 6px 9px; }
+  .catalog-card .table .range { color: #687669; font-variant-numeric: tabular-nums; }
+  .catalog-card .bulkline { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-top: 1px solid var(--line); }
+  .catalog-card .bulkline .spacer { flex: 1; }
+  .catalog-card .bulkline .note { color: var(--muted); font-size: 10px; }
+
+  /* ? 帮助 */
+  .help {
+    display: inline-block; vertical-align: -2px;
+    width: 16px; height: 16px; flex: none;
+    border: 1px solid #bdcfbe; border-radius: 50%;
+    color: #58705b; background: #f7faf6;
+    font-size: 10px; line-height: 14px; font-weight: 700;
+    text-align: center; cursor: help; user-select: none;
+  }
+  .help:hover { background: var(--green-50); border-color: #88aa8c; }
+  .tooltip {
+    position: fixed; z-index: 100; max-width: 290px;
+    padding: 9px 11px; border: 1px solid #cfdccf; border-radius: 8px;
+    background: #fff; color: #38463a; box-shadow: 0 8px 22px rgba(25,50,30,.14);
+    font-size: 12px; line-height: 1.55; pointer-events: none;
+    opacity: 0; transform: translateY(3px); transition: opacity .12s ease, transform .12s ease;
+  }
+  .tooltip.show { opacity: 1; transform: translateY(0); }
+  .tooltip strong { display: block; margin-bottom: 2px; }
+
+  @media (max-width: 1120px) {
+    .download-split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">来源 <strong>R2 + 国内网盘</strong></span>
+      <span class="pill">只读 <strong>可删不可改</strong></span>
+      <span class="spacer"></span>
+      <span class="avatar">S</span>
+    </div>
+
+    <div class="content download-content">
+      <div class="page-head download-head">
+        <a class="back" href="cache-compact.html">← 缓存页</a>
+        <div>
+          <h1>下载缓存</h1>
+          <p>选择内容后开始下载；任务会在后台并发执行，进度在这里集中查看。</p>
+        </div>
+        <span class="spacer"></span>
+        <span class="tag gray">示例数据</span>
+      </div>
+
+      <!-- 下载源选择 -->
+      <section class="card card-pad source-card">
+        <div class="source-line">
+          <span class="source-label">下载源</span>
+          <div class="segmented" id="sourceTabs">
+            <button class="seg active" type="button" data-source="auto">自动</button>
+            <button class="seg" type="button" data-source="r2">R2 主源</button>
+            <button class="seg" type="button" data-source="netdisk">国内网盘</button>
+          </div>
+          <span class="help" data-tip-title="下载源选择" data-tip="自动：R2 优先，失败后提示国内网盘备用；R2：只走网络源；网盘：手动下载 zip 后由程序导入。">?</span>
+          <span class="spacer"></span>
+          <span class="concurrency">下载并发 <strong>3</strong> · 解压并发 <strong>1</strong></span>
+        </div>
+        <div class="source-note" id="sourceNote">自动选择：优先 R2，下载失败时提示国内网盘备用；已下载的官方缓存只读。</div>
+      </section>
+
+      <!-- 任务队列 -->
+      <section class="card card-pad task-board">
+        <div class="card-head">
+          <h2>下载队列</h2>
+          <span class="tag">3 个进行中</span>
+          <span class="help" data-tip-title="下载队列" data-tip="同时下载多个文件；单个文件失败只重试该文件，不影响已完成文件。网盘来源会额外显示解压进度。">?</span>
+          <span class="spacer"></span>
+          <button class="btn small" type="button">暂停全部</button>
+          <button class="btn small danger" type="button">取消全部</button>
+        </div>
+
+        <div class="aggregate">
+          <div class="agg-line"><strong>总下载进度</strong><span class="pct">59.0%</span></div>
+          <div class="track"><div class="fill" style="width:59%"></div></div>
+          <div class="agg-meta">
+            <span>2,820 / 4,778 MB</span>
+            <span>速度 10.5 MB/s</span>
+            <span class="right">平均 8.4 MB/s</span>
+          </div>
+          <div class="agg-mini">
+            <div class="mini-line"><span class="mini-label">文件数</span><div class="track"><div class="fill" style="width:59%"></div></div><span class="mini-value">38 / 64</span></div>
+            <div class="mini-line"><span class="mini-label">解压</span><div class="track amber"><div class="fill amber" style="width:46.9%"></div></div><span class="mini-value">30 / 64</span></div>
+          </div>
+        </div>
+
+        <div class="task-list">
+          <div class="task-row">
+            <span class="source-badge r2">R2</span>
+            <div class="task-main">
+              <div class="task-line">
+                <strong>基岩版区块缓存-全部-39.zip</strong>
+                <span class="task-meta">54.1 / 74.3 MB · 10.5 MB/s</span>
+                <span class="pct">77%</span>
+              </div>
+              <div class="track thin"><div class="fill blue" style="width:77%"></div></div>
+            </div>
+            <button class="btn small" type="button">暂停</button>
+            <button class="btn small danger" type="button">取消</button>
+          </div>
+
+          <div class="task-row">
+            <span class="source-badge r2">R2</span>
+            <div class="task-main">
+              <div class="task-line">
+                <strong>基岩版区块缓存-全部-40.zip</strong>
+                <span class="task-meta">38.6 / 74.3 MB · 9.8 MB/s</span>
+                <span class="pct">52%</span>
+              </div>
+              <div class="track thin"><div class="fill blue" style="width:52%"></div></div>
+            </div>
+            <button class="btn small" type="button">暂停</button>
+            <button class="btn small danger" type="button">取消</button>
+          </div>
+
+          <div class="task-row">
+            <span class="source-badge netdisk">网盘</span>
+            <div class="task-main">
+              <div class="task-line">
+                <strong>基岩版区块缓存-局部-2.zip</strong>
+                <span class="task-meta">18.0 / 18.0 MB · 已下载</span>
+                <span class="pct" style="color:#8a621c">解压中</span>
+              </div>
+              <div class="track thin"><div class="fill" style="width:100%"></div></div>
+              <div class="task-sub">
+                <span class="note">解压 · 局部-2.zip</span>
+                <div class="track amber"><div class="fill amber" style="width:46.9%"></div></div>
+                <span class="pct">46.9%</span>
+              </div>
+            </div>
+            <button class="btn small" type="button">暂停</button>
+            <button class="btn small danger" type="button">取消</button>
+          </div>
+
+          <div class="task-row queued">
+            <span class="source-badge queued">等待</span>
+            <div class="task-main">
+              <div class="task-line">
+                <strong>基岩版区块缓存-全部-41.zip</strong>
+                <span class="task-meta">等待并发槽位</span>
+                <span class="pct" style="color:#7b877d">排队</span>
+              </div>
+              <div class="track thin"><div class="fill" style="width:0%"></div></div>
+            </div>
+            <span class="task-status">第 4 个</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 选择内容 + 地图 -->
+      <div class="download-split">
+        <div class="stack">
+          <section class="card map-card">
+            <div class="card-pad" style="padding-bottom:8px">
+              <div class="card-head" style="margin-bottom:0">
+                <h2>覆盖预览</h2>
+                <span class="help" data-tip-title="覆盖预览" data-tip="蓝色为可下载包，绿色为已下载包，金色为当前选中。">?</span>
+                <span class="spacer"></span>
+                <span class="tag gray">可下载</span>
+              </div>
+            </div>
+            <canvas class="map-preview" id="previewMap" aria-label="可下载缓存覆盖预览"></canvas>
+            <div class="map-note">
+              <span><i class="legend-dot downloaded"></i>可下载</span>
+              <span><i class="legend-dot local"></i>已下载</span>
+              <span><i class="legend-dot selected"></i>选中</span>
+              <span class="spacer"></span>
+              <span>点击列表或地图选择</span>
+            </div>
+          </section>
+          <div class="summary-strip">
+            <span>已下载 <strong>247</strong> 个</span>
+            <span>占用 <strong>4.51 GB</strong></span>
+            <span class="note">只读，可批量删除</span>
+          </div>
+        </div>
+
+        <section class="card catalog-card">
+          <div class="catalog-tabs">
+            <button class="catalog-tab active">可下载 <span class="count">240</span></button>
+            <button class="catalog-tab">已下载 <span class="count">247</span></button>
+          </div>
+          <div class="catalog-toolbar">
+            <span class="note">快捷范围</span>
+            <button class="btn small" type="button">全部</button>
+            <button class="btn small" type="button">附近 ±2k</button>
+            <button class="btn small" type="button">局部 ±8k</button>
+            <button class="btn small" type="button">较大 ±32k</button>
+            <input class="input search" type="text" placeholder="搜索范围">
+            <span class="spacer"></span>
+            <button class="btn small primary" type="button">下载选中</button>
+          </div>
+          <table class="table compact">
+            <thead>
+              <tr><th style="width:28px"><input class="check" type="checkbox" aria-label="全选"></th><th>包名</th><th>覆盖范围</th><th>大小</th><th>状态</th><th style="width:64px">操作</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><input class="check" type="checkbox"></td><td>全部-39</td><td class="range">98304..102399, -131072..-126977</td><td class="num">74.3 MB</td><td><span class="download-state pending">可下载</span></td><td><button class="btn small primary">下载</button></td></tr>
+              <tr><td><input class="check" type="checkbox"></td><td>全部-40</td><td class="range">98304..102399, -126976..-122881</td><td class="num">74.3 MB</td><td><span class="download-state pending">下载中</span></td><td><button class="btn small" disabled>进行中</button></td></tr>
+              <tr><td><input class="check" type="checkbox"></td><td>局部-2</td><td class="range">-8192..8191, 0..8191</td><td class="num">18.0 MB</td><td><span class="download-state">已下载</span></td><td><button class="btn small danger">删除</button></td></tr>
+              <tr><td><input class="check" type="checkbox"></td><td>附近-1</td><td class="range">-2048..2047, -2048..2047</td><td class="num">1.1 MB</td><td><span class="download-state">已下载</span></td><td><button class="btn small danger">删除</button></td></tr>
+              <tr><td><input class="check" type="checkbox"></td><td>较大-2</td><td class="range">-32768..32767, -16384..-1</td><td class="num">71.0 MB</td><td><span class="download-state pending">可下载</span></td><td><button class="btn small primary">下载</button></td></tr>
+              <tr><td><input class="check" type="checkbox"></td><td>较大-3</td><td class="range">-32768..32767, 0..16383</td><td class="num">71.0 MB</td><td><span class="download-state pending">可下载</span></td><td><button class="btn small primary">下载</button></td></tr>
+            </tbody>
+          </table>
+          <div class="bulkline">
+            <span class="note">已选 <strong>2</strong> 个 · 共 240 个可下载包</span>
+            <span class="spacer"></span>
+            <button class="btn small">全选当前页</button>
+            <button class="btn small">全选筛选结果</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<script>
+  // 下载源切换
+  const sourceTabs = document.querySelectorAll('.seg');
+  const sourceNote = document.getElementById('sourceNote');
+  function setSource(v) {
+    sourceTabs.forEach(b => b.classList.toggle('active', b.dataset.source === v));
+    if (v === 'r2') sourceNote.textContent = '只使用 R2 主源；单文件失败只重试该文件，不会自动切换到网盘。';
+    else if (v === 'netdisk') sourceNote.textContent = '国内网盘为人工备用：下载 zip 后由程序校验、导入、去重；会额外显示解压进度。';
+    else sourceNote.textContent = '自动选择：优先 R2，下载失败时提示国内网盘备用；已下载的官方缓存只读。';
+  }
+  sourceTabs.forEach(b => b.addEventListener('click', () => setSource(b.dataset.source)));
+
+  // ? 帮助浮层
+  const tip = document.getElementById('tooltip');
+  let tipTimer = null;
+  function showTip(el) {
+    const title = el.dataset.tipTitle || '说明';
+    const body = el.dataset.tip || '';
+    tip.innerHTML = '';
+    const b = document.createElement('strong'); b.textContent = title; tip.appendChild(b);
+    tip.appendChild(document.createTextNode(body));
+    tip.classList.add('show');
+    const rr = el.getBoundingClientRect();
+    let left = rr.left + rr.width / 2 - 145;
+    let top = rr.bottom + 8;
+    if (left < 10) left = 10;
+    if (left + 300 > innerWidth - 10) left = innerWidth - 300 - 10;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.classList.remove('show'); }
+  document.querySelectorAll('.help').forEach(el => {
+    el.addEventListener('mouseenter', () => { clearTimeout(tipTimer); showTip(el); });
+    el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('focus', () => showTip(el));
+    el.addEventListener('blur', hideTip);
+  });
+
+  // 预览地图
+  const canvas = document.getElementById('previewMap');
+  const ctx = canvas.getContext('2d');
+  const view = { x0: -36000, x1: 36000, z0: -36000, z1: 36000 };
+  const boxes = [
+    { x0:-32768, x1:32767, z0:-32768, z1:-16385, tone:'blue' },
+    { x0:-32768, x1:32767, z0:-16384, z1:-1, tone:'blue' },
+    { x0:-8192, x1:8191, z0:0, z1:8191, tone:'green' },
+    { x0:-2048, x1:2047, z0:-2048, z1:2047, tone:'green' }
+  ];
+  function sizeCanvas() {
+    const r = canvas.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(r.width*dpr)); canvas.height = Math.max(1, Math.round(r.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function w2s(x,z) { const w=canvas.clientWidth,h=canvas.clientHeight; return {x:(x-view.x0)/(view.x1-view.x0)*w, y:h-(z-view.z0)/(view.z1-view.z0)*h}; }
+  function draw() {
+    sizeCanvas();
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle='#f7faf5'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#e4ede2'; ctx.lineWidth=1;
+    for (let i=0;i<=20;i++){const x=i/20*w,y=i/20*h;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+    for (const b of boxes) {
+      const a=w2s(b.x0,b.z0), c=w2s(b.x1+1,b.z1+1);
+      const x=Math.min(a.x,c.x), y=Math.min(a.y,c.y), ww=Math.abs(c.x-a.x), hh=Math.abs(c.y-a.y);
+      ctx.fillStyle = b.tone==='green' ? 'rgba(103,179,123,.28)' : 'rgba(91,145,200,.25)';
+      ctx.fillRect(x,y,ww,hh);
+      ctx.strokeStyle = b.tone==='green' ? 'rgba(103,179,123,.65)' : 'rgba(91,145,200,.6)';
+      ctx.strokeRect(x+.5,y+.5,Math.max(1,ww-1),Math.max(1,hh-1));
+    }
+    ctx.fillStyle='#90a094'; ctx.font='10px "Microsoft YaHei", sans-serif';
+    ctx.fillText('x ' + view.x0 + ' … ' + view.x1, 10, h-10);
+    ctx.fillText('z ' + view.z0 + ' … ' + view.z1, 10, 14);
+  }
+  window.addEventListener('resize', draw); draw();
+</script>
+</body>
+</html>
