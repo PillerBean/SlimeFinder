@@ -47,7 +47,7 @@ def write_zip(out_path, subset, manifest, source_root, label, serial, limits):
         'rangeLabel': RANGE_LABELS.get(label, label),
         'serial': serial,
         'packCount': len(subset),
-        'fileLimitBytes': limits,
+        'rangeLimitChunks': limits,
         **bounds,
     }
     with open(os.path.join(tmp, 'batch.json'), 'w', encoding='utf-8', newline='\n') as f:
@@ -102,7 +102,7 @@ def main():
         manifest = json.load(f)
     limits = {'nearby': args.nearby, 'local': args.local, 'large': args.large, 'all': args.all}
     wanted = [x.strip() for x in args.labels.split(',') if x.strip()]
-    packs = manifest.get('packs', [])
+    packs = sorted(manifest.get('packs', []), key=lambda p: (p['minZ'], p['minX']))
     shutil.rmtree(args.out_dir, ignore_errors=True)
     os.makedirs(args.out_dir, exist_ok=True)
     written = []
