@@ -1,4 +1,4 @@
-// v3.12.3：官方缓存样例构建工具
+﻿// v3.12.3：官方缓存样例构建工具
 // 直接按 Bedrock 史莱姆判定生成 1024×1024 对齐的 v3 pack，不依赖 GUI。
 // 用法示例：
 //   slime_cache_build.exe --out cache-official --min-x -2048 --max-x 2048 --min-z -2048 --max-z 2048
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
                 std::printf("write pack failed (%s): %s\n", name.c_str(), err.c_str());
                 return 1;
             }
-            if (!store.addPack(path, "local", &err)) {
+            if (!store.addPack(path, "local", &err, false)) {
                 std::printf("add pack failed (%s): %s\n", name.c_str(), err.c_str());
                 return 1;
             }
@@ -105,6 +105,10 @@ int main(int argc, char** argv)
     }
     if (built == 0) {
         std::printf("no pack built\n");
+        return 1;
+    }
+    if (!store.save(&err)) {
+        std::printf("save index failed: %s\n", err.c_str());
         return 1;
     }
     if (verify) {

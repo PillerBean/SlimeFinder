@@ -177,3 +177,17 @@ py -3 scripts/release/package_netdisk_batches.py `
 ```
 
 四卷必须一起使用；`附近`、`局部` 与 `较大` 独立完整覆盖，本地加载按范围去重。
+
+### 全部范围（已构建）
+
+`基岩版区块缓存-全部-1.zip` 到 `-64.zip`：
+
+- 完整覆盖 X/Z ±131,072 区块；
+- 65,536 个 pack；
+- 64 卷，每卷 1,024 个 pack；
+- 每卷约 74.6 MB，低于 100 MB；
+- zip 合计 4,777,994,792 B（约 4.78 GB）；
+- 每卷按 Z 方向连续切 4,096 区块；
+- `SHA256SUMS-全部.txt` 与 zip 放在同一目录。
+
+源缓存位于 `cache-build/全部/`，manifest 为 `cache-build/全部/manifest.json`。

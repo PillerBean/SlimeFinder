@@ -28,7 +28,7 @@ def in_range(p, limit):
     return pack_abs(p) <= limit
 
 
-def write_zip(out_path, subset, manifest, source_root, label, serial, limits):
+def write_zip(out_path, subset, manifest, source_root, label, serial, limits, compression):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     tmp = out_path + '.tmpdir'
     shutil.rmtree(tmp, ignore_errors=True)
@@ -75,7 +75,8 @@ def write_zip(out_path, subset, manifest, source_root, label, serial, limits):
                 '解压后把 local 目录合并到程序目录的 cache/local；\n'
                 '程序启动时会自动扫描并去重，不需要手工改 index.json。\n'
                 '网盘地址：https://wwben.lanzoul.com/b01d7e4lre\n')
-    with zipfile.ZipFile(out_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    comp = zipfile.ZIP_STORED if compression == 'stored' else zipfile.ZIP_DEFLATED
+    with zipfile.ZipFile(out_path, 'w', compression=comp, compresslevel=9) as z:
         for root, _, files in os.walk(tmp):
             for name in files:
                 path = os.path.join(root, name)
@@ -96,6 +97,7 @@ def main():
     ap.add_argument('--labels', default='nearby,local,large,all')
     ap.add_argument('--batch-packs', type=int, default=16)
     ap.add_argument('--max-bytes', type=int, default=100 * 1024 * 1024)
+    ap.add_argument('--compression', choices=('deflate', 'stored'), default='deflate')
     args = ap.parse_args()
 
     with open(args.manifest, encoding='utf-8') as f:
@@ -116,7 +118,7 @@ def main():
         for i, batch in enumerate(batches, 1):
             name = f'基岩版区块缓存-{RANGE_LABELS[label]}-{i}.zip'
             out = os.path.join(args.out_dir, name)
-            size = write_zip(out, batch, manifest, args.source_root, label, i, limits[label])
+            size = write_zip(out, batch, manifest, args.source_root, label, i, limits[label], args.compression)
             if size > args.max_bytes:
                 print('WARN: over max size', out, size)
             written.append((name, len(batch), size))

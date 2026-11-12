@@ -53,7 +53,7 @@ public:
 
     // 新增一个已经写出的 pack。source 必须为 local/downloaded；文件必须位于对应目录。
     bool addPack(const std::filesystem::path& path, const std::string& source,
-                 std::string* err = nullptr);
+                 std::string* err = nullptr, bool persist = true);
 
     // 删除一个 pack（本地或下载均允许；下载 pack 只能整包删除，不能修改内容）。
     bool removePack(const std::string& file, std::string* err = nullptr);

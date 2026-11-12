@@ -1,4 +1,4 @@
-#include "cache/CacheStore.h"
+﻿#include "cache/CacheStore.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -293,7 +293,7 @@ int64_t CacheStore::totalRawBytes() const noexcept
 }
 
 bool CacheStore::addPack(const std::filesystem::path& path, const std::string& source,
-                         std::string* err)
+                         std::string* err, bool persist)
 {
     if (source != kLocalDir && source != kDownloadedDir) {
         if (err) *err = "未知缓存来源";
@@ -335,7 +335,7 @@ bool CacheStore::addPack(const std::filesystem::path& path, const std::string& s
     e.createdAt = nowUnix();
     (void)sourceRoot;
     m_packs.push_back(std::move(e));
-    return save(err);
+    return persist ? save(err) : true;
 }
 
 bool CacheStore::removePack(const std::string& file, std::string* err)
