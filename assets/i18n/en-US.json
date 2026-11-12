@@ -1234,5 +1234,6 @@
   "ui.cache.download.downloadSelected": "Download selected",
   "ui.cache.download.downloading": "Downloading %1…",
   "ui.cache.download.failed": "Failed to download %1: %2",
-  "ui.cache.download.downloadedCount": "Downloaded %1 cache packs"
+  "ui.cache.download.downloadedCount": "Downloaded %1 cache packs",
+  "ui.cache.download.netdisk": "Netdisk fallback"
 }

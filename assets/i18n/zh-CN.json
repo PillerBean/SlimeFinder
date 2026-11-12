@@ -1234,5 +1234,6 @@
   "ui.cache.download.downloadSelected": "下载选中",
   "ui.cache.download.downloading": "正在下载 %1…",
   "ui.cache.download.failed": "%1 下载失败：%2",
-  "ui.cache.download.downloadedCount": "已下载 %1 个缓存包"
+  "ui.cache.download.downloadedCount": "已下载 %1 个缓存包",
+  "ui.cache.download.netdisk": "国内网盘备用"
 }

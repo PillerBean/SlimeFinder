@@ -125,7 +125,8 @@ $cfgText = @"
   },
   "cacheDownload": {
     "primary": "",
-    "fallback": ""
+    "fallback": "",
+    "netdisk": "https://wwben.lanzoul.com/b01d7e4lre"
   },
   "algorithm": {
     "mode": "exact",

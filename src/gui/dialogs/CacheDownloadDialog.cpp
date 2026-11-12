@@ -8,6 +8,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
 #include <QLabel>
@@ -58,10 +59,14 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         auto* toolsLay = new QHBoxLayout(tools);
         toolsLay->setContentsMargins(0, 0, 0, 0);
         m_loadManifest = new QPushButton(slime::ui::t("ui.cache.download.fetch"), tools);
+        auto* netdisk = new QPushButton(slime::ui::t("ui.cache.download.netdisk"), tools);
+        netdisk->setEnabled(!CacheDownloadClient::netdiskUrl().trimmed().isEmpty());
+        netdisk->setToolTip(CacheDownloadClient::netdiskUrl());
         m_availableStatus = new QLabel(tools);
         m_availableStatus->setObjectName(QStringLiteral("topSummary"));
         m_availableStatus->setWordWrap(true);
         toolsLay->addWidget(m_loadManifest);
+        toolsLay->addWidget(netdisk);
         toolsLay->addWidget(m_availableStatus, 1);
         lay->addWidget(tools);
 
@@ -92,6 +97,10 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         tabs->addTab(page, slime::ui::t("ui.cache.download.available"));
 
         connect(m_loadManifest, &QPushButton::clicked, this, [this]() { loadAvailable(); });
+        connect(netdisk, &QPushButton::clicked, this, []() {
+            const QString url = CacheDownloadClient::netdiskUrl();
+            if (!url.isEmpty()) QDesktopServices::openUrl(QUrl(url));
+        });
         connect(selectAll, &QCheckBox::toggled, this, [this](bool on) {
             for (int r = 0; r < m_availableTable->rowCount(); ++r)
                 if (auto* it = m_availableTable->item(r, 0))
@@ -317,7 +326,7 @@ void CacheDownloadDialog::refreshAvailable()
             const auto dest = m_store->root() / "downloaded" / name.toStdWString();
             if (m_availableStatus) m_availableStatus->setText(
                 slime::ui::t("ui.cache.download.downloading").arg(p.name));
-            m_client->downloadPack(p.url, p, QString::fromStdWString(dest.wstring()),
+            m_client->downloadPackWithFallback(p.url, p.fallbackUrl, p, QString::fromStdWString(dest.wstring()),
                                    [this, p, dest](bool ok, const QString& err) {
                 if (!ok) {
                     if (m_availableStatus) m_availableStatus->setText(
@@ -365,7 +374,7 @@ void CacheDownloadDialog::downloadSelected()
         }
         QDir().mkpath(QString::fromStdWString((m_store->root() / "downloaded").wstring()));
         const auto dest = m_store->root() / "downloaded" / name.toStdWString();
-        m_client->downloadPack(p.url, p, QString::fromStdWString(dest.wstring()),
+        m_client->downloadPackWithFallback(p.url, p.fallbackUrl, p, QString::fromStdWString(dest.wstring()),
                                [this, p, dest, pending, failed, totalCount](bool ok, const QString& err) {
             if (!ok) {
                 ++*failed;

@@ -15,6 +15,7 @@ struct RemoteCachePack {
     QString file;
     QString name;
     QUrl url;
+    QUrl fallbackUrl;
     qint64 bytes = 0;
     QString sha256;
     qint32 minX = 0;
@@ -35,6 +36,8 @@ public:
     // 主源/备用源 manifest 地址。空字符串表示未配置。
     static QString primaryManifestUrl();
     static QString fallbackManifestUrl();
+    // 国内网盘人工备用地址（文件夹；不是 manifest JSON）。
+    static QString netdiskUrl();
 
     // manifestUrl 为空时直接返回失败“未配置下载源”。
     void fetchManifest(const QUrl& manifestUrl, ManifestCallback done);
@@ -42,6 +45,11 @@ public:
     // packUrl 已由 manifest 解析；destPath 为最终 .slmz 路径，内部写 .part 后再校验/替换。
     void downloadPack(const QUrl& packUrl, const RemoteCachePack& pack, const QString& destPath,
                       DownloadCallback done);
+
+    // 先主源，失败后尝试 fallbackUrl；两者均失败才回调失败。
+    void downloadPackWithFallback(const QUrl& packUrl, const QUrl& fallbackUrl,
+                                  const RemoteCachePack& pack, const QString& destPath,
+                                  DownloadCallback done);
 
 private:
     QNetworkAccessManager* m_net = nullptr;

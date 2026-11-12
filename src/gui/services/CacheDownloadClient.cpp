@@ -66,6 +66,13 @@ QString CacheDownloadClient::fallbackManifestUrl()
     return configValue(QStringLiteral("cacheDownload"), QStringLiteral("fallback"));
 }
 
+QString CacheDownloadClient::netdiskUrl()
+{
+    const QString env = qEnvironmentVariable("SLIME_CACHE_NETDISK");
+    if (!env.trimmed().isEmpty()) return env;
+    return configValue(QStringLiteral("cacheDownload"), QStringLiteral("netdisk"));
+}
+
 void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallback done)
 {
     if (!manifestUrl.isValid() || manifestUrl.isEmpty()) {
@@ -95,6 +102,8 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
             return;
         }
         QVector<RemoteCachePack> packs;
+        const QString fallbackBase = root.value(QStringLiteral("fallbackBaseUrl")).toString();
+        const QUrl fallbackManifest = fallbackBase.isEmpty() ? QUrl() : QUrl(fallbackBase);
         const QJsonArray arr = root.value(QStringLiteral("packs")).toArray();
         for (const auto& v : arr) {
             const QJsonObject o = v.toObject();
@@ -109,6 +118,10 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
             p.maxZ = o.value(QStringLiteral("maxZ")).toInt(-1);
             p.source = o.value(QStringLiteral("source")).toString(QStringLiteral("downloaded"));
             p.url = resolvePackUrl(manifestUrl, p.file, o.value(QStringLiteral("url")).toString());
+            if (fallbackManifest.isValid() && !fallbackManifest.isEmpty()) {
+                const QString explicitFallback = o.value(QStringLiteral("fallbackUrl")).toString();
+                p.fallbackUrl = resolvePackUrl(fallbackManifest, p.file, explicitFallback);
+            }
             if (!p.file.isEmpty() && p.url.isValid() && p.maxX >= p.minX && p.maxZ >= p.minZ) {
                 packs.push_back(std::move(p));
             }
@@ -197,4 +210,25 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
                          }
                          done(true, {});
                      });
+
+}
+
+void CacheDownloadClient::downloadPackWithFallback(const QUrl& packUrl, const QUrl& fallbackUrl,
+                                                   const RemoteCachePack& pack, const QString& destPath,
+                                                   DownloadCallback done)
+{
+    if (fallbackUrl.isEmpty() || fallbackUrl == packUrl) {
+        downloadPack(packUrl, pack, destPath, done);
+        return;
+    }
+    downloadPack(packUrl, pack, destPath, [this, fallbackUrl, pack, destPath, done](bool ok, const QString& err) {
+        if (ok) {
+            done(true, {});
+            return;
+        }
+        downloadPack(fallbackUrl, pack, destPath, [done, err](bool ok2, const QString& err2) {
+            if (ok2) done(true, {});
+            else done(false, err + QStringLiteral(" / ") + err2);
+        });
+    });
 }

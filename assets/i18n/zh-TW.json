@@ -1234,5 +1234,6 @@
   "ui.cache.download.downloadSelected": "下載選取",
   "ui.cache.download.downloading": "正在下載 %1…",
   "ui.cache.download.failed": "%1 下載失敗：%2",
-  "ui.cache.download.downloadedCount": "已下載 %1 個快取包"
+  "ui.cache.download.downloadedCount": "已下載 %1 個快取包",
+  "ui.cache.download.netdisk": "國內網盤備用"
 }

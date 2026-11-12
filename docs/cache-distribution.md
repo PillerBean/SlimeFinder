@@ -76,3 +76,16 @@ powershell -File scripts\release\publish_cache.ps1 `
 SLIME_CACHE_MANIFEST
 SLIME_CACHE_MANIFEST_FALLBACK
 ```
+
+## 国内网盘人工备用
+
+当前备用文件夹：
+
+```text
+https://wwben.lanzoul.com/b01d7e4lre
+```
+
+- 这是人工备用入口，不是 manifest JSON；
+- 客户端通过“国内网盘备用”按钮打开；
+- 需要手动下载文件后放入 `cache/downloaded/`；
+- 后续如果网盘目录提供可直链 manifest，再接入自动回退。
