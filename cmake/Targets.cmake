@@ -129,6 +129,7 @@ add_executable(SlimeFinder WIN32
     src/gui/widgets/PatternEditorPanel.cpp
     src/gui/dialogs/UpdateDialog.cpp # v3.10.12.10：检查更新（GitHub Releases + 镜像加速 + 网盘备用）
     src/gui/services/TelemetryClient.cpp # v3.10.12.12：匿名统计（默认关闭）
+    src/gui/services/CacheDownloadClient.cpp # v3.12.3：缓存联网下载
     src/i18n/UiText.cpp # v3.11.0：外部 JSON 语言包
     src/i18n/UiStrings.cpp # v3.11.0：兼容语言 API（数据在 JSON）
     src/gui/dialogs/HelpDialog.cpp
@@ -156,6 +157,7 @@ target_link_libraries(SlimeFinder PRIVATE
     slime_core
     slime_gpu
     Qt6::Widgets
+    Qt6::Network
     OpenMP::OpenMP_CXX
 )
 

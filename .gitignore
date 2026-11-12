@@ -2,10 +2,10 @@
 # 原则：仓库只保存源码/脚本/文档；编译产物、安装包、运行时缓存一律走 Releases 或本地。
 
 # --- 构建产物 / 打包产物（体积大，绝不提交）---
-build/
-build$r/
-dist/
-release/
+/build/
+/build$r/
+/dist/
+/release/
 release_upload_state.json
 *.obj
 *.pdb
