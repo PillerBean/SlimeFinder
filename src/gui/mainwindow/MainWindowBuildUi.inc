@@ -1644,7 +1644,7 @@ void MainWindow::buildV340Pages()
         auto* leftCol = new QWidget(buildPage);
         leftCol->setObjectName(QStringLiteral("cacheLeftCol"));
         leftCol->setMinimumWidth(360);
-        leftCol->setMaximumWidth(480);
+        leftCol->setMaximumWidth(420);
         auto* leftLay = new QVBoxLayout(leftCol);
         leftLay->setContentsMargins(0, 0, 0, 0);
         leftLay->setSpacing(8);
@@ -1661,9 +1661,9 @@ void MainWindow::buildV340Pages()
             download->setProperty("card", true);
             auto* dlLay = new QVBoxLayout(download);
             dlLay->setContentsMargins(8, 4, 8, 6);
-            auto* dlEmpty = new QLabel(slime::ui::t("ui.cache.download.empty"), download);
-            dlEmpty->setWordWrap(true);
-            dlLay->addWidget(dlEmpty);
+            m_cacheDownloadEmpty = new QLabel(slime::ui::t("ui.cache.download.empty"), download);
+            m_cacheDownloadEmpty->setWordWrap(true);
+            dlLay->addWidget(m_cacheDownloadEmpty);
             auto* dlRo = new QLabel(slime::ui::t("ui.cache.download.readonly"), download);
             dlRo->setObjectName(QStringLiteral("topSummary"));
             dlRo->setWordWrap(true);
@@ -1719,6 +1719,9 @@ void MainWindow::buildV340Pages()
             m_cacheLocalSummary = new QLabel(QStringLiteral("0"), local);
             m_cacheLocalSummary->setObjectName(QStringLiteral("topSummary"));
             localLay->addWidget(m_cacheLocalSummary);
+            m_cacheLocalEmpty = new QLabel(slime::ui::t("ui.cache.local.empty"), local);
+            m_cacheLocalEmpty->setObjectName(QStringLiteral("topSummary"));
+            localLay->addWidget(m_cacheLocalEmpty);
             m_cacheLocalTable = new QTableWidget(0, 4, local);
             m_cacheLocalTable->setHorizontalHeaderLabels(
                 { slime::ui::t("ui.cache.pack.source"), slime::ui::t("ui.cache.pack.range"),
@@ -1791,6 +1794,7 @@ void MainWindow::buildV340Pages()
         auto* buildScroll = new QScrollArea(buildPage);
         buildScroll->setWidgetResizable(true);
         buildScroll->setFrameShape(QFrame::NoFrame);
+        buildScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         auto* page = new QWidget(buildScroll);
         page->setObjectName(QStringLiteral("buildExtra"));
         auto* lay = new QVBoxLayout(page);
@@ -1890,9 +1894,12 @@ void MainWindow::buildV340Pages()
         estLay->setContentsMargins(8, 4, 8, 6);
         m_w->bEstimate = nullptr; // v3.4.12：预估按钮已移除（信息实时显示）
         m_w->bSummaryLive = new QLabel(slime::ui::t("ui.786d17b3a524"), estCard);
-        m_w->bSummaryLive->setObjectName(QStringLiteral("buildEstimateLive"));
+        m_w->bSummaryLive->setObjectName(QStringLiteral("topSummary"));
         m_w->bSummaryLive->setWordWrap(true);
-        estLay->addWidget(m_w->bSummaryLive);
+        // v3.12.3：预估不再单独占一张卡片，压缩成启动按钮下方的一行说明。
+        m_w->bSummaryLive->setParent(page);
+        lay->addWidget(m_w->bSummaryLive);
+        estCard->setVisible(false);
         lay->addWidget(estCard);
         // 构建进度（与主界面共用同一进度组件）
         auto* progCard = new QGroupBox(slime::ui::t("ui.b60d9a287dc2"), page);
@@ -1907,6 +1914,8 @@ void MainWindow::buildV340Pages()
         m_w->bText = new QLabel(slime::ui::t("ui.062e5e670f73"), progCard);
         m_w->bText->setWordWrap(true);
         progLay->addWidget(m_w->bText);
+        // 进度/完成汇总只在构建运行时才有意义；旧版静态卡片一直占位，首屏显得臃肿。
+        progCard->setVisible(false);
         lay->addWidget(progCard);
         // 完成汇总
         auto* sumCard = new QGroupBox(slime::ui::t("ui.86b0b92a37f4"), page);
@@ -1932,7 +1941,9 @@ void MainWindow::buildV340Pages()
         });
         pathLay->addWidget(openDir);
         sumLay->addWidget(pathRow);
+        sumCard->setVisible(false);
         lay->addWidget(sumCard);
+        lay->addStretch(1); // 内容顶部对齐，避免隐藏卡片后预估被布局推到页面底部
         // v3.4.8：本页已作为独立导航页加入 m_pageStack（见上），不再挂搜索页参数列、也不再隐藏
 
         // 连接：预算写回 config（范围与搜索页共用同一组控件）

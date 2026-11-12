@@ -1,4 +1,4 @@
-// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
+﻿// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
 //
 // 交互流程：游戏版本 → 种子 → 范围(快速预设/边界截断) → 模式（严格图案 / 密度）→
 // 搜索算法（精确 / 分层 / 快速估算 / 保守）→ 查询起点 → 开始搜索；
@@ -360,6 +360,8 @@ private:
     std::unique_ptr<slime::cache::CacheStore> m_cacheStore;
     QTableWidget* m_cacheDownloadTable = nullptr;
     CacheCoverageMap* m_cacheCoverageMap = nullptr;
+    QLabel* m_cacheLocalEmpty = nullptr;
+    QLabel* m_cacheDownloadEmpty = nullptr;
     QPushButton* m_cacheBuildBtn = nullptr;
     QTableWidget* m_cacheLocalTable = nullptr;
     QLabel* m_cacheDownloadSummary = nullptr;

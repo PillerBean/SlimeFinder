@@ -1198,7 +1198,7 @@
   "ui.lang.zh_tw": "Traditional Chinese",
   "ui.lang.feedback": "Translation quality not good? Try contacting us!",
   "ui.cache.download.title": "Downloaded cache (recommended)",
-  "ui.cache.download.empty": "No downloaded cache yet. Download support will be available in a later version.",
+  "ui.cache.download.empty": "No downloaded cache.",
   "ui.cache.download.readonly": "Downloaded cache is read-only; packs can be deleted, but contents and size cannot be modified.",
   "ui.cache.local.title": "Local cache packs",
   "ui.cache.pack.source": "Source",
@@ -1235,5 +1235,6 @@
   "ui.cache.download.downloading": "Downloading %1…",
   "ui.cache.download.failed": "Failed to download %1: %2",
   "ui.cache.download.downloadedCount": "Downloaded %1 cache packs",
-  "ui.cache.download.netdisk": "Netdisk fallback"
+  "ui.cache.download.netdisk": "Netdisk fallback",
+  "ui.cache.local.empty": "No local cache"
 }

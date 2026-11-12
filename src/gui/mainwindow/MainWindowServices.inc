@@ -845,6 +845,11 @@ void MainWindow::refreshCacheUi()
     fill(m_cacheLocalTable, "local", m_cacheLocalSummary, &lr, &lc, &ln);
     if (m_cacheCoverageMap) m_cacheCoverageMap->setPacks(m_cacheStore->packs());
     if (m_cacheDownloadTable) m_cacheDownloadTable->setVisible(dn > 0);
+    if (m_cacheLocalTable) m_cacheLocalTable->setVisible(ln > 0);
+    if (m_cacheLocalEmpty) m_cacheLocalEmpty->setVisible(ln == 0);
+    if (m_cacheDownloadSummary) m_cacheDownloadSummary->setVisible(dn > 0);
+    if (m_cacheDownloadEmpty) m_cacheDownloadEmpty->setVisible(dn == 0);
+    if (m_cacheLocalSummary) m_cacheLocalSummary->setVisible(ln > 0);
     if (m_cacheLegacyNotice) {
         std::error_code ec;
         m_cacheLegacyNotice->setVisible(std::filesystem::exists(appDirPath() / kCacheFileName, ec));

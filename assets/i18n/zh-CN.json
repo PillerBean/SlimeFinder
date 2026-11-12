@@ -1198,7 +1198,7 @@
   "ui.lang.zh_tw": "中文（繁体）",
   "ui.lang.feedback": "翻译质量不佳？试试联系我们！",
   "ui.cache.download.title": "下载缓存（推荐）",
-  "ui.cache.download.empty": "暂无下载缓存。下载功能将在后续版本开放。",
+  "ui.cache.download.empty": "暂无下载缓存。",
   "ui.cache.download.readonly": "下载缓存只读，可整包删除，不可修改内容或大小。",
   "ui.cache.local.title": "本地缓存包",
   "ui.cache.pack.source": "来源",
@@ -1235,5 +1235,6 @@
   "ui.cache.download.downloading": "正在下载 %1…",
   "ui.cache.download.failed": "%1 下载失败：%2",
   "ui.cache.download.downloadedCount": "已下载 %1 个缓存包",
-  "ui.cache.download.netdisk": "国内网盘备用"
+  "ui.cache.download.netdisk": "国内网盘备用",
+  "ui.cache.local.empty": "暂无本地缓存"
 }
