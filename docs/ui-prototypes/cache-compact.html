@@ -105,6 +105,66 @@
   .tooltip.show { opacity: 1; transform: translateY(0); }
   .tooltip strong { display: block; margin-bottom: 2px; font-size: 12px; }
 
+
+  /* 下载源选择 + 下载任务 */
+  .source-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed #dbe7db;
+  }
+  .source-label { color: var(--muted); font-size: 11px; flex: none; }
+  .source-tabs { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+  .source-tab {
+    border: 1px solid var(--line); background: #fff; color: #5f6e61;
+    border-radius: 6px; padding: 3px 7px; font-size: 11px; cursor: pointer;
+  }
+  .source-tab:hover { background: var(--green-50); border-color: #b8d0ba; }
+  .source-tab.active { color: #fff; background: var(--green-700); border-color: var(--green-700); }
+  .source-row .demo-btn { margin-left: auto; flex: none; }
+  .source-note {
+    color: var(--muted); font-size: 10.5px; line-height: 1.45;
+    margin-top: 5px;
+  }
+
+  .download-task {
+    margin-top: 10px; border: 1px solid #d6e4d6; border-radius: 8px;
+    background: #fbfdfb; padding: 10px 11px 9px;
+  }
+  .download-task.hidden, .unzip-block.hidden { display: none; }
+  .task-head { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+  .task-head strong { font-size: 12px; }
+  .task-state {
+    color: #2e7d32; background: #e8f4e8; border: 1px solid #cfe4cf;
+    border-radius: 4px; padding: 1px 5px; font-size: 10px;
+  }
+  .task-head .spacer { flex: 1; }
+  .task-head .btn { padding: 2px 7px; font-size: 10px; }
+  .progress-block { margin-bottom: 8px; }
+  .progress-block:last-child { margin-bottom: 0; }
+  .progress-label { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .progress-label span:first-child { font-size: 11px; color: #4e5d50; }
+  .progress-label .pct { margin-left: auto; color: var(--green-700); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .track { height: 6px; border-radius: 3px; background: #e7eee5; overflow: hidden; }
+  .track.thin { height: 5px; }
+  .track.amber { background: #f1ead9; }
+  .fill { height: 100%; width: 0; background: #4e9a5a; border-radius: inherit; transition: width .18s linear; }
+  .fill.blue { background: #5b91c8; }
+  .fill.amber { background: #d8a33e; }
+  .progress-meta {
+    display: flex; align-items: center; gap: 6px; margin-top: 3px;
+    color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums;
+  }
+  .progress-meta .right { margin-left: auto; }
+  .file-name {
+    color: #657366; font-size: 10.5px; margin: 1px 0 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .file-count-line { display: flex; align-items: center; gap: 7px; margin-top: 5px; }
+  .file-count-line .track { flex: 1; height: 4px; }
+  .file-count-line .note { font-size: 10px; white-space: nowrap; }
+  .task-actions { display: flex; gap: 5px; margin-left: auto; }
+  .download-actions { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .download-actions .note { margin-left: auto; }
+
   .empty-soft {
     border: 1px dashed #d6e2d6; border-radius: 8px;
     color: var(--muted); background: #fafcf9;
@@ -158,9 +218,61 @@
             <div class="download-line">
               <div class="download-copy">
                 <strong>暂无下载缓存</strong>
-                <span class="note">可从官方源下载，或导入网盘缓存包。</span>
+                <span class="note">可选择下载源，或导入网盘缓存包。</span>
               </div>
               <a class="btn primary" href="download-page.html">打开下载界面</a>
+            </div>
+
+            <div class="source-row">
+              <span class="source-label">下载源</span>
+              <div class="source-tabs" id="sourceTabs">
+                <button class="source-tab active" type="button" data-source="auto">自动</button>
+                <button class="source-tab" type="button" data-source="r2">R2 主源</button>
+                <button class="source-tab" type="button" data-source="netdisk">国内网盘</button>
+              </div>
+              <span class="help" data-tip-title="下载源选择" data-tip="自动：优先 R2，失败后提示网盘备用；R2：只走网络源；网盘：手动下载 zip 后由程序导入并校验。">?</span>
+              <button class="btn small demo-btn" type="button" id="demoBtn">模拟下载</button>
+            </div>
+            <div class="source-note" id="sourceNote">自动选择：R2 主源优先，失败时提示国内网盘备用。</div>
+
+            <div class="download-task hidden" id="downloadTask">
+              <div class="task-head">
+                <strong>缓存包下载</strong>
+                <span class="task-state" id="taskState">下载中</span>
+                <span class="spacer"></span>
+                <button class="btn small" type="button" id="pauseBtn">暂停</button>
+                <button class="btn small danger" type="button" id="cancelBtn">取消</button>
+              </div>
+
+              <div class="progress-block">
+                <div class="progress-label"><span>总下载进度</span><span class="pct" id="totalPct">0%</span></div>
+                <div class="track"><div class="fill" id="totalBar"></div></div>
+                <div class="progress-meta"><span id="totalBytes">0 MB / 4.78 GB</span><span class="right" id="speed">0 MB/s</span></div>
+              </div>
+
+              <div class="progress-block">
+                <div class="progress-label"><span>分文件下载进度</span><span class="pct" id="filePct">0%</span></div>
+                <div class="file-name" id="fileName">等待第一个文件…</div>
+                <div class="track thin"><div class="fill blue" id="fileBar"></div></div>
+              </div>
+
+              <div class="file-count-line">
+                <span class="note">文件数</span>
+                <div class="track"><div class="fill" id="countBar"></div></div>
+                <span class="note" id="fileCount">0 / 64</span>
+              </div>
+
+              <div class="progress-block unzip-block hidden" id="unzipBlock" style="margin-top:9px">
+                <div class="progress-label"><span>解压进度</span><span class="pct" id="unzipPct">0%</span></div>
+                <div class="track thin amber"><div class="fill amber" id="unzipBar"></div></div>
+                <div class="progress-meta"><span id="unzipName">等待解压…</span><span class="right" id="unzipCount">0 / 64</span></div>
+              </div>
+            </div>
+
+            <div class="download-actions">
+              <span class="note" id="downloadHint">未开始下载</span>
+              <span class="spacer"></span>
+              <button class="btn small" type="button" id="resetBtn">重置</button>
             </div>
           </section>
 
@@ -359,6 +471,100 @@
   });
   window.addEventListener('resize', draw);
   draw();
+
+  // ---- 下载源选择与下载进度示意 ----
+  const sourceTabs = document.querySelectorAll('.source-tab');
+  const sourceNote = document.getElementById('sourceNote');
+  const task = document.getElementById('downloadTask');
+  const unzipBlock = document.getElementById('unzipBlock');
+  const demoBtn = document.getElementById('demoBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  let source = 'auto';
+  let demoTimer = null;
+  let paused = false;
+  let state = { total: 0, files: 0, unzip: 0 };
+  const TOTAL_FILES = 64;
+  const TOTAL_MB = 4778;
+
+  function sourceLabel() {
+    if (source === 'r2') return 'R2 主源';
+    if (source === 'netdisk') return '国内网盘';
+    return '自动选择';
+  }
+  function setSource(v) {
+    source = v;
+    sourceTabs.forEach(b => b.classList.toggle('active', b.dataset.source === v));
+    if (v === 'r2') sourceNote.textContent = '只使用 R2 主源；不会自动切换到网盘。';
+    else if (v === 'netdisk') sourceNote.textContent = '国内网盘为人工备用：下载 zip 后由程序导入、校验、去重。';
+    else sourceNote.textContent = '自动选择：R2 主源优先，失败时提示国内网盘备用。';
+    if (task && !task.classList.contains('hidden')) {
+      document.getElementById('taskState').textContent = v === 'netdisk' ? '导入中' : '下载中';
+      unzipBlock.classList.toggle('hidden', v !== 'netdisk');
+    }
+  }
+  function updateProgress() {
+    const pct = Math.min(100, state.total / TOTAL_MB * 100);
+    const filePct = state.files >= TOTAL_FILES ? 100 : Math.round((state.total % (TOTAL_MB/TOTAL_FILES)) / (TOTAL_MB/TOTAL_FILES) * 100);
+    document.getElementById('totalPct').textContent = pct.toFixed(1) + '%';
+    document.getElementById('totalBar').style.width = pct + '%';
+    document.getElementById('totalBytes').textContent = (state.total).toFixed(0) + ' MB / ' + TOTAL_MB + ' MB';
+    document.getElementById('speed').textContent = (8.4 + (state.files % 5) * .7).toFixed(1) + ' MB/s';
+    document.getElementById('filePct').textContent = filePct + '%';
+    document.getElementById('fileBar').style.width = filePct + '%';
+    document.getElementById('fileName').textContent = state.files >= TOTAL_FILES ? '全部文件下载完成' : '基岩版区块缓存-全部-' + (state.files + 1) + '.zip';
+    document.getElementById('countBar').style.width = (state.files / TOTAL_FILES * 100) + '%';
+    document.getElementById('fileCount').textContent = state.files + ' / ' + TOTAL_FILES;
+    if (source === 'netdisk') {
+      const up = Math.min(100, state.unzip / TOTAL_FILES * 100);
+      document.getElementById('unzipPct').textContent = up.toFixed(1) + '%';
+      document.getElementById('unzipBar').style.width = up + '%';
+      document.getElementById('unzipCount').textContent = state.unzip + ' / ' + TOTAL_FILES;
+      document.getElementById('unzipName').textContent = state.unzip >= TOTAL_FILES ? '解压完成' : '正在解压 · 基岩版区块缓存-全部-' + (state.unzip + 1) + '.zip';
+    }
+    if (state.files >= TOTAL_FILES) {
+      document.getElementById('taskState').textContent = source === 'netdisk' ? '已完成' : '已完成';
+      document.getElementById('downloadHint').textContent = source === 'netdisk' ? '全部文件已导入并去重' : '全部文件已下载并校验';
+      if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+    }
+  }
+  function startDemo() {
+    if (demoTimer) clearInterval(demoTimer);
+    demoTimer = null; paused = false;
+    task.classList.remove('hidden');
+    unzipBlock.classList.toggle('hidden', source !== 'netdisk');
+    state = { total: 0, files: 0, unzip: 0 };
+    document.getElementById('downloadHint').textContent = '示例：' + sourceLabel();
+    updateProgress();
+    const step = TOTAL_MB / TOTAL_FILES / 8;
+    demoTimer = setInterval(() => {
+      if (paused) return;
+      state.total = Math.min(TOTAL_MB, state.total + step);
+      state.files = Math.min(TOTAL_FILES, Math.floor(state.total / (TOTAL_MB / TOTAL_FILES)));
+      if (source === 'netdisk') {
+        state.unzip = state.files >= TOTAL_FILES ? TOTAL_FILES
+                                                 : Math.min(TOTAL_FILES, Math.max(state.unzip, state.files - 1));
+      }
+      updateProgress();
+    }, 120);
+  }
+  sourceTabs.forEach(b => b.addEventListener('click', () => setSource(b.dataset.source)));
+  demoBtn.addEventListener('click', startDemo);
+  pauseBtn.addEventListener('click', () => { paused = !paused; pauseBtn.textContent = paused ? '继续' : '暂停'; });
+  cancelBtn.addEventListener('click', () => { if (demoTimer) clearInterval(demoTimer); demoTimer=null; task.classList.add('hidden'); document.getElementById('downloadHint').textContent='已取消'; });
+  resetBtn.addEventListener('click', () => { task.classList.add('hidden'); document.getElementById('downloadHint').textContent='未开始下载'; });
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('demo') === '1') {
+    setSource(qs.get('source') || 'auto');
+    startDemo();
+    if (qs.get('snapshot') === '1') {
+      if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+      state = { total: 2820, files: 38, unzip: 30 };
+      updateProgress();
+    }
+  }
+
 </script>
 </body>
 </html>
