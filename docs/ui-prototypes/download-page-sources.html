@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>下载缓存 - R2 自动 / 网盘手动导入</title>
+<link rel="stylesheet" href="cache-ui.css">
+<style>
+  :root { --side: 390px; }
+  .dl-content { padding-top: 18px; }
+  .dl-head { margin-bottom: 14px; }
+  .dl-head h1 { font-size: 23px; }
+  .mode-card { margin-bottom: 12px; }
+  .mode-card .card-head { margin-bottom: 8px; }
+  .mode-line { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .mode-label { color: var(--muted); font-size: 11px; }
+  .segmented { display: inline-flex; gap: 3px; }
+  .seg {
+    border: 1px solid var(--line); background: #fff; color: #5f6e61;
+    border-radius: 6px; padding: 4px 11px; font-size: 11px; cursor: pointer;
+  }
+  .seg:hover { background: var(--green-50); border-color: #b8d0ba; }
+  .seg.active { background: var(--green-700); border-color: var(--green-700); color: #fff; }
+  .mode-line .spacer { flex: 1; }
+  .mode-note { margin-top: 6px; color: var(--muted); font-size: 10.5px; }
+  .mode-line .tag { font-size: 10px; }
+
+  .r2-view .card, .netdisk-view .card { border-radius: 10px; }
+  .r2-view .stack { display: flex; flex-direction: column; gap: 12px; }
+  .r2-split { display: grid; grid-template-columns: var(--side) minmax(0,1fr); gap: 14px; align-items: start; margin-top: 12px; }
+  .r2-split .map-card { min-width: 0; }
+  .r2-split canvas { display: block; width: 100%; height: 280px; background: #f7faf5; }
+  .r2-split .map-note { display: flex; gap: 10px; align-items: center; padding: 7px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+  .r2-split .map-note .spacer { flex: 1; }
+  .table-card .toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: #fbfcfa; }
+  .table-card .toolbar .spacer { flex: 1; }
+  .table-card .toolbar .search { width: 150px; height: 26px; font-size: 11px; }
+  .table-card .toolbar .btn { font-size: 11px; padding: 3px 8px; }
+  .table-card .table { font-size: 11.5px; }
+  .table-card .table th, .table-card .table td { padding: 6px 9px; }
+
+  /* 任务区 */
+  .task-board { margin-bottom: 12px; }
+  .task-board .card-head { margin-bottom: 8px; }
+  .task-board .card-head .spacer { flex: 1; }
+  .aggregate { border: 1px solid #dce8da; border-radius: 8px; background: #f8fbf7; padding: 9px 11px 8px; }
+  .agg-line { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .agg-line strong { font-size: 11px; color: #455447; }
+  .agg-line .pct { margin-left: auto; color: var(--green-700); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .agg-meta { display: flex; gap: 12px; margin-top: 4px; color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .agg-meta .right { margin-left: auto; }
+  .agg-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 14px; margin-top: 7px; }
+  .mini-line { display: flex; align-items: center; gap: 7px; }
+  .mini-label { width: 30px; color: var(--muted); font-size: 9.5px; flex: none; }
+  .mini-line .track { flex: 1; height: 4px; }
+  .mini-value { width: 48px; text-align: right; color: var(--muted); font-size: 9.5px; font-variant-numeric: tabular-nums; flex: none; }
+  .track { height: 6px; border-radius: 3px; background: #e6eee4; overflow: hidden; }
+  .track.thin { height: 5px; }
+  .track.amber { background: #f1ead9; }
+  .fill { height: 100%; background: #4e9a5a; border-radius: inherit; }
+  .fill.blue { background: #5b91c8; }
+  .fill.amber { background: #d8a33e; }
+  .task-list { display: flex; flex-direction: column; gap: 7px; margin-top: 9px; }
+  .task-row { display: flex; align-items: center; gap: 9px; border: 1px solid #e0e9de; border-radius: 8px; background: #fff; padding: 7px 9px; }
+  .task-row.queued { background: #fbfcfa; border-style: dashed; }
+  .source-badge { flex: none; width: 38px; text-align: center; font-size: 9.5px; font-weight: 700; border-radius: 4px; padding: 3px 0; }
+  .source-badge.r2 { color: #315e88; background: #eaf2fb; border: 1px solid #cfe0f2; }
+  .source-badge.netdisk { color: #8a621c; background: #fbf3e1; border: 1px solid #edddb9; }
+  .source-badge.queued { color: #7b877d; background: #f2f5f1; border: 1px solid #e0e7de; }
+  .task-main { flex: 1; min-width: 0; }
+  .task-line { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .task-line strong { font-size: 11.5px; font-weight: 600; }
+  .task-meta { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .task-line .pct { margin-left: auto; color: var(--green-700); font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .task-row .btn { flex: none; padding: 2px 7px; font-size: 10px; }
+
+  /* 网盘四范围 */
+  .netdisk-view .range-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 12px; }
+  .range-card { border: 1px solid #dce6da; border-radius: 9px; background: #fff; padding: 12px; }
+  .range-card h3 { margin: 0; font-size: 14px; }
+  .range-card .range-sub { color: var(--muted); font-size: 10.5px; margin: 3px 0 10px; }
+  .range-card .range-stats { display: flex; gap: 10px; color: var(--muted); font-size: 10px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+  .range-card .btn { width: 100%; font-size: 11px; padding: 4px 8px; }
+  .netdisk-guide { display: flex; align-items: center; gap: 10px; border: 1px dashed #d3e0d1; border-radius: 9px; background: #f8fbf7; padding: 12px 13px; margin-bottom: 12px; }
+  .netdisk-guide .ico-box { width: 32px; height: 32px; border: 1px solid #cfe0cd; border-radius: 7px; color: var(--green-700); background: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; flex: none; }
+  .netdisk-guide strong { display: block; font-size: 12px; }
+  .netdisk-guide .note { display: block; margin-top: 2px; }
+  .netdisk-guide .btn { margin-left: auto; flex: none; }
+  .import-summary { display: flex; align-items: center; gap: 10px; border: 1px solid #e0e8de; border-radius: 8px; background: #fbfcfa; padding: 9px 12px; color: var(--muted); font-size: 11px; }
+  .import-summary .spacer { flex: 1; }
+  .import-summary strong { color: #3f5041; }
+  .import-summary .btn { font-size: 10px; padding: 3px 8px; }
+  .netdisk-note { margin-top: 9px; color: var(--muted); font-size: 10px; }
+
+  /* 帮助 */
+  .help { display: inline-block; vertical-align: -2px; width: 16px; height: 16px; flex: none; border: 1px solid #bdcfbe; border-radius: 50%; color: #58705b; background: #f7faf6; font-size: 10px; line-height: 14px; font-weight: 700; text-align: center; cursor: help; user-select: none; }
+  .help:hover { background: var(--green-50); border-color: #88aa8c; }
+  .tooltip { position: fixed; z-index: 100; max-width: 290px; padding: 9px 11px; border: 1px solid #cfdccf; border-radius: 8px; background: #fff; color: #38463a; box-shadow: 0 8px 22px rgba(25,50,30,.14); font-size: 12px; line-height: 1.55; pointer-events: none; opacity: 0; transform: translateY(3px); transition: opacity .12s ease, transform .12s ease; }
+  .tooltip.show { opacity: 1; transform: translateY(0); }
+  .tooltip strong { display: block; margin-bottom: 2px; }
+
+  /* 导入窗口 */
+  .modal-mask { position: fixed; inset: 0; background: rgba(20, 34, 24, .32); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal-mask.show { display: flex; }
+  .import-modal { width: min(760px, 96vw); max-height: 88vh; overflow: auto; border-radius: 10px; background: #fff; border: 1px solid #d7e2d5; box-shadow: 0 24px 70px rgba(20,40,25,.22); }
+  .import-modal .m-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .import-modal .m-head h2 { margin: 0; font-size: 15px; }
+  .import-modal .m-head .spacer { flex: 1; }
+  .import-modal .m-body { padding: 14px 16px; }
+  .dropzone { border: 1px dashed #bcd4bd; border-radius: 9px; background: #f8fbf7; padding: 24px 16px; text-align: center; cursor: pointer; }
+  .dropzone:hover, .dropzone.drag { border-color: var(--green-700); background: var(--green-50); }
+  .dropzone .dz-title { font-size: 13px; font-weight: 700; color: #39493b; }
+  .dropzone .dz-sub { margin-top: 4px; color: var(--muted); font-size: 11px; }
+  .dropzone .dz-actions { margin-top: 10px; display: flex; justify-content: center; gap: 7px; }
+  .staged-head { display: flex; align-items: center; gap: 8px; margin: 13px 0 6px; font-size: 11px; color: var(--muted); }
+  .staged-head .spacer { flex: 1; }
+  .staged-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; font-size: 11px; }
+  .staged-table th { text-align: left; padding: 6px 8px; background: #f7faf5; color: #687669; font-weight: 500; border-bottom: 1px solid var(--line); }
+  .staged-table td { padding: 7px 8px; border-bottom: 1px solid #eef2ec; }
+  .staged-table tr:last-child td { border-bottom: 0; }
+  .staged-table .num { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .staged-table .ok { color: var(--green-700); }
+  .staged-empty { border: 1px dashed #d7e2d5; border-radius: 7px; padding: 14px; text-align: center; color: var(--muted); font-size: 11px; background: #fbfcfa; }
+  .import-progress { display: none; margin-top: 12px; border: 1px solid #dce8da; border-radius: 8px; background: #f8fbf7; padding: 10px 11px; }
+  .import-progress.show { display: block; }
+  .m-foot { display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-top: 1px solid var(--line); background: #fbfcfa; }
+  .m-foot .note { color: var(--muted); font-size: 10.5px; }
+  .m-foot .spacer { flex: 1; }
+  .hidden { display: none !important; }
+  @media (max-width: 1100px) { .r2-split { grid-template-columns: 1fr; } .netdisk-view .range-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">S</div>
+    <button class="side-item"><span class="ico"></span>搜索</button>
+    <button class="side-item active"><span class="ico"></span>缓存</button>
+    <button class="side-item"><span class="ico"></span>设置</button>
+    <div class="side-spacer"></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">平台 <strong>基岩版</strong></span>
+      <span class="pill">来源 <strong>R2 + 网盘</strong></span>
+      <span class="pill">只读 <strong>可删不可改</strong></span>
+      <span class="spacer"></span><span class="avatar">S</span>
+    </div>
+
+    <div class="content dl-content">
+      <div class="page-head dl-head">
+        <a class="back" href="cache-compact.html">← 缓存页</a>
+        <div><h1>下载缓存</h1><p>R2 自动下载；网盘由用户下载 zip 后拖入导入窗口。</p></div>
+        <span class="spacer"></span><span class="tag gray">示例数据</span>
+      </div>
+
+      <section class="card card-pad mode-card">
+        <div class="mode-line">
+          <span class="mode-label">下载方式</span>
+          <div class="segmented" id="modeTabs">
+            <button class="seg active" type="button" data-mode="r2">R2 自动</button>
+            <button class="seg" type="button" data-mode="netdisk">网盘手动</button>
+          </div>
+          <span class="help" data-tip-title="下载方式" data-tip="R2：程序自动批量下载并校验，显示真实进度。网盘：程序只打开文件夹，用户下载 zip 后拖入导入窗口，确认后才开始导入。">?</span>
+          <span class="spacer"></span>
+          <span class="tag gray" id="modeState">R2 自动</span>
+        </div>
+        <div class="mode-note" id="modeNote">R2 自动：程序读取 manifest，批量下载、校验、合并，不需要手动选择文件。</div>
+      </section>
+
+      <!-- R2 自动下载 -->
+      <div class="r2-view" id="r2View">
+        <section class="card card-pad task-board">
+          <div class="card-head">
+            <h2>下载队列</h2><span class="tag">3 个进行中</span>
+            <span class="help" data-tip-title="下载队列" data-tip="同时下载多个文件；单个文件失败只重试该文件。总进度、文件进度、文件数都是真实数据。">?</span>
+            <span class="spacer"></span>
+            <button class="btn small" type="button">暂停全部</button>
+            <button class="btn small danger" type="button">取消全部</button>
+          </div>
+          <div class="aggregate">
+            <div class="agg-line"><strong>总下载进度</strong><span class="pct">59.0%</span></div>
+            <div class="track"><div class="fill" style="width:59%"></div></div>
+            <div class="agg-meta"><span>2,820 / 4,778 MB</span><span>速度 10.5 MB/s</span><span class="right">平均 8.4 MB/s</span></div>
+            <div class="agg-mini">
+              <div class="mini-line"><span class="mini-label">文件数</span><div class="track"><div class="fill" style="width:59%"></div></div><span class="mini-value">38 / 64</span></div>
+              <div class="mini-line"><span class="mini-label">校验</span><div class="track"><div class="fill" style="width:59%"></div></div><span class="mini-value">38 / 64</span></div>
+            </div>
+          </div>
+          <div class="task-list">
+            <div class="task-row"><span class="source-badge r2">R2</span><div class="task-main"><div class="task-line"><strong>基岩版区块缓存-全部-39.zip</strong><span class="task-meta">54.1 / 74.3 MB · 10.5 MB/s</span><span class="pct">77%</span></div><div class="track thin"><div class="fill blue" style="width:77%"></div></div></div><button class="btn small">暂停</button><button class="btn small danger">取消</button></div>
+            <div class="task-row"><span class="source-badge r2">R2</span><div class="task-main"><div class="task-line"><strong>基岩版区块缓存-全部-40.zip</strong><span class="task-meta">38.6 / 74.3 MB · 9.8 MB/s</span><span class="pct">52%</span></div><div class="track thin"><div class="fill blue" style="width:52%"></div></div></div><button class="btn small">暂停</button><button class="btn small danger">取消</button></div>
+            <div class="task-row queued"><span class="source-badge queued">等待</span><div class="task-main"><div class="task-line"><strong>基岩版区块缓存-全部-41.zip</strong><span class="task-meta">等待并发槽位</span><span class="pct" style="color:#7b877d">排队</span></div><div class="track thin"><div class="fill" style="width:0%"></div></div></div><span class="note">第 4 个</span></div>
+          </div>
+        </section>
+
+        <div class="r2-split">
+          <div class="stack">
+            <section class="card map-card">
+              <div class="card-pad" style="padding-bottom:8px"><div class="card-head" style="margin-bottom:0"><h2>覆盖预览</h2><span class="help" data-tip-title="覆盖预览" data-tip="蓝色为可下载包，绿色为已下载；点击列表或地图定位。">?</span><span class="spacer"></span><span class="tag gray">可下载</span></div></div>
+              <canvas id="r2Map" aria-label="R2 可下载缓存覆盖预览"></canvas>
+              <div class="map-note"><span><i class="legend-dot downloaded"></i>可下载</span><span><i class="legend-dot local"></i>已下载</span><span><i class="legend-dot selected"></i>选中</span><span class="spacer"></span><span>自动下载无需手动选择</span></div>
+            </section>
+          </div>
+          <section class="card table-card">
+            <div class="toolbar"><span class="note">R2 清单</span><span class="spacer"></span><button class="btn small primary" type="button">全部加入下载</button><button class="btn small" type="button">刷新清单</button></div>
+            <table class="table compact">
+              <thead><tr><th>包名</th><th>覆盖范围</th><th>大小</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>全部-39</td><td class="range">98304..102399, -131072..-126977</td><td class="num">74.3 MB</td><td><span class="download-state">下载中</span></td><td><button class="btn small" disabled>进行中</button></td></tr>
+                <tr><td>全部-40</td><td class="range">98304..102399, -126976..-122881</td><td class="num">74.3 MB</td><td><span class="download-state">下载中</span></td><td><button class="btn small" disabled>进行中</button></td></tr>
+                <tr><td>全部-41</td><td class="range">98304..102399, -122880..-118785</td><td class="num">74.3 MB</td><td><span class="download-state pending">排队</span></td><td><button class="btn small danger">取消</button></td></tr>
+                <tr><td>局部-1</td><td class="range">-8192..8191, -8192..8191</td><td class="num">18.0 MB</td><td><span class="download-state">已下载</span></td><td><button class="btn small danger">删除</button></td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+
+      <!-- 网盘手动导入 -->
+      <div class="netdisk-view hidden" id="netdiskView">
+        <section class="card card-pad" style="margin-bottom:12px">
+          <div class="card-head" style="margin-bottom:8px"><h2>选择范围，打开网盘文件夹</h2><span class="help" data-tip-title="网盘手动模式" data-tip="程序不会自动扫描网盘，也不会显示网盘下载进度。你需要自己在浏览器里下载 zip，然后拖入导入窗口。">?</span><span class="spacer"></span><span class="tag gray">需要手动下载</span></div>
+          <div class="range-grid">
+            <div class="range-card"><h3>附近</h3><div class="range-sub">±2,048 区块</div><div class="range-stats"><span>16 packs</span><span>约 1.1 MB</span></div><button class="btn" type="button">打开文件夹 ↗</button></div>
+            <div class="range-card"><h3>局部</h3><div class="range-sub">±8,192 区块</div><div class="range-stats"><span>256 packs</span><span>约 18 MB</span></div><button class="btn" type="button">打开文件夹 ↗</button></div>
+            <div class="range-card"><h3>较大</h3><div class="range-sub">±32,768 区块</div><div class="range-stats"><span>4,096 packs</span><span>约 296 MB</span></div><button class="btn" type="button">打开文件夹 ↗</button></div>
+            <div class="range-card"><h3>全部</h3><div class="range-sub">±131,072 区块</div><div class="range-stats"><span>65,536 packs</span><span>约 4.78 GB</span></div><button class="btn" type="button">打开文件夹 ↗</button></div>
+          </div>
+          <div class="netdisk-note">四个范围链接分别指向网盘文件夹。程序不会自动搜索文件，也不会跟踪浏览器下载进度。</div>
+        </section>
+
+        <section class="card card-pad">
+          <div class="netdisk-guide">
+            <div class="ico-box">＋</div>
+            <div><strong>下载 zip 后，拖入导入窗口</strong><span class="note">支持一次拖入多个 zip；先预览已选目标和缓存，再点击开始导入。</span></div>
+            <button class="btn primary" id="openImport" type="button">打开导入窗口</button>
+          </div>
+          <div class="import-summary" id="importSummary">
+            <span>已选择 <strong id="selectedCount">0</strong> 个 zip</span>
+            <span>待导入 pack <strong id="selectedPacks">0</strong> 个</span>
+            <span class="spacer"></span>
+            <span class="note" id="importState">尚未开始导入</span>
+            <button class="btn small hidden" id="reopenImport" type="button">查看/继续</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 导入窗口 -->
+<div class="modal-mask" id="importMask">
+  <div class="import-modal" role="dialog" aria-modal="true" aria-label="导入网盘缓存">
+    <div class="m-head"><h2>导入网盘缓存</h2><span class="help" data-tip-title="导入流程" data-tip="先拖入 zip，程序读取其中的 manifest 并预览；确认后才解压、校验、合并和去重。支持批量。">?</span><span class="spacer"></span><button class="btn small" id="closeImport" type="button">关闭</button></div>
+    <div class="m-body">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-title">把多个 zip 拖到这里</div>
+        <div class="dz-sub">只接受官方缓存 zip；可以先预览再导入</div>
+        <div class="dz-actions"><button class="btn small primary" id="pickFiles" type="button">选择文件</button><button class="btn small" id="stageDemo" type="button">放入示例文件</button></div>
+      </div>
+
+      <div class="staged-head"><span>已选择 <strong id="stagedCount">0</strong> 个文件</span><span class="spacer"></span><span class="note" id="stagedHint">等待拖入</span></div>
+      <div id="stagedEmpty" class="staged-empty">还没有选择 zip</div>
+      <table class="staged-table hidden" id="stagedTable">
+        <thead><tr><th style="width:28px"></th><th>文件</th><th>识别范围</th><th>pack 数</th><th>大小</th><th>状态</th></tr></thead>
+        <tbody id="stagedRows"></tbody>
+      </table>
+
+      <div class="import-progress" id="importProgress">
+        <div class="progress-label" style="display:flex;align-items:center;margin-bottom:5px"><span style="font-size:11px;color:#4e5d50">导入进度</span><span class="pct" id="importPct" style="margin-left:auto;color:var(--green-700);font-weight:700;font-size:11px">0%</span></div>
+        <div class="track"><div class="fill" id="importBar" style="width:0%"></div></div>
+        <div class="agg-meta"><span id="importFiles">0 / 0 文件</span><span id="importPacks">0 个 pack</span><span class="right" id="importCurrent">等待开始</span></div>
+        <div class="task-list" id="importTasks"></div>
+      </div>
+    </div>
+    <div class="m-foot"><span class="note" id="footNote">确认后才开始解压、校验、合并到缓存。</span><span class="spacer"></span><button class="btn small" id="cancelImport" type="button">取消</button><button class="btn small primary" id="startImport" type="button" disabled>开始导入</button></div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<script>
+  // ? 帮助浮层
+  const tip = document.getElementById('tooltip');
+  function showTip(el) {
+    const title = el.dataset.tipTitle || '说明'; const body = el.dataset.tip || '';
+    tip.innerHTML = ''; const b = document.createElement('strong'); b.textContent = title; tip.appendChild(b);
+    tip.appendChild(document.createTextNode(body)); tip.classList.add('show');
+    const rr = el.getBoundingClientRect(); let left = rr.left + rr.width / 2 - 145; let top = rr.bottom + 8;
+    if (left < 10) left = 10; if (left + 300 > innerWidth - 10) left = innerWidth - 300 - 10;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.classList.remove('show'); }
+  document.querySelectorAll('.help').forEach(el => {
+    el.addEventListener('mouseenter', () => showTip(el)); el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('focus', () => showTip(el)); el.addEventListener('blur', hideTip);
+  });
+
+  // 下载方式切换
+  const modeTabs = document.querySelectorAll('#modeTabs .seg');
+  const r2View = document.getElementById('r2View');
+  const netdiskView = document.getElementById('netdiskView');
+  const modeNote = document.getElementById('modeNote');
+  const modeState = document.getElementById('modeState');
+  function setMode(v) {
+    modeTabs.forEach(b => b.classList.toggle('active', b.dataset.mode === v));
+    r2View.classList.toggle('hidden', v !== 'r2');
+    netdiskView.classList.toggle('hidden', v !== 'netdisk');
+    if (v === 'netdisk') {
+      modeNote.textContent = '网盘手动：打开对应范围文件夹，自行下载 zip，然后拖入导入窗口；程序不显示网盘下载进度。';
+      modeState.textContent = '网盘手动';
+    } else {
+      modeNote.textContent = 'R2 自动：程序读取 manifest，批量下载、校验、合并，不需要手动选择文件。';
+      modeState.textContent = 'R2 自动';
+    }
+  }
+  modeTabs.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+  // 导入窗口：只做 UI 预览，真正实现时由 Qt 解压/校验/去重
+  const mask = document.getElementById('importMask');
+  const stagedRows = document.getElementById('stagedRows');
+  const stagedTable = document.getElementById('stagedTable');
+  const stagedEmpty = document.getElementById('stagedEmpty');
+  const startBtn = document.getElementById('startImport');
+  const selectedCount = document.getElementById('selectedCount');
+  const selectedPacks = document.getElementById('selectedPacks');
+  const importState = document.getElementById('importState');
+  const progressBox = document.getElementById('importProgress');
+  let staged = [];
+  let importTimer = null;
+
+  const demo = [
+    { name:'基岩版区块缓存-局部-1.zip', range:'局部 ±8192', packs:256, size:'18 MB', status:'待导入' },
+    { name:'基岩版区块缓存-较大-2.zip', range:'较大 ±32768', packs:1024, size:'71 MB', status:'待导入' },
+    { name:'基岩版区块缓存-附近-1.zip', range:'附近 ±2048', packs:16, size:'1.1 MB', status:'待导入' }
+  ];
+
+  function renderStaged() {
+    stagedTable.classList.toggle('hidden', staged.length === 0);
+    stagedEmpty.classList.toggle('hidden', staged.length !== 0);
+    stagedRows.innerHTML = '';
+    staged.forEach((f, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td><input class="check" type="checkbox" checked></td><td>' + f.name + '</td><td>' + f.range + '</td><td class="num">' + f.packs + '</td><td class="num">' + f.size + '</td><td class="ok">' + f.status + '</td>';
+      tr.querySelector('input').addEventListener('change', e => { if (!e.target.checked) staged.splice(i, 1); renderStaged(); });
+      stagedRows.appendChild(tr);
+    });
+    const totalPacks = staged.reduce((a, f) => a + f.packs, 0);
+    document.getElementById('stagedCount').textContent = staged.length;
+    document.getElementById('stagedHint').textContent = staged.length ? '确认后开始导入' : '等待拖入';
+    startBtn.disabled = staged.length === 0;
+    selectedCount.textContent = staged.length;
+    selectedPacks.textContent = totalPacks;
+    if (staged.length === 0) {
+      selectedCount.textContent = '0'; selectedPacks.textContent = '0';
+    }
+  }
+
+  function openImport() {
+    mask.classList.add('show');
+    renderStaged();
+  }
+  function closeImport() { mask.classList.remove('show'); }
+  document.getElementById('openImport').addEventListener('click', openImport);
+  document.getElementById('reopenImport').addEventListener('click', openImport);
+  document.getElementById('closeImport').addEventListener('click', closeImport);
+  document.getElementById('cancelImport').addEventListener('click', closeImport);
+  mask.addEventListener('click', e => { if (e.target === mask) closeImport(); });
+  document.getElementById('pickFiles').addEventListener('click', openImport);
+  document.getElementById('stageDemo').addEventListener('click', () => { staged = demo.map(x => ({...x})); renderStaged(); });
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const names = [...e.dataTransfer.files].map(f => f.name).filter(n => n.toLowerCase().endsWith('.zip'));
+    staged = names.map(n => ({ name:n, range:'待识别', packs:0, size:'待读取', status:'待读 manifest' }));
+    renderStaged();
+  });
+
+  function startImport() {
+    const total = staged.reduce((a, f) => a + Math.max(1, f.packs), 0);
+    let done = 0;
+    progressBox.classList.add('show');
+    document.getElementById('footNote').textContent = '正在解压并校验，请稍候…';
+    document.getElementById('importTasks').innerHTML = staged.map(f => '<div class="task-row"><span class="source-badge netdisk">网盘</span><div class="task-main"><div class="task-line"><strong>' + f.name + '</strong><span class="task-meta">' + (f.packs || 0) + ' packs</span><span class="pct" style="color:#8a6b2b">解压中</span></div><div class="track thin amber"><div class="fill amber" style="width:0%"></div></div></div></div>').join('');
+    importTimer = setInterval(() => {
+      done = Math.min(total, done + Math.max(1, Math.round(total / 20)));
+      const pct = total ? done / total * 100 : 100;
+      document.getElementById('importPct').textContent = pct.toFixed(1) + '%';
+      document.getElementById('importBar').style.width = pct + '%';
+      document.getElementById('importFiles').textContent = staged.length + ' / ' + staged.length + ' 文件';
+      document.getElementById('importPacks').textContent = done + ' / ' + total + ' pack';
+      document.getElementById('importCurrent').textContent = pct >= 100 ? '导入完成' : '正在解压 · ' + staged[0].name;
+      if (pct >= 100) {
+        clearInterval(importTimer); importTimer = null;
+        document.getElementById('footNote').textContent = '导入完成，已去重。';
+        importState.textContent = '已导入 ' + staged.length + ' 个 zip';
+        document.getElementById('reopenImport').classList.remove('hidden');
+      }
+    }, 220);
+  }
+  startBtn.addEventListener('click', startImport);
+  document.getElementById('stageDemo').addEventListener('click', () => { if (!mask.classList.contains('show')) openImport(); });
+
+  // R2 预览地图
+  const canvas = document.getElementById('r2Map');
+  const ctx = canvas.getContext('2d');
+  const view = { x0:-14000, x1:14000, z0:-14000, z1:14000 };
+  const boxes = [{x0:-8192,x1:8191,z0:-8192,z1:8191,tone:'green'},{x0:-8192,x1:8191,z0:-8192,z1:8191,tone:'blue'}];
+  function drawMap() {
+    const r = canvas.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.round(r.width*dpr)); canvas.height = Math.max(1, Math.round(r.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    ctx.fillStyle='#f7faf5'; ctx.fillRect(0,0,w,h); ctx.strokeStyle='#e4ede2';
+    for (let i=0;i<=20;i++){ const x=i/20*w,y=i/20*h; ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke(); }
+    const w2s=(x,z)=>({x:(x-view.x0)/(view.x1-view.x0)*w,y:h-(z-view.z0)/(view.z1-view.z0)*h});
+    for (const b of boxes) { const a=w2s(b.x0,b.z0), c=w2s(b.x1+1,b.z1+1); ctx.fillStyle=b.tone==='green'?'rgba(103,179,123,.28)':'rgba(91,145,200,.25)'; ctx.fillRect(Math.min(a.x,c.x),Math.min(a.y,c.y),Math.abs(c.x-a.x),Math.abs(c.y-a.y)); }
+    ctx.fillStyle='#90a094'; ctx.font='10px "Microsoft YaHei", sans-serif'; ctx.fillText('x '+view.x0+' … '+view.x1,10,h-10);
+  }
+  window.addEventListener('resize', drawMap);
+  drawMap();
+  const q = new URLSearchParams(location.search);
+  if (q.get('mode') === 'netdisk') setMode('netdisk');
+  if (q.get('import') === '1') { setMode('netdisk'); openImport(); staged = demo.map(x=>({...x})); renderStaged(); }
+</script>
+</body>
+</html>
