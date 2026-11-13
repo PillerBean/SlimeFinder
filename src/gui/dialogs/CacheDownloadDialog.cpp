@@ -1,4 +1,4 @@
-#include "gui/dialogs/CacheDownloadDialog.h"
+﻿#include "gui/dialogs/CacheDownloadDialog.h"
 #include "gui/dialogs/CacheZipImportDialog.h"
 
 #include "gui/widgets/CacheCoverageMap.h"
@@ -354,11 +354,23 @@ void CacheDownloadDialog::loadAvailable()
     const auto apply = [this](bool ok, const QString& err, const QVector<RemoteCachePack>& packs) {
         if (!m_availableStatus || !m_availableTable) return;
         if (!ok) {
-            m_availableStatus->setText(err);
+            if (m_client && m_client->quotaWarning() == QStringLiteral("exhausted")) {
+                m_availableStatus->setText(slime::ui::t("ui.cache.download.quota.exhausted"));
+            } else {
+                m_availableStatus->setText(err);
+            }
             return;
         }
         m_availablePacks = packs;
         refreshAvailable();
+        const QString quota = m_client ? m_client->quotaWarning() : QString();
+        if (m_availableStatus) {
+            if (quota == QStringLiteral("warn")) {
+                m_availableStatus->setText(slime::ui::t("ui.cache.download.quota.warn"));
+            } else if (quota == QStringLiteral("exhausted")) {
+                m_availableStatus->setText(slime::ui::t("ui.cache.download.quota.exhausted"));
+            }
+        }
     };
     if (fallback.trimmed().isEmpty()) {
         m_client->fetchManifest(QUrl(primary), apply);

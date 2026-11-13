@@ -1,4 +1,4 @@
-#include "gui/services/CacheDownloadClient.h"
+﻿#include "gui/services/CacheDownloadClient.h"
 
 #include <QCryptographicHash>
 #include <QCoreApplication>
@@ -58,7 +58,10 @@ QString CacheDownloadClient::primaryManifestUrl()
 {
     const QString env = qEnvironmentVariable("SLIME_CACHE_MANIFEST");
     if (!env.trimmed().isEmpty()) return env;
-    return configValue(QStringLiteral("cacheDownload"), QStringLiteral("primary"));
+    const QString configured = configValue(QStringLiteral("cacheDownload"), QStringLiteral("primary"));
+    if (!configured.trimmed().isEmpty()) return configured;
+    // v3.12.3：默认官方分发入口（Cloudflare Pages，国内可达性优于 workers.dev）。
+    return QStringLiteral("https://slimefinder-cache.pages.dev/v3.12.3/manifest.json");
 }
 
 QString CacheDownloadClient::fallbackManifestUrl()
@@ -102,9 +105,14 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
     }
     QNetworkRequest req(manifestUrl);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    req.setRawHeader("User-Agent", "SlimeFinder/3.12.3");
     auto* reply = m_net->get(req);
     QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, manifestUrl, done]() {
         reply->deleteLater();
+        const QByteArray quota = reply->rawHeader("x-slimefinder-quota");
+        m_quotaWarning = quota == "warn" ? QStringLiteral("warn")
+                         : quota == "exhausted" ? QStringLiteral("exhausted")
+                                                 : QString();
         if (reply->error() != QNetworkReply::NoError) {
             done(false, normalizedError(reply), {});
             return;
@@ -167,6 +175,7 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
     const qint64 offset = QFileInfo(partPath).size();
     QNetworkRequest req(packUrl);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    req.setRawHeader("User-Agent", "SlimeFinder/3.12.3");
     if (offset > 0) {
         req.setRawHeader("Range", QByteArray("bytes=") + QByteArray::number(offset) + "-");
     }

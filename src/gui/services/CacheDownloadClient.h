@@ -1,4 +1,4 @@
-// CacheDownloadClient.h - v3.12.3：官方缓存 manifest / pack 下载（R2 主源，国内网盘备用源预留）
+﻿// CacheDownloadClient.h - v3.12.3：官方缓存 manifest / pack 下载（R2 主源，国内网盘备用源预留）
 #pragma once
 
 #include <QByteArray>
@@ -53,6 +53,10 @@ public:
                                   const RemoteCachePack& pack, const QString& destPath,
                                   DownloadCallback done);
 
+    // 最近一次 manifest 请求返回的配额状态：ok / warn / exhausted。
+    QString quotaWarning() const { return m_quotaWarning; }
+
 private:
     QNetworkAccessManager* m_net = nullptr;
+    QString m_quotaWarning;
 };

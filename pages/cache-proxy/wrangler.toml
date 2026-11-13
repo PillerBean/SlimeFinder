@@ -1,0 +1,11 @@
+name = "slimefinder-cache"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-11-13"
+
+[[r2_buckets]]
+binding = "CACHE_BUCKET"
+bucket_name = "slimefinderchunkcache"
+
+[[kv_namespaces]]
+binding = "QUOTA_KV"
+id = "b97865e6b824478f9f2d82d872e89495"

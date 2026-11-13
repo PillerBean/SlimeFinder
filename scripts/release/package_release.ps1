@@ -124,7 +124,7 @@ $cfgText = @"
     "enabled": false
   },
   "cacheDownload": {
-    "primary": "",
+    "primary": "https://slimefinder-cache.pages.dev/v3.12.3/manifest.json",
     "fallback": "",
     "netdisk": "https://wwben.lanzoul.com/b01d7e4lre",
     "netdiskNearby": "https://wwben.lanzoul.com/b01d7e5jyf",

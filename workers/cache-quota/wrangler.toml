@@ -1,0 +1,18 @@
+name = "slimefinder-cache"
+main = "src/index.js"
+compatibility_date = "2026-11-13"
+
+[[r2_buckets]]
+binding = "CACHE_BUCKET"
+bucket_name = "slimefinderchunkcache"
+
+[[kv_namespaces]]
+binding = "QUOTA_KV"
+id = "b97865e6b824478f9f2d82d872e89495"
+
+[vars]
+CF_ACCOUNT_ID = "07ba6b6364e0fe27fd401f9ab52c09e3"
+CACHE_BUCKET_NAME = "slimefinderchunkcache"
+
+[triggers]
+crons = ["*/15 * * * *"]

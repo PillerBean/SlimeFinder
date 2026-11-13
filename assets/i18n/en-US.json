@@ -1256,5 +1256,7 @@
   "ui.cache.download.netdisk.import": "Open import window",
   "ui.cache.download.netdisk.note": "The app does not scan netdisk or show netdisk download progress; it only shows selected zips and import/extract progress.",
   "ui.cache.download.import": "Import netdisk cache",
-  "ui.cache.status.imported": "Cache imported: %1 packs (%2 MB)"
+  "ui.cache.status.imported": "Cache imported: %1 packs (%2 MB)",
+  "ui.cache.download.quota.warn": "R2 monthly quota is above 80%; service may stop soon. Prefer the netdisk fallback.",
+  "ui.cache.download.quota.exhausted": "R2 monthly quota is exhausted. Wait until next month; only the netdisk fallback is available."
 }

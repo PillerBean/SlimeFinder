@@ -1256,5 +1256,7 @@
   "ui.cache.download.netdisk.import": "打开导入窗口",
   "ui.cache.download.netdisk.note": "程序不会搜索网盘文件，也不会显示网盘下载进度；只显示已选 zip 和导入/解压进度。",
   "ui.cache.download.import": "导入网盘缓存",
-  "ui.cache.status.imported": "缓存已导入：%1 个缓存包（%2 MB）"
+  "ui.cache.status.imported": "缓存已导入：%1 个缓存包（%2 MB）",
+  "ui.cache.download.quota.warn": "R2 本月额度已使用 80% 以上，服务可能随时停止；请优先使用网盘备用下载。",
+  "ui.cache.download.quota.exhausted": "R2 本月服务额度已用尽，需要等待下个月恢复；期间只能尝试网盘下载。"
 }
