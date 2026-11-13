@@ -1,4 +1,4 @@
-﻿// v3.12.0：搜索、构建与结果处理逻辑。
+// v3.12.0：搜索、构建与结果处理逻辑。
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {
@@ -232,6 +232,15 @@ void MainWindow::startSearch()
     opt.cache = nullptr;
     opt.cacheBandLoader = nullptr;
     if (cacheEnabled && !buildModeActive() && m_cacheStore) {
+        opt.cacheBandMayCover = [this](const slime::Rect& band) {
+            if (!m_cacheStore) return false;
+            for (const auto& e : m_cacheStore->packs()) {
+                if (e.rect.maxX < band.minX || e.rect.minX > band.maxX ||
+                    e.rect.maxZ < band.minZ || e.rect.minZ > band.maxZ) continue;
+                return true;
+            }
+            return false;
+        };
         opt.cacheBandLoader = [this](const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
             auto cm = std::make_shared<slime::CacheManager>();
             if (!m_cacheStore) return cm;

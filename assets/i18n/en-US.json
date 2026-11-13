@@ -1255,5 +1255,6 @@
   "ui.cache.download.netdisk.drop": "Drag downloaded zips into the import window",
   "ui.cache.download.netdisk.import": "Open import window",
   "ui.cache.download.netdisk.note": "The app does not scan netdisk or show netdisk download progress; it only shows selected zips and import/extract progress.",
-  "ui.cache.download.import": "Import netdisk cache"
+  "ui.cache.download.import": "Import netdisk cache",
+  "ui.cache.status.imported": "Cache imported: %1 packs (%2 MB)"
 }

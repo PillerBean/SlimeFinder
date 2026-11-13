@@ -344,6 +344,8 @@ struct SearchOptions {
     // 每次返回只包含该 band 相交 pack 的 CacheManager；band 结束即释放。
     using CacheBandLoader = std::function<std::shared_ptr<CacheManager>(const Rect& band)>;
     CacheBandLoader cacheBandLoader;
+    // 仅读元数据的快速提示：band 是否可能与缓存相交（用于缓存优先排序）。
+    std::function<bool(const Rect& band)> cacheBandMayCover;
     int cacheBandSize = 4096; // 每个核心 band 的边长（区块）
     // v3.1.2：分块路径的增量缓存写入（每块完成即合并，避免整图收集导致缓存为空/内存爆炸）
     CacheManager* cacheWrite = nullptr; // 可与 cache 为同一对象；仅分块路径使用

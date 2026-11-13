@@ -1255,5 +1255,6 @@
   "ui.cache.download.netdisk.drop": "下載 zip 後，拖入匯入視窗批次匯入",
   "ui.cache.download.netdisk.import": "開啟匯入視窗",
   "ui.cache.download.netdisk.note": "程式不會搜尋網盤檔案，也不會顯示網盤下載進度；只顯示已選 zip 和匯入/解壓進度。",
-  "ui.cache.download.import": "匯入網盤快取"
+  "ui.cache.download.import": "匯入網盤快取",
+  "ui.cache.status.imported": "快取已匯入：%1 個快取包（%2 MB）"
 }

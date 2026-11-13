@@ -4825,18 +4825,41 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     bool anyOk = false;
     int64_t bandIndex = 0;
 
+    struct BandInfo {
+        int64_t cx0 = 0, cx1 = 0, cz0 = 0, cz1 = 0;
+        bool cached = false;
+    };
+    std::vector<BandInfo> bands;
+    bands.reserve(static_cast<size_t>(totalBands));
     for (int64_t bz = 0; bz < nz; ++bz) {
-        for (int64_t bx = 0; bx < nx; ++bx, ++bandIndex) {
+        for (int64_t bx = 0; bx < nx; ++bx) {
+            BandInfo b;
+            b.cx0 = x0 + bx * coreW;
+            b.cx1 = std::min<int64_t>(x1, b.cx0 + coreW - 1);
+            b.cz0 = z0 + bz * coreW;
+            b.cz1 = std::min<int64_t>(z1, b.cz0 + coreW - 1);
+            if (optIn.cacheBandMayCover) {
+                b.cached = optIn.cacheBandMayCover(Rect{ static_cast<int>(b.cx0), static_cast<int>(b.cx1),
+                                                          static_cast<int>(b.cz0), static_cast<int>(b.cz1) });
+            }
+            bands.push_back(b);
+        }
+    }
+    // 缓存优先：先处理有缓存的 band，尽早命中并减少无效计算；最终仍按原排序合并结果。
+    std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
+        return a.cached && !b.cached;
+    });
+    for (const BandInfo& band : bands) {
+        const int64_t cx0 = band.cx0;
+        const int64_t cx1 = band.cx1;
+        const int64_t cz0 = band.cz0;
+        const int64_t cz1 = band.cz1;
+        {
             if (cancel.load(std::memory_order_relaxed)) {
                 out.cancelled = true;
                 out.ok = false;
                 return;
             }
-            const int64_t cx0 = x0 + bx * coreW;
-            const int64_t cx1 = std::min<int64_t>(x1, cx0 + coreW - 1);
-            const int64_t cz0 = z0 + bz * coreW;
-            const int64_t cz1 = std::min<int64_t>(z1, cz0 + coreW - 1);
-
             Rect core{ static_cast<int>(cx0), static_cast<int>(cx1),
                        static_cast<int>(cz0), static_cast<int>(cz1) };
             Rect loaded{ static_cast<int>(cx0) - halo, static_cast<int>(cx1) + halo,
@@ -4847,6 +4870,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
 
             SearchOptions bandOpt = optIn;
             bandOpt.cacheBandLoader = nullptr;
+            bandOpt.cacheBandMayCover = nullptr;
             bandOpt.cache = bandCache.get();
             bandOpt.cacheWrite = nullptr;
             bandOpt.cacheReadMu = nullptr;
@@ -4854,7 +4878,6 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             bandOpt.maxX = loaded.maxX;
             bandOpt.minZ = loaded.minZ;
             bandOpt.maxZ = loaded.maxZ;
-            // 分带后由外层统一做全局 TopN；禁止每个 band 自行提前停止。
             bandOpt.stopAtTarget = false;
             bandOpt.smartRange = false;
 
@@ -4897,8 +4920,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
                 auto it = merged.find(key);
                 if (it == merged.end() || better(r, it->second)) merged[key] = r;
             }
-            // bandCache 在此作用域结束即释放。
         }
+        ++bandIndex;
     }
 
     if (cancel.load(std::memory_order_relaxed)) {

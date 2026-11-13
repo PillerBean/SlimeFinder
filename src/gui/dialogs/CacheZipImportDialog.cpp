@@ -92,6 +92,11 @@ CacheZipImportDialog::CacheZipImportDialog(slime::cache::CacheStore* store, QWid
     QObject::connect(m_start, &QPushButton::clicked, this, [this]() { startImport(); });
 }
 
+CacheZipImportDialog::~CacheZipImportDialog()
+{
+    if (m_worker.joinable()) m_worker.join();
+}
+
 void CacheZipImportDialog::dragEnterEvent(QDragEnterEvent* ev)
 {
     if (ev->mimeData()->hasUrls()) {
@@ -180,7 +185,7 @@ void CacheZipImportDialog::startImport()
     m_hint->setText(QStringLiteral("后台导入中，请稍候…"));
 
     // 导入在后台线程执行；主线程只接收进度并刷新，避免大 zip 卡死界面。
-    std::thread([this, valid]() {
+    m_worker = std::thread([this, valid]() {
         int imported = 0, skipped = 0, failed = 0;
         QStringList errors;
         for (size_t i = 0; i < valid.size(); ++i) {
@@ -215,7 +220,7 @@ void CacheZipImportDialog::startImport()
             if (onImported) onImported();
             refresh();
         }, Qt::QueuedConnection);
-    }).detach();
+    });
 }
 
 void CacheZipImportDialog::reject()

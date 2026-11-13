@@ -1,4 +1,4 @@
-﻿// v3.12.0：语言、版本、预设、缓存、遥测与对话框服务。
+// v3.12.0：语言、版本、预设、缓存、遥测与对话框服务。
 
 void MainWindow::applyLanguage()
 {
@@ -876,11 +876,18 @@ void MainWindow::updateCacheStatusUi()
         m_w->cacheStatus->setText(slime::ui::t("ui.705f907ae91f"));
         return;
     }
-    if (m_cache->hasData()) {
+    if (m_cache && m_cache->hasData()) {
         m_w->cacheStatus->setText(slime::ui::t("ui.a13898466222")
                                       .arg(m_cache->entryCount())
                                       .arg(m_cache->ranges().size())
                                       .arg(m_cache->sizeBytes() / (1024 * 1024)));
+        return;
+    }
+    if (m_cacheStore && !m_cacheStore->packs().empty()) {
+        const double mb = static_cast<double>(m_cacheStore->totalCompressedBytes()) / (1024.0 * 1024.0);
+        m_w->cacheStatus->setText(slime::ui::t("ui.cache.status.imported")
+                                      .arg(static_cast<int>(m_cacheStore->packs().size()))
+                                      .arg(mb, 0, 'f', 1));
         return;
     }
     std::error_code ec;

@@ -7,6 +7,7 @@
 #include <QDialog>
 
 #include <functional>
+#include <thread>
 #include <vector>
 
 class QLabel;
@@ -16,6 +17,7 @@ class QTableWidget;
 class CacheZipImportDialog : public QDialog {
 public:
     explicit CacheZipImportDialog(slime::cache::CacheStore* store, QWidget* parent = nullptr);
+    ~CacheZipImportDialog() override;
 
     std::function<void()> onImported;
 
@@ -41,4 +43,5 @@ private:
     QPushButton* m_start = nullptr;
     std::vector<Item> m_items;
     bool m_importing = false;
+    std::thread m_worker;
 };
