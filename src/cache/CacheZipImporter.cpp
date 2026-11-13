@@ -331,7 +331,8 @@ bool CacheZipImporter::inspect(const QString& zipPath, ZipInspection& out)
 }
 
 bool CacheZipImporter::importZip(const QString& zipPath, const std::filesystem::path& cacheRoot,
-                                 QString* error, int* imported, int* skipped)
+                                 QString* error, int* imported, int* skipped,
+                                 const ImportProgress& progress)
 {
     const auto fail = [&](const QString& msg) {
         if (error) *error = msg;
@@ -376,7 +377,11 @@ bool CacheZipImporter::importZip(const QString& zipPath, const std::filesystem::
     std::vector<Staged> staged;
     staged.reserve(contents.packs.size());
 
+    int progressIndex = 0;
+    const int progressTotal = static_cast<int>(contents.packs.size());
     for (const auto& p : contents.packs) {
+        if (progress) progress(progressIndex, progressTotal, p.file);
+        ++progressIndex;
         const mz_uint index = contents.names.value(p.file);
         void* heap = mz_zip_reader_extract_to_heap(&zip, index, nullptr, 0);
         if (!heap) {

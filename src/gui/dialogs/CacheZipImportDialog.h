@@ -1,4 +1,4 @@
-// CacheZipImportDialog.h - v3.12.3：网盘 zip 批量导入窗口
+﻿// CacheZipImportDialog.h - v3.12.3：网盘 zip 批量导入窗口
 #pragma once
 
 #include "cache/CacheZipImporter.h"
@@ -12,7 +12,9 @@
 
 class QLabel;
 class QPushButton;
+class QProgressBar;
 class QTableWidget;
+class QCloseEvent;
 
 class CacheZipImportDialog : public QDialog {
 public:
@@ -25,6 +27,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent* ev) override;
     void dropEvent(QDropEvent* ev) override;
     void reject() override;
+    void closeEvent(QCloseEvent* ev) override;
 
 private:
     struct Item {
@@ -41,6 +44,9 @@ private:
     QLabel* m_summary = nullptr;
     QLabel* m_hint = nullptr;
     QPushButton* m_start = nullptr;
+    QPushButton* m_pick = nullptr;
+    QPushButton* m_cancel = nullptr;
+    QProgressBar* m_progress = nullptr;
     std::vector<Item> m_items;
     bool m_importing = false;
     std::thread m_worker;

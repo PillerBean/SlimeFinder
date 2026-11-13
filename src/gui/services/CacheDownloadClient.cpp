@@ -73,7 +73,7 @@ QString CacheDownloadClient::fallbackManifestUrl()
 
 QString CacheDownloadClient::netdiskRangeUrl(int index)
 {
-    static const char* keys[] = { "netdiskNearby", "netdiskLocal", "netdiskLarge", "netdiskAll" };
+    static const char* keys[] = { "netdiskLocal", "netdiskLarge", "netdiskAll" };
     static const char* defaults[] = {
         "https://wwben.lanzoul.com/b01d7e5jyf",
         "https://wwben.lanzoul.com/b01d7e5k0h",

@@ -127,7 +127,6 @@ $cfgText = @"
     "primary": "https://slimefinder-cache.pages.dev/v3.12.3/manifest.json",
     "fallback": "",
     "netdisk": "https://wwben.lanzoul.com/b01d7e4lre",
-    "netdiskNearby": "https://wwben.lanzoul.com/b01d7e5jyf",
     "netdiskLocal": "https://wwben.lanzoul.com/b01d7e5k0h",
     "netdiskLarge": "https://wwben.lanzoul.com/b01d7e5kah",
     "netdiskAll": "https://wwben.lanzoul.com/b01d7e5l9c"

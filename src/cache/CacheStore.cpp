@@ -335,6 +335,18 @@ bool CacheStore::addPack(const std::filesystem::path& path, const std::string& s
     return persist ? save(err) : true;
 }
 
+bool CacheStore::clearAll(std::string* err)
+{
+    std::error_code ec;
+    for (const auto& e : m_packs) {
+        std::filesystem::remove(m_root / e.file, ec);
+    }
+    m_packs.clear();
+    std::filesystem::remove(indexPath(), ec);
+    if (!ensureDirs(err)) return false;
+    return save(err);
+}
+
 bool CacheStore::removePack(const std::string& file, std::string* err)
 {
     const auto it = std::find_if(m_packs.begin(), m_packs.end(), [&](const CachePackEntry& e) {

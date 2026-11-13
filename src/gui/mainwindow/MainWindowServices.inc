@@ -1,4 +1,4 @@
-// v3.12.0：语言、版本、预设、缓存、遥测与对话框服务。
+﻿// v3.12.0：语言、版本、预设、缓存、遥测与对话框服务。
 
 void MainWindow::applyLanguage()
 {
@@ -902,37 +902,14 @@ void MainWindow::updateCacheStatusUi()
 
 void MainWindow::importCache()
 {
-    // v3.3.1（任务书 2.1）：过滤器与保存扩展名一致 —— 新版 .slimecache 优先，旧版 .cache 兼容，
-    // 并提供「所有文件」兜底，避免缓存文件存在却在对话框里看不到。
-    // v3.3.2（任务书 3.2/3.3）：对话框**定位到缓存目录（程序目录）并预选当前缓存文件**，
-    // 保证「刚保存的缓存」不仅可见（过滤器匹配），而且已经选中（直接点“打开”即可加载）。
-    // 修复前的实现（v3.1.1~v3.3.0）第三个参数为空 → 对话框落在进程工作目录/上次目录，
-    // 缓存文件虽在程序目录却看不到，这正是任务书描述的「缓存文件存在但选不中」。
-    QFileDialog dlg(this, slime::ui::t("ui.834c34e48ed2"),
-                    QString::fromStdWString(appDirPath().wstring()));
-    dlg.setFileMode(QFileDialog::ExistingFile);
-    dlg.setNameFilters(cacheImportFilter().split(QStringLiteral(";;")));
-    dlg.selectFile(QString::fromStdString(kCacheFileName)); // 预选 slime_cache.slimecache
-    if (dlg.exec() != QDialog::Accepted) return;
-
-    const QStringList chosen = dlg.selectedFiles();
-    if (chosen.isEmpty()) return;
-    const QString path = chosen.isEmpty() ? QString() : chosen.first();
-    if (path.isEmpty()) return;
-
-    if (path.endsWith(QStringLiteral(".pkl"), Qt::CaseInsensitive) ||
-        path.endsWith(QStringLiteral(".pickle"), Qt::CaseInsensitive)) {
-        QMessageBox::warning(this, slime::ui::t("ui.a042ea99a76c"),
-                             slime::ui::t("ui.e4b8900b55f6"));
-        return;
-    }
-
-    importCacheFromPath(path, !m_uiQuiet, !m_uiQuiet);
+    // v3.12.3：搜索页旧入口改为直接调用新的 v3 zip 导入窗口。
+    if (!m_cacheStore) return;
+    CacheZipImportDialog dlg(m_cacheStore.get(), this);
+    dlg.onImported = [this]() { reloadV3CacheAfterImport(); };
+    dlg.exec();
+    reloadV3CacheAfterImport();
 }
 
-// v3.3.8.1（任务书 1.3）：大缓存导入移到**后台线程** + 进度条（界面不冻结）。
-// 读取本身不可中断，「取消」= 丢弃已读结果、不合并（如实反映可取消范围）。
-// showProgressDialog=false（自检静默模式）时同步读取，避免模态框阻塞自动化流程。
 void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialog, bool showResultDialogs)
 {
     const auto srcPath = std::filesystem::path(path.toStdWString());
@@ -1039,13 +1016,19 @@ void MainWindow::clearCache()
                               slime::ui::t("ui.b41f2a3ce538")) != QMessageBox::Yes) {
         return;
     }
+    std::string err;
     m_cache->clear();
+    if (!m_cacheStore || !m_cacheStore->clearAll(&err)) {
+        QMessageBox::warning(this, slime::ui::t("ui.b56d9ac6c5a0"),
+                             QString::fromStdString(err.empty() ? "清空 v3 缓存失败" : err));
+        return;
+    }
     std::error_code ec;
     std::filesystem::remove(m_cacheFile, ec);
-    // v3.3.1：连同旧版扩展名文件一起清除（否则下次启动会把它当旧缓存重新加载）
     std::filesystem::remove(appDirPath() / kCacheLegacyFileName, ec);
+    refreshCacheUi();
     updateCacheStatusUi();
-    Logger::info("缓存已清除");
+    Logger::info("v3 缓存已清空");
 }
 
 // ---------------- 坐标转换 ----------------

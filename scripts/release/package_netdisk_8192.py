@@ -75,8 +75,7 @@ def main():
     ROOT = args.root
     out_root = args.out
     os.makedirs(out_root, exist_ok=True)
-    tiers = [('nearby', '附近', 2048), ('local', '局部', 8192),
-             ('large', '较大', 32768), ('all', '全部', 131072)]
+    tiers = [('local', '局部', 8192), ('large', '较大', 32768), ('all', '全部', 131072)]
     for tier, label, limit in tiers:
         packs = load_tier(tier)
         packs.sort(key=lambda p: (p['minZ'], p['minX']))

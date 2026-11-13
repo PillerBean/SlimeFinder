@@ -170,17 +170,17 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         auto* grid = new QGridLayout();
         grid->setHorizontalSpacing(8);
         grid->setVerticalSpacing(8);
-        const char* keys[] = { "ui.cache.download.quick.near",
-                               "ui.cache.download.quick.local",
+        // 网盘源已取消“附近”档；只保留局部/较大/全部。
+        const char* keys[] = { "ui.cache.download.quick.local",
                                "ui.cache.download.quick.large",
                                "ui.cache.download.quick.all" };
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 3; ++i) {
             auto* box = new QGroupBox(slime::ui::t(keys[i]), ndPage);
             box->setProperty("card", true);
             auto* boxLay = new QVBoxLayout(box);
             boxLay->setContentsMargins(8, 6, 8, 8);
             auto* open = new QPushButton(slime::ui::t("ui.cache.download.openFolder"), box);
-            const int rangeIndex = i;
+            const int rangeIndex = i; // 网盘源仅保留局部/较大/全部
             open->setEnabled(!CacheDownloadClient::netdiskRangeUrl(rangeIndex).trimmed().isEmpty());
             QObject::connect(open, &QPushButton::clicked, this, [rangeIndex]() {
                 const QString url = CacheDownloadClient::netdiskRangeUrl(rangeIndex);

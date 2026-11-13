@@ -59,6 +59,9 @@ public:
     // 删除一个 pack（本地或下载均允许；下载 pack 只能整包删除，不能修改内容）。
     bool removePack(const std::string& file, std::string* err = nullptr);
 
+    // 删除全部本地/下载 pack 和索引（清空 v3 缓存）。
+    bool clearAll(std::string* err = nullptr);
+
     // 按覆盖范围查找包含该坐标的 pack；返回 nullptr 表示没有缓存覆盖。
     const CachePackEntry* findContaining(int32_t x, int32_t z) const noexcept;
 
