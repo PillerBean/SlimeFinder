@@ -4821,6 +4821,10 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     int64_t windows = 0;
     int64_t chunksPruned = 0;
     double scanMs = 0, matchMs = 0, totalMs = 0;
+    int64_t cacheHitPoints = 0;
+    int64_t cacheFirstChunks = 0;
+    bool cacheFillSkipped = false;
+    bool cacheFirstOrder = false;
     bool stoppedEarly = false;
     bool anyOk = false;
     int64_t bandIndex = 0;
@@ -4909,6 +4913,10 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             totalMs += bo.stats.totalMs;
             if (bo.stoppedEarly) stoppedEarly = true;
             totalFound += bo.totalFound;
+            cacheHitPoints += bo.cacheHitPoints;
+            cacheFirstChunks += bo.cacheFirstChunks;
+            cacheFillSkipped = cacheFillSkipped || bo.cacheFillSkipped;
+            cacheFirstOrder = cacheFirstOrder || bo.cacheFirstOrder;
 
             for (const auto& r : bo.results) {
                 // 只接收锚点位于核心带内的结果；halo 只用于计算，不用于输出。
@@ -4947,8 +4955,14 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
 
     out.ok = true;
     out.results = std::move(results);
-    out.totalFound = totalFound;
+    // halo 内重复命中只影响统计，不应改变最终显示结果。
+    out.totalFound = static_cast<int64_t>(out.results.size());
     out.stoppedEarly = stoppedEarly;
+    out.cacheHitPoints = cacheHitPoints;
+    out.cacheFillSkipped = cacheFillSkipped;
+    out.cacheFirstOrder = cacheFirstOrder;
+    out.cacheFirstChunks = cacheFirstChunks;
+    out.stats.threadsUsed = optIn.threads;
     out.stats.scannedChunks = scanned;
     out.stats.windowsEvaluated = windows;
     out.stats.scanMs = scanMs;

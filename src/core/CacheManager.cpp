@@ -1,4 +1,4 @@
-// CacheManager.cpp - 位图化缓存读写实现（v3.3.8 任务 3+5 合流）
+﻿// CacheManager.cpp - 位图化缓存读写实现（v3.3.8 任务 3+5 合流）
 //
 // 设计要点（与 CacheManager.h 顶部注释一致）：
 //   * 内存 = m_ranges + 每 range 一张位图（行优先，(z-minZ)*W + (x-minX)）+ 不在任何 range 内的 outlairs；
@@ -194,6 +194,27 @@ void CacheManager::mergeRegion(const Rect& region, const std::vector<std::pair<i
             addOutlier(x, z);
         }
     }
+}
+
+bool CacheManager::addPackedBitmap(const Rect& region, const uint8_t* bits, size_t bytes)
+{
+    if (!region.valid() || !bits) return false;
+    const int64_t w = static_cast<int64_t>(region.maxX) - region.minX + 1;
+    const int64_t h = static_cast<int64_t>(region.maxZ) - region.minZ + 1;
+    const size_t needed = static_cast<size_t>((w * h + 7) / 8);
+    if (bytes < needed) return false;
+    const size_t idx = ensureRange(region);
+    for (int64_t z = 0; z < h; ++z) {
+        for (int64_t x = 0; x < w; ++x) {
+            const size_t bit = static_cast<size_t>(z * w + x);
+            if ((bits[bit / 8] >> (bit % 8)) & 1u) {
+                if (setBit(idx, static_cast<int>(region.minX + x), static_cast<int>(region.minZ + z))) {
+                    ++m_uniqueEntries;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 void CacheManager::mergeRaw(const std::vector<Rect>& ranges, const std::vector<std::pair<int, int>>& slimeChunks)

@@ -4,6 +4,8 @@
 
 #include <cstdio>
 #include <memory>
+#include <chrono>
+#include <cstdlib>
 #include <vector>
 
 namespace {
@@ -82,10 +84,12 @@ int main()
 
     // 有缓存：加载器为每个 band 构造一份实际 Bedrock 缓存，结果必须与无缓存一致。
     {
+        const int testRange = std::getenv("SLIME_TEST_RANGE") ? std::atoi(std::getenv("SLIME_TEST_RANGE")) : 128;
         slime::SearchOptions cached = strict;
-        cached.minX = -128; cached.maxX = 127;
-        cached.minZ = -128; cached.maxZ = 127;
-        cached.cacheBandSize = 64;
+        cached.useCache = true;
+        cached.minX = -testRange; cached.maxX = testRange - 1;
+        cached.minZ = -testRange; cached.maxZ = testRange - 1;
+        cached.cacheBandSize = testRange > 512 ? 4096 : 64;
         cached.cacheBandLoader = [](const slime::Rect& band) {
             auto cm = std::make_shared<slime::CacheManager>();
             std::vector<std::pair<int, int>> slime;
@@ -119,10 +123,12 @@ int main()
             std::printf("store load failed: %s\n", storeErr.c_str());
             return 1;
         }
+        const int testRange = std::getenv("SLIME_TEST_RANGE") ? std::atoi(std::getenv("SLIME_TEST_RANGE")) : 128;
         slime::SearchOptions cached = strict;
-        cached.minX = -128; cached.maxX = 127;
-        cached.minZ = -128; cached.maxZ = 127;
-        cached.cacheBandSize = 64;
+        cached.useCache = true;
+        cached.minX = -testRange; cached.maxX = testRange - 1;
+        cached.minZ = -testRange; cached.maxZ = testRange - 1;
+        cached.cacheBandSize = testRange > 512 ? 4096 : 64;
         cached.cacheBandLoader = [&store](const slime::Rect& band) {
             auto cm = std::make_shared<slime::CacheManager>();
             std::string err;
@@ -133,15 +139,23 @@ int main()
         slime::SearchOutcome plain;
         slime::SearchOptions plainOpt = cached;
         plainOpt.cacheBandLoader = nullptr;
+        const auto p0 = std::chrono::steady_clock::now();
         engine.run(plainOpt, std::atomic<bool>{}, {}, plain);
+        const auto p1 = std::chrono::steady_clock::now();
         slime::SearchOutcome banded;
+        const auto b0 = std::chrono::steady_clock::now();
         engine.runBanded(cached, std::atomic<bool>{}, {}, banded);
+        const auto b1 = std::chrono::steady_clock::now();
         if (!plain.ok || !banded.ok || !sameResults(plain.results, banded.results)) {
             std::printf("real store RESULT MISMATCH plain=%zu banded=%zu\n", plain.results.size(),
                         banded.results.size());
             return 1;
         }
-        std::printf("real-store OK results=%zu packs=%zu\n", plain.results.size(), store.packs().size());
+        std::printf("real-store OK results=%zu packs=%zu range=%d plain_ms=%.1f banded_ms=%.1f cacheHit=%lld\n",
+                    plain.results.size(), store.packs().size(), testRange,
+                    std::chrono::duration<double, std::milli>(p1 - p0).count(),
+                    std::chrono::duration<double, std::milli>(b1 - b0).count(),
+                    static_cast<long long>(banded.cacheHitPoints));
     }
     std::printf("cache band test OK\n");
     return 0;

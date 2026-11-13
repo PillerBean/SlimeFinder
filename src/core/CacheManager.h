@@ -1,4 +1,4 @@
-// CacheManager.h - 基岩版史莱姆区块缓存管理（Qt 无关，二进制格式）
+﻿// CacheManager.h - 基岩版史莱姆区块缓存管理（Qt 无关，二进制格式）
 //
 // 缓存语义：
 //   * 缓存 = 一组“已完整扫描”的矩形区域(ranges) + 每个区域内的史莱姆区块**位图**；
@@ -61,6 +61,9 @@ public:
 
     // 合并任意 range/条目（导入用；自动去重）
     void mergeRaw(const std::vector<Rect>& ranges, const std::vector<std::pair<int, int>>& slimeChunks);
+
+    // v3.12.3：直接合并按行主序打包的位图，避免展开成 pair<int,int>。
+    bool addPackedBitmap(const Rect& region, const uint8_t* bits, size_t bytes);
 
     // ---- 磁盘 IO ----
     // replace=true：整文件替换内存内容（启动加载）；false：与内存合并（导入）
