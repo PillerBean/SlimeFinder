@@ -203,7 +203,6 @@ void CacheZipImportDialog::startImport()
     if (m_cancel) m_cancel->setEnabled(false);
     if (m_pick) m_pick->setEnabled(false);
     if (m_table) m_table->setEnabled(false);
-    setWindowFlag(Qt::WindowCloseButtonHint, false);
     int totalPacks = 0;
     for (const auto& item : valid) totalPacks += item.info.packCount;
     if (m_progress) {
@@ -258,7 +257,6 @@ void CacheZipImportDialog::startImport()
                 m_progress->setValue(m_progress->maximum());
                 m_progress->setVisible(true);
             }
-            setWindowFlag(Qt::WindowCloseButtonHint, true);
             QString result = QStringLiteral("导入完成：新增 %1 个 pack，跳过重复 %2 个，失败 %3 个。")
                                  .arg(imported).arg(skipped).arg(failed);
             if (!errors.isEmpty()) result += QStringLiteral("\n%1").arg(errors.join(QChar('\n')));
