@@ -524,16 +524,77 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
 {
     target.clear();
     if (!range.valid()) return true;
+
+    const int64_t W = static_cast<int64_t>(range.maxX) - range.minX + 1;
+    const int64_t H = static_cast<int64_t>(range.maxZ) - range.minZ + 1;
+    const size_t fullBytes = static_cast<size_t>((W * H + 7) / 8);
+    std::vector<uint8_t> fullBits(fullBytes, 0);
+    std::vector<const CachePackEntry*> hits;
+    bool fullyCovered = true;
+
+    // 先判断每个 z 行是否被 pack 完整覆盖；完整覆盖才把整块交给 CacheManager。
+    // 这样可以命中引擎的整行位图快路径；部分覆盖时回退到逐个 pack range（结果仍正确）。
+    std::vector<std::pair<int, int>> intervals;
+    for (int64_t z = range.minZ; z <= range.maxZ && fullyCovered; ++z) {
+        intervals.clear();
+        for (const auto& e : m_packs) {
+            if (z < e.rect.minZ || z > e.rect.maxZ) continue;
+            const int a = (std::max)(static_cast<int>(range.minX), e.rect.minX);
+            const int b = (std::min)(static_cast<int>(range.maxX), e.rect.maxX);
+            if (a <= b) intervals.emplace_back(a - range.minX, b - range.minX);
+        }
+        if (intervals.empty()) { fullyCovered = false; break; }
+        std::sort(intervals.begin(), intervals.end());
+        int64_t end = -1;
+        for (const auto& iv : intervals) {
+            if (iv.first > end + 1) { fullyCovered = false; break; }
+            end = (std::max)(end, static_cast<int64_t>(iv.second));
+        }
+        if (end < W - 1) fullyCovered = false;
+    }
+
+    if (!fullyCovered) {
+        // 部分覆盖：保留每个相交 pack 的独立范围。引擎会逐区块读缓存（不走整行直取）。
+        for (const auto& e : m_packs) {
+            const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
+            if (pr.maxX < range.minX || pr.minX > range.maxX ||
+                pr.maxZ < range.minZ || pr.minZ > range.maxZ) continue;
+            std::vector<uint8_t> bits;
+            if (!readPackBitmap(e, bits, err)) return false;
+            if (!target.addPackedBitmap(pr, bits.data(), bits.size())) {
+                if (err) *err = "缓存位图合并失败";
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 完整覆盖：按行把 pack 位图组装成整个 band 的连续位图，交给引擎整行快路径。
     for (const auto& e : m_packs) {
         const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
         if (pr.maxX < range.minX || pr.minX > range.maxX ||
             pr.maxZ < range.minZ || pr.minZ > range.maxZ) continue;
         std::vector<uint8_t> bits;
         if (!readPackBitmap(e, bits, err)) return false;
-        if (!target.addPackedBitmap(pr, bits.data(), bits.size())) {
-            if (err) *err = "缓存位图合并失败";
-            return false;
+        const int64_t pw = static_cast<int64_t>(pr.maxX) - pr.minX + 1;
+        const int x0 = (std::max)(range.minX, pr.minX);
+        const int x1 = (std::min)(range.maxX, pr.maxX);
+        const int dz0 = (std::max)(range.minZ, pr.minZ);
+        const int dz1 = (std::min)(range.maxZ, pr.maxZ);
+        for (int z = dz0; z <= dz1; ++z) {
+            const int64_t localZ = z - pr.minZ;
+            for (int x = x0; x <= x1; ++x) {
+                const int64_t bit = localZ * pw + (x - pr.minX);
+                if ((bits[static_cast<size_t>(bit / 8)] >> (bit % 8)) & 1u) {
+                    const int64_t dst = (static_cast<int64_t>(z) - range.minZ) * W + (x - range.minX);
+                    fullBits[static_cast<size_t>(dst / 8)] |= static_cast<uint8_t>(1u << (dst % 8));
+                }
+            }
         }
+    }
+    if (!target.addPackedBitmap(range, fullBits.data(), fullBits.size())) {
+        if (err) *err = "缓存整块位图合并失败";
+        return false;
     }
     return true;
 }
