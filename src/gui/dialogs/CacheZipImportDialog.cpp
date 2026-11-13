@@ -88,6 +88,8 @@ CacheZipImportDialog::CacheZipImportDialog(slime::cache::CacheStore* store, QWid
     m_progress->setRange(0, 1);
     m_progress->setValue(0);
     m_progress->setTextVisible(true);
+    m_progress->setFormat(QStringLiteral("导入 %v / %m"));
+    m_progress->setMinimumHeight(18);
     m_progress->setVisible(false);
     root->addWidget(m_progress);
 
@@ -176,7 +178,7 @@ void CacheZipImportDialog::refresh()
     m_start->setEnabled(valid > 0);
     m_hint->setText(valid ? QStringLiteral("%1 个文件可导入").arg(valid)
                           : QStringLiteral("尚未选择有效文件"));
-    if (!m_importing && m_progress) {
+    if (!m_importing && !m_hasResult && m_progress) {
         m_progress->setVisible(false);
         m_progress->setRange(0, 1);
         m_progress->setValue(0);
@@ -196,6 +198,7 @@ void CacheZipImportDialog::startImport()
     if (valid.empty()) return;
 
     m_importing = true;
+    m_hasResult = false;
     m_start->setEnabled(false);
     if (m_cancel) m_cancel->setEnabled(false);
     if (m_pick) m_pick->setEnabled(false);
@@ -207,6 +210,8 @@ void CacheZipImportDialog::startImport()
         m_progress->setVisible(true);
         m_progress->setRange(0, std::max(1, totalPacks));
         m_progress->setValue(0);
+        m_progress->setVisible(true);
+        m_progress->repaint();
     }
     m_hint->setText(QStringLiteral("后台导入中，请稍候…"));
 
@@ -244,6 +249,7 @@ void CacheZipImportDialog::startImport()
         }
         QMetaObject::invokeMethod(this, [this, imported, skipped, failed, errors]() {
             m_importing = false;
+            m_hasResult = true;
             m_start->setEnabled(true);
             if (m_cancel) m_cancel->setEnabled(true);
             if (m_pick) m_pick->setEnabled(true);

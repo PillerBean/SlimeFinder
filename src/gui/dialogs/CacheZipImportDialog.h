@@ -49,5 +49,6 @@ private:
     QProgressBar* m_progress = nullptr;
     std::vector<Item> m_items;
     bool m_importing = false;
+    bool m_hasResult = false;
     std::thread m_worker;
 };
