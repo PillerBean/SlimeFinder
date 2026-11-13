@@ -1,4 +1,4 @@
-// CacheDownloadDialog.h - v3.12.3：下载缓存管理页（本地 v3 pack 管理占位）
+﻿// CacheDownloadDialog.h - v3.12.3：下载缓存管理页（本地 v3 pack 管理占位）
 //
 // 当前尚未接入官方缓存目录/下载器；本对话框先完成“下载缓存”的页面结构：
 //   * 可下载页：等待联网目录接入；
@@ -22,6 +22,8 @@ class QPushButton;
 class QTableWidget;
 class QTabWidget;
 
+class QProgressBar;
+
 class CacheDownloadDialog : public QDialog {
 public:
     explicit CacheDownloadDialog(slime::cache::CacheStore* store, QWidget* parent = nullptr);
@@ -34,6 +36,8 @@ private:
     void refreshAvailable();
     void loadAvailable();
     void downloadSelected();
+    void startNextDownloads();
+    void finishDownloads();
     void updateSelectionUi();
     bool matchesRange(const slime::cache::CachePackEntry& e) const;
     bool matchesSearch(const slime::cache::CachePackEntry& e) const;
@@ -57,4 +61,12 @@ private:
     QVector<RemoteCachePack> m_availablePacks;
     int m_availableRange = 0;
     QString m_availableQuery;
+
+    QProgressBar* m_downloadProgress = nullptr;
+    QLabel* m_downloadProgressLabel = nullptr;
+    QVector<RemoteCachePack> m_downloadQueue;
+    int m_downloadTotal = 0;
+    int m_downloadDone = 0;
+    int m_downloadFailed = 0;
+    int m_downloadActive = 0;
 };

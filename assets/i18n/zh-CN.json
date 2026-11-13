@@ -1258,5 +1258,7 @@
   "ui.cache.download.import": "导入网盘缓存",
   "ui.cache.status.imported": "缓存已导入：%1 个缓存包（%2 MB）",
   "ui.cache.download.quota.warn": "R2 本月额度已使用 80% 以上，服务可能随时停止；请优先使用网盘备用下载。",
-  "ui.cache.download.quota.exhausted": "R2 本月服务额度已用尽，需要等待下个月恢复；期间只能尝试网盘下载。"
+  "ui.cache.download.quota.exhausted": "R2 本月服务额度已用尽，需要等待下个月恢复；期间只能尝试网盘下载。",
+  "ui.cache.download.progress": "正在下载 %1 / %2：%3",
+  "ui.cache.download.progress.done": "下载完成：成功 %1 个，失败 %2 个"
 }

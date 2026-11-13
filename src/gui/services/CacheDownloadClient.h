@@ -30,6 +30,7 @@ public:
     using ManifestCallback =
         std::function<void(bool ok, const QString& error, const QVector<RemoteCachePack>& packs)>;
     using DownloadCallback = std::function<void(bool ok, const QString& error)>;
+    using DownloadProgress = std::function<void(qint64 received, qint64 total)>;
 
     explicit CacheDownloadClient(QObject* parent = nullptr);
 
@@ -46,12 +47,12 @@ public:
 
     // packUrl 已由 manifest 解析；destPath 为最终 .slmz 路径，内部写 .part 后再校验/替换。
     void downloadPack(const QUrl& packUrl, const RemoteCachePack& pack, const QString& destPath,
-                      DownloadCallback done);
+                      DownloadCallback done, DownloadProgress progress = {});
 
     // 先主源，失败后尝试 fallbackUrl；两者均失败才回调失败。
     void downloadPackWithFallback(const QUrl& packUrl, const QUrl& fallbackUrl,
                                   const RemoteCachePack& pack, const QString& destPath,
-                                  DownloadCallback done);
+                                  DownloadCallback done, DownloadProgress progress = {});
 
     // 最近一次 manifest 请求返回的配额状态：ok / warn / exhausted。
     QString quotaWarning() const { return m_quotaWarning; }

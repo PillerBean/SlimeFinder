@@ -17,6 +17,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QProgressBar>
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -111,6 +112,22 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         bottomLay->addStretch(1);
         bottomLay->addWidget(m_downloadSelected);
         lay->addWidget(bottom);
+
+        auto* progressRow = new QWidget(page);
+        auto* progressLay = new QHBoxLayout(progressRow);
+        progressLay->setContentsMargins(0, 0, 0, 0);
+        progressLay->setSpacing(8);
+        m_downloadProgressLabel = new QLabel(progressRow);
+        m_downloadProgressLabel->setObjectName(QStringLiteral("topSummary"));
+        m_downloadProgress = new QProgressBar(progressRow);
+        m_downloadProgress->setRange(0, 1000);
+        m_downloadProgress->setValue(0);
+        m_downloadProgress->setTextVisible(false);
+        progressLay->addWidget(m_downloadProgressLabel, 1);
+        progressLay->addWidget(m_downloadProgress, 1);
+        m_downloadProgress->setVisible(false);
+        m_downloadProgressLabel->setVisible(false);
+        lay->addWidget(progressRow);
         tabs->addTab(page, slime::ui::t("ui.cache.download.r2tab"));
 
         connect(m_loadManifest, &QPushButton::clicked, this, [this]() { loadAvailable(); });
@@ -461,7 +478,7 @@ void CacheDownloadDialog::refreshAvailable()
 
 void CacheDownloadDialog::downloadSelected()
 {
-    if (!m_client || !m_availableTable) return;
+    if (!m_client || !m_availableTable || m_downloadActive > 0) return;
     QVector<RemoteCachePack> chosen;
     for (int r = 0; r < m_availableTable->rowCount(); ++r) {
         if (auto* it = m_availableTable->item(r, 0); it && it->checkState() == Qt::Checked) {
@@ -470,34 +487,98 @@ void CacheDownloadDialog::downloadSelected()
         }
     }
     if (chosen.isEmpty()) return;
+    m_downloadQueue = chosen;
+    m_downloadTotal = chosen.size();
+    m_downloadDone = 0;
+    m_downloadFailed = 0;
+    m_downloadActive = 0;
     m_downloadSelected->setEnabled(false);
-    const int totalCount = chosen.size();
-    auto pending = std::make_shared<int>(chosen.size());
-    auto failed = std::make_shared<int>(0);
-    for (const RemoteCachePack& p : chosen) {
+    if (m_downloadProgress) {
+        m_downloadProgress->setVisible(true);
+        m_downloadProgress->setValue(0);
+    }
+    if (m_downloadProgressLabel) {
+        m_downloadProgressLabel->setVisible(true);
+        m_downloadProgressLabel->setText(
+            slime::ui::t("ui.cache.download.progress").arg(0).arg(m_downloadTotal).arg(QStringLiteral("…")));
+    }
+    startNextDownloads();
+}
+
+void CacheDownloadDialog::startNextDownloads()
+{
+    constexpr int kParallel = 3; // Pages/R2 对 256 并发请求不友好；限制并发并保持反馈。
+    while (m_downloadActive < kParallel && !m_downloadQueue.isEmpty()) {
+        const RemoteCachePack p = m_downloadQueue.front();
+        m_downloadQueue.pop_front();
         const QString name = QFileInfo(p.file).fileName();
         if (name.isEmpty() || name.contains(QStringLiteral(".."))) {
-            --*pending;
+            ++m_downloadFailed;
+            ++m_downloadDone;
             continue;
         }
         QDir().mkpath(QString::fromStdWString((m_store->root() / "downloaded").wstring()));
         const auto dest = m_store->root() / "downloaded" / name.toStdWString();
-        m_client->downloadPackWithFallback(p.url, p.fallbackUrl, p, QString::fromStdWString(dest.wstring()),
-                               [this, p, dest, pending, failed, totalCount](bool ok, const QString& err) {
-            if (!ok) {
-                ++*failed;
-            } else {
-                std::string addErr;
-                if (!m_store->addPack(dest, slime::cache::CacheStore::kDownloadedDir, &addErr)) ++*failed;
-            }
-            if (--*pending == 0) {
-                if (m_availableStatus) m_availableStatus->setText(
-                    slime::ui::t("ui.cache.download.downloadedCount").arg(totalCount));
-                refresh();
-                if (onChanged) onChanged();
-            }
-        });
+        ++m_downloadActive;
+        if (m_downloadProgressLabel) {
+            m_downloadProgressLabel->setText(
+                slime::ui::t("ui.cache.download.progress")
+                    .arg(m_downloadDone + 1).arg(m_downloadTotal).arg(name));
+        }
+        if (m_downloadProgress) {
+            m_downloadProgress->setValue(
+                m_downloadTotal > 0 ? (m_downloadDone * 1000 / m_downloadTotal) : 0);
+        }
+        m_client->downloadPackWithFallback(
+            p.url, p.fallbackUrl, p, QString::fromStdWString(dest.wstring()),
+            [this, name, dest](bool ok, const QString& err) {
+                --m_downloadActive;
+                if (!ok) {
+                    ++m_downloadFailed;
+                } else {
+                    std::string addErr;
+                    if (!m_store->addPack(dest, slime::cache::CacheStore::kDownloadedDir, &addErr)) {
+                        ++m_downloadFailed;
+                        if (m_availableStatus) m_availableStatus->setText(
+                            slime::ui::t("ui.cache.download.failed").arg(name, QString::fromStdString(addErr)));
+                    }
+                }
+                ++m_downloadDone;
+                if (m_downloadProgress) {
+                    m_downloadProgress->setValue(
+                        m_downloadTotal > 0 ? (m_downloadDone * 1000 / m_downloadTotal) : 1000);
+                }
+                if (m_downloadProgressLabel) {
+                    m_downloadProgressLabel->setText(
+                        slime::ui::t("ui.cache.download.progress.done")
+                            .arg(m_downloadDone - m_downloadFailed).arg(m_downloadFailed));
+                }
+                startNextDownloads();
+            },
+            [this, name](qint64 got, qint64 total) {
+                if (m_downloadProgressLabel) {
+                    const int pct = total > 0 ? static_cast<int>(got * 100 / total) : 0;
+                    m_downloadProgressLabel->setText(
+                        slime::ui::t("ui.cache.download.progress")
+                            .arg(m_downloadDone + 1).arg(m_downloadTotal)
+                            .arg(QStringLiteral("%1 (%2%)").arg(name).arg(pct)));
+                }
+            });
     }
+    if (m_downloadActive == 0 && m_downloadQueue.isEmpty()) finishDownloads();
+}
+
+void CacheDownloadDialog::finishDownloads()
+{
+    if (m_downloadSelected) m_downloadSelected->setEnabled(m_availableTable && m_availableTable->rowCount() > 0);
+    if (m_downloadProgress) m_downloadProgress->setValue(1000);
+    if (m_downloadProgressLabel) {
+        m_downloadProgressLabel->setText(
+            slime::ui::t("ui.cache.download.progress.done")
+                .arg(m_downloadDone - m_downloadFailed).arg(m_downloadFailed));
+    }
+    refresh();
+    if (onChanged) onChanged();
 }
 
 void CacheDownloadDialog::refresh()

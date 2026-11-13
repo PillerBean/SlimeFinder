@@ -1258,5 +1258,7 @@
   "ui.cache.download.import": "Import netdisk cache",
   "ui.cache.status.imported": "Cache imported: %1 packs (%2 MB)",
   "ui.cache.download.quota.warn": "R2 monthly quota is above 80%; service may stop soon. Prefer the netdisk fallback.",
-  "ui.cache.download.quota.exhausted": "R2 monthly quota is exhausted. Wait until next month; only the netdisk fallback is available."
+  "ui.cache.download.quota.exhausted": "R2 monthly quota is exhausted. Wait until next month; only the netdisk fallback is available.",
+  "ui.cache.download.progress": "Downloading %1 / %2: %3",
+  "ui.cache.download.progress.done": "Download finished: %1 succeeded, %2 failed"
 }

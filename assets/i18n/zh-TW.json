@@ -1258,5 +1258,7 @@
   "ui.cache.download.import": "匯入網盤快取",
   "ui.cache.status.imported": "快取已匯入：%1 個快取包（%2 MB）",
   "ui.cache.download.quota.warn": "R2 本月額度已使用 80% 以上，服務可能隨時停止；請優先使用網盤備用下載。",
-  "ui.cache.download.quota.exhausted": "R2 本月服務額度已用盡，需要等待下個月恢復；期間只能嘗試網盤下載。"
+  "ui.cache.download.quota.exhausted": "R2 本月服務額度已用盡，需要等待下個月恢復；期間只能嘗試網盤下載。",
+  "ui.cache.download.progress": "正在下載 %1 / %2：%3",
+  "ui.cache.download.progress.done": "下載完成：成功 %1 個，失敗 %2 個"
 }

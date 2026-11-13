@@ -106,6 +106,7 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
     QNetworkRequest req(manifestUrl);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     req.setRawHeader("User-Agent", "SlimeFinder/3.12.3");
+    req.setTransferTimeout(30000);
     auto* reply = m_net->get(req);
     QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, manifestUrl, done]() {
         reply->deleteLater();
@@ -164,7 +165,8 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
 }
 
 void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePack& pack,
-                                       const QString& destPath, DownloadCallback done)
+                                       const QString& destPath, DownloadCallback done,
+                                       DownloadProgress progress)
 {
     if (!packUrl.isValid()) {
         done(false, QStringLiteral("缓存包 URL 无效"));
@@ -176,10 +178,15 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
     QNetworkRequest req(packUrl);
     req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     req.setRawHeader("User-Agent", "SlimeFinder/3.12.3");
+    req.setTransferTimeout(45000);
     if (offset > 0) {
         req.setRawHeader("Range", QByteArray("bytes=") + QByteArray::number(offset) + "-");
     }
     auto* reply = m_net->get(req);
+    if (progress) {
+        QObject::connect(reply, &QNetworkReply::downloadProgress, this,
+                         [progress](qint64 got, qint64 total) { progress(got, total); });
+    }
     QObject::connect(reply, &QNetworkReply::finished, this,
                      [reply, partPath, destPath, pack, offset, done]() {
                          reply->deleteLater();
@@ -245,13 +252,13 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
 
 void CacheDownloadClient::downloadPackWithFallback(const QUrl& packUrl, const QUrl& fallbackUrl,
                                                    const RemoteCachePack& pack, const QString& destPath,
-                                                   DownloadCallback done)
+                                                   DownloadCallback done, DownloadProgress progress)
 {
     if (fallbackUrl.isEmpty() || fallbackUrl == packUrl) {
-        downloadPack(packUrl, pack, destPath, done);
+        downloadPack(packUrl, pack, destPath, done, progress);
         return;
     }
-    downloadPack(packUrl, pack, destPath, [this, fallbackUrl, pack, destPath, done](bool ok, const QString& err) {
+    downloadPack(packUrl, pack, destPath, [this, fallbackUrl, pack, destPath, done, progress](bool ok, const QString& err) {
         if (ok) {
             done(true, {});
             return;
