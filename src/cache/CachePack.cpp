@@ -86,7 +86,7 @@ bool writePack(const std::filesystem::path& path, const PackRect& rect, const ui
     const uint64_t blocksX = static_cast<uint64_t>(rect.width() / kPackBlockChunks);
     const uint64_t blocksZ = static_cast<uint64_t>(rect.height() / kPackBlockChunks);
     const uint64_t blockCount = blocksX * blocksZ;
-    if (blockCount == 0 || blockCount > kPackMaxBlocks) return fail("pack 区块数超出 1..16");
+    if (blockCount == 0 || blockCount > kPackMaxBlocks) return fail("pack 区块数超出 1..64");
     const size_t needed = static_cast<size_t>((rect.area() + 7) / 8);
     if (needed > bitmapBytes) return fail("pack 位图长度不足");
 
@@ -286,14 +286,27 @@ bool readPack(const std::filesystem::path& path, PackInfo& info, std::vector<uin
                 if (err) *err = "pack 校验失败";
                 return false;
             }
-            for (int row = 0; row < kPackBlockChunks; ++row) {
-                const int64_t zRel = static_cast<int64_t>(bz) * kPackBlockChunks + row;
-                const int64_t xRelBase = static_cast<int64_t>(bx) * kPackBlockChunks;
-                for (int col = 0; col < kPackBlockChunks; ++col) {
-                    const size_t srcBit = static_cast<size_t>(row) * kPackBlockChunks + col;
-                    if ((src[srcBit / 8] >> (srcBit % 8)) & 1u) {
-                        const size_t dst = static_cast<size_t>(zRel * h.rect.width() + xRelBase + col);
-                        out[dst / 8] |= static_cast<uint8_t>(1u << (dst % 8));
+            const int64_t width = h.rect.width();
+            const size_t blockRowBytes = static_cast<size_t>(kPackBlockChunks) / 8;
+            if (width % 8 == 0) {
+                const size_t dstRowBytes = static_cast<size_t>(width) / 8;
+                for (int row = 0; row < kPackBlockChunks; ++row) {
+                    const int64_t zRel = static_cast<int64_t>(bz) * kPackBlockChunks + row;
+                    const int64_t xRelBase = static_cast<int64_t>(bx) * kPackBlockChunks;
+                    const size_t dst = static_cast<size_t>((zRel * width + xRelBase) / 8);
+                    std::memcpy(out.data() + dst, src + static_cast<size_t>(row) * blockRowBytes,
+                                blockRowBytes);
+                }
+            } else {
+                for (int row = 0; row < kPackBlockChunks; ++row) {
+                    const int64_t zRel = static_cast<int64_t>(bz) * kPackBlockChunks + row;
+                    const int64_t xRelBase = static_cast<int64_t>(bx) * kPackBlockChunks;
+                    for (int col = 0; col < kPackBlockChunks; ++col) {
+                        const size_t srcBit = static_cast<size_t>(row) * kPackBlockChunks + col;
+                        if ((src[srcBit / 8] >> (srcBit % 8)) & 1u) {
+                            const size_t dst = static_cast<size_t>(zRel * width + xRelBase + col);
+                            out[dst / 8] |= static_cast<uint8_t>(1u << (dst % 8));
+                        }
                     }
                 }
             }

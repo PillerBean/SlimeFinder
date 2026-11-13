@@ -196,6 +196,22 @@ void CacheManager::mergeRegion(const Rect& region, const std::vector<std::pair<i
     }
 }
 
+bool CacheManager::addPackedWords(const Rect& region, const uint64_t* words, size_t wordCount)
+{
+    if (!region.valid() || !words || wordCount == 0) return false;
+    const size_t idx = ensureRange(region);
+    Bitmap& b = m_bitmaps[idx];
+    const size_t n = static_cast<size_t>(b.wordsPerRow * b.rows);
+    if (wordCount < n) return false;
+    for (size_t i = 0; i < n; ++i) {
+        const uint64_t old = b.bits[i];
+        const uint64_t add = words[i] & ~old;
+        b.bits[i] = old | words[i];
+        m_uniqueEntries += static_cast<int64_t>(__popcnt64(add));
+    }
+    return true;
+}
+
 bool CacheManager::addPackedBitmap(const Rect& region, const uint8_t* bits, size_t bytes)
 {
     if (!region.valid() || !bits) return false;
@@ -203,18 +219,23 @@ bool CacheManager::addPackedBitmap(const Rect& region, const uint8_t* bits, size
     const int64_t h = static_cast<int64_t>(region.maxZ) - region.minZ + 1;
     const size_t needed = static_cast<size_t>((w * h + 7) / 8);
     if (bytes < needed) return false;
-    const size_t idx = ensureRange(region);
+    const int64_t wpr = (w + 63) / 64;
+    std::vector<uint64_t> words(static_cast<size_t>(wpr * h), 0ULL);
     for (int64_t z = 0; z < h; ++z) {
-        for (int64_t x = 0; x < w; ++x) {
-            const size_t bit = static_cast<size_t>(z * w + x);
-            if ((bits[bit / 8] >> (bit % 8)) & 1u) {
-                if (setBit(idx, static_cast<int>(region.minX + x), static_cast<int>(region.minZ + z))) {
-                    ++m_uniqueEntries;
-                }
+        const int64_t srcBase = z * w;
+        for (int64_t wi = 0; wi < wpr; ++wi) {
+            uint64_t v = 0;
+            const int64_t xBase = wi * 64;
+            for (int b = 0; b < 64; ++b) {
+                const int64_t x = xBase + b;
+                if (x >= w) break;
+                const int64_t bit = srcBase + x;
+                v |= static_cast<uint64_t>((bits[bit >> 3] >> (bit & 7)) & 1u) << b;
             }
+            words[static_cast<size_t>(z * wpr + wi)] = v;
         }
     }
-    return true;
+    return addPackedWords(region, words.data(), words.size());
 }
 
 void CacheManager::mergeRaw(const std::vector<Rect>& ranges, const std::vector<std::pair<int, int>>& slimeChunks)

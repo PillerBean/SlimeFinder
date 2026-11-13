@@ -374,25 +374,26 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
         int64_t wpr = 0, rows = 0;
         const uint64_t* words = source.rangeBitmap(ri, &wpr, &rows);
         if (!words || wpr <= 0 || rows <= 0) continue;
-        // 向外扩到 1024 对齐：边缘块不足 1024 的部分用 Bedrock 判定补齐，
-        // 这样 pack 总是完整的 1024 tile，同时不会留下未缓存边缘。
+        // 统一向外扩到 8192 对齐：边缘不足 8192 的部分用 Bedrock 判定补齐。
+        // pack 覆盖范围固定 8192×8192（内部仍是 64 个 1024×1024 zstd block）。
+        constexpr int64_t kTile = kPackTileChunks;
         const int64_t tileX0 = (static_cast<int64_t>(r.minX) >= 0)
-            ? (static_cast<int64_t>(r.minX) / 1024) * 1024
-            : -(((-static_cast<int64_t>(r.minX)) + 1023) / 1024) * 1024;
+            ? (static_cast<int64_t>(r.minX) / kTile) * kTile
+            : -(((-static_cast<int64_t>(r.minX)) + kTile - 1) / kTile) * kTile;
         const int64_t tileZ0 = (static_cast<int64_t>(r.minZ) >= 0)
-            ? (static_cast<int64_t>(r.minZ) / 1024) * 1024
-            : -(((-static_cast<int64_t>(r.minZ)) + 1023) / 1024) * 1024;
-        const int64_t tileX1 = ((static_cast<int64_t>(r.maxX) + 1 + 1023) / 1024) * 1024;
-        const int64_t tileZ1 = ((static_cast<int64_t>(r.maxZ) + 1 + 1023) / 1024) * 1024;
-        for (int64_t tz = tileZ0; tz < tileZ1; tz += 1024) {
-            for (int64_t tx = tileX0; tx < tileX1; tx += 1024) {
-                const PackRect pr{ static_cast<int32_t>(tx), static_cast<int32_t>(tx + 1023),
-                                   static_cast<int32_t>(tz), static_cast<int32_t>(tz + 1023) };
-                std::vector<uint8_t> bits((1024 * 1024 + 7) / 8, 0);
-                for (int row = 0; row < 1024; ++row) {
+            ? (static_cast<int64_t>(r.minZ) / kTile) * kTile
+            : -(((-static_cast<int64_t>(r.minZ)) + kTile - 1) / kTile) * kTile;
+        const int64_t tileX1 = ((static_cast<int64_t>(r.maxX) + 1 + kTile - 1) / kTile) * kTile;
+        const int64_t tileZ1 = ((static_cast<int64_t>(r.maxZ) + 1 + kTile - 1) / kTile) * kTile;
+        for (int64_t tz = tileZ0; tz < tileZ1; tz += kTile) {
+            for (int64_t tx = tileX0; tx < tileX1; tx += kTile) {
+                const PackRect pr{ static_cast<int32_t>(tx), static_cast<int32_t>(tx + kTile - 1),
+                                   static_cast<int32_t>(tz), static_cast<int32_t>(tz + kTile - 1) };
+                std::vector<uint8_t> bits(static_cast<size_t>((kTile * kTile + 7) / 8), 0);
+                for (int64_t row = 0; row < kTile; ++row) {
                     const int64_t z = tz + row;
                     const auto srcBitBase = static_cast<size_t>((z - r.minZ) * wpr * 64);
-                    for (int col = 0; col < 1024; ++col) {
+                    for (int64_t col = 0; col < kTile; ++col) {
                         const int64_t x = tx + col;
                         const size_t srcBit = srcBitBase + static_cast<size_t>(x - r.minX);
                         bool slime = false;
@@ -403,7 +404,7 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
                             slime = slime::SlimeEngine::isSlimeChunkBedrockMT(static_cast<int>(x), static_cast<int>(z));
                         }
                         if (slime) {
-                            const size_t dst = static_cast<size_t>(row) * 1024 + col;
+                            const size_t dst = static_cast<size_t>(row * kTile + col);
                             bits[dst / 8] |= static_cast<uint8_t>(1u << (dst % 8));
                         }
                     }
@@ -429,7 +430,7 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
         }
     }
     if (!wrote) {
-        if (err) *err = "缓存范围没有完整的 1024 对齐区块可写入";
+        if (err) *err = "缓存范围没有完整的 8192 对齐区块可写入";
         return false;
     }
     return save(err);
@@ -520,6 +521,30 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
     return true;
 }
 
+bool CacheStore::coversRange(const slime::Rect& range) const
+{
+    if (!range.valid()) return false;
+    std::vector<std::pair<int, int>> intervals;
+    for (int64_t z = range.minZ; z <= range.maxZ; ++z) {
+        intervals.clear();
+        for (const auto& e : m_packs) {
+            if (z < e.rect.minZ || z > e.rect.maxZ) continue;
+            const int a = (std::max)(static_cast<int>(range.minX), e.rect.minX);
+            const int b = (std::min)(static_cast<int>(range.maxX), e.rect.maxX);
+            if (a <= b) intervals.emplace_back(a - range.minX, b - range.minX);
+        }
+        if (intervals.empty()) return false;
+        std::sort(intervals.begin(), intervals.end());
+        int64_t end = -1;
+        for (const auto& iv : intervals) {
+            if (iv.first > end + 1) return false;
+            end = (std::max)(end, static_cast<int64_t>(iv.second));
+        }
+        if (end < static_cast<int64_t>(range.maxX) - range.minX) return false;
+    }
+    return true;
+}
+
 bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err) const
 {
     target.clear();
@@ -527,13 +552,10 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
 
     const int64_t W = static_cast<int64_t>(range.maxX) - range.minX + 1;
     const int64_t H = static_cast<int64_t>(range.maxZ) - range.minZ + 1;
-    const size_t fullBytes = static_cast<size_t>((W * H + 7) / 8);
-    std::vector<uint8_t> fullBits(fullBytes, 0);
-    std::vector<const CachePackEntry*> hits;
-    bool fullyCovered = true;
+    const int64_t wpr = (W + 63) / 64;
 
-    // 先判断每个 z 行是否被 pack 完整覆盖；完整覆盖才把整块交给 CacheManager。
-    // 这样可以命中引擎的整行位图快路径；部分覆盖时回退到逐个 pack range（结果仍正确）。
+    // 先判断每一行是否被 pack 完整覆盖；完整覆盖才走整带连续位图快路径。
+    bool fullyCovered = true;
     std::vector<std::pair<int, int>> intervals;
     for (int64_t z = range.minZ; z <= range.maxZ && fullyCovered; ++z) {
         intervals.clear();
@@ -554,7 +576,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
     }
 
     if (!fullyCovered) {
-        // 部分覆盖：保留每个相交 pack 的独立范围。引擎会逐区块读缓存（不走整行直取）。
+        // 部分覆盖：逐个 pack 写入范围位图（引擎按区块读缓存，不做整行快路径）。
         for (const auto& e : m_packs) {
             const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
             if (pr.maxX < range.minX || pr.minX > range.maxX ||
@@ -569,7 +591,10 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
         return true;
     }
 
-    // 完整覆盖：按行把 pack 位图组装成整个 band 的连续位图，交给引擎整行快路径。
+    // 完整覆盖：按行把 pack 位图合并成整带连续位图。使用 64 位字拷贝，
+    // 不再先构造 fullBits 再逐 bit 写入 CacheManager。
+    std::vector<uint64_t> fullWords(static_cast<size_t>(wpr * H), 0ULL);
+    std::vector<uint8_t> rowBuf;
     for (const auto& e : m_packs) {
         const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
         if (pr.maxX < range.minX || pr.minX > range.maxX ||
@@ -577,23 +602,50 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
         std::vector<uint8_t> bits;
         if (!readPackBitmap(e, bits, err)) return false;
         const int64_t pw = static_cast<int64_t>(pr.maxX) - pr.minX + 1;
+        const int64_t rowBytes = (pw + 7) / 8;
+        if (rowBuf.size() < static_cast<size_t>(rowBytes + 16)) rowBuf.resize(static_cast<size_t>(rowBytes + 16));
         const int x0 = (std::max)(range.minX, pr.minX);
         const int x1 = (std::min)(range.maxX, pr.maxX);
         const int dz0 = (std::max)(range.minZ, pr.minZ);
         const int dz1 = (std::min)(range.maxZ, pr.maxZ);
         for (int z = dz0; z <= dz1; ++z) {
-            const int64_t localZ = z - pr.minZ;
-            for (int x = x0; x <= x1; ++x) {
-                const int64_t bit = localZ * pw + (x - pr.minX);
-                if ((bits[static_cast<size_t>(bit / 8)] >> (bit % 8)) & 1u) {
-                    const int64_t dst = (static_cast<int64_t>(z) - range.minZ) * W + (x - range.minX);
-                    fullBits[static_cast<size_t>(dst / 8)] |= static_cast<uint8_t>(1u << (dst % 8));
+            std::fill(rowBuf.begin(), rowBuf.end(), 0);
+            const int64_t localZ = static_cast<int64_t>(z) - pr.minZ;
+            const size_t srcOffset = static_cast<size_t>(localZ * rowBytes);
+            if (srcOffset + static_cast<size_t>(rowBytes) > bits.size()) {
+                if (err) *err = "缓存 pack 位图长度不足";
+                return false;
+            }
+            std::memcpy(rowBuf.data(), bits.data() + srcOffset, static_cast<size_t>(rowBytes));
+            int srcBit = x0 - pr.minX;
+            int dstBit = static_cast<int>((static_cast<int64_t>(z) - range.minZ) * (wpr * 64) +
+                                          (x0 - range.minX));
+            int remain = x1 - x0 + 1;
+            while (remain > 0) {
+                const int chunk = (std::min)(64, remain);
+                const size_t byte = static_cast<size_t>(srcBit >> 3);
+                const int shift = srcBit & 7;
+                uint64_t lo = 0, hi = 0;
+                std::memcpy(&lo, rowBuf.data() + byte, 8);
+                std::memcpy(&hi, rowBuf.data() + byte + 8, 8);
+                uint64_t v = (lo >> shift);
+                if (shift != 0) v |= (hi << (64 - shift));
+                if (chunk < 64) v &= ((1ULL << chunk) - 1ULL);
+                const int dw = dstBit >> 6;
+                const int ds = dstBit & 63;
+                fullWords[static_cast<size_t>(dw)] |= (v << ds);
+                if (ds != 0 && ds + chunk > 64 &&
+                    static_cast<size_t>(dw + 1) < fullWords.size()) {
+                    fullWords[static_cast<size_t>(dw + 1)] |= (v >> (64 - ds));
                 }
+                srcBit += chunk;
+                dstBit += chunk;
+                remain -= chunk;
             }
         }
     }
-    if (!target.addPackedBitmap(range, fullBits.data(), fullBits.size())) {
-        if (err) *err = "缓存整块位图合并失败";
+    if (!target.addPackedWords(range, fullWords.data(), fullWords.size())) {
+        if (err) *err = "缓存整带位图合并失败";
         return false;
     }
     return true;

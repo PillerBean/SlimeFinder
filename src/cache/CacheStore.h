@@ -70,6 +70,8 @@ public:
     bool fillCacheManager(CacheManager& target, std::string* err = nullptr) const;
     // 只把与 range 相交的 pack 读入 target；用于基岩搜索的分带缓存。
     bool fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err = nullptr) const;
+    // 元数据判断：所有 pack 是否完整覆盖指定矩形（不读位图）。
+    bool coversRange(const slime::Rect& range) const;
 
     // 把现有 CacheManager 的完整 1024 对齐子区域写成 local packs。
     // 未对齐/不足一个 1024 块的边缘不会被写入（避免把未计算区域声明为已覆盖）。

@@ -2,7 +2,7 @@
 //
 // 设计目标：
 //   * 目录 + 多 pack（index.json 由后续 CacheStore 负责）；
-//   * 每 pack 原始约 16 MiB，block 原始 128 KiB；
+//   * 每 pack 原始约 8 MiB（8192×8192 区块），block 原始 128 KiB；
 //   * 每个 block 独立 zstd 压缩，压缩不划算时存 raw；
 //   * pack 之间/块之间不共享压缩字典，便于后续按块下载、随机读取。
 //
@@ -18,8 +18,9 @@
 
 namespace slime::cache {
 
-constexpr int kPackBlockChunks = 1024;   // 1024 x 1024 区块 = 128 KiB 原始位图
-constexpr int kPackMaxBlocks = 16;       // 约 16 MiB 原始数据/pack
+constexpr int kPackBlockChunks = 1024;   // 内部压缩 block：1024 x 1024 区块 = 128 KiB
+constexpr int kPackTileChunks = 8192;    // v3.12.3 统一 pack 覆盖：8192 x 8192 区块
+constexpr int kPackMaxBlocks = 64;       // 8192×8192 = 64 个 1024 block
 
 struct PackRect {
     int32_t minX = 0;

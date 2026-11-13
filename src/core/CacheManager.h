@@ -64,6 +64,8 @@ public:
 
     // v3.12.3：直接合并按行主序打包的位图，避免展开成 pair<int,int>。
     bool addPackedBitmap(const Rect& region, const uint8_t* bits, size_t bytes);
+    // 直接写入已按 CacheManager 行宽打包的位图（每行 wordsPerRow 个字）。
+    bool addPackedWords(const Rect& region, const uint64_t* words, size_t wordCount);
 
     // ---- 磁盘 IO ----
     // replace=true：整文件替换内存内容（启动加载）；false：与内存合并（导入）

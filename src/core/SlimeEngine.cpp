@@ -4781,10 +4781,13 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
 
     const int64_t x0 = optIn.minX, x1 = optIn.maxX;
     const int64_t z0 = optIn.minZ, z1 = optIn.maxZ;
-    const int64_t coreW = bandSize;
+    const int64_t coreW = std::clamp<int64_t>(bandSize, 64, 16384);
     const int64_t nx = std::max<int64_t>(1, (x1 - x0 + coreW) / coreW);
     const int64_t nz = std::max<int64_t>(1, (z1 - z0 + coreW) / coreW);
     const int64_t totalBands = nx * nz;
+    // 单带无 halo 仅用于小范围；大范围绝不一次性把整张缓存位图读进内存。
+    const int64_t totalChunks = (x1 - x0 + 1) * (z1 - z0 + 1);
+    const bool safeSingleBand = (totalBands == 1) && (totalChunks <= 4LL * 1024 * 1024);
 
     const bool byDensity = optIn.ignoreThreshold; // 最优候选：结果按窗口史莱姆数排序
     const auto dist2 = [&](const MatchResult& r) {
@@ -4821,6 +4824,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     int64_t windows = 0;
     int64_t chunksPruned = 0;
     double scanMs = 0, matchMs = 0, totalMs = 0;
+    double cacheLoadMs = 0;
     int64_t cacheHitPoints = 0;
     int64_t cacheFirstChunks = 0;
     bool cacheFillSkipped = false;
@@ -4866,10 +4870,23 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             }
             Rect core{ static_cast<int>(cx0), static_cast<int>(cx1),
                        static_cast<int>(cz0), static_cast<int>(cz1) };
-            Rect loaded{ static_cast<int>(cx0) - halo, static_cast<int>(cx1) + halo,
-                         static_cast<int>(cz0) - halo, static_cast<int>(cz1) + halo };
+            // 单带（完全覆盖的整范围）不需要 halo；halo 只服务多带边界。
+            Rect loaded = safeSingleBand
+                              ? core
+                              : Rect{ static_cast<int>(cx0) - halo, static_cast<int>(cx1) + halo,
+                                      static_cast<int>(cz0) - halo, static_cast<int>(cz1) + halo };
+            // 不把 halo 扩到用户搜索范围之外：边界 band 没有必要读取范围外缓存，
+            // 否则整块覆盖判断失败，会退化为逐 pack 合并，反而拖慢缓存准备。
+            loaded.minX = (std::max)(loaded.minX, static_cast<int>(optIn.minX));
+            loaded.maxX = (std::min)(loaded.maxX, static_cast<int>(optIn.maxX));
+            loaded.minZ = (std::max)(loaded.minZ, static_cast<int>(optIn.minZ));
+            loaded.maxZ = (std::min)(loaded.maxZ, static_cast<int>(optIn.maxZ));
 
+            const auto cacheT0 = std::chrono::steady_clock::now();
             std::shared_ptr<CacheManager> bandCache = optIn.cacheBandLoader(loaded);
+            // 缓存准备（读 pack / 组装整带位图）必须计入用户看到的实际耗时。
+            cacheLoadMs += std::chrono::duration<double, std::milli>(
+                               std::chrono::steady_clock::now() - cacheT0).count();
             if (!bandCache) bandCache = std::make_shared<CacheManager>();
 
             SearchOptions bandOpt = optIn;
@@ -4967,7 +4984,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     out.stats.windowsEvaluated = windows;
     out.stats.scanMs = scanMs;
     out.stats.matchMs = matchMs;
-    out.stats.totalMs = totalMs;
+    out.stats.cacheLoadMs = cacheLoadMs;
+    out.stats.totalMs = totalMs + cacheLoadMs;
     out.chunksPruned = chunksPruned;
     out.chunkedPath = true;
 }

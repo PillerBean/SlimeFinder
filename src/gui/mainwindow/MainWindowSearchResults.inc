@@ -1,4 +1,4 @@
-// v3.12.0：搜索、构建与结果处理逻辑。
+﻿// v3.12.0：搜索、构建与结果处理逻辑。
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {

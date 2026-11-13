@@ -89,7 +89,7 @@ int main()
         cached.useCache = true;
         cached.minX = -testRange; cached.maxX = testRange - 1;
         cached.minZ = -testRange; cached.maxZ = testRange - 1;
-        cached.cacheBandSize = testRange > 512 ? 4096 : 64;
+        cached.cacheBandSize = testRange > 512 ? (std::getenv("SLIME_TEST_BAND") ? std::atoi(std::getenv("SLIME_TEST_BAND")) : 4096) : 64;
         cached.cacheBandLoader = [](const slime::Rect& band) {
             auto cm = std::make_shared<slime::CacheManager>();
             std::vector<std::pair<int, int>> slime;
@@ -151,10 +151,11 @@ int main()
                         banded.results.size());
             return 1;
         }
-        std::printf("real-store OK results=%zu packs=%zu range=%d plain_ms=%.1f banded_ms=%.1f cacheHit=%lld\n",
+        std::printf("real-store OK results=%zu packs=%zu range=%d plain_ms=%.1f banded_ms=%.1f reported_ms=%.1f cacheLoad_ms=%.1f cacheHit=%lld\n",
                     plain.results.size(), store.packs().size(), testRange,
                     std::chrono::duration<double, std::milli>(p1 - p0).count(),
                     std::chrono::duration<double, std::milli>(b1 - b0).count(),
+                    banded.stats.totalMs, banded.stats.cacheLoadMs,
                     static_cast<long long>(banded.cacheHitPoints));
     }
     std::printf("cache band test OK\n");

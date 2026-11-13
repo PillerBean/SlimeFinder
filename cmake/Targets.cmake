@@ -1,4 +1,4 @@
-# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
+﻿# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
 
 # ---------------------------------------------------------------- zstd（BSD）：缓存块压缩
 # 自包含 vendored 源码，不依赖系统 zstd。
@@ -253,6 +253,15 @@ target_include_directories(slime_cache_band_tests PRIVATE ${CMAKE_CURRENT_SOURCE
 target_link_libraries(slime_cache_band_tests PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_cache_band_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_repack_packs
+    tools/cache/repack_1024_to_8192.cpp
+)
+target_include_directories(slime_repack_packs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_repack_packs PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_repack_packs PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
 add_executable(slime_cache_zip_tests

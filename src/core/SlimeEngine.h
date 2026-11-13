@@ -346,7 +346,7 @@ struct SearchOptions {
     CacheBandLoader cacheBandLoader;
     // 仅读元数据的快速提示：band 是否可能与缓存相交（用于缓存优先排序）。
     std::function<bool(const Rect& band)> cacheBandMayCover;
-    int cacheBandSize = 4096; // 每个核心 band 的边长（区块）
+    int cacheBandSize = 8192; // 每个核心 band 的边长（区块，与固定 pack 覆盖一致）
     // v3.1.2：分块路径的增量缓存写入（每块完成即合并，避免整图收集导致缓存为空/内存爆炸）
     CacheManager* cacheWrite = nullptr; // 可与 cache 为同一对象；仅分块路径使用
     int64_t cacheBudgetBytes = 0;       // >0：每次合并后按此预算丢弃最旧分块覆盖声明
@@ -377,7 +377,8 @@ struct SearchStats {
     int64_t windowsEvaluated = 0;   // 匹配窗口数
     double scanMs = 0.0;            // 扫描耗时（毫秒）
     double matchMs = 0.0;           // 匹配耗时（毫秒）
-    double totalMs = 0.0;           // 总耗时（毫秒）
+    double totalMs = 0.0;           // 总耗时（毫秒，分带缓存时包含缓存准备）
+    double cacheLoadMs = 0.0;       // 分带缓存准备耗时（毫秒）
     // v3.3.8（任务 6 / E3）：填充与密度滑窗**独立**计时（用于判据「滑窗耗时可随位图缩小而下降吗」）
     double fillMs = 0.0;            // 填充（扫描/史莱姆判定 + 置位）阶段耗时
     double slideWindowMs = 0.0;     // 密度滑动窗口（vertSum 行块滑窗）路径耗时；非滑窗路径恒为 0
