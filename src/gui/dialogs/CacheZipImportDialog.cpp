@@ -259,17 +259,13 @@ void CacheZipImportDialog::startImport()
                 m_progress->setVisible(true);
             }
             setWindowFlag(Qt::WindowCloseButtonHint, true);
-            if (!errors.isEmpty()) {
-                QMessageBox::warning(this, QStringLiteral("导入结果"),
-                                     QStringLiteral("导入完成。\n新增 %1 个 pack，跳过 %2 个，失败 %3 个。\n\n%4")
-                                         .arg(imported).arg(skipped).arg(failed).arg(errors.join(QChar('\n'))));
-            } else {
-                QMessageBox::information(this, QStringLiteral("导入结果"),
-                                         QStringLiteral("导入完成。\n新增 %1 个 pack，跳过重复 %2 个。")
-                                             .arg(imported).arg(skipped));
-            }
-            if (onImported) onImported();
+            QString result = QStringLiteral("导入完成：新增 %1 个 pack，跳过重复 %2 个，失败 %3 个。")
+                                 .arg(imported).arg(skipped).arg(failed);
+            if (!errors.isEmpty()) result += QStringLiteral("\n%1").arg(errors.join(QChar('\n')));
+            // 先刷新本窗口，再写结果；否则 refresh() 会覆盖完成提示。
             refresh();
+            if (m_hint) m_hint->setText(result);
+            if (onImported) onImported();
         }, Qt::QueuedConnection);
     });
 }
