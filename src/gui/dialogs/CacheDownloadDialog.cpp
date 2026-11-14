@@ -21,6 +21,7 @@
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <QTimer>
 
 #include <algorithm>
 #include <memory>
@@ -67,10 +68,9 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         m_availableStatus->setWordWrap(true);
         toolsLay->addWidget(m_loadManifest);
         auto* rangeAll = new QPushButton(slime::ui::t("ui.cache.download.quick.all"), tools);
-        auto* rangeNear = new QPushButton(slime::ui::t("ui.cache.download.quick.near"), tools);
         auto* rangeLocal = new QPushButton(slime::ui::t("ui.cache.download.quick.local"), tools);
         auto* rangeLarge = new QPushButton(slime::ui::t("ui.cache.download.quick.large"), tools);
-        for (QPushButton* b : { rangeAll, rangeNear, rangeLocal, rangeLarge }) {
+        for (QPushButton* b : { rangeAll, rangeLocal, rangeLarge }) {
             b->setCheckable(true);
             toolsLay->addWidget(b);
         }
@@ -78,7 +78,6 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
         auto* rangeGroup = new QButtonGroup(this);
         rangeGroup->setExclusive(true);
         rangeGroup->addButton(rangeAll, 0);
-        rangeGroup->addButton(rangeNear, 2048);
         rangeGroup->addButton(rangeLocal, 8192);
         rangeGroup->addButton(rangeLarge, 32768);
         m_availableSearch = new QLineEdit(tools);
@@ -359,6 +358,7 @@ bool CacheDownloadDialog::matchesSearch(const slime::cache::CachePackEntry& e) c
 void CacheDownloadDialog::loadAvailable()
 {
     if (!m_client || !m_availableStatus) return;
+    m_populating = false;
     m_availablePacks.clear();
     if (m_availableTable) m_availableTable->setRowCount(0);
     const QString primary = CacheDownloadClient::primaryManifestUrl();
@@ -379,7 +379,7 @@ void CacheDownloadDialog::loadAvailable()
             return;
         }
         m_availablePacks = packs;
-        refreshAvailable();
+        startAvailablePopulation();
         const QString quota = m_client ? m_client->quotaWarning() : QString();
         if (m_availableStatus) {
             if (quota == QStringLiteral("warn")) {
@@ -406,17 +406,114 @@ void CacheDownloadDialog::loadAvailable()
     }
 }
 
-void CacheDownloadDialog::refreshAvailable()
+void CacheDownloadDialog::startAvailablePopulation()
 {
     if (!m_availableTable) return;
     m_availableTable->blockSignals(true);
     m_availableTable->setRowCount(0);
-    const auto destName = [](const RemoteCachePack& p) {
+    m_availableTable->blockSignals(false);
+    m_populating = true;
+    m_populateIndex = 0;
+    m_populateTotal = m_availablePacks.size();
+    m_availableShown = 0;
+    m_populateElapsed.start();
+    if (m_downloadSelected) m_downloadSelected->setEnabled(false);
+    if (m_availableStatus) {
+        m_availableStatus->setText(QStringLiteral("清单已获取：0 / %1，正在生成列表…").arg(m_populateTotal));
+    }
+    QTimer::singleShot(0, this, [this]() { populateAvailableChunk(); });
+}
+
+void CacheDownloadDialog::appendAvailableRow(const RemoteCachePack& p, int sourceIndex)
+{
+    const int row = m_availableTable->rowCount();
+    m_availableTable->insertRow(row);
+    auto* check = new QTableWidgetItem();
+    check->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable);
+    check->setCheckState(Qt::Unchecked);
+    check->setData(Qt::UserRole, sourceIndex);
+    m_availableTable->setItem(row, 0, check);
+    m_availableTable->setItem(row, 1, new QTableWidgetItem(p.name));
+    m_availableTable->setItem(row, 2, new QTableWidgetItem(QStringLiteral("%1..%2, %3..%4")
+                                                              .arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ)));
+    m_availableTable->setItem(row, 3, new QTableWidgetItem(mbText(static_cast<uint64_t>(p.bytes))));
+    auto* dl = new QPushButton(slime::ui::t("ui.cache.download.download"), m_availableTable);
+    dl->setObjectName(QStringLiteral("miniButton"));
+    m_availableTable->setCellWidget(row, 4, dl);
+    connect(dl, &QPushButton::clicked, this, [this, p]() {
         const QString name = QFileInfo(p.file).fileName();
-        if (name.isEmpty() || name.contains(QStringLiteral(".."))) return QString();
-        return name;
-    };
-    int shown = 0;
+        if (name.isEmpty() || name.contains(QStringLiteral("..")) || !m_client) return;
+        QDir().mkpath(QString::fromStdWString((m_store->root() / "downloaded").wstring()));
+        const auto dest = m_store->root() / "downloaded" / name.toStdWString();
+        if (m_availableStatus) m_availableStatus->setText(
+            slime::ui::t("ui.cache.download.downloading").arg(p.name));
+        m_client->downloadPackWithFallback(p.url, p.fallbackUrl, p, QString::fromStdWString(dest.wstring()),
+                               [this, p, dest](bool ok, const QString& err) {
+            if (!ok) {
+                if (m_availableStatus) m_availableStatus->setText(
+                    slime::ui::t("ui.cache.download.failed").arg(p.name, err));
+                return;
+            }
+            std::string addErr;
+            if (!m_store->addPack(dest, slime::cache::CacheStore::kDownloadedDir, &addErr)) {
+                if (m_availableStatus) m_availableStatus->setText(
+                    slime::ui::t("ui.cache.download.failed").arg(p.name, QString::fromStdString(addErr)));
+                return;
+            }
+            if (m_availableStatus) m_availableStatus->setText(
+                slime::ui::t("ui.cache.download.downloaded").arg(p.name));
+            refresh();
+            if (onChanged) onChanged();
+        });
+    });
+    ++m_availableShown;
+}
+
+void CacheDownloadDialog::populateAvailableChunk()
+{
+    if (!m_populating || !m_availableTable) return;
+    constexpr int kChunk = 48;
+    m_availableTable->blockSignals(true);
+    const int end = std::min(m_populateTotal, m_populateIndex + kChunk);
+    for (; m_populateIndex < end; ++m_populateIndex) {
+        const RemoteCachePack& p = m_availablePacks[m_populateIndex];
+        if (m_availableRange > 0 &&
+            std::max({ std::abs(p.minX), std::abs(p.maxX), std::abs(p.minZ), std::abs(p.maxZ) }) > m_availableRange)
+            continue;
+        if (!m_availableQuery.isEmpty()) {
+            const QString range = QStringLiteral("%1..%2, %3..%4").arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ);
+            if (!p.name.contains(m_availableQuery, Qt::CaseInsensitive) && !range.contains(m_availableQuery))
+                continue;
+        }
+        appendAvailableRow(p, m_populateIndex);
+    }
+    m_availableTable->blockSignals(false);
+    if (m_populateIndex < m_populateTotal) {
+        if (m_availableStatus) {
+            const qint64 ms = std::max<qint64>(1, m_populateElapsed.elapsed());
+            const double rate = m_populateIndex > 0 ? static_cast<double>(m_populateIndex) * 1000.0 / ms : 0.0;
+            const int remain = rate > 0 ? static_cast<int>((m_populateTotal - m_populateIndex) / rate) : 0;
+            m_availableStatus->setText(QStringLiteral("正在生成列表 %1 / %2，预计剩余 %3 秒")
+                                           .arg(m_populateIndex).arg(m_populateTotal).arg(remain));
+        }
+        QTimer::singleShot(0, this, [this]() { populateAvailableChunk(); });
+        return;
+    }
+    m_populating = false;
+    if (m_availableStatus) {
+        m_availableStatus->setText(QStringLiteral("清单获取完成：共 %1 个 pack，当前显示 %2 个")
+                                       .arg(m_populateTotal).arg(m_availableShown));
+    }
+    if (m_downloadSelected) m_downloadSelected->setEnabled(m_availableShown > 0);
+}
+
+void CacheDownloadDialog::refreshAvailable()
+{
+    if (!m_availableTable) return;
+    m_populating = false;
+    m_availableTable->blockSignals(true);
+    m_availableTable->setRowCount(0);
+    m_availableShown = 0;
     for (int i = 0; i < m_availablePacks.size(); ++i) {
         const RemoteCachePack& p = m_availablePacks[i];
         if (m_availableRange > 0 &&
@@ -424,57 +521,17 @@ void CacheDownloadDialog::refreshAvailable()
             continue;
         if (!m_availableQuery.isEmpty()) {
             const QString range = QStringLiteral("%1..%2, %3..%4").arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ);
-            if (!p.name.contains(m_availableQuery, Qt::CaseInsensitive) &&
-                !range.contains(m_availableQuery))
+            if (!p.name.contains(m_availableQuery, Qt::CaseInsensitive) && !range.contains(m_availableQuery))
                 continue;
         }
-        const int row = m_availableTable->rowCount();
-        m_availableTable->insertRow(row);
-        auto* check = new QTableWidgetItem();
-        check->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable);
-        check->setCheckState(Qt::Unchecked);
-        check->setData(Qt::UserRole, i);
-        m_availableTable->setItem(row, 0, check);
-        m_availableTable->setItem(row, 1, new QTableWidgetItem(p.name));
-        m_availableTable->setItem(row, 2, new QTableWidgetItem(QStringLiteral("%1..%2, %3..%4")
-                                                                  .arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ)));
-        m_availableTable->setItem(row, 3, new QTableWidgetItem(mbText(static_cast<uint64_t>(p.bytes))));
-        auto* dl = new QPushButton(slime::ui::t("ui.cache.download.download"), m_availableTable);
-        dl->setObjectName(QStringLiteral("miniButton"));
-        m_availableTable->setCellWidget(row, 4, dl);
-        connect(dl, &QPushButton::clicked, this, [this, p, destName]() {
-            const QString name = destName(p);
-            if (name.isEmpty() || !m_client) return;
-            QDir().mkpath(QString::fromStdWString((m_store->root() / "downloaded").wstring()));
-            const auto dest = m_store->root() / "downloaded" / name.toStdWString();
-            if (m_availableStatus) m_availableStatus->setText(
-                slime::ui::t("ui.cache.download.downloading").arg(p.name));
-            m_client->downloadPackWithFallback(p.url, p.fallbackUrl, p, QString::fromStdWString(dest.wstring()),
-                                   [this, p, dest](bool ok, const QString& err) {
-                if (!ok) {
-                    if (m_availableStatus) m_availableStatus->setText(
-                        slime::ui::t("ui.cache.download.failed").arg(p.name, err));
-                    return;
-                }
-                std::string addErr;
-                if (!m_store->addPack(dest, slime::cache::CacheStore::kDownloadedDir, &addErr)) {
-                    if (m_availableStatus) m_availableStatus->setText(
-                        slime::ui::t("ui.cache.download.failed").arg(p.name, QString::fromStdString(addErr)));
-                    return;
-                }
-                if (m_availableStatus) m_availableStatus->setText(
-                    slime::ui::t("ui.cache.download.downloaded").arg(p.name));
-                refresh();
-                if (onChanged) onChanged();
-            });
-        });
-        ++shown;
+        appendAvailableRow(p, i);
     }
     m_availableTable->blockSignals(false);
-    if (m_availableStatus) m_availableStatus->setText(
-        slime::ui::t("ui.cache.download.availableCount").arg(shown));
+    if (m_availableStatus) {
+        m_availableStatus->setText(slime::ui::t("ui.cache.download.availableCount").arg(m_availableShown));
+    }
+    if (m_downloadSelected) m_downloadSelected->setEnabled(m_availableShown > 0);
 }
-
 
 void CacheDownloadDialog::downloadSelected()
 {

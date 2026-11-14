@@ -10,6 +10,7 @@
 #include "gui/services/CacheDownloadClient.h"
 
 #include <QDialog>
+#include <QElapsedTimer>
 
 #include <functional>
 #include <string>
@@ -35,6 +36,9 @@ private:
     void refresh();
     void refreshAvailable();
     void loadAvailable();
+    void startAvailablePopulation();
+    void populateAvailableChunk();
+    void appendAvailableRow(const RemoteCachePack& pack, int sourceIndex);
     void downloadSelected();
     void startNextDownloads();
     void finishDownloads();
@@ -61,6 +65,11 @@ private:
     QVector<RemoteCachePack> m_availablePacks;
     int m_availableRange = 0;
     QString m_availableQuery;
+    bool m_populating = false;
+    int m_populateIndex = 0;
+    int m_populateTotal = 0;
+    int m_availableShown = 0;
+    QElapsedTimer m_populateElapsed;
 
     QProgressBar* m_downloadProgress = nullptr;
     QLabel* m_downloadProgressLabel = nullptr;

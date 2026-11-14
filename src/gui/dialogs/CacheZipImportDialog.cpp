@@ -107,6 +107,7 @@ CacheZipImportDialog::CacheZipImportDialog(slime::cache::CacheStore* store, QWid
 
 CacheZipImportDialog::~CacheZipImportDialog()
 {
+    if (m_inspectWorker.joinable()) m_inspectWorker.join();
     if (m_worker.joinable()) m_worker.join();
 }
 
@@ -139,13 +140,66 @@ void CacheZipImportDialog::dropEvent(QDropEvent* ev)
 
 void CacheZipImportDialog::addPaths(const QStringList& paths)
 {
+    if (m_importing || m_inspecting) return;
+    QStringList added;
     for (const QString& path : paths) {
         Item item;
         item.path = path;
-        slime::cache::CacheZipImporter::inspect(path, item.info);
         m_items.push_back(std::move(item));
+        added << path;
     }
+    if (added.isEmpty()) return;
+    if (m_inspectWorker.joinable()) m_inspectWorker.join();
+    m_inspectDone = 0;
+    m_inspectTotal = static_cast<int>(added.size());
+    m_inspecting = true;
+    if (m_pick) m_pick->setEnabled(false);
+    if (m_start) m_start->setEnabled(false);
+    if (m_cancel) m_cancel->setEnabled(false);
+    if (m_progress) {
+        m_progress->setVisible(true);
+        m_progress->setFormat(QStringLiteral("检测 %v / %m"));
+        m_progress->setRange(0, std::max(1, m_inspectTotal));
+        m_progress->setValue(0);
+    }
+    if (m_hint) m_hint->setText(QStringLiteral("正在读取 zip 清单 0 / %1…").arg(m_inspectTotal));
     refresh();
+
+    m_inspectWorker = std::thread([this, added]() {
+        int done = 0;
+        for (const QString& path : added) {
+            slime::cache::ZipInspection info;
+            slime::cache::CacheZipImporter::inspect(path, info);
+            ++done;
+            const QString name = QFileInfo(path).fileName();
+            const int current = done;
+            QMetaObject::invokeMethod(this, [this, path, info, current, name]() {
+                for (auto& item : m_items) {
+                    if (!item.inspected && item.path == path) {
+                        item.info = info;
+                        item.inspected = true;
+                        break;
+                    }
+                }
+                m_inspectDone = current;
+                if (m_progress) m_progress->setValue(current);
+                if (m_hint) m_hint->setText(QStringLiteral("正在读取 zip 清单 %1 / %2：%3")
+                                                .arg(current).arg(m_inspectTotal).arg(name));
+                refresh();
+            }, Qt::QueuedConnection);
+        }
+        QMetaObject::invokeMethod(this, [this]() {
+            m_inspecting = false;
+            if (m_pick) m_pick->setEnabled(true);
+            if (m_cancel) m_cancel->setEnabled(true);
+            refresh();
+            if (m_progress) {
+                m_progress->setValue(m_progress->maximum());
+                m_progress->setVisible(true);
+            }
+            if (m_hint) m_hint->setText(QStringLiteral("清单读取完成，共 %1 个 zip").arg(m_inspectTotal));
+        }, Qt::QueuedConnection);
+    });
 }
 
 void CacheZipImportDialog::refresh()
@@ -158,27 +212,32 @@ void CacheZipImportDialog::refresh()
         const int row = m_table->rowCount();
         m_table->insertRow(row);
         m_table->setItem(row, 0, new QTableWidgetItem(QFileInfo(item.path).fileName()));
-        m_table->setItem(row, 1, new QTableWidgetItem(item.info.ok ? item.info.rangeLabel
-                                                                  : QStringLiteral("—")));
-        m_table->setItem(row, 2, new QTableWidgetItem(item.info.ok ? QString::number(item.info.packCount)
-                                                                  : QStringLiteral("—")));
+        m_table->setItem(row, 1, new QTableWidgetItem(item.inspected && item.info.ok ? item.info.rangeLabel
+                                                                                    : QStringLiteral("—")));
+        m_table->setItem(row, 2, new QTableWidgetItem(item.inspected && item.info.ok ? QString::number(item.info.packCount)
+                                                                                    : QStringLiteral("—")));
         m_table->setItem(row, 3, new QTableWidgetItem(
             item.info.ok ? QStringLiteral("%1 MB").arg(item.info.bytes / (1024.0 * 1024.0), 0, 'f', 1)
                          : QStringLiteral("—")));
-        auto* status = new QTableWidgetItem(
-            item.info.ok ? QStringLiteral("待导入") : QStringLiteral("已拒绝：%1").arg(item.info.error));
-        if (!item.info.ok) status->setForeground(QColor(176, 48, 32));
+        QString statusText;
+        if (!item.inspected) statusText = QStringLiteral("检测中…");
+        else if (item.info.ok) statusText = QStringLiteral("待导入");
+        else statusText = QStringLiteral("已拒绝：%1").arg(item.info.error);
+        auto* status = new QTableWidgetItem(statusText);
+        if (item.inspected && !item.info.ok) status->setForeground(QColor(176, 48, 32));
         m_table->setItem(row, 4, status);
-        if (item.info.ok) {
+        if (item.inspected && item.info.ok) {
             ++valid;
             totalBytes += item.info.bytes;
             totalPacks += item.info.packCount;
         }
     }
-    m_start->setEnabled(valid > 0);
-    m_hint->setText(valid ? QStringLiteral("%1 个文件可导入").arg(valid)
-                          : QStringLiteral("尚未选择有效文件"));
-    if (!m_importing && !m_hasResult && m_progress) {
+    m_start->setEnabled(!m_inspecting && valid > 0);
+    if (!m_inspecting) {
+        m_hint->setText(valid ? QStringLiteral("%1 个文件可导入").arg(valid)
+                              : QStringLiteral("尚未选择有效文件"));
+    }
+    if (!m_importing && !m_inspecting && !m_hasResult && m_progress) {
         m_progress->setVisible(false);
         m_progress->setRange(0, 1);
         m_progress->setValue(0);
@@ -192,7 +251,7 @@ void CacheZipImportDialog::refresh()
 
 void CacheZipImportDialog::startImport()
 {
-    if (m_importing) return;
+    if (m_importing || m_inspecting) return;
     std::vector<Item> valid;
     for (const auto& item : m_items) if (item.info.ok) valid.push_back(item);
     if (valid.empty()) return;
@@ -270,13 +329,13 @@ void CacheZipImportDialog::startImport()
 
 void CacheZipImportDialog::reject()
 {
-    if (m_importing) return; // 后台导入时禁止关闭，避免悬垂回调/UI线程 join 卡死
+    if (m_importing || m_inspecting) return; // 后台导入/检测时禁止关闭
     QDialog::reject();
 }
 
 void CacheZipImportDialog::closeEvent(QCloseEvent* ev)
 {
-    if (m_importing) {
+    if (m_importing || m_inspecting) {
         ev->ignore();
         return;
     }

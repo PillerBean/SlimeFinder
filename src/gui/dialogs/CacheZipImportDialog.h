@@ -33,9 +33,11 @@ private:
     struct Item {
         QString path;
         slime::cache::ZipInspection info;
+        bool inspected = false;
     };
 
     void addPaths(const QStringList& paths);
+    void startInspection();
     void refresh();
     void startImport();
 
@@ -49,6 +51,10 @@ private:
     QProgressBar* m_progress = nullptr;
     std::vector<Item> m_items;
     bool m_importing = false;
+    bool m_inspecting = false;
     bool m_hasResult = false;
+    int m_inspectDone = 0;
+    int m_inspectTotal = 0;
     std::thread m_worker;
+    std::thread m_inspectWorker;
 };
