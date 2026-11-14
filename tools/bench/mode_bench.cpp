@@ -116,7 +116,9 @@ void print(const Row& r)
 
 int main()
 {
-    _putenv_s("SLIME_GPU_MIN_CHUNKS", "1");
+    if (!std::getenv("SLIME_BENCH_DEFAULT_THRESHOLD")) {
+        _putenv_s("SLIME_GPU_MIN_CHUNKS", "1");
+    }
     if (const char* sideEnv = std::getenv("SLIME_BENCH_SIDE")) {
         const int v = std::atoi(sideEnv);
         if (v >= 64 && v <= 16384) gSide = v;

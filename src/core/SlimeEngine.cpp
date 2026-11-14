@@ -786,6 +786,28 @@ inline int64_t gpuMinChunksEnv(Version v) noexcept
     return gpuMinChunksDefault(v);
 }
 
+// v3.13.2：AMD 显卡的密度 GPU 路径在小范围也明显快于 CPU（实测 1024² 约 2 倍），
+//   因此 AMD 的 Java 密度门槛单独降到 1M；其他厂商保持历史门槛，避免低端 GPU 回退。
+bool isAmdDevice(const GpuScan* gpu)
+{
+    if (!gpu) return false;
+    std::string dn = gpu->deviceName();
+    std::transform(dn.begin(), dn.end(), dn.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return dn.find("amd") != std::string::npos ||
+           dn.find("advanced micro devices") != std::string::npos ||
+           dn.find("gfx") != std::string::npos;
+}
+
+int64_t gpuMinChunksForDevice(const SearchOptions& opt) noexcept
+{
+    int64_t n = gpuMinChunksEnv(opt.version);
+    if (opt.version == Version::Java && isAmdDevice(opt.gpuScan)) {
+        n = (std::min)(n, int64_t{ 1 } << 20);
+    }
+    return n;
+}
+
 // GPU 判定扫描阶段（单线程驱动；由经典路径在 grid 分配后调用）。
 // 网格位/缓存覆盖/新缓存收集/进度/取消的语义与 CPU 扫描路径完全一致：
 //   - 行主序瓦片扫描（x 最快，瓦片 ≤ 预算字节）
@@ -838,7 +860,7 @@ static int runGpuScanStage(const SearchOptions& opt,
         errOut = "GPU 不可用（available=false）";
         return 0;
     }
-    if (totalChunks < gpuMinChunksEnv(opt.version)) {
+    if (totalChunks < gpuMinChunksForDevice(opt)) {
         errOut = "区域过小（低于启用阈值）";
         return 0;
     }
@@ -1259,15 +1281,7 @@ void SlimeEngine::run(const SearchOptions& optIn,
         const int64_t totalChunksP = Wp * Hp;
         // v3.13.0：图案 GPU 流式目前只验证过 AMD（gfx 系列）。
         //   NVIDIA/Intel 默认仍走 CPU，避免未验证驱动上的正确性/性能回退。
-        const auto amdPatternGpu = [&]() {
-            if (!opt.gpuScan) return false;
-            std::string dn = opt.gpuScan->deviceName();
-            std::transform(dn.begin(), dn.end(), dn.begin(),
-                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-            return dn.find("amd") != std::string::npos ||
-                   dn.find("advanced micro devices") != std::string::npos ||
-                   dn.find("gfx") != std::string::npos;
-        }();
+        const bool amdPatternGpu = isAmdDevice(opt.gpuScan);
         // v3.13.1：图案 GPU 流式的固定开销约 0.3 ms，Java CPU 图案匹配在很小范围也要
         //   ~1.3 ms（12 线程开销）；实测 128²/256² 已经收益。图案路径单独使用低门槛，
         //   密度路径仍沿用原来的 GPU 门槛。
@@ -1990,7 +2004,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                                 (opt.algorithm == Algorithm::Exact || layeredLossless) &&
                                 !sampleScan &&
                                 !(version == Version::Bedrock && useCache) && opt.gpuScan &&
-                                opt.gpuScan->available() && totalChunks >= gpuMinChunksEnv(opt.version);
+                                opt.gpuScan->available() && totalChunks >= gpuMinChunksForDevice(opt);
     if (gpuMatchWanted) {
         DensityMatchParams gp;
         gp.version = version;
@@ -2313,7 +2327,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     //   因此图案模式仅在区域 ≥ 3e9 区块时启用 GPU 扫描；密度模式不受影响。
     const bool patternGpuScanOk = (opt.mode != Mode::Strict) || totalChunks >= 3000000000LL;
     if (!sampleScan && !opt.buildMode && opt.gpuScan && opt.gpuScan->available() && patternGpuScanOk &&
-        totalChunks >= gpuMinChunksEnv(opt.version)) {
+        totalChunks >= gpuMinChunksForDevice(opt)) {
         gpuStage = runGpuScanStage(opt, cancel, scanEm, grid, threadNew[0], gpuStageErr);
         if (gpuStage == 0 && std::getenv("SLIME_DEBUG")) {
             std::fprintf(stderr, "[engine] GPU 扫描不可用，回退 CPU：%s\n", gpuStageErr.c_str());

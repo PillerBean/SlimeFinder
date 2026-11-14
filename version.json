@@ -1,16 +1,16 @@
 {
-  "version": "3.13.1",
-  "tag": "v3.13.1",
-  "notes": "# SlimeFinder v3.13.1\n\n## 搜索性能\n\n- **图案 GPU 流式的启用门槛从约 8M 区块降到 16K 区块**：\n  - AMD 显卡下，普通小范围图案搜索也能走 GPU 图案流式；\n  - 实测 128² / 256² / 512² 范围已有收益；\n  - Java 图案小范围约 3~4 倍，Bedrock 约 2~3 倍。\n- 仍然只适用于方向锁定的单图案变体；\n- 旋转图案、非 AMD 显卡、GPU 不可用、缓存构建模式继续自动回退 CPU。\n\n## 兼容与说明\n\n- 判定结果、结果排序、缓存格式均未改变；\n- 图案结果与 CPU 路径逐项一致；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- 图案 CPU/GPU 命中数一致",
+  "version": "3.13.2",
+  "tag": "v3.13.2",
+  "notes": "# SlimeFinder v3.13.2\n\n## 搜索性能\n\n- **AMD 显卡的 Java 密度 GPU 启用门槛从 30M 降到 1M 区块**：\n  - 1024² 密集搜索实测约 2 倍；\n  - 2048² 实测约 2 倍；\n  - 小范围不再无条件走 CPU。\n- Bedrock 密度门槛保持原有策略；\n- NVIDIA / Intel 保持原门槛，避免低端 GPU 回退。\n\n## 兼容与说明\n\n- 结果、排序、缓存格式不变；\n- 构建缓存模式、取消、进度语义不变；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- CPU/GPU 结果一致",
   "assets": [
     {
-      "name": "SlimeFinder-3.13.1-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.1/SlimeFinder-3.13.1-Setup.exe",
-      "size": 17872964
+      "name": "SlimeFinder-3.13.2-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.2/SlimeFinder-3.13.2-Setup.exe",
+      "size": 17873430
     },
     {
-      "name": "SHA256SUMS-3.13.1.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.1/SHA256SUMS-3.13.1.txt",
+      "name": "SHA256SUMS-3.13.2.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.2/SHA256SUMS-3.13.2.txt",
       "size": 202
     }
   ]
