@@ -1268,5 +1268,6 @@
   "ui.cache.download.streamHeader": "Loading cache list: %1 / %2",
   "ui.cache.download.streamRows": "Building list %1 / %2, about %3 s remaining",
   "ui.cache.download.streamReady": "Cache list loaded: %1 packs, %2 shown",
-  "ui.update.sums.required": "The update package is missing its SHA256 checksum; automatic installation was cancelled and the download was removed."
+  "ui.update.sums.required": "The update package is missing its SHA256 checksum; automatic installation was cancelled and the download was removed.",
+  "ui.update.manualOnly": "Open the GitHub release page and download manually; this app will not download or install updates automatically."
 }

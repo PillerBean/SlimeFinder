@@ -1,4 +1,4 @@
-﻿// UpdateDialog.cpp — v3.10.12.10
+// UpdateDialog.cpp — v3.10.12.10
 #include "i18n/UiText.h"
 #include "gui/dialogs/UpdateDialog.h"
 
@@ -154,6 +154,7 @@ void UpdateDialog::buildUi()
     m_progress->setTextVisible(true);
     m_downloadBtn = new QPushButton(slime::ui::t("ui.f9ff8c365c95"), this);
     m_downloadBtn->setEnabled(false);
+    m_downloadBtn->setVisible(false); // 无代码签名：只通知新版本，更新必须手动从发布页下载
     m_folderBtn = new QPushButton(slime::ui::t("ui.9b519e408eb3"), this);
     m_folderBtn->setVisible(false);
     auto* closeBtn = new QPushButton(slime::ui::t("ui.6c14bd7f6f9e"), this);
@@ -178,7 +179,6 @@ void UpdateDialog::buildUi()
             m_status->setText(slime::ui::t("ui.49747a3ed295"));
     });
     connect(m_checkBtn, &QPushButton::clicked, this, &UpdateDialog::startCheck);
-    connect(m_downloadBtn, &QPushButton::clicked, this, &UpdateDialog::startDownload);
     connect(m_folderBtn, &QPushButton::clicked, this, &UpdateDialog::openDownloadFolder);
     connect(m_githubBtn, &QPushButton::clicked, this, &UpdateDialog::openGithubPage);
     connect(m_panBtn, &QPushButton::clicked, this, &UpdateDialog::openPanPage);
@@ -718,17 +718,21 @@ void UpdateDialog::parseLatest(const QByteArray& body)
     setBusy(false);
     if (versionNewer(ver, current)) {
         m_updateAvailable = true;
-        setStatusText(slime::ui::t("ui.1cc383f53f07").arg(ver, current));
+        setStatusText(slime::ui::t("ui.1cc383f53f07").arg(ver, current) + QStringLiteral("\n") +
+                      slime::ui::t("ui.update.manualOnly"));
         QString notes = releaseNotesFor(m_notesText);
         if (notes.isEmpty()) notes = slime::ui::t("ui.7e818e98207a");
         m_notes->setPlainText(notes);
-        m_downloadBtn->setEnabled(!zip.url.isEmpty());
-        m_downloadBtn->setText(slime::ui::t("ui.f9ff8c365c95"));
+        // 无代码签名证书：本程序不自动下载/安装更新，只提示新版本。
+        m_downloadBtn->setVisible(false);
+        m_downloadBtn->setEnabled(false);
         m_progress->setVisible(false);
+        m_folderBtn->setVisible(false);
     } else {
         m_updateAvailable = false;
         setStatusText(slime::ui::t("ui.f11ef12bb9bd").arg(current));
         m_notes->setPlainText(releaseNotesFor(m_notesText));
+        m_downloadBtn->setVisible(false);
         m_downloadBtn->setEnabled(false);
     }
     emit probeFinished(m_updateAvailable,

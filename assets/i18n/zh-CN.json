@@ -1268,5 +1268,6 @@
   "ui.cache.download.streamHeader": "正在获取清单：%1 / %2",
   "ui.cache.download.streamRows": "正在生成列表 %1 / %2，预计剩余 %3 秒",
   "ui.cache.download.streamReady": "清单获取完成：共 %1 个 pack，当前显示 %2 个",
-  "ui.update.sums.required": "更新包缺少 SHA256 校验文件，已取消自动安装并删除下载文件。"
+  "ui.update.sums.required": "更新包缺少 SHA256 校验文件，已取消自动安装并删除下载文件。",
+  "ui.update.manualOnly": "请手动打开 GitHub 发布页下载；本程序不会自动下载或安装更新。"
 }
