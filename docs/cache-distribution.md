@@ -64,9 +64,9 @@ C:\Users\<用户>\.slimefinder\r2.env
 当前只提供三个范围：
 
 ```text
-局部：https://wwben.lanzoul.com/b01d7e5jyf
-较大：https://wwben.lanzoul.com/b01d7e5k0h
-全部：https://wwben.lanzoul.com/b01d7e5kah
+局部：https://wwben.lanzoul.com/b01d7e5k0h
+较大：https://wwben.lanzoul.com/b01d7e5kah
+全部：https://wwben.lanzoul.com/b01d7e5l9c
 ```
 
 说明：

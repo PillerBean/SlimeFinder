@@ -1,4 +1,4 @@
-﻿#include "gui/services/CacheDownloadClient.h"
+#include "gui/services/CacheDownloadClient.h"
 
 #include <QCryptographicHash>
 #include <QCoreApplication>
@@ -128,12 +128,11 @@ QString CacheDownloadClient::netdiskRangeUrl(int index)
 {
     static const char* keys[] = { "netdiskLocal", "netdiskLarge", "netdiskAll" };
     static const char* defaults[] = {
-        "https://wwben.lanzoul.com/b01d7e5jyf",
         "https://wwben.lanzoul.com/b01d7e5k0h",
         "https://wwben.lanzoul.com/b01d7e5kah",
         "https://wwben.lanzoul.com/b01d7e5l9c"
     };
-    if (index >= 0 && index < 4) {
+    if (index >= 0 && index < 3) {
         const QString v = configValue(QStringLiteral("cacheDownload"), QString::fromLatin1(keys[index]));
         if (!v.trimmed().isEmpty()) return v;
         return QString::fromLatin1(defaults[index]);
