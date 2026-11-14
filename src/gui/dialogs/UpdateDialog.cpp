@@ -1,4 +1,4 @@
-// UpdateDialog.cpp — v3.10.12.10
+﻿// UpdateDialog.cpp — v3.10.12.10
 #include "i18n/UiText.h"
 #include "gui/dialogs/UpdateDialog.h"
 
@@ -300,7 +300,10 @@ void UpdateDialog::runCurl(const QStringList& args, const QString& outFile, bool
             done(0, QByteArray());
         }
     });
-    m_proc->start(curlExe(), args);
+    QStringList secureArgs{ QStringLiteral("--proto"), QStringLiteral("=https"),
+                            QStringLiteral("--proto-redir"), QStringLiteral("=https") };
+    secureArgs += args;
+    m_proc->start(curlExe(), secureArgs);
 }
 
 // ---------------- 检查更新 ----------------
@@ -423,7 +426,7 @@ void UpdateDialog::tryNextApi()
                                              .arg(QCoreApplication::applicationPid())
                                              .arg(m_officialIndex);
     const QStringList args = {
-        QStringLiteral("-L"), QStringLiteral("--ssl-no-revoke"), QStringLiteral("--max-time"),
+        QStringLiteral("-L"), QStringLiteral("--max-time"),
         QStringLiteral("12"), QStringLiteral("-sS"), QStringLiteral("-A"),
         QStringLiteral("SlimeFinder-Updater/1.0"), QStringLiteral("-o"), tmp,
         QStringLiteral("-w"), QStringLiteral("%{http_code}"), url,
@@ -487,7 +490,7 @@ void UpdateDialog::probeNextMirrorManifest()
                                              .arg(m_mirrorProbeIndex);
     const qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     const QStringList args = {
-        QStringLiteral("-L"), QStringLiteral("--ssl-no-revoke"), QStringLiteral("--max-time"),
+        QStringLiteral("-L"), QStringLiteral("--max-time"),
         QStringLiteral("8"), QStringLiteral("-sS"), QStringLiteral("-A"),
         QStringLiteral("SlimeFinder-Updater/1.0"), QStringLiteral("-o"), tmp,
         QStringLiteral("-w"), QStringLiteral("%{http_code}"), url,
@@ -557,7 +560,7 @@ void UpdateDialog::probeNextMirrorSample()
                                              .arg(m_sampleIndex);
     const qint64 t0 = QDateTime::currentMSecsSinceEpoch();
     const QStringList args = {
-        QStringLiteral("-L"), QStringLiteral("--ssl-no-revoke"), QStringLiteral("--max-time"),
+        QStringLiteral("-L"), QStringLiteral("--max-time"),
         QStringLiteral("8"), QStringLiteral("--range"), QStringLiteral("0-262143"),
         QStringLiteral("-sS"), QStringLiteral("-A"), QStringLiteral("SlimeFinder-Updater/1.0"),
         QStringLiteral("-o"), tmp, QStringLiteral("-w"), QStringLiteral("%{http_code}"), url,
@@ -687,7 +690,9 @@ void UpdateDialog::parseLatest(const QByteArray& body)
     for (const QJsonValue& v : assets) {
         const QJsonObject a = v.toObject();
         Asset as;
-        as.name = a.value(QStringLiteral("name")).toString();
+        const QString rawName = a.value(QStringLiteral("name")).toString();
+        as.name = QFileInfo(rawName).fileName();
+        if (as.name.isEmpty() || as.name != rawName) continue; // 禁止资产名路径穿越
         as.url = a.value(QStringLiteral("browser_download_url")).toString();
         if (as.url.isEmpty()) as.url = a.value(QStringLiteral("url")).toString();
         as.size = static_cast<qint64>(a.value(QStringLiteral("size")).toDouble());
@@ -772,6 +777,7 @@ void UpdateDialog::startDownload()
     if (m_downloadDir.isEmpty()) m_downloadDir = QDir::homePath();
     m_downloadDir += QStringLiteral("/SlimeFinder-update-v") + m_latestVersion;
     QDir().mkpath(m_downloadDir);
+    if (m_zipAsset.name.isEmpty() || m_zipAsset.name != QFileInfo(m_zipAsset.name).fileName()) return;
     m_downloadPath = m_downloadDir + QLatin1Char('/') + m_zipAsset.name;
 
     m_downloadUrls = buildDownloadUrls(m_zipAsset.url);
@@ -803,7 +809,7 @@ void UpdateDialog::tryNextDownload()
                       .arg(m_downloadUrls.size())
                       .arg(url));
     const QStringList args = {
-        QStringLiteral("-L"), QStringLiteral("--ssl-no-revoke"), QStringLiteral("--max-time"),
+        QStringLiteral("-L"), QStringLiteral("--max-time"),
         QStringLiteral("900"), QStringLiteral("-sS"), QStringLiteral("-A"),
         QStringLiteral("SlimeFinder-Updater/1.0"), QStringLiteral("-o"), m_downloadPath,
         QStringLiteral("-w"), QStringLiteral("%{http_code}"), url,
@@ -826,18 +832,33 @@ void UpdateDialog::onZipDone(int httpCode, bool ok)
     tryNextDownload();
 }
 
+void UpdateDialog::failDownloadVerification(const QString& reason, const QString& message)
+{
+    m_pendingDownload = false;
+    m_downloadBtn->setEnabled(false);
+    setBusy(false);
+    setStatusText(message);
+    QFile::remove(m_downloadPath);
+    emit probeDownloadFinished(false, reason);
+}
+
 void UpdateDialog::fetchSumsThenFinish()
 {
     if (m_sumsAsset.url.isEmpty() || m_sumsAsset.name.isEmpty()) {
-        finishDownloadOk();
+        failDownloadVerification(QStringLiteral("sums-missing"),
+                                 slime::ui::t("ui.update.sums.required"));
         return;
     }
     const QStringList urls = buildDownloadUrls(m_sumsAsset.url);
-    if (urls.isEmpty()) { finishDownloadOk(); return; }
+    if (urls.isEmpty()) {
+        failDownloadVerification(QStringLiteral("sums-unreachable"),
+                                 slime::ui::t("ui.update.sums.required"));
+        return;
+    }
     const QString tmp = QDir::tempPath() + QStringLiteral("/slime_update_%1_sums.txt")
                                              .arg(QCoreApplication::applicationPid());
     const QStringList args = {
-        QStringLiteral("-L"), QStringLiteral("--ssl-no-revoke"), QStringLiteral("--max-time"),
+        QStringLiteral("-L"), QStringLiteral("--max-time"),
         QStringLiteral("30"), QStringLiteral("-sS"), QStringLiteral("-A"),
         QStringLiteral("SlimeFinder-Updater/1.0"), QStringLiteral("-o"), tmp,
         QStringLiteral("-w"), QStringLiteral("%{http_code}"), urls.first(),
@@ -867,7 +888,11 @@ void UpdateDialog::onSumsDone(int httpCode, const QByteArray& body)
             break;
         }
     }
-    if (want.isEmpty()) { finishDownloadOk(); return; }
+    if (want.isEmpty()) {
+        failDownloadVerification(QStringLiteral("sha256-missing"),
+                                 slime::ui::t("ui.update.sums.required"));
+        return;
+    }
     QFile f(m_downloadPath);
     QByteArray got;
     if (f.open(QIODevice::ReadOnly)) {

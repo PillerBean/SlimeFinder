@@ -1267,5 +1267,6 @@
   "ui.cache.download.streamFailed": "清單取得失敗：%1",
   "ui.cache.download.streamHeader": "正在取得清單：%1 / %2",
   "ui.cache.download.streamRows": "正在產生列表 %1 / %2，預計剩餘 %3 秒",
-  "ui.cache.download.streamReady": "清單取得完成：共 %1 個 pack，目前顯示 %2 個"
+  "ui.cache.download.streamReady": "清單取得完成：共 %1 個 pack，目前顯示 %2 個",
+  "ui.update.sums.required": "更新包缺少 SHA256 校驗檔案，已取消自動安裝並刪除下載檔案。"
 }

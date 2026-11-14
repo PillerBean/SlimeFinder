@@ -1,4 +1,4 @@
-﻿#include "cache/CacheZipImporter.h"
+#include "cache/CacheZipImporter.h"
 
 #include "cache/CachePack.h"
 #include "cache/CacheStore.h"
@@ -383,6 +383,14 @@ bool CacheZipImporter::importZip(const QString& zipPath, const std::filesystem::
         if (progress) progress(progressIndex, progressTotal, p.file);
         ++progressIndex;
         const mz_uint index = contents.names.value(p.file);
+        // 安全：manifest 的 bytes 必须与 zip 条目的真实解压大小一致。
+        // 否则下面按 p.bytes 构造 QByteArray 时可能越过 mz_zip_reader_extract_to_heap 的缓冲区。
+        mz_zip_archive_file_stat st{};
+        if (!mz_zip_reader_file_stat(&zip, index, &st) ||
+            static_cast<quint64>(st.m_uncomp_size) != p.bytes) {
+            mz_zip_reader_end(&zip);
+            return fail(QStringLiteral("缓存包解压大小与 manifest 不一致：%1").arg(p.file));
+        }
         void* heap = mz_zip_reader_extract_to_heap(&zip, index, nullptr, 0);
         if (!heap) {
             mz_zip_reader_end(&zip);

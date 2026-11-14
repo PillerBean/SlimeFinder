@@ -1,4 +1,4 @@
-#include "gui/services/TelemetryClient.h"
+﻿#include "gui/services/TelemetryClient.h"
 
 #include "i18n/UiText.h"
 #include <QCoreApplication>
@@ -222,7 +222,9 @@ void TelemetryClient::post(const QJsonObject& event)
         QFile::remove(path);
     });
     proc->start(curl, { QStringLiteral("--silent"), QStringLiteral("--show-error"),
-                        QStringLiteral("--ssl-no-revoke"), QStringLiteral("--max-time"),
+                        QStringLiteral("--proto"), QStringLiteral("=https"),
+                        QStringLiteral("--proto-redir"), QStringLiteral("=https"),
+                        QStringLiteral("--max-time"),
                         QStringLiteral("10"), QStringLiteral("-X"), QStringLiteral("POST"),
                         QStringLiteral("-H"), QStringLiteral("Content-Type: application/json"),
                         QStringLiteral("--data-binary"), QStringLiteral("@") + path, m_endpoint });

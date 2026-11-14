@@ -90,6 +90,7 @@ private:
     void onZipDone(int httpCode, bool ok);
     void fetchSumsThenFinish();
     void onSumsDone(int httpCode, const QByteArray& body);
+    void failDownloadVerification(const QString& reason, const QString& message);
     void finishDownloadOk();
     void openDownloadFolder();
     void startInstallerAndQuit();
