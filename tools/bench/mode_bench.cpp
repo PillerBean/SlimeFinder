@@ -25,6 +25,8 @@ struct Row {
     std::string backend;
     bool ok = false;
     double bestMs = 1e100;
+    double statsTotalMs = 0.0;
+    double statsScanMs = 0.0;
     int64_t chunks = 0;
     int64_t found = 0;
     int64_t windows = 0;
@@ -79,7 +81,11 @@ Row runOne(const std::string& mode, const std::string& backend, const slime::Sea
         row.windows = out.stats.windowsEvaluated;
         row.gpuScan = out.gpuScanUsed;
         row.gpuMatch = out.gpuMatchUsed;
-        if (rep == 0 || ms < row.bestMs) row.bestMs = ms;
+        if (rep == 0 || ms < row.bestMs) {
+            row.bestMs = ms;
+            row.statsTotalMs = out.stats.totalMs;
+            row.statsScanMs = out.stats.scanMs;
+        }
     }
     return row;
 }
@@ -92,10 +98,13 @@ void print(const Row& r)
     }
     constexpr int64_t rangeChunks = int64_t{ 2048 } * 2048;
     const double rate = r.bestMs > 0.0 ? static_cast<double>(rangeChunks) / (r.bestMs / 1000.0) : 0.0;
-    const double scanRate = r.bestMs > 0.0 ? static_cast<double>(r.chunks) / (r.bestMs / 1000.0) : 0.0;
-    std::printf("%-18s %-5s %9.2f ms  %10.2f 亿/s  scanned=%lld/%lld (%.1f 亿/s) found=%-8lld gpu=%d/%d\n",
+    const double statsTotal = r.statsTotalMs > 0.0 ? r.statsTotalMs : r.bestMs;
+    const double statsScan = std::max(0.0, std::min(statsTotal, r.statsScanMs));
+    const double matchMs = std::max(0.0, statsTotal - statsScan);
+    const double matchPct = statsTotal > 0.0 ? matchMs * 100.0 / statsTotal : 0.0;
+    std::printf("%-24s %-5s %9.2f ms  %9.2f 亿/s  scan=%5.2f ms  match=%5.2f ms (%4.1f%%)  found=%-7lld gpu=%d/%d\n",
                 r.mode.c_str(), r.backend.c_str(), r.bestMs, rate / 1e8,
-                static_cast<long long>(r.chunks), static_cast<long long>(rangeChunks), scanRate / 1e8,
+                statsScan, matchMs, matchPct,
                 static_cast<long long>(r.found), r.gpuScan ? 1 : 0, r.gpuMatch ? 1 : 0);
 }
 
@@ -111,7 +120,7 @@ int main()
     std::printf("range=2048x2048 chunks=%d threads=auto\n", 2048 * 2048);
     if (gpu) std::printf("gpu=%s\n", gpu->deviceName().c_str());
     else std::printf("gpu=unavailable (%s)\n", gpuErr.c_str());
-    std::printf("\n%-24s %-5s %12s  %14s  %s\n", "mode", "dev", "total", "throughput", "details");
+    std::printf("\n%-24s %-5s %12s  %14s  %s\n", "mode", "dev", "total", "throughput", "scan / match");
 
     slime::Pattern p2(2, 2);
     for (int r = 0; r < 2; ++r)
