@@ -802,8 +802,13 @@ bool isAmdDevice(const GpuScan* gpu)
 int64_t gpuMinChunksForDevice(const SearchOptions& opt) noexcept
 {
     int64_t n = gpuMinChunksEnv(opt.version);
-    if (opt.version == Version::Java && isAmdDevice(opt.gpuScan)) {
-        n = (std::min)(n, int64_t{ 1 } << 20);
+    if (isAmdDevice(opt.gpuScan)) {
+        // v3.13.3：AMD 的密度 GPU 在小范围也已经更快。
+        //   Java 64K / Bedrock 16K 是实测仍明显获益的保守门槛；
+        //   更小范围保持 CPU，避免 GPU 固定开销反超。
+        const int64_t amdMin = opt.version == Version::Java ? (int64_t{ 64 } << 10)
+                                                            : (int64_t{ 16 } << 10);
+        n = (std::min)(n, amdMin);
     }
     return n;
 }
