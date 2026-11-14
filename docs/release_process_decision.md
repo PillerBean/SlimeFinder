@@ -29,6 +29,7 @@ API 提交不会出现在本地历史里，一旦本地继续提交就会分叉�
   - `packaging/windows/install.nsi`
   - `scripts/release/build_installer.ps1`
   - 更新历史、Release Notes、README
+- **更新说明必须写明：自 v3.12.3 起只提示新版本，用户需手动下载安装，不自动下载/安装。**
 - 跑检查：单元测试、参考对拍、GUI 自检；
 - 打包前确认只出 Setup（不再出便携 zip）。
 

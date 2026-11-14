@@ -23,9 +23,9 @@ Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 
 
 - 平台：Windows 10/11 x64；
 - **只提供安装包** `SlimeFinder-*-Setup.exe`（默认安装到 Program Files，需管理员权限）；
-- 自动更新只支持安装版：检查到新版本后会下载 Setup、校验 SHA256，然后退出程序并打开安装向导（用户点下一步完成覆盖，保留设置与缓存）；
+- 更新方式：自 v3.12.3 起仅提示新版本，不再自动下载或自动安装；请手动前往 Releases 下载 Setup，核对 SHA256 后安装；
 - 便携 zip 已停发；旧版本 zip 仍可从历史 Release 获取；
-- 具体版本以 Releases 页面为准；当前本地构建：**v3.12.3（本地缓存新体系，尚未发布）**，在“检查更新”里切换到测试通道即可收到。
+- 具体版本以 Releases 页面为准；当前正式版：**v3.12.3（官方缓存体系 / R2 与网盘分发）**。
 
 > 📦 **按版本查找全部历史版本**：**[打开版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)**
 > GitHub Releases 页面按发布时间排序（补传历史后会乱序），版本索引按版本号从新到旧排列。
@@ -80,7 +80,7 @@ build\slime_tests.exe --unit
 ## 版本与发布规则
 
 - 版本号统一四段，例如 `3.10.12.10`；
-- **正式发布**：Release 不勾 `Pre-release` ⇒ 成为 Latest（自动更新默认读取它）；
+- **正式发布**：Release 不勾 `Pre-release` ⇒ 成为 Latest（作为手动下载入口，不再自动更新）；
 - **测试发布**：勾选 `Pre-release` ⇒ 不会成为 Latest；
 - Latest 由发布者手动控制；完整流程见 [docs/GITHUB_PUBLISH_GUIDE.md](docs/GITHUB_PUBLISH_GUIDE.md)。
 

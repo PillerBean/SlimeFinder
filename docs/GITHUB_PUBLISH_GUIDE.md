@@ -1,12 +1,14 @@
-# GitHub 发布与自动更新准备指南（SlimeFinder）
+# GitHub 发布与手动更新准备指南（SlimeFinder）
 
 > ⚠️ **强制流程：2026-11-10 起以 [`release_process_decision.md`](release_process_decision.md) 为准。**
 > 核心规则：**Git 历史是唯一事实来源；`git push` 不成功就不发布。**
 > 禁止用 GitHub API 直接创建 tree/commit 替代 git push 上传源码。
 >
-> 本文档给「第一次用 GitHub」的人看：**源码进仓库，安装包进 Releases**，自动更新从 Releases 读取。
-> 当前源码版本：`3.10.12.11`；本机工具：Git 已安装（2.56），GitHub CLI 将放在
-> `<工作区>\gh`（下载/解压见文末）。
+> **更新方式（v3.12.3 起）：**程序只提示新版本，**不自动下载、不自动安装**。用户需手动从 Releases 下载 Setup 并核对 SHA256。
+> 本文档下方关于自动更新的历史设计仅保留作参考，不再作为当前发布要求。
+>
+> 本文档给「第一次用 GitHub」的人看：**源码进仓库，安装包进 Releases**。
+> 历史版本号仅作示例；发布前以当前版本号为准。
 
 ## 一、两个地方分别放什么
 
@@ -15,8 +17,8 @@
 | **Repository（仓库）** | `src/`、`tests/`、`scripts/`、`tools/`、`third_party/`、`assets/`、`CMakeLists.txt`、`README.md`、`docs/`（不含大截图/视频）、`.gitignore`、`LICENSE` | `build/`、`dist/`、安装包、日志、缓存、`config.json` |
 | **Releases（发行版）** | 每个版本的 `SlimeFinder-X-Setup.exe`、`SHA256SUMS-X.txt`（**只发 Setup，不再发便携 zip**） | 源码压缩包（GitHub 会根据 tag 自动生成源码包）、便携 zip（历史版本除外） |
 
-原因：Git 仓库适合存文本、要求体积小；Releases 专门放大文件，且自动更新程序就是访问
-`/releases/latest` 拿资产。
+原因：Git 仓库适合存文本、要求体积小；Releases 专门放大文件，并且更新提示程序需要访问
+`/releases/latest` 拿版本信息。
 
 ## 二、本机现状（已盘点）
 
@@ -110,27 +112,31 @@ GitHub Releases 没有硬性总量限制，但 3.4 GB 上传慢、也没必要�
 - 更老的可以打包成一个 `legacy` Release（例如把 3.2.1~3.8.x 的 zip 合成一个 7z），或以后需要时再补；
 - 每个 Release 建议跟一个 tag（如 `v3.10.9`），保持与版本号一致。
 
-## 五、自动更新以后怎么接
+## 五、更新提醒与手动更新（v3.12.3 起）
 
-公开仓库客户端可以直接请求：
+公开仓库客户端仍可请求：
 
-```
+```text
 GET https://api.github.com/repos/<用户名>/SlimeFinder/releases/latest
 ```
 
-返回里关键字段：
-- `tag_name`：如 `v3.10.12.9`
-- `assets[].name` / `assets[].browser_download_url`：安装包地址
-- `assets[].size`；`body`：更新说明
+或读取 `version.json` 清单，用于**提示新版本**。
 
-更新流程建议：
-1. 比较本地版本与 `tag_name`（语义化版本比较）；
-2. 下载 `SlimeFinder-X-win64.zip`；
-3. 用 Release 里的 `SHA256SUMS-X.txt` 校验；
-4. 退出程序 → 解压覆盖 → 重启。
+当前流程：
 
-可以自己写（WinHTTP/WinINet + JSON 解析），也可以直接集成 **WinSparkle**（成熟的开源更新框架）。
-发版时注意：**tag 名 + 资产文件名 + SHA256 清单**三者保持一致，更新器最省事。
+1. 比较本地版本与 `tag_name` / `version`；
+2. 只提示“发现新版本”和更新说明；
+3. **不自动下载、不自动安装**；
+4. 用户手动打开 Releases 下载 Setup；
+5. 用户自行核对 `SHA256SUMS-X.txt` 后安装。
+
+发布时仍要保证：
+
+```text
+tag 名 + 资产文件名 + SHA256SUMS 一致
+```
+
+但程序端不得恢复自动下载/自动安装，除非以后完成代码签名并单独评审。
 
 ## 六、发布前安全/合规检查
 
@@ -236,7 +242,9 @@ gh release create v3.10.12.9 "release\3.10.12.9\*" --title "SlimeFinder v3.10.12
 - 仓库 About 已精简为：`Minecraft 史莱姆区块查找器 | C++20/Qt6 | GPU 加速 | 源码公开（非商业）`，
   Homepage 指向 Releases 页。
 
-## 十一、自动更新与镜像源（v3.10.12.10）
+## 十一、更新提醒与镜像源（v3.10.12.10 历史设计）
+
+> **v3.12.3 起已停用自动下载/自动安装。** 本节仅说明“检查更新/镜像回退”的历史实现；实际发版只允许提示新版本，用户手动下载。
 
 程序内「帮助 → 检查更新」提供三种来源（选择会记住，存在 `update_config.json`）：
 
@@ -264,7 +272,9 @@ py -3 scripts\release\gen_version_manifest.py --version 3.10.12.10 --notes-file 
 git add version.json && git commit -m "release: version.json 3.10.12.10" && git push
 ```
 
-### 更新包下载
+### 更新包下载（历史实现，v3.12.3 起停用）
+
+> 当前版本不自动下载；以下流程仅保留给历史版本参考。
 
 - 下载 zip 到 `%USERPROFILE%\Downloads\SlimeFinder-update-v<版本>\`；
 - 下载后用 Release 的 `SHA256SUMS-<版本>.txt` 校验；校验失败自动删除；
