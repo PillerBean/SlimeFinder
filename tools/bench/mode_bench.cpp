@@ -52,6 +52,10 @@ slime::SearchOptions baseOptions(slime::Version version, slime::Mode mode, slime
     o.gridSize = 5;
     o.minDensity = 0.3;
     o.targetCount = 200000;
+    if (const char* t = std::getenv("SLIME_BENCH_TARGET")) {
+        const int v = std::atoi(t);
+        if (v >= 1 && v <= 1000000) o.targetCount = v;
+    }
     o.stopAtTarget = false;
     o.smartRange = false;
     o.threads = 0;
