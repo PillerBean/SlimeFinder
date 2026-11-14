@@ -1,4 +1,4 @@
-﻿// v3.12.0：搜索、构建与结果处理逻辑。
+// v3.12.0：搜索、构建与结果处理逻辑。
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {
@@ -226,7 +226,21 @@ void MainWindow::startSearch()
         }
     }
 
-    const bool cacheEnabled = (opt.version == Version::Bedrock) && m_w->useCache->isChecked();
+    // v3.13.4：缓存开关勾选但本地没有任何缓存 / 缓存完全不覆盖本次范围时，
+    //   不要让 useCache 白白关闭 GPU 图案/扫描路径；此时等价于“无缓存搜索”。
+    bool cacheEnabled = (opt.version == Version::Bedrock) && m_w->useCache->isChecked();
+    if (cacheEnabled) {
+        bool anyOverlap = false;
+        if (m_cacheStore) {
+            for (const auto& e : m_cacheStore->packs()) {
+                if (e.rect.maxX < opt.minX || e.rect.minX > opt.maxX ||
+                    e.rect.maxZ < opt.minZ || e.rect.minZ > opt.maxZ) continue;
+                anyOverlap = true;
+                break;
+            }
+        }
+        if (!anyOverlap) cacheEnabled = false;
+    }
     opt.useCache = cacheEnabled;
     // v3.12.3：普通搜索不再一次性持有全量 m_cache；按 band 从 CacheStore 懒加载。
     opt.cache = nullptr;

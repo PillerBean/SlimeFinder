@@ -1,16 +1,16 @@
 {
-  "version": "3.13.3",
-  "tag": "v3.13.3",
-  "notes": "# SlimeFinder v3.13.3\n\n## 搜索性能\n\n- AMD 显卡密度 GPU 门槛进一步下调：\n  - Java：1M → **64K 区块**\n  - Bedrock：96K → **16K 区块**\n- 256² / 512² 等小范围密度搜索会优先走 GPU；\n- 低于实测收益门槛仍回退 CPU；\n- NVIDIA / Intel 保持原有保守门槛。\n\n## 说明\n\n- 结果、排序、缓存格式不变；\n- 构建缓存、取消、进度语义不变；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- CPU/GPU 结果一致",
+  "version": "3.13.4",
+  "tag": "v3.13.4",
+  "notes": "# SlimeFinder v3.13.4\n\n## 搜索性能\n\n- **缓存勾选但实际无缓存覆盖时，不再白关 GPU 路径**：\n  - 本地没有任何缓存包；\n  - 或缓存包与本次搜索范围完全不重叠；\n  - 此时等价于无缓存搜索，自动让 GPU 图案/扫描路径正常启用。\n- 有缓存与范围相交时，行为与之前一致；\n- 结果、排序、缓存格式不变。\n\n## 说明\n\n- 这是路径选择修复，不是缓存语义变更；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过",
   "assets": [
     {
-      "name": "SlimeFinder-3.13.3-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.3/SlimeFinder-3.13.3-Setup.exe",
-      "size": 17873025
+      "name": "SlimeFinder-3.13.4-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.4/SlimeFinder-3.13.4-Setup.exe",
+      "size": 17871278
     },
     {
-      "name": "SHA256SUMS-3.13.3.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.3/SHA256SUMS-3.13.3.txt",
+      "name": "SHA256SUMS-3.13.4.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.4/SHA256SUMS-3.13.4.txt",
       "size": 202
     }
   ]
