@@ -1,5 +1,7 @@
 #include "gui/widgets/CacheCoverageMap.h"
 
+#include "i18n/UiText.h"
+
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -86,7 +88,7 @@ void CacheCoverageMap::paintEvent(QPaintEvent*)
 
     if (m_packs.empty()) {
         p.setPen(text);
-        p.drawText(rect(), Qt::AlignCenter, QStringLiteral("暂无缓存覆盖"));
+        p.drawText(rect(), Qt::AlignCenter, slime::ui::t("ui.cache.map.noCoverage"));
         return;
     }
 
@@ -109,7 +111,7 @@ void CacheCoverageMap::paintEvent(QPaintEvent*)
             f.setPointSizeF(std::max(7.0, f.pointSizeF() - 1.5));
             p.setFont(f);
             p.drawText(r.adjusted(5, 3, -4, -3), Qt::AlignLeft | Qt::AlignTop,
-                       (local ? QStringLiteral("本地 ") : QStringLiteral("下载 ")) +
+                       (local ? slime::ui::t("ui.cache.map.local") : slime::ui::t("ui.cache.map.download")) +
                            QString::number(static_cast<double>(e.compressedBytes) / (1024.0 * 1024.0), 'f', 1) +
                            QStringLiteral(" MB"));
         }

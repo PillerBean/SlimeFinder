@@ -33,6 +33,7 @@ def main():
     packs = [("zh-CN", load("zh-CN.json")), ("zh-TW", load("zh-TW.json")), ("en-US", load("en-US.json"))]
     zh = packs[0][1]
     errors = []
+    ph_re = re.compile(r"%\d+")
     for name, data in packs:
         if set(zh) != set(data):
             errors.append("%s key mismatch: missing=%d extra=%d" %
@@ -40,6 +41,15 @@ def main():
         for k, v in data.items():
             if not str(v).strip():
                 errors.append("empty %s value: %s" % (name, k))
+        if name == "en-US":
+            for k, v in data.items():
+                if cjk(str(v)):
+                    errors.append("en-US contains CJK: %s" % k)
+    # 占位符必须与中文基准一致（%10 不能被误写成 %1 0）。
+    for name, data in packs[1:]:
+        for k in set(zh) & set(data):
+            if sorted(set(ph_re.findall(str(zh[k])))) != sorted(set(ph_re.findall(str(data[k])))):
+                errors.append("placeholder mismatch %s: %s" % (name, k))
     for help_name in ("tutorial-zh-CN.html", "tutorial-zh-TW.html", "tutorial-en-US.html"):
         hp = os.path.join(ROOT, "assets", "help", help_name)
         if not os.path.exists(hp) or os.path.getsize(hp) < 100:

@@ -14,6 +14,8 @@
 #include <QSaveFile>
 #include <QStandardPaths>
 
+#include "i18n/UiText.h"
+
 #include <algorithm>
 #include <memory>
 
@@ -43,8 +45,8 @@ QString configValue(const QString& group, const QString& key)
 
 QString normalizedError(const QNetworkReply* reply)
 {
-    if (!reply) return QStringLiteral("网络请求失败");
-    return reply->errorString().isEmpty() ? QStringLiteral("网络请求失败") : reply->errorString();
+    if (!reply) return slime::ui::t("ui.cache.download.error.network");
+    return reply->errorString().isEmpty() ? slime::ui::t("ui.cache.download.error.network") : reply->errorString();
 }
 
 RemoteCachePack parseRemotePack(const QJsonObject& o, const QUrl& manifestUrl, const QUrl& fallbackManifest)
@@ -151,7 +153,7 @@ QString CacheDownloadClient::netdiskUrl()
 void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallback done)
 {
     if (!manifestUrl.isValid() || manifestUrl.isEmpty()) {
-        done(false, QStringLiteral("未配置缓存下载源"), {});
+        done(false, slime::ui::t("ui.cache.download.error.sourceMissing"), {});
         return;
     }
     QNetworkRequest req(manifestUrl);
@@ -173,13 +175,13 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
         QJsonParseError parseErr{};
         const QJsonDocument doc = QJsonDocument::fromJson(body, &parseErr);
         if (parseErr.error != QJsonParseError::NoError || !doc.isObject()) {
-            done(false, QStringLiteral("manifest JSON 解析失败"), {});
+            done(false, slime::ui::t("ui.cache.download.error.manifestJson"), {});
             return;
         }
         const QJsonObject root = doc.object();
         const int format = root.value(QStringLiteral("formatVersion")).toInt(0);
         if (format != 3) {
-            done(false, QStringLiteral("manifest 格式版本不支持"), {});
+            done(false, slime::ui::t("ui.cache.download.error.manifestVersion"), {});
             return;
         }
         QVector<RemoteCachePack> packs;
@@ -204,7 +206,7 @@ void CacheDownloadClient::fetchManifestStream(const QUrl& manifestUrl, StreamHea
                                                StreamPackCallback onPack, StreamDoneCallback done)
 {
     if (!manifestUrl.isValid() || manifestUrl.isEmpty()) {
-        done(false, QStringLiteral("未配置缓存下载源"));
+        done(false, slime::ui::t("ui.cache.download.error.sourceMissing"));
         return;
     }
     struct State {
@@ -292,7 +294,7 @@ void CacheDownloadClient::fetchManifestStream(const QUrl& manifestUrl, StreamHea
         process();
         if (!st->finished) {
             st->finished = true;
-            done(false, QStringLiteral("manifest 流式解析中断"));
+            done(false, slime::ui::t("ui.cache.download.error.streamInterrupted"));
         }
     });
 }
@@ -302,7 +304,7 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
                                        DownloadProgress progress)
 {
     if (!packUrl.isValid()) {
-        done(false, QStringLiteral("缓存包 URL 无效"));
+        done(false, slime::ui::t("ui.cache.download.error.packUrl"));
         return;
     }
     const QString partPath = destPath + QStringLiteral(".part");
@@ -333,7 +335,7 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
                          QFile part(partPath);
                          if (offset > 0 && status == 206) {
                              if (!part.open(QIODevice::Append)) {
-                                 done(false, QStringLiteral("无法追加缓存包临时文件"));
+                                 done(false, slime::ui::t("ui.cache.download.error.tempAppend"));
                                  return;
                              }
                          } else {
@@ -343,25 +345,25 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
                                  QFile::remove(partPath);
                              }
                              if (!part.open(QIODevice::WriteOnly)) {
-                                 done(false, QStringLiteral("无法写入缓存包临时文件"));
+                                 done(false, slime::ui::t("ui.cache.download.error.tempWrite"));
                                  return;
                              }
                          }
                          if (part.write(data) != data.size()) {
                              part.close();
-                             done(false, QStringLiteral("缓存包写入失败"));
+                             done(false, slime::ui::t("ui.cache.download.error.packWrite"));
                              return;
                          }
                          part.close();
                          const qint64 total = QFileInfo(partPath).size();
                          if (pack.bytes > 0 && total != pack.bytes) {
-                             done(false, QStringLiteral("缓存包大小校验失败"));
+                             done(false, slime::ui::t("ui.cache.download.error.packSize"));
                              return;
                          }
                          if (!pack.sha256.isEmpty()) {
                              QFile verify(partPath);
                              if (!verify.open(QIODevice::ReadOnly)) {
-                                 done(false, QStringLiteral("无法读取缓存包临时文件"));
+                                 done(false, slime::ui::t("ui.cache.download.error.tempRead"));
                                  return;
                              }
                              const QByteArray all = verify.readAll();
@@ -369,13 +371,13 @@ void CacheDownloadClient::downloadPack(const QUrl& packUrl, const RemoteCachePac
                                  QCryptographicHash::hash(all, QCryptographicHash::Sha256).toHex());
                              if (got.compare(pack.sha256, Qt::CaseInsensitive) != 0) {
                                  QFile::remove(partPath);
-                                 done(false, QStringLiteral("缓存包 SHA256 校验失败"));
+                                 done(false, slime::ui::t("ui.cache.download.error.packSha"));
                                  return;
                              }
                          }
                          QFile::remove(destPath);
                          if (!QFile::rename(partPath, destPath)) {
-                             done(false, QStringLiteral("缓存包替换失败"));
+                             done(false, slime::ui::t("ui.cache.download.error.packReplace"));
                              return;
                          }
                          done(true, {});

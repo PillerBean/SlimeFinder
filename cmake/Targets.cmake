@@ -1,4 +1,4 @@
-﻿# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
+# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
 
 # ---------------------------------------------------------------- zstd（BSD）：缓存块压缩
 # 自包含 vendored 源码，不依赖系统 zstd。
@@ -267,11 +267,24 @@ endif()
 add_executable(slime_cache_stream_tests
     tests/integration/cache_stream_test.cpp
     src/gui/services/CacheDownloadClient.cpp
+    src/i18n/UiText.cpp
+    src/i18n/UiStrings.cpp
 )
 target_include_directories(slime_cache_stream_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_cache_stream_tests PRIVATE Qt6::Core Qt6::Network)
 if(MSVC)
     target_compile_options(slime_cache_stream_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_i18n_tests
+    tests/integration/i18n_test.cpp
+    src/i18n/UiText.cpp
+    src/i18n/UiStrings.cpp
+)
+target_include_directories(slime_i18n_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_i18n_tests PRIVATE Qt6::Core)
+if(MSVC)
+    target_compile_options(slime_i18n_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
 add_executable(slime_cache_zip_tests
