@@ -1,17 +1,17 @@
 {
-  "version": "3.6.19",
-  "tag": "v3.6.19-archive",
-  "notes": "SlimeFinder v3.6.19（稳定通道当前指向的正式版本）\n\n新版正式版发布后会更新此清单。",
+  "version": "3.12.3",
+  "tag": "v3.12.3",
+  "notes": "# SlimeFinder v3.12.3\n\n## 重要变更\n\n- **更新方式改为手动**：发现新版本后只提示，不再自动下载或自动安装。请手动前往 Releases 下载 `Setup.exe`，核对 SHA256 后安装。\n- **缓存系统升级**：官方缓存覆盖范围更大，支持从官方服务器获取，也支持导入网盘下载的压缩包。\n- 普通搜索不再写入缓存；基岩版搜索会按需读取缓存，搜索结果不受影响。\n\n## 缓存\n\n- 缓存页改为手动点击“获取清单”，首次打开不会自动请求。\n- 清单边获取边显示，不再一次性建完整列表。\n- 网盘压缩包导入会显示检测和导入进度，大文件不再长时间无反馈。\n- 缓存默认上限改为 10240 MB，可在设置中调整。\n- 旧版缓存仍然可以读取，建议重新获取新版缓存以获得更大覆盖范围。\n- 移除缓存页的“附近”快捷项。\n- 增加按钮防连点，避免重复请求。\n\n## 体验与修复\n\n- 修复大量压缩包导入时界面看似卡死的问题。\n- 修复缓存列表一次性构建造成的卡顿。\n- 更新下载入口已停用，请手动下载并核对 SHA256。\n- 同步中、英、繁体中文语言文本。\n\n## 注意事项\n\n- 本版没有代码签名，部分杀毒软件可能误报；请只从官方 Releases 下载，并核对 `SHA256SUMS`。\n- 自 v3.12.3 起不再自动更新；此前版本介绍中的自动更新说明不再适用。",
   "assets": [
     {
-      "name": "SlimeFinder-3.6.19-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.6.19-archive/SlimeFinder-3.6.19-Setup.exe",
-      "size": 10896096
+      "name": "SlimeFinder-3.12.3-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.3/SlimeFinder-3.12.3-Setup.exe",
+      "size": 17866272
     },
     {
-      "name": "SHA256SUMS-3.6.19.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.6.19-archive/SHA256SUMS-3.6.19.txt",
-      "size": 606
+      "name": "SHA256SUMS-3.12.3.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.12.3/SHA256SUMS-3.12.3.txt",
+      "size": 202
     }
   ]
 }
