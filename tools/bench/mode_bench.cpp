@@ -119,6 +119,11 @@ int main()
     if (!std::getenv("SLIME_BENCH_DEFAULT_THRESHOLD")) {
         _putenv_s("SLIME_GPU_MIN_CHUNKS", "1");
     }
+    // 基准默认禁用判定位图复用，避免第二次重复运行把扫描耗时变成 0；
+    // 验证复用本身时显式设置 SLIME_REUSE_BITMAP=1。
+    if (!std::getenv("SLIME_REUSE_BITMAP")) {
+        _putenv_s("SLIME_REUSE_BITMAP", "0");
+    }
     if (const char* sideEnv = std::getenv("SLIME_BENCH_SIDE")) {
         const int v = std::atoi(sideEnv);
         if (v >= 64 && v <= 16384) gSide = v;

@@ -405,6 +405,18 @@ public:
         return cnt;
     }
 
+    // v3.13.5：整幅位图快照/恢复（参数变化复用同一区域的判定结果）
+    inline void copyWordsTo(std::vector<uint64_t>& out) const
+    {
+        out = m_bits;
+    }
+    inline bool copyWordsFrom(const std::vector<uint64_t>& in) noexcept
+    {
+        if (in.size() != m_bits.size()) return false;
+        std::copy(in.begin(), in.end(), m_bits.begin());
+        return true;
+    }
+
 private:
     static inline int popcount64(uint64_t v) noexcept
     {
@@ -418,6 +430,31 @@ private:
     int64_t m_x0 = 0, m_z0 = 0, m_w = 0, m_h = 0, m_wpr = 0;
     std::vector<uint64_t> m_bits;
 };
+
+// v3.13.5：同一区域/种子/版本的判定位图只保留一份。用户改图案、密度阈值或搜索
+//   参数时，匹配阶段仍要重跑，但判定阶段可以跳过；这是纯内存缓存，不写磁盘。
+struct BitmapReuseCache {
+    std::mutex mu;
+    bool valid = false;
+    Version version = Version::Java;
+    int64_t seed = 0;
+    int64_t x0 = 0, z0 = 0, w = 0, h = 0;
+    std::vector<uint64_t> words;
+};
+
+BitmapReuseCache& bitmapReuseCache()
+{
+    static BitmapReuseCache c;
+    return c;
+}
+
+bool bitmapReuseEnabled() noexcept
+{
+    const char* e = std::getenv("SLIME_REUSE_BITMAP");
+    return !(e && e[0] == '0' && e[1] == '\0');
+}
+
+constexpr int64_t kBitmapReuseMaxChunks = int64_t{ 64 } << 20; // 64M 区块 = 8MB 位图
 
 // ---------- 进度发射器：200 步（0.5%）节流 ----------
 // v3.10.3：GPU 阶段标记（livePhase=2 扫描中 / 3 匹配中；析构自动清零）——
@@ -2254,6 +2291,28 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     out.stats.threadsUsed = nthreads;
     const int64_t wpr = grid.wordsPerRow();
 
+    // v3.13.5：同区域/种子/版本的判定位图复用。仅 CPU 精确路径且无缓存时启用，
+    //   避免与缓存覆盖、采样扫描、GPU 全流式路径混用；位图本身与图案/阈值无关。
+    bool bitmapReused = false;
+    const bool bitmapReuseEligible = bitmapReuseEnabled() && !sampleScan && !useCache &&
+                                     !opt.buildMode && opt.algorithm == Algorithm::Exact &&
+                                     totalChunks <= kBitmapReuseMaxChunks &&
+                                     (!opt.gpuScan || !opt.gpuScan->available());
+    if (bitmapReuseEligible) {
+        std::lock_guard<std::mutex> lk(bitmapReuseCache().mu);
+        const auto& c = bitmapReuseCache();
+        if (c.valid && c.version == version && c.seed == opt.worldSeed && c.x0 == x0 &&
+            c.z0 == z0 && c.w == W && c.h == H && grid.copyWordsFrom(c.words)) {
+            bitmapReused = true;
+            if (std::getenv("SLIME_DEBUG")) {
+                std::fprintf(stderr, "[engine] 复用上一次判定位图：%lldx%lld @ (%lld,%lld)\n",
+                             static_cast<long long>(W), static_cast<long long>(H),
+                             static_cast<long long>(x0), static_cast<long long>(z0));
+                std::fflush(stderr);
+            }
+        }
+    }
+
     // v3.2.0：GPU 可选加速。成功(1)则跳过下方 CPU 扫描块；0=失败回退 CPU；-1=取消
     // v3.3.7（P0-3）：扫描阶段的真实计数统一由本发射器累加（CPU/GPU 两条扫描路径共用）
     Emitter scanEm(progress, kScanFrac0, kScanFrac1, true, opt.liveScanned);
@@ -2331,7 +2390,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     //   （20k²：110 vs 89 ms；40k² 基本持平；100k² 起 GPU 明显占优 2125 vs 2711 ms）。
     //   因此图案模式仅在区域 ≥ 3e9 区块时启用 GPU 扫描；密度模式不受影响。
     const bool patternGpuScanOk = (opt.mode != Mode::Strict) || totalChunks >= 3000000000LL;
-    if (!sampleScan && !opt.buildMode && opt.gpuScan && opt.gpuScan->available() && patternGpuScanOk &&
+    if (!bitmapReused && !sampleScan && !opt.buildMode && opt.gpuScan && opt.gpuScan->available() && patternGpuScanOk &&
         totalChunks >= gpuMinChunksForDevice(opt)) {
         gpuStage = runGpuScanStage(opt, cancel, scanEm, grid, threadNew[0], gpuStageErr);
         if (gpuStage == 0 && std::getenv("SLIME_DEBUG")) {
@@ -2636,6 +2695,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         scanEm.report(cd, totalChunks, speed, eta);
     };
 
+    if (!bitmapReused) {
 #ifdef _OPENMP
     if (!sampleScan && nthreads > 1) {
 #pragma omp parallel for schedule(dynamic, 4)
@@ -2649,6 +2709,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             for (int64_t t = 0; t < nTasks; ++t) scanTask(t);
         }
     }
+    }
     } // v3.2.0：CPU 扫描块结束（gpuStage==1 时跳过本块）
 
     if (cancel.load(std::memory_order_relaxed)) {
@@ -2656,8 +2717,25 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         out.stats.totalMs = elapsedMs();
         return;
     }
+    if (bitmapReused) {
+        if (opt.liveScanned) opt.liveScanned->fetch_add(totalChunks, std::memory_order_relaxed);
+        if (opt.liveTotal) opt.liveTotal->store(totalChunks, std::memory_order_relaxed);
+        scanEm.report(totalChunks, totalChunks, 0.0, 0.0);
+    }
     out.stats.scannedChunks = sampleScan ? sampleChunks : totalChunks;
     out.stats.scanMs = elapsedMs();
+    if (!bitmapReused && bitmapReuseEligible && !cancel.load(std::memory_order_relaxed)) {
+        std::lock_guard<std::mutex> lk(bitmapReuseCache().mu);
+        auto& c = bitmapReuseCache();
+        c.valid = true;
+        c.version = version;
+        c.seed = opt.worldSeed;
+        c.x0 = x0;
+        c.z0 = z0;
+        c.w = W;
+        c.h = H;
+        grid.copyWordsTo(c.words);
+    }
     if (kScanProfileOn && g_profGpuChunks.load(std::memory_order_relaxed) > 0) {
         const int64_t ck = g_profGpuChunks.load(std::memory_order_relaxed);
         const int64_t sc = g_profGpuScanCycles.load(std::memory_order_relaxed);
