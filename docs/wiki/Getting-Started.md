@@ -2,7 +2,7 @@
 
 ## 1. 下载
 
-- 稳定版（Latest）：<https://github.com/PillerBean/SlimeFinder/releases/latest>（当前 v3.12.3）
+- 稳定版（Latest）：<https://github.com/PillerBean/SlimeFinder/releases/latest>（当前 v3.13.4）
 - 测试版：Releases 页面里带 `Pre-release` 标记的版本
 - 安装包：在对应 Release 的 **Assets** 里下载 `SlimeFinder-<版本>-Setup.exe`
   （默认安装到 Program Files，需要管理员权限；更新需手动下载安装、核对 SHA256）

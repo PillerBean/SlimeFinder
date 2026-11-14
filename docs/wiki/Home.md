@@ -34,7 +34,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 - 稳定版（Latest）：<https://github.com/PillerBean/SlimeFinder/releases/latest>
 - 测试版 / 历史版本：<https://github.com/PillerBean/SlimeFinder/releases>
   （带 `Pre-release` 标记的是测试版；历史版本为二进制归档）
-- **当前正式版：v3.12.3** → [直接打开 Release](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.12.3)
+- **当前正式版：v3.13.4** → [直接打开 Release](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.4)
 
 每个版本的 Assets 里只需要下载：
 
