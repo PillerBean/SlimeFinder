@@ -2,7 +2,7 @@
 // Public URL: https://slimefinder-cache.pages.dev
 // Reads only GET/HEAD, whitelists versioned cache paths, and reports quota status.
 
-const ALLOWED = /^\/v3\.12\.3\/(manifest\.json|(?:local|downloaded)\/[A-Za-z0-9._-]+\.slmz)$/;
+const ALLOWED = /^\/v3\.12\.3\/(manifest\.json|manifest\.ndjson|(?:local|downloaded)\/[A-Za-z0-9._-]+\.slmz)$/;
 
 function jsonResponse(status, obj, extraHeaders = {}) {
   return new Response(JSON.stringify(obj), {
@@ -55,7 +55,7 @@ export default {
     const pct = typeof quota?.pct === 'number' ? quota.pct : null;
 
     if (state === 'exhausted') {
-      if (url.pathname.endsWith('manifest.json')) {
+      if (url.pathname.endsWith('manifest.json') || url.pathname.endsWith('manifest.ndjson')) {
         return jsonResponse(503, {
           ok: false,
           error: 'r2_quota_exhausted',
@@ -67,6 +67,36 @@ export default {
         error: 'r2_quota_exhausted',
         message: 'R2 本月服务额度已用尽，需要等待下个月恢复；期间只能尝试网盘下载。',
       }, quotaHeaders(state, pct));
+    }
+
+    // 流式清单：从现有 manifest.json 生成 NDJSON，客户端按行递增显示。
+    if (url.pathname.endsWith('/manifest.ndjson')) {
+      const manifestObject = await env.CACHE_BUCKET.get('v3.12.3/manifest.json');
+      if (!manifestObject) return jsonResponse(404, { ok: false, error: 'manifest_not_found' });
+      const manifest = JSON.parse(await manifestObject.text());
+      const packs = Array.isArray(manifest.packs) ? manifest.packs : [];
+      const header = { ...manifest, kind: 'header', totalPacks: packs.length };
+      delete header.packs;
+      const encoder = new TextEncoder();
+      const headers = new Headers();
+      headers.set('content-type', 'application/x-ndjson; charset=utf-8');
+      headers.set('cache-control', 'no-cache');
+      headers.set('x-slimefinder-total-packs', String(packs.length));
+      for (const [k, v] of Object.entries(quotaHeaders(state, pct))) headers.set(k, v);
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(JSON.stringify(header) + '\n'));
+          for (let i = 0; i < packs.length; i += 16) {
+            let chunk = '';
+            for (let j = i; j < Math.min(packs.length, i + 16); ++j) {
+              chunk += JSON.stringify({ kind: 'pack', ...packs[j] }) + '\n';
+            }
+            controller.enqueue(encoder.encode(chunk));
+          }
+          controller.close();
+        },
+      });
+      return new Response(stream, { headers });
     }
 
     const key = url.pathname.slice(1); // bucket key without leading slash

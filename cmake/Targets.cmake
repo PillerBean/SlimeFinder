@@ -264,6 +264,16 @@ if(MSVC)
     target_compile_options(slime_repack_packs PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_cache_stream_tests
+    tests/integration/cache_stream_test.cpp
+    src/gui/services/CacheDownloadClient.cpp
+)
+target_include_directories(slime_cache_stream_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_cache_stream_tests PRIVATE Qt6::Core Qt6::Network)
+if(MSVC)
+    target_compile_options(slime_cache_stream_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_zip_tests
     tests/integration/cache_zip_import_test.cpp
     src/cache/CacheZipImporter.cpp

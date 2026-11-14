@@ -151,7 +151,7 @@ CacheDownloadDialog::CacheDownloadDialog(slime::cache::CacheStore* store, QWidge
             if (m_downloadSelected) m_downloadSelected->setEnabled(n > 0);
         });
         connect(m_downloadSelected, &QPushButton::clicked, this, [this]() { downloadSelected(); });
-        loadAvailable();
+        m_availableStatus->setText(slime::ui::t("ui.cache.download.clickFetch"));
     }
 
     // 网盘手动页：只给 4 个范围链接 + 导入窗口，不做自动扫描/下载
@@ -357,53 +357,114 @@ bool CacheDownloadDialog::matchesSearch(const slime::cache::CachePackEntry& e) c
 
 void CacheDownloadDialog::loadAvailable()
 {
-    if (!m_client || !m_availableStatus) return;
-    m_populating = false;
-    m_availablePacks.clear();
-    if (m_availableTable) m_availableTable->setRowCount(0);
+    if (!m_client || !m_availableStatus || m_manifestLoading || m_populating) return;
+    if (m_manifestThrottle.isValid() && m_manifestThrottle.elapsed() < 1500) return;
     const QString primary = CacheDownloadClient::primaryManifestUrl();
     const QString fallback = CacheDownloadClient::fallbackManifestUrl();
     if (primary.trimmed().isEmpty()) {
         m_availableStatus->setText(slime::ui::t("ui.cache.download.unconfigured"));
         return;
     }
+    m_manifestLoading = true;
+    m_manifestThrottle.start();
+    if (m_loadManifest) m_loadManifest->setEnabled(false);
+    if (m_downloadSelected) m_downloadSelected->setEnabled(false);
+    m_streamTotal = 0;
+    m_streamLoaded = 0;
+    m_availablePacks.clear();
+    m_availableShown = 0;
+    if (m_availableTable) m_availableTable->setRowCount(0);
     m_availableStatus->setText(slime::ui::t("ui.cache.download.loading"));
-    const auto apply = [this](bool ok, const QString& err, const QVector<RemoteCachePack>& packs) {
-        if (!m_availableStatus || !m_availableTable) return;
-        if (!ok) {
-            if (m_client && m_client->quotaWarning() == QStringLiteral("exhausted")) {
-                m_availableStatus->setText(slime::ui::t("ui.cache.download.quota.exhausted"));
-            } else {
-                m_availableStatus->setText(err);
-            }
-            return;
-        }
-        m_availablePacks = packs;
-        startAvailablePopulation();
-        const QString quota = m_client ? m_client->quotaWarning() : QString();
-        if (m_availableStatus) {
-            if (quota == QStringLiteral("warn")) {
-                m_availableStatus->setText(slime::ui::t("ui.cache.download.quota.warn"));
-            } else if (quota == QStringLiteral("exhausted")) {
-                m_availableStatus->setText(slime::ui::t("ui.cache.download.quota.exhausted"));
-            }
-        }
+
+    const auto finish = [this](bool ok, const QString& err) {
+        finishManifestLoad(ok, err);
     };
-    if (fallback.trimmed().isEmpty()) {
-        m_client->fetchManifest(QUrl(primary), apply);
-    } else {
-        m_client->fetchManifest(QUrl(primary), [this, apply, fallback](bool ok, const QString& err,
-                                                                       const QVector<RemoteCachePack>& packs) {
-            if (ok) {
-                apply(true, {}, packs);
+
+    const auto tryJson = std::make_shared<std::function<void(const QUrl&, const QString&)>>();
+    *tryJson = [this, primary, fallback, finish](const QUrl& url, const QString& previousError) {
+        m_client->fetchManifest(url, [this, fallback, finish, previousError](bool ok, const QString& err,
+                                                                              const QVector<RemoteCachePack>& packs) {
+            if (!ok && !fallback.trimmed().isEmpty()) {
+                // 备用 manifest 只再尝试一次。
+                m_client->fetchManifest(QUrl(fallback), [this, finish](bool ok2, const QString& err2,
+                                                                       const QVector<RemoteCachePack>& p2) {
+                    if (!ok2) { finish(false, err2); return; }
+                    m_availablePacks = p2;
+                    m_streamLoaded = p2.size();
+                    startAvailablePopulation();
+                    finish(true, {});
+                });
                 return;
             }
-            m_client->fetchManifest(QUrl(fallback), [apply](bool ok2, const QString& err2,
-                                                             const QVector<RemoteCachePack>& packs2) {
-                apply(ok2, err2, packs2);
-            });
+            if (!ok) { finish(false, err); return; }
+            m_availablePacks = packs;
+            m_streamLoaded = packs.size();
+            startAvailablePopulation();
+            finish(true, {});
         });
+    };
+
+    const QUrl primaryUrl(primary);
+    m_client->fetchManifestStream(
+        primaryUrl,
+        [this](int total) {
+            m_streamTotal = total;
+            m_manifestElapsed.start();
+            if (m_availableTable) m_availableTable->setRowCount(0);
+            if (m_availableStatus) m_availableStatus->setText(
+                slime::ui::t("ui.cache.download.streamHeader").arg(0).arg(total));
+        },
+        [this](const RemoteCachePack& p) {
+            const int index = m_availablePacks.size();
+            m_availablePacks.push_back(p);
+            ++m_streamLoaded;
+            bool show = true;
+            if (m_availableRange > 0 &&
+                std::max({ std::abs(p.minX), std::abs(p.maxX), std::abs(p.minZ), std::abs(p.maxZ) }) > m_availableRange)
+                show = false;
+            if (show && !m_availableQuery.isEmpty()) {
+                const QString range = QStringLiteral("%1..%2, %3..%4").arg(p.minX).arg(p.maxX).arg(p.minZ).arg(p.maxZ);
+                if (!p.name.contains(m_availableQuery, Qt::CaseInsensitive) && !range.contains(m_availableQuery))
+                    show = false;
+            }
+            if (show && m_availableTable) appendAvailableRow(p, index);
+            // 每收到一个 pack 都更新计数（ETA 也在同一处刷新）。
+            if (m_availableStatus) {
+                    const qint64 ms = std::max<qint64>(1, m_manifestElapsed.elapsed());
+                    const double rate = m_streamLoaded > 0 ? static_cast<double>(m_streamLoaded) * 1000.0 / ms : 0.0;
+                    const int remain = rate > 0 ? static_cast<int>((m_streamTotal - m_streamLoaded) / rate) : 0;
+                    m_availableStatus->setText(
+                        slime::ui::t("ui.cache.download.streamProgress")
+                            .arg(m_streamLoaded).arg(m_streamTotal).arg(remain));
+            }
+        },
+        [this, tryJson, finish](bool ok, const QString& err) {
+            if (ok) finish(true, {});
+            else if (m_availablePacks.isEmpty()) (*tryJson)(QUrl(CacheDownloadClient::primaryManifestUrl()), err);
+            else finish(false, err);
+        });
+}
+
+void CacheDownloadDialog::startManifestLoad()
+{
+    loadAvailable();
+}
+
+void CacheDownloadDialog::finishManifestLoad(bool ok, const QString& error)
+{
+    if (!m_manifestLoading) return;
+    m_manifestLoading = false;
+    if (ok) {
+        if (m_availableStatus) {
+            m_availableStatus->setText(slime::ui::t("ui.cache.download.streamDone").arg(m_streamLoaded));
+        }
+    } else if (m_availableStatus) {
+        m_availableStatus->setText(slime::ui::t("ui.cache.download.streamFailed").arg(error));
     }
+    if (m_downloadSelected) m_downloadSelected->setEnabled(m_availableShown > 0);
+    QTimer::singleShot(1200, this, [this]() {
+        if (!m_manifestLoading && m_loadManifest) m_loadManifest->setEnabled(true);
+    });
 }
 
 void CacheDownloadDialog::startAvailablePopulation()
@@ -419,7 +480,7 @@ void CacheDownloadDialog::startAvailablePopulation()
     m_populateElapsed.start();
     if (m_downloadSelected) m_downloadSelected->setEnabled(false);
     if (m_availableStatus) {
-        m_availableStatus->setText(QStringLiteral("清单已获取：0 / %1，正在生成列表…").arg(m_populateTotal));
+        m_availableStatus->setText(slime::ui::t("ui.cache.download.streamRows").arg(0).arg(m_populateTotal).arg(0));
     }
     QTimer::singleShot(0, this, [this]() { populateAvailableChunk(); });
 }
@@ -493,7 +554,7 @@ void CacheDownloadDialog::populateAvailableChunk()
             const qint64 ms = std::max<qint64>(1, m_populateElapsed.elapsed());
             const double rate = m_populateIndex > 0 ? static_cast<double>(m_populateIndex) * 1000.0 / ms : 0.0;
             const int remain = rate > 0 ? static_cast<int>((m_populateTotal - m_populateIndex) / rate) : 0;
-            m_availableStatus->setText(QStringLiteral("正在生成列表 %1 / %2，预计剩余 %3 秒")
+            m_availableStatus->setText(slime::ui::t("ui.cache.download.streamRows")
                                            .arg(m_populateIndex).arg(m_populateTotal).arg(remain));
         }
         QTimer::singleShot(0, this, [this]() { populateAvailableChunk(); });
@@ -501,7 +562,7 @@ void CacheDownloadDialog::populateAvailableChunk()
     }
     m_populating = false;
     if (m_availableStatus) {
-        m_availableStatus->setText(QStringLiteral("清单获取完成：共 %1 个 pack，当前显示 %2 个")
+        m_availableStatus->setText(slime::ui::t("ui.cache.download.streamReady")
                                        .arg(m_populateTotal).arg(m_availableShown));
     }
     if (m_downloadSelected) m_downloadSelected->setEnabled(m_availableShown > 0);

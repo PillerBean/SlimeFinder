@@ -46,6 +46,57 @@ QString normalizedError(const QNetworkReply* reply)
     if (!reply) return QStringLiteral("网络请求失败");
     return reply->errorString().isEmpty() ? QStringLiteral("网络请求失败") : reply->errorString();
 }
+
+RemoteCachePack parseRemotePack(const QJsonObject& o, const QUrl& manifestUrl, const QUrl& fallbackManifest)
+{
+    RemoteCachePack p;
+    p.file = o.value(QStringLiteral("file")).toString();
+    p.name = o.value(QStringLiteral("name")).toString(p.file);
+    p.bytes = static_cast<qint64>(o.value(QStringLiteral("bytes")).toDouble());
+    p.sha256 = o.value(QStringLiteral("sha256")).toString();
+    p.minX = o.value(QStringLiteral("minX")).toInt();
+    p.maxX = o.value(QStringLiteral("maxX")).toInt(-1);
+    p.minZ = o.value(QStringLiteral("minZ")).toInt();
+    p.maxZ = o.value(QStringLiteral("maxZ")).toInt(-1);
+    p.source = o.value(QStringLiteral("source")).toString(QStringLiteral("downloaded"));
+    p.url = resolvePackUrl(manifestUrl, p.file, o.value(QStringLiteral("url")).toString());
+    if (fallbackManifest.isValid() && !fallbackManifest.isEmpty()) {
+        const QString explicitFallback = o.value(QStringLiteral("fallbackUrl")).toString();
+        p.fallbackUrl = resolvePackUrl(fallbackManifest, p.file, explicitFallback);
+    }
+    return p;
+}
+
+int findJsonObjectEnd(const QByteArray& body, int start)
+{
+    int depth = 0;
+    bool inString = false;
+    bool escape = false;
+    for (int i = start; i < body.size(); ++i) {
+        const char c = body.at(i);
+        if (inString) {
+            if (escape) escape = false;
+            else if (c == '\\') escape = true;
+            else if (c == '"') inString = false;
+            continue;
+        }
+        if (c == '"') inString = true;
+        else if (c == '{') ++depth;
+        else if (c == '}') {
+            --depth;
+            if (depth == 0) return i;
+        }
+    }
+    return -1;
+}
+
+int findPacksArray(const QByteArray& body, int from)
+{
+    const int key = body.indexOf("\"packs\"", from);
+    if (key < 0) return -1;
+    const int bracket = body.indexOf('[', key);
+    return bracket >= 0 ? bracket + 1 : -1;
+}
 } // namespace
 
 CacheDownloadClient::CacheDownloadClient(QObject* parent)
@@ -136,22 +187,7 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
         const QUrl fallbackManifest = fallbackBase.isEmpty() ? QUrl() : QUrl(fallbackBase);
         const QJsonArray arr = root.value(QStringLiteral("packs")).toArray();
         for (const auto& v : arr) {
-            const QJsonObject o = v.toObject();
-            RemoteCachePack p;
-            p.file = o.value(QStringLiteral("file")).toString();
-            p.name = o.value(QStringLiteral("name")).toString(p.file);
-            p.bytes = static_cast<qint64>(o.value(QStringLiteral("bytes")).toDouble());
-            p.sha256 = o.value(QStringLiteral("sha256")).toString();
-            p.minX = o.value(QStringLiteral("minX")).toInt();
-            p.maxX = o.value(QStringLiteral("maxX")).toInt(-1);
-            p.minZ = o.value(QStringLiteral("minZ")).toInt();
-            p.maxZ = o.value(QStringLiteral("maxZ")).toInt(-1);
-            p.source = o.value(QStringLiteral("source")).toString(QStringLiteral("downloaded"));
-            p.url = resolvePackUrl(manifestUrl, p.file, o.value(QStringLiteral("url")).toString());
-            if (fallbackManifest.isValid() && !fallbackManifest.isEmpty()) {
-                const QString explicitFallback = o.value(QStringLiteral("fallbackUrl")).toString();
-                p.fallbackUrl = resolvePackUrl(fallbackManifest, p.file, explicitFallback);
-            }
+            RemoteCachePack p = parseRemotePack(v.toObject(), manifestUrl, fallbackManifest);
             if (!p.file.isEmpty() && p.url.isValid() && p.maxX >= p.minX && p.maxZ >= p.minZ) {
                 packs.push_back(std::move(p));
             }
@@ -161,6 +197,103 @@ void CacheDownloadClient::fetchManifest(const QUrl& manifestUrl, ManifestCallbac
             return a.minX < b.minX;
         });
         done(true, {}, packs);
+    });
+}
+
+void CacheDownloadClient::fetchManifestStream(const QUrl& manifestUrl, StreamHeaderCallback header,
+                                               StreamPackCallback onPack, StreamDoneCallback done)
+{
+    if (!manifestUrl.isValid() || manifestUrl.isEmpty()) {
+        done(false, QStringLiteral("未配置缓存下载源"));
+        return;
+    }
+    struct State {
+        QByteArray body;
+        int pos = 0;
+        int total = 0;
+        bool headerSent = false;
+        bool packsStarted = false;
+        bool finished = false;
+        bool failed = false;
+    };
+    auto st = std::make_shared<State>();
+    QNetworkRequest req(manifestUrl);
+    req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    req.setRawHeader("User-Agent", "SlimeFinder/3.12.3");
+    req.setTransferTimeout(30000);
+    auto* reply = m_net->get(req);
+
+    const auto process = [this, st, manifestUrl, header, onPack, done, reply]() {
+        if (st->finished) return;
+        if (!st->headerSent) {
+            const int key = st->body.indexOf("\"totalPacks\"");
+            if (key < 0) return;
+            int p = key + 12;
+            while (p < st->body.size() && (st->body.at(p) == ' ' || st->body.at(p) == ':')) ++p;
+            int total = 0;
+            while (p < st->body.size() && st->body.at(p) >= '0' && st->body.at(p) <= '9') {
+                total = total * 10 + (st->body.at(p) - '0');
+                ++p;
+            }
+            st->total = total;
+            st->headerSent = true;
+            if (header) header(total);
+        }
+        if (!st->packsStarted) {
+            st->pos = findPacksArray(st->body, st->pos);
+            if (st->pos < 0) return;
+            st->packsStarted = true;
+        }
+        while (st->pos < st->body.size()) {
+            char c = st->body.at(st->pos);
+            while (c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == ',') {
+                ++st->pos;
+                if (st->pos >= st->body.size()) return;
+                c = st->body.at(st->pos);
+            }
+            if (c == ']') {
+                st->finished = true;
+                if (done) done(true, {});
+                return;
+            }
+            if (c != '{') return;
+            const int end = findJsonObjectEnd(st->body, st->pos);
+            if (end < 0) return;
+            const QByteArray obj = st->body.mid(st->pos, end - st->pos + 1);
+            st->pos = end + 1;
+            QJsonParseError pe{};
+            const QJsonDocument doc = QJsonDocument::fromJson(obj, &pe);
+            if (pe.error != QJsonParseError::NoError || !doc.isObject()) continue;
+            RemoteCachePack pack = parseRemotePack(doc.object(), manifestUrl, QUrl());
+            if (!pack.file.isEmpty() && pack.url.isValid() && pack.maxX >= pack.minX && pack.maxZ >= pack.minZ) {
+                if (onPack) onPack(pack);
+            }
+        }
+    };
+
+    QObject::connect(reply, &QNetworkReply::readyRead, this, [reply, st, process]() {
+        st->body += reply->readAll();
+        process();
+    });
+    QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, st, process, done]() {
+        reply->deleteLater();
+        const QByteArray quota = reply->rawHeader("x-slimefinder-quota");
+        m_quotaWarning = quota == "warn" ? QStringLiteral("warn")
+                         : quota == "exhausted" ? QStringLiteral("exhausted")
+                                                 : QString();
+        if (st->finished) return;
+        if (reply->error() != QNetworkReply::NoError) {
+            st->finished = true;
+            st->failed = true;
+            done(false, normalizedError(reply));
+            return;
+        }
+        st->body += reply->readAll();
+        process();
+        if (!st->finished) {
+            st->finished = true;
+            done(false, QStringLiteral("manifest 流式解析中断"));
+        }
     });
 }
 

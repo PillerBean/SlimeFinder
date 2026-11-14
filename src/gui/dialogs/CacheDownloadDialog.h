@@ -36,6 +36,8 @@ private:
     void refresh();
     void refreshAvailable();
     void loadAvailable();
+    void startManifestLoad();
+    void finishManifestLoad(bool ok, const QString& error);
     void startAvailablePopulation();
     void populateAvailableChunk();
     void appendAvailableRow(const RemoteCachePack& pack, int sourceIndex);
@@ -70,6 +72,11 @@ private:
     int m_populateTotal = 0;
     int m_availableShown = 0;
     QElapsedTimer m_populateElapsed;
+    QElapsedTimer m_manifestThrottle;
+    QElapsedTimer m_manifestElapsed;
+    bool m_manifestLoading = false;
+    int m_streamTotal = 0;
+    int m_streamLoaded = 0;
 
     QProgressBar* m_downloadProgress = nullptr;
     QLabel* m_downloadProgressLabel = nullptr;

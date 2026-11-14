@@ -45,6 +45,13 @@ public:
     // manifestUrl 为空时直接返回失败“未配置下载源”。
     void fetchManifest(const QUrl& manifestUrl, ManifestCallback done);
 
+    // 流式解析 manifest.json：网络读取过程中每解析出一个 pack 就回调一次。
+    using StreamHeaderCallback = std::function<void(int totalPacks)>;
+    using StreamPackCallback = std::function<void(const RemoteCachePack& pack)>;
+    using StreamDoneCallback = std::function<void(bool ok, const QString& error)>;
+    void fetchManifestStream(const QUrl& manifestUrl, StreamHeaderCallback header,
+                             StreamPackCallback onPack, StreamDoneCallback done);
+
     // packUrl 已由 manifest 解析；destPath 为最终 .slmz 路径，内部写 .part 后再校验/替换。
     void downloadPack(const QUrl& packUrl, const RemoteCachePack& pack, const QString& destPath,
                       DownloadCallback done, DownloadProgress progress = {});

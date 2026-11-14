@@ -37,7 +37,6 @@ private:
     };
 
     void addPaths(const QStringList& paths);
-    void startInspection();
     void refresh();
     void startImport();
 
