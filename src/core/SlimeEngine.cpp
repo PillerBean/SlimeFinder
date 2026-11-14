@@ -1268,12 +1268,16 @@ void SlimeEngine::run(const SearchOptions& optIn,
                    dn.find("advanced micro devices") != std::string::npos ||
                    dn.find("gfx") != std::string::npos;
         }();
+        // v3.13.1：图案 GPU 流式的固定开销约 0.3 ms，Java CPU 图案匹配在很小范围也要
+        //   ~1.3 ms（12 线程开销）；实测 128²/256² 已经收益。图案路径单独使用低门槛，
+        //   密度路径仍沿用原来的 GPU 门槛。
+        const int64_t patternGpuMinChunks = (std::min)(gpuMinChunksEnv(opt.version), int64_t{ 1 } << 14);
         if (const char* patGpu = std::getenv("SLIME_GPU_PATTERN")) {
             // v3.10.12.3：仅单变体（方向锁定）走 GPU 图案流式 —— 旋转模式实测 1043 ms(CPU) vs
             //   2260 ms(GPU)：4 个变体 × 流式调用 + 跨变体去重反而更慢，直接回退 CPU。
             if (*patGpu == '1' && amdPatternGpu && strict0 && opt.directionLocked && !opt.useCache &&
                 !opt.buildMode && opt.gpuScan && opt.gpuScan->available() &&
-                totalChunksP >= (std::min)(gpuMinChunksEnv(opt.version), int64_t{ 8 } << 20)) {
+                totalChunksP >= patternGpuMinChunks) {
                 std::vector<VariantMasks> gpuVariants;
                 gpuVariants.push_back(makeVariant(opt.pattern));
                 if (!opt.directionLocked) {

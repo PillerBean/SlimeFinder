@@ -1,16 +1,16 @@
 {
-  "version": "3.13.0",
-  "tag": "v3.13.0",
-  "notes": "# SlimeFinder v3.13.0\n\n## 搜索性能\n\n- **AMD 显卡默认启用 GPU 图案流式匹配**：\n  - 仅方向锁定、单图案变体；\n  - 图案判定与匹配在显卡内完成，只回传命中；\n  - 实测图案搜索约 **2~6 倍**提速，具体取决于显卡和区域大小。\n- NVIDIA / Intel 仍未验证，程序会自动回退 CPU，不会改变结果。\n- 设置中仍可手动关闭“GPU 图案流式匹配”。\n- 旋转图案保持 CPU 路径；历史实测 GPU 多旋转变体反而更慢。\n\n## 说明\n\n- 本版没有改变搜索判定结果与缓存格式；\n- 缓存构建模式、取消、进度与结果排序均沿用原有逻辑；\n- 无代码签名，仅提供手动更新；\n- 更新前请先退出旧版本，安装后检查 GPU 设置是否符合预期。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- GPU/CPU 图案结果一致：Java 436 / Bedrock 410\n- 3 语言文本检查：通过",
+  "version": "3.13.1",
+  "tag": "v3.13.1",
+  "notes": "# SlimeFinder v3.13.1\n\n## 搜索性能\n\n- **图案 GPU 流式的启用门槛从约 8M 区块降到 16K 区块**：\n  - AMD 显卡下，普通小范围图案搜索也能走 GPU 图案流式；\n  - 实测 128² / 256² / 512² 范围已有收益；\n  - Java 图案小范围约 3~4 倍，Bedrock 约 2~3 倍。\n- 仍然只适用于方向锁定的单图案变体；\n- 旋转图案、非 AMD 显卡、GPU 不可用、缓存构建模式继续自动回退 CPU。\n\n## 兼容与说明\n\n- 判定结果、结果排序、缓存格式均未改变；\n- 图案结果与 CPU 路径逐项一致；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- 图案 CPU/GPU 命中数一致",
   "assets": [
     {
-      "name": "SlimeFinder-3.13.0-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.0/SlimeFinder-3.13.0-Setup.exe",
-      "size": 17870201
+      "name": "SlimeFinder-3.13.1-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.1/SlimeFinder-3.13.1-Setup.exe",
+      "size": 17872964
     },
     {
-      "name": "SHA256SUMS-3.13.0.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.0/SHA256SUMS-3.13.0.txt",
+      "name": "SHA256SUMS-3.13.1.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.1/SHA256SUMS-3.13.1.txt",
       "size": 202
     }
   ]

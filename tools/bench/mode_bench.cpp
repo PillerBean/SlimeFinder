@@ -19,6 +19,7 @@
 namespace {
 
 using Clock = std::chrono::steady_clock;
+int gSide = 2048;
 
 struct Row {
     std::string mode;
@@ -27,6 +28,8 @@ struct Row {
     double bestMs = 1e100;
     double statsTotalMs = 0.0;
     double statsScanMs = 0.0;
+    double statsSlideMs = 0.0;
+    double statsFillMs = 0.0;
     int64_t chunks = 0;
     int64_t found = 0;
     int64_t windows = 0;
@@ -40,10 +43,10 @@ slime::SearchOptions baseOptions(slime::Version version, slime::Mode mode, slime
     slime::SearchOptions o;
     o.version = version;
     o.worldSeed = 12345;
-    o.minX = -1024;
-    o.maxX = 1023;
-    o.minZ = -1024;
-    o.maxZ = 1023;
+    o.minX = -(gSide / 2);
+    o.maxX = gSide / 2 - 1;
+    o.minZ = -(gSide / 2);
+    o.maxZ = gSide / 2 - 1;
     o.mode = mode;
     o.algorithm = alg;
     o.gridSize = 5;
@@ -85,6 +88,8 @@ Row runOne(const std::string& mode, const std::string& backend, const slime::Sea
             row.bestMs = ms;
             row.statsTotalMs = out.stats.totalMs;
             row.statsScanMs = out.stats.scanMs;
+            row.statsSlideMs = out.stats.slideWindowMs;
+            row.statsFillMs = out.stats.fillMs;
         }
     }
     return row;
@@ -96,15 +101,14 @@ void print(const Row& r)
         std::printf("%-18s %-5s FAIL %s\n", r.mode.c_str(), r.backend.c_str(), r.error.c_str());
         return;
     }
-    constexpr int64_t rangeChunks = int64_t{ 2048 } * 2048;
-    const double rate = r.bestMs > 0.0 ? static_cast<double>(rangeChunks) / (r.bestMs / 1000.0) : 0.0;
-    const double statsTotal = r.statsTotalMs > 0.0 ? r.statsTotalMs : r.bestMs;
+    const int64_t rangeChunks = int64_t{ gSide } * gSide;
+    const double rate = r.bestMs > 0.0 ? static_cast<double>(rangeChunks) / (r.bestMs / 1000.0) : 0.0;    const double statsTotal = r.statsTotalMs > 0.0 ? r.statsTotalMs : r.bestMs;
     const double statsScan = std::max(0.0, std::min(statsTotal, r.statsScanMs));
     const double matchMs = std::max(0.0, statsTotal - statsScan);
     const double matchPct = statsTotal > 0.0 ? matchMs * 100.0 / statsTotal : 0.0;
-    std::printf("%-24s %-5s %9.2f ms  %9.2f 亿/s  scan=%5.2f ms  match=%5.2f ms (%4.1f%%)  found=%-7lld gpu=%d/%d\n",
+    std::printf("%-24s %-5s %9.2f ms  %9.2f 亿/s  scan=%5.2f ms  match=%5.2f ms (%4.1f%%)  slide=%5.2f  fill=%5.2f  found=%-7lld gpu=%d/%d\n",
                 r.mode.c_str(), r.backend.c_str(), r.bestMs, rate / 1e8,
-                statsScan, matchMs, matchPct,
+                statsScan, matchMs, matchPct, r.statsSlideMs, r.statsFillMs,
                 static_cast<long long>(r.found), r.gpuScan ? 1 : 0, r.gpuMatch ? 1 : 0);
 }
 
@@ -113,11 +117,15 @@ void print(const Row& r)
 int main()
 {
     _putenv_s("SLIME_GPU_MIN_CHUNKS", "1");
+    if (const char* sideEnv = std::getenv("SLIME_BENCH_SIDE")) {
+        const int v = std::atoi(sideEnv);
+        if (v >= 64 && v <= 16384) gSide = v;
+    }
     std::string gpuErr;
     std::unique_ptr<slime::GpuScan> gpu = slimegpu::createGpuScanAdapter(&gpuErr);
     if (gpu && !gpu->available()) gpu.reset();
     std::printf("SlimeFinder v3.13.0 mode benchmark\n");
-    std::printf("range=2048x2048 chunks=%d threads=auto\n", 2048 * 2048);
+    std::printf("range=%dx%d chunks=%d threads=auto\n", gSide, gSide, gSide * gSide);
     if (gpu) std::printf("gpu=%s\n", gpu->deviceName().c_str());
     else std::printf("gpu=unavailable (%s)\n", gpuErr.c_str());
     std::printf("\n%-24s %-5s %12s  %14s  %s\n", "mode", "dev", "total", "throughput", "scan / match");
