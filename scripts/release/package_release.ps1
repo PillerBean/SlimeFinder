@@ -129,7 +129,7 @@ $cfgText = @"
     "netdisk": "https://wwben.lanzoul.com/b01d7e4lre",
     "netdiskLocal": "https://wwben.lanzoul.com/b01d7e5k0h",
     "netdiskLarge": "https://wwben.lanzoul.com/b01d7e5kah",
-    "netdiskAll": "https://wwben.lanzoul.com/b01d7e5l9c"
+    "netdiskAll": "https://wwben.lanzoul.com/b01d7e94ch"
   },
   "algorithm": {
     "mode": "exact",

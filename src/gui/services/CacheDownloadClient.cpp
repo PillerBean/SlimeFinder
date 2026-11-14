@@ -130,7 +130,7 @@ QString CacheDownloadClient::netdiskRangeUrl(int index)
     static const char* defaults[] = {
         "https://wwben.lanzoul.com/b01d7e5k0h",
         "https://wwben.lanzoul.com/b01d7e5kah",
-        "https://wwben.lanzoul.com/b01d7e5l9c"
+        "https://wwben.lanzoul.com/b01d7e94ch"
     };
     if (index >= 0 && index < 3) {
         const QString v = configValue(QStringLiteral("cacheDownload"), QString::fromLatin1(keys[index]));

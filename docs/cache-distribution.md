@@ -66,7 +66,7 @@ C:\Users\<用户>\.slimefinder\r2.env
 ```text
 局部：https://wwben.lanzoul.com/b01d7e5k0h
 较大：https://wwben.lanzoul.com/b01d7e5kah
-全部：https://wwben.lanzoul.com/b01d7e5l9c
+全部：https://wwben.lanzoul.com/b01d7e94ch
 ```
 
 说明：
