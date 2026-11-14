@@ -15,7 +15,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 - 输入种子和范围，快速找出史莱姆区块（密度、图案、环形覆盖）
 - 支持 Java 版与基岩版；Java 可搜到世界边界；基岩搜索缩至 ±131,072 区块（float32 0.25 精度边界）
 - GPU（OpenCL）加速，失败自动回退 CPU
-- Windows 10/11 x64；**只提供 Setup 安装包**（安装版支持自动更新）
+- Windows 10/11 x64；**只提供 Setup 安装包**（更新需手动下载安装）
 
 ## 快速导航
 
@@ -24,7 +24,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 | [快速开始](Getting-Started) | 下载、首次搜索、结果使用 |
 | [功能说明](Features) | 密度/图案/环形/分层/采样/缓存 |
 | [GPU 与性能](GPU-Performance) | 开启 GPU、实测数据、故障排查 |
-| [自动更新](Updates) | 版本规则、GitHub/镜像/网盘来源 |
+| [更新与版本规则](Updates) | 手动更新、版本规则、GitHub/镜像/网盘来源 |
 | [常见问题](FAQ) | 杀软误报、GPU 不生效、更新失败等 |
 
 ## 下载
@@ -34,7 +34,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 - 稳定版（Latest）：<https://github.com/PillerBean/SlimeFinder/releases/latest>
 - 测试版 / 历史版本：<https://github.com/PillerBean/SlimeFinder/releases>
   （带 `Pre-release` 标记的是测试版；历史版本为二进制归档）
-- **当前测试版：v3.11.2** → [直接打开 Release](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.11.2)
+- **当前正式版：v3.12.3** → [直接打开 Release](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.12.3)
 
 每个版本的 Assets 里只需要下载：
 
@@ -42,7 +42,7 @@ Minecraft Java / 基岩版**史莱姆区块查找工具**，原生 **C++20 + Qt 
 2. `SHA256SUMS-<版本>.txt`（校验文件，可选用）
 
 > 便携 zip 已停发；旧版本 zip 仍可从历史 Release 的 Assets 获取。
-> 自动更新只支持安装版：检查更新时下载 Setup，校验后打开安装向导（`/UPDATE` 保留设置与缓存）。
+> 自 v3.12.3 起不再自动下载或自动安装：发现新版本后只提示，请手动下载 Setup 并核对 SHA256。
 
 ## 核心功能
 

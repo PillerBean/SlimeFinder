@@ -5,7 +5,7 @@
 - [快速开始](Getting-Started)
 - [功能说明](Features)
 - [GPU 与性能](GPU-Performance)
-- [自动更新](Updates)
+- [更新与版本规则](Updates)
 - [版本索引（按版本号）](Version-Index)
 - [常见问题](FAQ)
 

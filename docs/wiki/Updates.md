@@ -1,45 +1,54 @@
-# 自动更新与版本规则
+# 更新与版本规则
 
 ## 版本号
 
-所有版本统一四段，例如 `3.10.12.9`；正式 / 测试不靠版本号区分。
+所有版本统一四段版本号，例如 `3.10.12.9`；正式版 / 测试版不靠版本号区分。
+
+## 更新方式（v3.12.3 起）
+
+**只提示新版本，不自动下载、不自动安装。**
+
+1. 打开「帮助 → 检查更新」；
+2. 若有新版本，只显示版本号和更新说明；
+3. 点击 GitHub 发布页（或网盘备用页）手动下载 `Setup.exe`；
+4. 核对 Release 中的 `SHA256SUMS-<版本>.txt`；
+5. 退出 SlimeFinder，运行 Setup 覆盖安装；
+6. 安装会保留 `config.json` 和缓存。
+
+当前没有代码签名，因此不提供自动下载/自动安装。
 
 ## GitHub Release 规则
 
-- **正式发布**：不勾 `Pre-release` ⇒ 成为 **Latest**；
+- **正式发布**：不勾 `Pre-release` ⇒ 成为 **Latest**（作为手动下载入口）；
 - **测试发布**：勾 `Pre-release` ⇒ 不会成为 Latest；
-- 自动更新默认读取 `/releases/latest`（只拿正式版）；
-- 历史版本以 `-archive` tag 归档，只提供二进制，源码自 3.10.12.9 起保留。
+- 更新提示默认读取 `/releases/latest`（只拿正式版）；
+- 历史版本以 `-archive` tag 归档，只提供二进制。
 
-## 程序内「检查更新」
+## 检查更新来源
 
-帮助 → 检查更新（GitHub/镜像）：
+「帮助 → 检查更新」支持：
 
-1. **更新通道**：
-   - **稳定版（默认）**：只提示正式版（`version.json`）；
-   - **测试版**：还会提示 Pre-release（`version-beta.json`），当前测试版为 v3.11.2；
-2. **来源**：
-   - 自动（推荐）：先试 GitHub 官方；官方不可达时对内置镜像测速，选最快的继续检查与下载；
-   - GitHub 官方：`api.github.com` + `raw.githubusercontent.com`；
-   - 网盘（国内备用）：蓝奏云页面，仅手动获取，不做自动更新；
-3. **下载与安装**：
-   - 只下载 Setup；下载后按 Release 的 `SHA256SUMS` 校验；
-   - 校验通过 → 提示关闭程序并打开安装向导；
-   - 安装时带 `/UPDATE`，会保留 `config.json` 与缓存；用户点“下一步”完成覆盖；
-   - 安装完成后可从完成页直接启动新版。
+1. **自动（推荐）**：先试 GitHub 官方；官方不可达时测试内置镜像，选最快的一个；
+2. **GitHub 官方**：`api.github.com` + `raw.githubusercontent.com`；
+3. **网盘（国内备用）**：蓝奏云页面，只手动打开，不做自动下载。
 
-清单地址：`https://raw.githubusercontent.com/PillerBean/SlimeFinder/main/version.json`（稳定）/
-`version-beta.json`（测试）。
+版本清单地址：
+
+```text
+https://raw.githubusercontent.com/PillerBean/SlimeFinder/main/version.json
+https://raw.githubusercontent.com/PillerBean/SlimeFinder/main/version-beta.json
+```
 
 ## 手动更新
 
-1. 打开对应版本的 Release，在 **Assets** 中下载 `SlimeFinder-<版本>-Setup.exe`；
-2. 按需下载 `SHA256SUMS-<版本>.txt` 核对；
-3. 退出 SlimeFinder；
-4. 运行 Setup，按向导安装（默认会安装到原目录；安装器会保留 config/缓存）；
-5. 从开始菜单/桌面重新启动。
+1. 打开对应版本的 Release；
+2. 在 **Assets** 中下载 `SlimeFinder-<版本>-Setup.exe`；
+3. 下载并核对 `SHA256SUMS-<版本>.txt`；
+4. 退出 SlimeFinder；
+5. 运行 Setup，按向导安装（默认安装到原目录，保留配置与缓存）；
+6. 从开始菜单或桌面重新启动。
 
-> 不再发布便携 zip；旧版本仍可从历史 Release 的 Assets 获取 zip。
+> 不再发布便携 zip；旧版本 zip 仍可从历史 Release 的 Assets 获取。
 
 ## 找不到更新？
 
