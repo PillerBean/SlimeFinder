@@ -1,4 +1,4 @@
-﻿// SettingsDialog.h —— 程序设置对话框（v3.3.5 任务书 优化 5）
+// SettingsDialog.h —— 程序设置对话框（v3.3.5 任务书 优化 5）
 //
 // 设计约定（与主窗口的分工）：
 //   1. 本对话框只负责「显示 / 收集」配置项，不读写 config.json、不产生任何副作用；
@@ -71,7 +71,7 @@ struct AppSettings {
     int gpuLimitPercent = 100;          // v3.7.1：GPU 占用率上限（10~100；100 = 不限）
     // v3.8.11：图案 GPU 流式匹配（实验转正；默认关闭。目前只在 AMD 显卡上验证过，
     //   NVIDIA / Intel 未验证）
-    bool gpuPatternStream = false;
+    bool gpuPatternStream = true;
     // v3.10.11.1：结果自优化（GPU 密度匹配提前停止；默认关，行为与旧版一致）
     bool gpuResultSelfOptimize = false;
     int memLimitMB = 0;                 // 内存上限（MB；0 = 自动 = 1.5GB 分块位图预算）

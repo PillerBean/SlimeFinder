@@ -1,4 +1,4 @@
-﻿// SlimeEngine.cpp - 核心计算引擎实现
+// SlimeEngine.cpp - 核心计算引擎实现
 //
 // 设计要点：
 //   * 扫描阶段：按行并行（OpenMP），行内分段（缓存覆盖段 / 计算段），
@@ -19,6 +19,7 @@
 #include <map>
 #include <cmath>
 #include <cstdlib>
+#include <cctype>
 #include <limits>
 #include <condition_variable> // v3.4.13：归并线程 / 背压等待
 #include <deque>                // v3.4.13：归并批次队列
@@ -1256,11 +1257,22 @@ void SlimeEngine::run(const SearchOptions& optIn,
         const int64_t Wp = static_cast<int64_t>(opt.maxX) - opt.minX + 1;
         const int64_t Hp = static_cast<int64_t>(opt.maxZ) - opt.minZ + 1;
         const int64_t totalChunksP = Wp * Hp;
+        // v3.13.0：图案 GPU 流式目前只验证过 AMD（gfx 系列）。
+        //   NVIDIA/Intel 默认仍走 CPU，避免未验证驱动上的正确性/性能回退。
+        const auto amdPatternGpu = [&]() {
+            if (!opt.gpuScan) return false;
+            std::string dn = opt.gpuScan->deviceName();
+            std::transform(dn.begin(), dn.end(), dn.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            return dn.find("amd") != std::string::npos ||
+                   dn.find("advanced micro devices") != std::string::npos ||
+                   dn.find("gfx") != std::string::npos;
+        }();
         if (const char* patGpu = std::getenv("SLIME_GPU_PATTERN")) {
             // v3.10.12.3：仅单变体（方向锁定）走 GPU 图案流式 —— 旋转模式实测 1043 ms(CPU) vs
             //   2260 ms(GPU)：4 个变体 × 流式调用 + 跨变体去重反而更慢，直接回退 CPU。
-            if (*patGpu == '1' && strict0 && opt.directionLocked && !opt.useCache && !opt.buildMode &&
-                opt.gpuScan && opt.gpuScan->available() &&
+            if (*patGpu == '1' && amdPatternGpu && strict0 && opt.directionLocked && !opt.useCache &&
+                !opt.buildMode && opt.gpuScan && opt.gpuScan->available() &&
                 totalChunksP >= (std::min)(gpuMinChunksEnv(opt.version), int64_t{ 8 } << 20)) {
                 std::vector<VariantMasks> gpuVariants;
                 gpuVariants.push_back(makeVariant(opt.pattern));

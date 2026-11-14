@@ -116,7 +116,7 @@ int main()
     std::string gpuErr;
     std::unique_ptr<slime::GpuScan> gpu = slimegpu::createGpuScanAdapter(&gpuErr);
     if (gpu && !gpu->available()) gpu.reset();
-    std::printf("SlimeFinder v3.12.3 mode benchmark\n");
+    std::printf("SlimeFinder v3.13.0 mode benchmark\n");
     std::printf("range=2048x2048 chunks=%d threads=auto\n", 2048 * 2048);
     if (gpu) std::printf("gpu=%s\n", gpu->deviceName().c_str());
     else std::printf("gpu=unavailable (%s)\n", gpuErr.c_str());
