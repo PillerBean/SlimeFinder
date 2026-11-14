@@ -1,16 +1,16 @@
 {
-  "version": "3.13.5",
-  "tag": "v3.13.5",
-  "notes": "# SlimeFinder v3.13.5\n\n## 搜索性能\n\n- **同区域判定位图复用**：\n  - 同一版本、种子、范围内再次搜索时，跳过重复的区块判定；\n  - 只重跑匹配阶段，因此改图案、密度阈值、目标数量或排序参数时直接受益；\n  - 仅 CPU 精确路径、无缓存搜索启用；\n  - GPU 图案/密度流式路径、采样/分层、缓存构建模式保持原逻辑；\n  - 单次缓存上限 64M 区块（约 8MB 位图），避免占内存。\n\n实测（CPU 精确路径，同区域第二次搜索）：\n\n```text\nJava 图案：\n  扫描 0.95 ms → 0.16 ms\n  总耗时约 2.36 ms → 1.57 ms\n\nBedrock 图案：\n  扫描 17.4 ms → 1.7 ms\n\nBedrock 密度：\n  扫描 20.2 ms → 3.8 ms\n```\n\n命中数、排序与 CPU/GPU 结果保持一致。\n\n## 说明\n\n- 这是内存缓存，不写磁盘，不改变缓存文件格式；\n- 换版本、换种子、换范围或开启缓存搜索时不会误用旧位图；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- 复用/不复用命中数一致",
+  "version": "3.13.6",
+  "tag": "v3.13.6",
+  "notes": "# SlimeFinder v3.13.6\n\n## 搜索性能\n\n- **判定位图复用的适用范围扩展**：\n  - 3.13.5 只覆盖精确算法；\n  - 3.13.6 同时覆盖 **分层（Layered）** 和 **保守（Brute）**；\n  - 采样估算仍不复用，避免采样位图被误当成完整判定。\n- 复用条件仍然是：同版本、同种子、同范围、CPU 精确扫描、无缓存，且不超过 64M 区块。\n\n实测（CPU，同区域第二次搜索）：\n\n```text\n分层：\n  扫描 0.98 ms → 0.20 ms\n  总耗时约 6.1 ms → 5.3 ms\n\n保守：\n  扫描 0.99 ms → 0.14 ms\n  匹配阶段仍占主要耗时\n```\n\n命中数、排序与复用时一致。\n\n## 说明\n\n- 这不是缓存格式变更，仍是纯内存位图；\n- GPU 流式、缓存构建、采样模式保持原逻辑；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- 复用/不复用命中数一致",
   "assets": [
     {
-      "name": "SlimeFinder-3.13.5-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.5/SlimeFinder-3.13.5-Setup.exe",
-      "size": 17873141
+      "name": "SlimeFinder-3.13.6-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.6/SlimeFinder-3.13.6-Setup.exe",
+      "size": 17874602
     },
     {
-      "name": "SHA256SUMS-3.13.5.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.5/SHA256SUMS-3.13.5.txt",
+      "name": "SHA256SUMS-3.13.6.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.6/SHA256SUMS-3.13.6.txt",
       "size": 202
     }
   ]

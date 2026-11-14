@@ -2295,7 +2295,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     //   避免与缓存覆盖、采样扫描、GPU 全流式路径混用；位图本身与图案/阈值无关。
     bool bitmapReused = false;
     const bool bitmapReuseEligible = bitmapReuseEnabled() && !sampleScan && !useCache &&
-                                     !opt.buildMode && opt.algorithm == Algorithm::Exact &&
+                                     !opt.buildMode && opt.algorithm != Algorithm::Sample &&
                                      totalChunks <= kBitmapReuseMaxChunks &&
                                      (!opt.gpuScan || !opt.gpuScan->available());
     if (bitmapReuseEligible) {
