@@ -247,6 +247,18 @@ if(WIN32)
     target_link_libraries(slime_chunk_bench PRIVATE dbghelp)
 endif()
 
+add_executable(slime_mode_bench
+    tools/bench/mode_bench.cpp
+)
+target_include_directories(slime_mode_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_mode_bench PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_mode_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+if(WIN32)
+    target_link_libraries(slime_mode_bench PRIVATE dbghelp)
+endif()
+
 add_executable(slime_ocl_probe
     tools/gpu/ocl_probe.cpp
 )
