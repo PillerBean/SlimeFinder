@@ -156,10 +156,11 @@ Fused GPU 或 Banded，CPU 新路径不进入产品自动选择。
 ```text
 Banded SearchTask 进度/结果/liveMatches/liveScanned：通过
 完整缓存覆盖：自动回退旧路径，通过
-构建模式：自动回退旧路径，entries=1744，通过
+构建模式：自动回退旧路径，entries=1744=独立判定，通过
+Fused 2048² SearchTask 中间进度/取消/live 计数：通过
 Fused 超大范围分带进度/取消：通过
 环形/AFK 隔离：通过
-Fused 常见范围细粒度进度/取消：仍未覆盖
+Fused 512² 细粒度进度：短任务缺口
 ```
 
 详见 `phase8_compat.md`。

@@ -169,7 +169,15 @@ int main()
         task.wait();
         std::printf("build-isolation: done=%d ok=%d entries=%lld\n", done.load() ? 1 : 0,
                     out.ok ? 1 : 0, static_cast<long long>(cache->entryCount()));
-        if (!done.load() || !out.ok || cache->entryCount() <= 0) ++failures;
+        int64_t expected = 0;
+        for (int z = opt.minZ; z <= opt.maxZ; ++z) {
+            for (int x = opt.minX; x <= opt.maxX; ++x) {
+                if (slime::SlimeEngine::isSlimeChunk(opt.version, opt.worldSeed, x, z)) ++expected;
+            }
+        }
+        std::printf("build-content: expected=%lld actual=%lld\n", static_cast<long long>(expected),
+                    static_cast<long long>(cache->entryCount()));
+        if (!done.load() || !out.ok || cache->entryCount() <= 0 || cache->entryCount() != expected) ++failures;
     }
 
     // 4) 超大范围 Fused 分带进度（>8192 锚点行才切 band）
@@ -232,7 +240,68 @@ int main()
         }
     }
 
-    // 6) 环形/AFK 隔离：feature flag 不应影响 AfkPlanner
+    // 7) Fused 2048² 通过 SearchTask：进度、live 计数、取消
+    {
+        std::string gpuErr;
+        auto gpu = slimegpu::createGpuScanAdapter(&gpuErr);
+        if (gpu && gpu->available()) {
+            slime::SearchOptions opt = base(slime::Version::Java);
+            opt.minX = -1024;
+            opt.maxX = 1023;
+            opt.minZ = -1024;
+            opt.maxZ = 1023;
+            opt.gridSize = 5;
+            opt.targetCount = 10;
+            opt.threads = 8;
+            opt.gpuScan = gpu.get();
+            slime::SearchOptions oldOpt = opt;
+            oldOpt.gpuScan = nullptr;
+            std::atomic<bool> cancel{ false };
+            slime::SearchOutcome oldOut;
+            slime::SlimeEngine oldEngine;
+            oldEngine.run(oldOpt, cancel, slime::ProgressFn(), oldOut);
+
+            slime::SearchOutcome out;
+            std::atomic<bool> done{ false };
+            std::atomic<int> progressCount{ 0 };
+            double last = -1.0;
+            slime::SearchTask task;
+            task.start(opt, [&](double f, bool, double, double) {
+                ++progressCount;
+                last = f;
+            }, [&](const slime::SearchOutcome& o) {
+                out = o;
+                done.store(true, std::memory_order_release);
+            });
+            task.wait();
+            const int64_t area = 2048LL * 2048LL;
+            const bool ok = done.load() && oldOut.ok && out.ok && same(oldOut.results, out.results) &&
+                            oldOut.totalFound == out.totalFound && progressCount.load() >= 2 &&
+                            last >= 0.999 && task.liveScannedCount() == area &&
+                            task.liveTotalCount() == area && task.liveMatchCount() == out.totalFound;
+            std::printf("fused-searchtask: done=%d progress=%d final=%.3f live=%lld/%lld %s\n",
+                        done.load() ? 1 : 0, progressCount.load(), last,
+                        static_cast<long long>(task.liveScannedCount()),
+                        static_cast<long long>(task.liveTotalCount()), ok ? "SAME" : "DIFF");
+            if (!ok) ++failures;
+
+            slime::SearchOutcome cancelledOut;
+            std::atomic<bool> cancelledDone{ false };
+            slime::SearchTask cancelTask;
+            cancelTask.start(opt, [&](double f, bool, double, double) {
+                if (f >= 0.25) cancelTask.cancel();
+            }, [&](const slime::SearchOutcome& o) {
+                cancelledOut = o;
+                cancelledDone.store(true, std::memory_order_release);
+            });
+            cancelTask.wait();
+            std::printf("fused-searchtask-cancel: done=%d cancelled=%d\n", cancelledDone.load() ? 1 : 0,
+                        cancelledOut.cancelled ? 1 : 0);
+            if (!cancelledDone.load() || !cancelledOut.cancelled) ++failures;
+        }
+    }
+
+    // 8) 环形/AFK 隔离：feature flag 不应影响 AfkPlanner
     {
         slime::AfkPlanOptions a;
         a.area = slime::Rect{ -8, 8, -8, 8 };

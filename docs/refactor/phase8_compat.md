@@ -47,7 +47,13 @@ build-isolation: done=1 ok=1 entries=1744
 ```
 
 构建模式仍走旧引擎，没有被新 Pipeline 误接管；
-同时验证了旧路径确实把条目写进 CacheManager（entries>0）。
+同时验证了旧路径确实把条目写进 CacheManager：
+
+```text
+build-content: expected=1744 actual=1744
+```
+
+缓存条目数与独立标量判定完全一致。
 
 ## 4. Fused 超大范围进度
 
@@ -81,7 +87,28 @@ fused-cancel: ok=0 cancelled=1
 
 说明 Fused 新路径至少在大范围分带时可以在 band 边界响应取消。
 
-## 6. 环形/AFK 隔离
+## 6. Fused SearchTask 2048²
+
+```text
+fused-searchtask:
+  done=1
+  progress=5
+  final=1.000
+  live=4194304/4194304
+  SAME
+
+fused-searchtask-cancel:
+  done=1
+  cancelled=1
+```
+
+说明：
+
+- 2048² Fused 走 2 band，SearchTask 能收到中间进度；
+- 完成时 liveScanned == liveTotal == 区域面积；
+- 中间取消能让 SearchTask 返回 cancelled。
+
+## 7. 环形/AFK 隔离
 
 `AfkPlanner::planForSeed` 在 feature flag 关闭/开启下各跑一次：
 
@@ -91,21 +118,22 @@ afk-isolation: candidates=3/3 SAME
 
 说明环境变量不影响环形/AFK 规划；新 Pipeline 没有接管该路径。
 
-## 7. 仍未覆盖
+## 8. 仍未覆盖
 
-- Fused GPU 常见范围没有中间进度，SearchTask 只在结束时报告；
-- 常见范围取消只能在 GPU 调用返回后生效；
-- GUI 的实时扫描计数在 Fused 路径上仍是按进度估算，未做精确 GPU 计数；
-- 构建模式缓存内容仍需专门验收。
+- Fused 512² 只有开始/结束进度，没有中间点（调用本身约 1ms）；
+- Fused 常见范围取消只能在 GPU 调用返回后生效；
+- GUI 的实时扫描计数在 Fused 路径上是按进度估算/结束后校正。
 
-## 8. 结论
+## 9. 结论
 
 ```text
 Banded 的 SearchTask 进度/结果/liveMatches/liveScanned 兼容性通过
 完整缓存/构建模式回退隔离通过
+构建模式缓存条目数与独立判定一致
+Fused 2048² SearchTask 中间进度/取消/live 计数通过
 Fused 超大范围分带进度/取消通过
 环形/AFK 隔离通过
-Fused 常见范围细粒度进度/取消仍是验收缺口
+Fused 512² 细粒度进度仍是可接受的短任务缺口
 ```
 
 因此仍不切换默认路径。
