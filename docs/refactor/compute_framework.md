@@ -393,6 +393,19 @@ FusedGpuPattern / FusedGpuDensity
 
 当前仍不接入产品、不打包。
 
+Phase 5 集成状态：
+
+```text
+PlanExecutor：Materialize / Chunked / Banded / FusedGpu 四类分派
+SearchTask：环境变量 SLIME_NEXT_PIPELINE，默认关闭
+随机矩阵：4 cycle × 8 case，全部通过
+feature flag 验证：开启 gpuMatch=1；关闭仍走旧引擎
+```
+
+详见 `docs/refactor/phase5_integration.md`。
+
+默认关闭，未达到全量切换验收条件前不会改默认路径。
+
 
 ## 8. 从主分支实际流程反推
 

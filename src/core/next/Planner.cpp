@@ -91,6 +91,7 @@ ExecutionPlan makeSearchPlan(const PlannerInput& in, int64_t total)
     const bool needChunk = total > in.caps.classicChunkLimit || o.buildMode ||
                            (o.stopAtTarget && o.useCache && o.cache != nullptr);
     p.partition.kind = needChunk ? PartitionKind::Chunked : PartitionKind::Single;
+    if (needChunk) p.partition.rowsPerChunk = 256;
     p.partition.cacheFirst = o.stopAtTarget && o.useCache;
 
     p.mayReuseBitmap = !o.useCache && !o.buildMode && !o.stopAtTarget && !o.smartRange &&

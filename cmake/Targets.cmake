@@ -62,6 +62,14 @@ add_library(slime_core STATIC
     src/core/SpawnWeights.cpp # v3.5.2（任务 3）：群系 → 史莱姆刷怪效率权重（Wiki 数据）
     src/core/PerfLog.cpp        # E3.3.7.2（任务书步骤 2 / P1-D）：引擎侧性能事件
     src/utils/IncidentLog.cpp   # E3.3.7.2：移入核心库 —— 引擎需要写关键信息日志（Qt 无关）
+    # 重构分支：新计算框架原型；默认由 SLIME_NEXT_PIPELINE=1 才启用
+    src/core/next/Determiner.cpp
+    src/core/next/Matcher.cpp
+    src/core/next/Collector.cpp
+    src/core/next/Pipeline.cpp
+    src/core/next/FusedGpu.cpp
+    src/core/next/Planner.cpp
+    src/core/next/PlanExecutor.cpp
 )
 target_include_directories(slime_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_core PUBLIC OpenMP::OpenMP_CXX cubiomes zstd)
@@ -290,7 +298,6 @@ endif()
 # 重构分支 Phase 0：Bitmap + Determiner 对拍（不接入产品）
 add_executable(slime_next_pipeline_parity
     tools/refactor/pipeline_parity.cpp
-    src/core/next/Determiner.cpp
 )
 target_include_directories(slime_next_pipeline_parity PRIVATE \/src)
 target_link_libraries(slime_next_pipeline_parity PRIVATE slime_core slime_gpu)
@@ -301,9 +308,9 @@ endif()
 
 add_executable(slime_next_collector_test
     tools/refactor/collector_test.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_collector_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_collector_test PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_next_collector_test PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
@@ -311,7 +318,6 @@ endif()
 
 add_executable(slime_next_planner_test
     tools/refactor/planner_test.cpp
-    src/core/next/Planner.cpp
 )
 target_include_directories(slime_next_planner_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_planner_test PRIVATE slime_core)
@@ -321,7 +327,6 @@ endif()
 
 add_executable(slime_next_parity_rounds
     tools/refactor/parity_rounds.cpp
-    src/core/next/Determiner.cpp
 )
 target_include_directories(slime_next_parity_rounds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_parity_rounds PRIVATE slime_core slime_gpu)
@@ -331,10 +336,6 @@ endif()
 
 add_executable(slime_next_phase2_parity
     tools/refactor/phase2_search_parity.cpp
-    src/core/next/Determiner.cpp
-    src/core/next/Matcher.cpp
-    src/core/next/Pipeline.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_phase2_parity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_phase2_parity PRIVATE slime_core)
@@ -344,10 +345,6 @@ endif()
 
 add_executable(slime_next_phase2_threads
     tools/refactor/phase2_threads.cpp
-    src/core/next/Determiner.cpp
-    src/core/next/Matcher.cpp
-    src/core/next/Pipeline.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_phase2_threads PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_phase2_threads PRIVATE slime_core)
@@ -357,10 +354,6 @@ endif()
 
 add_executable(slime_next_phase2_progress
     tools/refactor/phase2_progress_cancel.cpp
-    src/core/next/Determiner.cpp
-    src/core/next/Matcher.cpp
-    src/core/next/Pipeline.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_phase2_progress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_phase2_progress PRIVATE slime_core)
@@ -370,10 +363,6 @@ endif()
 
 add_executable(slime_next_phase3_chunked
     tools/refactor/phase3_chunked_parity.cpp
-    src/core/next/Determiner.cpp
-    src/core/next/Matcher.cpp
-    src/core/next/Pipeline.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_phase3_chunked PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_phase3_chunked PRIVATE slime_core)
@@ -383,10 +372,6 @@ endif()
 
 add_executable(slime_next_phase3_banded
     tools/refactor/phase3_banded_parity.cpp
-    src/core/next/Determiner.cpp
-    src/core/next/Matcher.cpp
-    src/core/next/Pipeline.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_phase3_banded PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_phase3_banded PRIVATE slime_core)
@@ -396,14 +381,32 @@ endif()
 
 add_executable(slime_next_phase4_fused
     tools/refactor/phase4_fused_parity.cpp
-    src/core/next/FusedGpu.cpp
-    src/core/next/Collector.cpp
 )
 target_include_directories(slime_next_phase4_fused PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slime_next_phase4_fused PRIVATE slime_core slime_gpu)
 if(MSVC)
     target_compile_options(slime_next_phase4_fused PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
+
+add_executable(slime_next_phase5_matrix
+    tools/refactor/phase5_plan_matrix.cpp
+)
+target_include_directories(slime_next_phase5_matrix PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase5_matrix PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_next_phase5_matrix PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
+add_executable(slime_next_phase5_feature_flag
+    tools/refactor/phase5_feature_flag.cpp
+)
+target_include_directories(slime_next_phase5_feature_flag PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase5_feature_flag PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_next_phase5_feature_flag PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
+
 
 
 

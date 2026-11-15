@@ -1,7 +1,50 @@
-﻿// SearchTask.cpp - 后台搜索任务实现
+// SearchTask.cpp - 后台搜索任务实现
 #include "core/SearchTask.h"
 
+#include "core/next/Plan.h"
+#include "core/next/PlanExecutor.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <string>
+
 namespace slime {
+
+namespace {
+
+bool nextPipelineEnabled()
+{
+    const char* e = std::getenv("SLIME_NEXT_PIPELINE");
+    if (!e || !*e) return false;
+    std::string s(e);
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return s == "1" || s == "true" || s == "on";
+}
+
+bool canUseNextPipeline(const SearchOptions& opt, slime::next::ExecutionPlan& plan)
+{
+    if (opt.buildMode || opt.ignoreThreshold || opt.stopAtTarget || opt.smartRange) return false;
+    if (opt.mode == Mode::Strict && (opt.algorithm != Algorithm::Exact || !opt.directionLocked)) return false;
+    if (opt.mode == Mode::Density && opt.algorithm != Algorithm::Exact) return false;
+    if (opt.useCache && !opt.cacheBandLoader) return false;
+
+    slime::next::PlannerInput in;
+    in.options = opt;
+    in.caps.gpuAvailable = opt.gpuScan && opt.gpuScan->available();
+    if (in.caps.gpuAvailable) {
+        std::string name = opt.gpuScan->deviceName();
+        std::transform(name.begin(), name.end(), name.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        in.caps.gpuIsAmd = name.find("amd") != std::string::npos ||
+                           name.find("advanced micro devices") != std::string::npos ||
+                           name.find("gfx") != std::string::npos;
+    }
+    plan = slime::next::makeExecutionPlan(in);
+    return slime::next::PlanExecutor::supported(opt, plan);
+}
+
+} // namespace
 
 SearchTask::~SearchTask()
 {
@@ -41,10 +84,44 @@ void SearchTask::start(const SearchOptions& options, const ProgressFn& progress,
     const DoneFn fn = done;
     m_thread = std::thread([this, opt, cb, fn, liveCounter, liveScanned, liveTotal, liveRecorded, liveSkipped,
                             livePhase]() {
-        SlimeEngine engine;
         SearchOutcome out;
-        if (opt.cacheBandLoader) engine.runBanded(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
-        else engine.run(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
+        bool usedNext = false;
+        slime::next::ExecutionPlan plan;
+        if (nextPipelineEnabled() && canUseNextPipeline(opt, plan)) {
+            slime::next::MaterializeResult nr;
+            std::string nerr;
+            slime::next::PlanExecutor executor;
+            const bool ok = executor.run(opt, plan, static_cast<const std::atomic<bool>&>(m_cancel), nr, &nerr, cb);
+            if (ok) {
+                out.ok = true;
+                out.results = std::move(nr.results);
+                out.totalFound = nr.totalFound;
+                out.cancelled = nr.cancelled;
+                out.chunkedPath = plan.partition.kind == slime::next::PartitionKind::Chunked;
+                out.gpuMatchUsed = plan.matcher == slime::next::MatcherKind::FusedGpuPattern ||
+                                   plan.matcher == slime::next::MatcherKind::FusedGpuDensity;
+                out.stats.scanMs = nr.scan.ms;
+                out.stats.matchMs = nr.match.ms;
+                out.stats.totalMs = nr.scan.ms + nr.match.ms;
+                out.stats.scannedChunks = nr.scan.chunks;
+                out.stats.windowsEvaluated = nr.match.windows;
+                out.stats.threadsUsed = opt.threads;
+                usedNext = true;
+            } else if (nr.cancelled || m_cancel.load(std::memory_order_relaxed)) {
+                out.cancelled = true;
+                out.error = "已取消";
+                usedNext = true;
+            }
+        }
+        if (!usedNext) {
+            SlimeEngine engine;
+            if (opt.cacheBandLoader) engine.runBanded(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
+            else engine.run(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
+        } else {
+            if (liveCounter) liveCounter->store(out.totalFound, std::memory_order_relaxed);
+            if (liveScanned) liveScanned->store(out.stats.scannedChunks, std::memory_order_relaxed);
+            if (liveTotal) liveTotal->store(out.stats.scannedChunks, std::memory_order_relaxed);
+        }
         m_running.store(false, std::memory_order_release);
         if (fn) fn(out);
         (void)liveCounter; // 保证计数对象活到引擎返回之后（防悬垂的最后一道保险）
