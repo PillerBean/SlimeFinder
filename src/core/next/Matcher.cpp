@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <atomic>
+#include <bit>
+#include <cmath>
 #include <chrono>
 #include <vector>
 
@@ -14,6 +16,16 @@
 namespace slime::next {
 
 namespace {
+
+uint64_t extractRowBits(const uint64_t* row, int wpr, int64_t bit) noexcept
+{
+    const int64_t wi = bit >> 6;
+    if (wi < 0 || wi >= wpr) return 0;
+    const int off = static_cast<int>(bit & 63);
+    uint64_t v = row[wi] >> off;
+    if (off != 0 && wi + 1 < wpr) v |= row[wi + 1] << (64 - off);
+    return v;
+}
 
 struct AnchorDims {
     int64_t axMin = 0, axMax = -1, azMin = 0, azMax = -1;
@@ -66,15 +78,15 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             return false;
         }
         int active = 0;
-        std::vector<uint64_t> enf(static_cast<size_t>(patRows), 0ULL);
-        std::vector<uint64_t> grn(static_cast<size_t>(patRows), 0ULL);
+        struct PatternCell { int row; int col; slime::CellState state; };
+        std::vector<PatternCell> cells;
+        cells.reserve(static_cast<size_t>(patRows) * cols);
         for (int r = 0; r < patRows; ++r) {
             for (int c = 0; c < cols; ++c) {
                 const auto state = opt.pattern.at(r, c);
                 if (state == slime::CellState::Ignore) continue;
                 ++active;
-                enf[static_cast<size_t>(r)] |= 1ULL << c;
-                if (state == slime::CellState::Green) grn[static_cast<size_t>(r)] |= 1ULL << c;
+                cells.push_back(PatternCell{ r, c, state });
             }
         }
         if (active == 0) {
@@ -109,9 +121,8 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
         const int64_t rankZMin = limits.zLimited ? limits.rankZMin : d.azMin;
         const int64_t rankAzCount = limits.zLimited ? limits.rankAzCount : nAz;
         const size_t anchorCount = static_cast<size_t>(d.axMax - d.axMin + 1);
-        const uint64_t colMask = (cols >= 64) ? ~0ULL : ((1ULL << cols) - 1ULL);
         const int reportEvery = (std::max)(1, static_cast<int>(nAz / 100));
-        const auto emit = [&](int64_t ax, int64_t az) {
+        const auto emit = [&](ResultCollector& out, int64_t ax, int64_t az) {
             const int64_t off2x = 2 * ax + (cols - 1) - 2 * static_cast<int64_t>(opt.startX);
             const int64_t off2z = 2 * az + (patRows - 1) - 2 * static_cast<int64_t>(opt.startZ);
             Candidate c;
@@ -122,7 +133,7 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             c.result.density = 0.0f;
             c.d2 = off2x * off2x + off2z * off2z;
             c.rank = (ax - rankXMin) * rankAzCount + (az - rankZMin);
-            collector.add(c);
+            out.add(c);
         };
 
 #ifdef _OPENMP
@@ -130,7 +141,8 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
 #endif
         {
             std::vector<const uint64_t*> rowPtrs(static_cast<size_t>(patRows));
-            std::vector<unsigned char> flags(anchorCount);
+            ResultCollector local(CollectorKind::DistanceTopN, opt.targetCount);
+            const int wpr = bitmap.wordsPerRow();
 #ifdef _OPENMP
 #pragma omp for schedule(dynamic, 4)
 #endif
@@ -139,18 +151,31 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
                 for (int r = 0; r < patRows; ++r) {
                     rowPtrs[static_cast<size_t>(r)] = bitmap.row(static_cast<int>(az + r));
                 }
-                slime::strictRowAvx2(rowPtrs.data(), enf.data(), grn.data(), patRows,
-                                     bitmap.wordsPerRow(), bitmap.x0(), static_cast<int>(d.axMin),
-                                     static_cast<int>(d.axMax), colMask, flags.data());
-                windows.fetch_add(static_cast<int64_t>(anchorCount), std::memory_order_relaxed);
-                for (size_t i = 0; i < anchorCount; ++i) {
-                    if (flags[i]) emit(d.axMin + static_cast<int64_t>(i), az);
+                for (int64_t blockStart = d.axMin; blockStart <= d.axMax; blockStart += 64) {
+                    const int nValid = static_cast<int>((std::min)(int64_t{ 64 }, d.axMax - blockStart + 1));
+                    const uint64_t validMask = nValid >= 64 ? ~0ULL : ((1ULL << nValid) - 1ULL);
+                    uint64_t cand = ~0ULL;
+                    for (const auto& cell : cells) {
+                        const int64_t rel = (blockStart - bitmap.x0()) + cell.col;
+                        uint64_t bits = extractRowBits(rowPtrs[static_cast<size_t>(cell.row)], wpr, rel);
+                        bits = cell.state == slime::CellState::Green ? bits : ~bits;
+                        cand &= bits;
+                        if (!cand) break;
+                    }
+                    cand &= validMask;
+                    while (cand) {
+                        const int bit = std::countr_zero(cand);
+                        cand &= cand - 1;
+                        emit(local, blockStart + bit, az);
+                    }
                 }
+                windows.fetch_add(static_cast<int64_t>(anchorCount), std::memory_order_relaxed);
                 if (progress && (az - d.azMin) % reportEvery == 0) {
                     progress(static_cast<double>(az - d.azMin + 1) / static_cast<double>(nAz), false, 0.0,
                              0.0);
                 }
             }
+            collector.merge(local);
         }
     } else {
         const int g = opt.gridSize;
@@ -192,7 +217,7 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
         const size_t anchorCount = static_cast<size_t>(d.axMax - d.axMin + 1);
         const double area = static_cast<double>(g) * g;
         const int reportEvery = (std::max)(1, static_cast<int>(nAz / 100));
-        const auto emit = [&](int64_t ax, int64_t az, int count) {
+        const auto emit = [&](ResultCollector& out, int64_t ax, int64_t az, int count) {
             const int64_t off2x = 2 * ax + (g - 1) - 2 * static_cast<int64_t>(opt.startX);
             const int64_t off2z = 2 * az + (g - 1) - 2 * static_cast<int64_t>(opt.startZ);
             Candidate c;
@@ -204,38 +229,98 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             c.density = c.result.density;
             c.d2 = off2x * off2x + off2z * off2z;
             c.rank = (ax - rankXMin) * rankAzCount + (az - rankZMin);
-            collector.add(c);
+            out.add(c);
         };
 
+        const int w = bitmap.w();
+        const int wpr = bitmap.wordsPerRow();
+        const int64_t baseRel = d.axMin - bitmap.x0();
+#ifdef _OPENMP
+        const int64_t blocks = (std::min)(nAz, (std::max)(int64_t{ 1 }, static_cast<int64_t>(omp_get_max_threads()) * 4));
+#else
+        const int64_t blocks = 1;
+#endif
+        const int64_t blockRows = (nAz + blocks - 1) / blocks;
+        const int minCount = (std::max)(0, static_cast<int>(std::ceil(opt.minDensity * area - 1e-12)));
+        const size_t maskWords = (anchorCount + 63) / 64;
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
         {
-            std::vector<const uint64_t*> rows(static_cast<size_t>(g));
-            std::vector<uint32_t> counts(anchorCount);
+            std::vector<int32_t> vert(static_cast<size_t>(w), 0);
+            std::vector<int32_t> counts(anchorCount);
+            std::vector<uint64_t> hitMask(maskWords);
+            ResultCollector local(CollectorKind::DistanceTopN, opt.targetCount);
 #ifdef _OPENMP
-#pragma omp for schedule(dynamic, 4)
+#pragma omp for schedule(dynamic, 1)
 #endif
-            for (int64_t az = d.azMin; az <= d.azMax; ++az) {
-                if (cancel.load(std::memory_order_relaxed)) continue;
-                for (int r = 0; r < g; ++r) rows[static_cast<size_t>(r)] = bitmap.row(static_cast<int>(az + r));
-                if (!slime::densityWindowCountsAvx2(rows.data(), g, bitmap.wordsPerRow(),
-                                                    d.axMin - bitmap.x0(), d.axMax - bitmap.x0(),
-                                                    counts.data())) {
-                    continue;
+            for (int64_t bi = 0; bi < blocks; ++bi) {
+                const int64_t az0 = d.azMin + bi * blockRows;
+                if (az0 > d.azMax) continue;
+                const int64_t az1 = (std::min)(d.azMax, az0 + blockRows - 1);
+                std::fill(vert.begin(), vert.end(), 0);
+                for (int r = 0; r < g; ++r) {
+                    slime::vertSumDiffAvx2(vert.data(), bitmap.row(static_cast<int>(az0 + r)), nullptr, wpr, w, 0);
                 }
-                windows.fetch_add(static_cast<int64_t>(anchorCount), std::memory_order_relaxed);
-                for (size_t i = 0; i < anchorCount; ++i) {
-                    const int count = static_cast<int>(counts[i]);
-                    if (slime::SlimeEngine::densityWindowMeets(count, g, opt.minDensity)) {
-                        emit(d.axMin + static_cast<int64_t>(i), az, count);
+                for (int64_t az = az0; az <= az1; ++az) {
+                    if (cancel.load(std::memory_order_relaxed)) break;
+                    windows.fetch_add(static_cast<int64_t>(anchorCount), std::memory_order_relaxed);
+                    bool handled = false;
+                    if (minCount > 0 &&
+                        slime::densityHitMaskAvx2(vert.data() + baseRel, static_cast<int64_t>(anchorCount), g,
+                                                  minCount - 1, hitMask.data(),
+                                                  static_cast<int64_t>(maskWords))) {
+                        handled = true;
+                        for (size_t wi = 0; wi < maskWords; ++wi) {
+                            uint64_t m = hitMask[wi];
+                            while (m) {
+                                const int b = std::countr_zero(m);
+                                m &= m - 1;
+                                const int64_t i = static_cast<int64_t>(wi * 64 + b);
+                                if (i >= static_cast<int64_t>(anchorCount)) break;
+                                int count = 0;
+                                for (int k = 0; k < g; ++k) {
+                                    count += vert[static_cast<size_t>(baseRel + i + k)];
+                                }
+                                emit(local, d.axMin + i, az, count);
+                            }
+                        }
+                    }
+                    if (!handled) {
+                        bool sumsOk = slime::densityWindowSumsAvx2(vert.data() + baseRel,
+                                                                   static_cast<int64_t>(anchorCount), g,
+                                                                   counts.data());
+                        if (!sumsOk) {
+                            int32_t sum = 0;
+                            for (int x = 0; x < w; ++x) {
+                                sum += vert[static_cast<size_t>(x)];
+                                if (x >= g) sum -= vert[static_cast<size_t>(x - g)];
+                                if (x >= g - 1) {
+                                    const int64_t rel = x - g + 1;
+                                    if (rel >= baseRel && rel < baseRel + static_cast<int64_t>(anchorCount)) {
+                                        counts[static_cast<size_t>(rel - baseRel)] = sum;
+                                    }
+                                }
+                            }
+                        }
+                        for (size_t i = 0; i < anchorCount; ++i) {
+                            const int count = static_cast<int>(counts[i]);
+                            if (slime::SlimeEngine::densityWindowMeets(count, g, opt.minDensity)) {
+                                emit(local, d.axMin + static_cast<int64_t>(i), az, count);
+                            }
+                        }
+                    }
+                    if (az < az1) {
+                        slime::vertSumDiffAvx2(vert.data(), bitmap.row(static_cast<int>(az + g)),
+                                               bitmap.row(static_cast<int>(az)), wpr, w, 0);
+                    }
+                    if (progress && ((az - d.azMin) % reportEvery == 0 || az == az1)) {
+                        progress(static_cast<double>(az - d.azMin + 1) / static_cast<double>(nAz), false, 0.0,
+                                 0.0);
                     }
                 }
-                if (progress && (az - d.azMin) % reportEvery == 0) {
-                    progress(static_cast<double>(az - d.azMin + 1) / static_cast<double>(nAz), false, 0.0,
-                             0.0);
-                }
             }
+            collector.merge(local);
         }
     }
 

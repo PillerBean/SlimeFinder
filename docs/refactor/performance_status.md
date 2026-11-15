@@ -53,16 +53,24 @@ Bedrock density：新旧 GPU 基本持平
 同一 2048² Java pattern：
 
 ```text
-旧 CPU              1.89 ms
-新 CPU Materialize  4.71 ms
+旧 CPU              1.82 ms
+新 CPU Materialize  1.21 ms
 ```
 
-新 CPU 物化路径仍慢约 2.5 倍，所以：
+算法优化后（FastJava 直接写位图 + 字级图案 matcher），
+新 CPU 图案路径已快于旧 CPU。
+
+Java density：
 
 ```text
-SearchTask feature flag 不开放 CPU Materialize/Chunked
-只开放 FusedGpu 和 Banded
+旧 CPU              2.17~2.32 ms
+新 CPU Materialize  2.43 ms
 ```
+
+仍慢约 10%，但已从早期约 1.7× 缩小。
+
+SearchTask feature flag 仍只开放 FusedGpu 和 Banded；
+CPU 路径虽然已接近/部分超过旧 CPU，但还没进入产品开关。
 
 ## 3. 怎么解读
 
@@ -84,13 +92,15 @@ Java density Fused       0.98×
 2048² Java 密度是 2-band Fused；GPU dispatch 与回读占比不低，
 所以优势远小于 Bedrock 密度。
 
-### 明显更慢
+### CPU 路径
 
 ```text
-新 CPU Materialize       约 2.5× 旧 CPU
+Java pattern   新 CPU 已快于旧 CPU
+Java density   新 CPU 仍慢约 10%
+Bedrock        基本持平
 ```
 
-这是当前 CPU 新路径不进入产品 feature flag 的原因。
+CPU 路径不再整体“明显更慢”，但还不足以解除产品开关限制。
 
 ## 4. 速度边界
 
@@ -123,7 +133,7 @@ Java pattern Fused：比旧路径快，收益明确
 Java density Fused：比旧 GPU 路径慢，不能算收益
 Bedrock density Fused：与旧 GPU 基本持平
 Banded：比旧 runBanded 快，但属于独立计划差异
-CPU Materialize/Chunked：结果正确但更慢，不开放
+CPU Materialize/Chunked：图案已快于旧 CPU，密度仍慢约 10%，暂不开放
 默认路径：未切换
 ```
 

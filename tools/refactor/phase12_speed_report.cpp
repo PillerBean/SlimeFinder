@@ -32,6 +32,8 @@ struct Timed {
     size_t results = 0;
     int64_t total = 0;
     std::vector<slime::MatchResult> vec;
+    double scanMs = 0.0;
+    double matchMs = 0.0;
 };
 
 slime::SearchOptions makeOpt(slime::Version v, slime::Mode m, int w, int h, int64_t seed, int target)
@@ -116,6 +118,8 @@ Timed newRun(const slime::SearchOptions& input, const slime::next::MachineCaps& 
     r.results = last.results.size();
     r.total = last.totalFound;
     r.vec = last.results;
+    r.scanMs = last.scan.ms;
+    r.matchMs = last.match.ms;
     return r;
 }
 
@@ -170,13 +174,15 @@ int main()
         slime::SlimeEngine e;
         e.run(ref, cancel, slime::ProgressFn(), refOut);
         report("Java pattern 2048", o, n, "fused");
-        std::printf("%-24s cpu-materialize median=%7.2fms\n", "", c.median);
+        std::printf("%-24s cpu-materialize median=%7.2fms scan=%7.2fms match=%7.2fms\n", "",
+                    c.median, c.scanMs, c.matchMs);
     }
 
     {
         auto opt = makeOpt(slime::Version::Java, slime::Mode::Density, 2048, 2048, 12345, 50);
         opt.gpuScan = gpu.get();
         const Timed o = oldRun(opt), n = newRun(opt, gpuCaps);
+        const Timed c = newRun(opt, cpuCaps);
         slime::SearchOptions noGpu = opt;
         noGpu.gpuScan = nullptr;
         std::atomic<bool> cancel{ false };
@@ -184,6 +190,8 @@ int main()
         slime::SlimeEngine e;
         e.run(noGpu, cancel, slime::ProgressFn(), refOut);
         report("Java density 2048", o, n, "fused-2band");
+        std::printf("%-24s cpu-materialize median=%7.2fms scan=%7.2fms match=%7.2fms\n", "",
+                    c.median, c.scanMs, c.matchMs);
     }
 
     {

@@ -1,5 +1,6 @@
 #include "core/next/Bitmap.h"
 
+#include "core/FastJava.h"
 #include "gpu/GpuScanAdapter.h"
 
 #include <algorithm>
@@ -12,6 +13,20 @@
 #endif
 
 namespace slime::next {
+
+namespace {
+
+uint64_t javaRowBaseLocal(int64_t worldSeed, int32_t cz) noexcept
+{
+    const uint32_t t3 = static_cast<uint32_t>(cz) * static_cast<uint32_t>(cz);
+    const uint32_t t4 = static_cast<uint32_t>(cz) * 389711u;
+    uint64_t b = static_cast<uint64_t>(worldSeed);
+    b += static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(t3)) * 4392871LL);
+    b += static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(t4)));
+    return b;
+}
+
+} // namespace
 
 bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel, Bitmap& out,
                         ScanStats& stats, std::string* err, const slime::ProgressFn& progress) const
@@ -34,6 +49,7 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
     const auto t0 = std::chrono::steady_clock::now();
     std::atomic<int64_t> rowsDone{ 0 };
     const int reportEvery = (std::max)(1, h / 100);
+    const bool javaFast = (opt.version == Version::Java) && fastjava::available();
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -45,14 +61,19 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
         for (int rz = 0; rz < h; ++rz) {
             if (cancel.load(std::memory_order_relaxed)) continue;
             const int z = static_cast<int>(opt.minZ) + rz;
-            if (opt.version == Version::Java) {
-                SlimeEngine::fillSlimeRowJava(opt.worldSeed, z, static_cast<int>(opt.minX), w, row.data());
-            } else {
-                SlimeEngine::fillSlimeRowBedrock(z, static_cast<int>(opt.minX), w, row.data());
-            }
             uint64_t* dst = bmp.row(z);
-            for (int x = 0; x < w; ++x) {
-                if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+            if (javaFast) {
+                const uint64_t rowBase = javaRowBaseLocal(opt.worldSeed, static_cast<int32_t>(z));
+                fastjava::scanRowJava(rowBase, static_cast<int32_t>(opt.minX), w, dst);
+            } else {
+                if (opt.version == Version::Java) {
+                    SlimeEngine::fillSlimeRowJava(opt.worldSeed, z, static_cast<int>(opt.minX), w, row.data());
+                } else {
+                    SlimeEngine::fillSlimeRowBedrock(z, static_cast<int>(opt.minX), w, row.data());
+                }
+                for (int x = 0; x < w; ++x) {
+                    if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+                }
             }
             const int64_t done = rowsDone.fetch_add(1, std::memory_order_relaxed) + 1;
             if (progress && (done % reportEvery == 0 || done == h)) {
