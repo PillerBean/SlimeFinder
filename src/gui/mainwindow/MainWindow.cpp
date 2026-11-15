@@ -1258,7 +1258,12 @@ void MainWindow::closeEvent(QCloseEvent* ev)
     }
     if (m_task.running()) {
         m_task.cancel();
-        m_task.wait();
+        // v3.14.0: two-phase cancel; never block the GUI indefinitely on a long engine step.
+        if (!m_task.waitFor(5000)) {
+            setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
+            ev->ignore();
+            return;
+        }
     }
     // v3.3.5（优化 5 / 5.1）：主界面当前的搜索相关选项自动成为下次默认值；
     // 窗口尺寸与位置按「窗口大小记忆」开关保存（均写入同一份 config.json）。
