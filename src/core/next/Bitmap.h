@@ -73,14 +73,16 @@ public:
     virtual ~Determiner() = default;
     virtual const char* name() const noexcept = 0;
     virtual bool run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel, Bitmap& out,
-                     ScanStats& stats, std::string* err) const = 0;
+                     ScanStats& stats, std::string* err,
+                     const slime::ProgressFn& progress = slime::ProgressFn()) const = 0;
 };
 
 class CpuDeterminer final : public Determiner {
 public:
     const char* name() const noexcept override { return "cpu"; }
     bool run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel, Bitmap& out,
-             ScanStats& stats, std::string* err) const override;
+             ScanStats& stats, std::string* err,
+             const slime::ProgressFn& progress = slime::ProgressFn()) const override;
 };
 
 class GpuDeterminer final : public Determiner {
@@ -88,7 +90,8 @@ public:
     explicit GpuDeterminer(const slime::GpuScan* gpu) : m_gpu(gpu) {}
     const char* name() const noexcept override { return "gpu"; }
     bool run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel, Bitmap& out,
-             ScanStats& stats, std::string* err) const override;
+             ScanStats& stats, std::string* err,
+             const slime::ProgressFn& progress = slime::ProgressFn()) const override;
 
 private:
     const slime::GpuScan* m_gpu = nullptr;

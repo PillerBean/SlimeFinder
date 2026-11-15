@@ -12,6 +12,7 @@ namespace slime::next {
 struct MaterializeResult {
     std::vector<slime::MatchResult> results;
     int64_t totalFound = 0;
+    bool cancelled = false;
     ScanStats scan;
     MatchStats match;
 };
@@ -19,7 +20,8 @@ struct MaterializeResult {
 class MaterializePipeline {
 public:
     bool run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel,
-             MaterializeResult& out, std::string* err) const;
+             MaterializeResult& out, std::string* err,
+             const slime::ProgressFn& progress = slime::ProgressFn()) const;
 };
 
 } // namespace slime::next

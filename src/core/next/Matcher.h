@@ -21,7 +21,8 @@ public:
     virtual const char* name() const noexcept = 0;
     virtual bool run(const Bitmap& bitmap, const slime::SearchOptions& opt,
                      const std::atomic<bool>& cancel, ResultCollector& collector,
-                     MatchStats& stats, std::string* err) const = 0;
+                     MatchStats& stats, std::string* err,
+                     const slime::ProgressFn& progress = slime::ProgressFn()) const = 0;
 };
 
 class CpuExactMatcher final : public Matcher {
@@ -29,7 +30,8 @@ public:
     const char* name() const noexcept override { return "cpu-exact"; }
     bool run(const Bitmap& bitmap, const slime::SearchOptions& opt,
              const std::atomic<bool>& cancel, ResultCollector& collector,
-             MatchStats& stats, std::string* err) const override;
+             MatchStats& stats, std::string* err,
+             const slime::ProgressFn& progress = slime::ProgressFn()) const override;
 };
 
 } // namespace slime::next

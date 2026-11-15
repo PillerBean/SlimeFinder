@@ -342,6 +342,34 @@ if(MSVC)
     target_compile_options(slime_next_phase2_parity PRIVATE /utf-8 /EHsc /permissive- /O2 /openmp)
 endif()
 
+add_executable(slime_next_phase2_threads
+    tools/refactor/phase2_threads.cpp
+    src/core/next/Determiner.cpp
+    src/core/next/Matcher.cpp
+    src/core/next/Pipeline.cpp
+    src/core/next/Collector.cpp
+)
+target_include_directories(slime_next_phase2_threads PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase2_threads PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_next_phase2_threads PRIVATE /utf-8 /EHsc /permissive- /O2 /openmp)
+endif()
+
+add_executable(slime_next_phase2_progress
+    tools/refactor/phase2_progress_cancel.cpp
+    src/core/next/Determiner.cpp
+    src/core/next/Matcher.cpp
+    src/core/next/Pipeline.cpp
+    src/core/next/Collector.cpp
+)
+target_include_directories(slime_next_phase2_progress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase2_progress PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_next_phase2_progress PRIVATE /utf-8 /EHsc /permissive- /O2 /openmp)
+endif()
+
+
+
 
 
 # ---------------------------------------------------------------- E3.3.1：SIMD 内核独立自检（不依赖引擎/OpenCL）

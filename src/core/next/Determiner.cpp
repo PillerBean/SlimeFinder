@@ -3,6 +3,7 @@
 #include "gpu/GpuScanAdapter.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <vector>
 
@@ -13,7 +14,7 @@
 namespace slime::next {
 
 bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel, Bitmap& out,
-                        ScanStats& stats, std::string* err) const
+                        ScanStats& stats, std::string* err, const slime::ProgressFn& progress) const
 {
     const int w = static_cast<int>(opt.maxX - opt.minX + 1);
     const int h = static_cast<int>(opt.maxZ - opt.minZ + 1);
@@ -26,7 +27,13 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
         if (err) *err = "位图分配失败";
         return false;
     }
+#ifdef _OPENMP
+    if (opt.threads > 0) omp_set_num_threads(opt.threads);
+#endif
+    if (progress) progress(0.0, true, 0.0, 0.0);
     const auto t0 = std::chrono::steady_clock::now();
+    std::atomic<int64_t> rowsDone{ 0 };
+    const int reportEvery = (std::max)(1, h / 100);
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -47,6 +54,10 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
             for (int x = 0; x < w; ++x) {
                 if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
             }
+            const int64_t done = rowsDone.fetch_add(1, std::memory_order_relaxed) + 1;
+            if (progress && (done % reportEvery == 0 || done == h)) {
+                progress(static_cast<double>(done) / static_cast<double>(h), true, 0.0, 0.0);
+            }
         }
     }
     const auto t1 = std::chrono::steady_clock::now();
@@ -54,6 +65,7 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
         if (err) *err = "cancelled";
         return false;
     }
+    if (progress) progress(1.0, true, 0.0, 0.0);
     stats.ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
     stats.chunks = static_cast<int64_t>(w) * h;
     stats.backend = "cpu";
@@ -63,7 +75,7 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
 }
 
 bool GpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel, Bitmap& out,
-                        ScanStats& stats, std::string* err) const
+                        ScanStats& stats, std::string* err, const slime::ProgressFn& progress) const
 {
     if (!m_gpu || !m_gpu->available()) {
         if (err) *err = "GPU 不可用";
@@ -81,6 +93,7 @@ bool GpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
         if (err) *err = "位图分配失败";
         return false;
     }
+    if (progress) progress(0.0, true, 0.0, 0.0);
     const auto t0 = std::chrono::steady_clock::now();
     std::vector<uint64_t> words;
     bool ok = m_gpu->scanRectWords(opt.version, opt.worldSeed, static_cast<int>(opt.minX),
@@ -113,6 +126,7 @@ bool GpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
         if (err) *err = "cancelled";
         return false;
     }
+    if (progress) progress(1.0, true, 0.0, 0.0);
     stats.ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
     stats.chunks = static_cast<int64_t>(w) * h;
     stats.backend = "gpu";
