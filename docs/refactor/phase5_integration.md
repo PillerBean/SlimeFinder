@@ -155,6 +155,7 @@ Fused GPU 或 Banded，CPU 新路径不进入产品自动选择。
 
 ```text
 Banded SearchTask 进度/结果/liveMatches/liveScanned：通过
+Banded SearchTask 取消：通过
 完整缓存覆盖：自动回退旧路径，通过
 构建模式：自动回退旧路径，entries=1744=独立判定，通过
 Fused 2048² SearchTask 中间进度/取消/live 计数：通过

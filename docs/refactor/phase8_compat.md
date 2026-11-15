@@ -28,6 +28,16 @@ SAME
 - Banded 的 totalFound 按旧 `runBanded` 语义等于最终结果数；
 - 结果与旧 CPU 无缓存路径一致。
 
+### Banded 取消
+
+1024² 完整缓存、band=64，在进度 ≥0.2 时取消：
+
+```text
+banded-cancel: done=1 cancelled=1
+```
+
+说明 Banded 新路径能在 tile 边界响应取消。
+
 ## 2. 完整缓存覆盖回退
 
 `useCache=true`、`cache` 直接给完整缓存、但没有 `cacheBandLoader`：

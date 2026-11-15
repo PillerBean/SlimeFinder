@@ -114,7 +114,36 @@ int main()
         if (!ok || !sawProgress.load() || task.liveScannedCount() <= 0 || task.liveTotalCount() <= 0) ++failures;
     }
 
-    // 2) 完整缓存覆盖：当前原型不接管，应回退旧路径且结果一致
+    // 2) Banded 新路径取消
+    {
+        slime::SearchOptions opt = base(slime::Version::Bedrock);
+        opt.minX = -512;
+        opt.maxX = 511;
+        opt.minZ = -512;
+        opt.maxZ = 511;
+        auto cache = buildCache(opt);
+        if (cache) {
+            opt.useCache = true;
+            opt.cacheBandSize = 64;
+            opt.cacheBandLoader = [cache](const slime::Rect&) { return cache; };
+            opt.cacheBandMayCover = [](const slime::Rect&) { return true; };
+            slime::SearchOutcome out;
+            std::atomic<bool> done{ false };
+            slime::SearchTask task;
+            task.start(opt, [&](double f, bool, double, double) {
+                if (f >= 0.2) task.cancel();
+            }, [&](const slime::SearchOutcome& o) {
+                out = o;
+                done.store(true, std::memory_order_release);
+            });
+            task.wait();
+            std::printf("banded-cancel: done=%d cancelled=%d\n", done.load() ? 1 : 0,
+                        out.cancelled ? 1 : 0);
+            if (!done.load() || !out.cancelled) ++failures;
+        }
+    }
+
+    // 3) 完整缓存覆盖：当前原型不接管，应回退旧路径且结果一致
     {
         slime::SearchOptions opt = base(slime::Version::Bedrock);
         auto cache = buildCache(opt);
