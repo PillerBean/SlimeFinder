@@ -140,6 +140,23 @@ Bedrock MT 递推：真正瓶颈
 8 链显式展开：目前唯一稳定收益
 ```
 
+### 16 链尝试
+
+继续把 8 链扩到 16 条显式链：
+
+```text
+density Bedrock 2048 kernel：约 3.04 ms（比 8 链慢）
+pattern Bedrock 2048：约 2.46 ms（与 8 链持平）
+```
+
+结论：
+
+```text
+16 链寄存器压力过大，密度内核反而退化
+8 链是当前最优
+```
+
+
 ## 7. 第 3 步：pattern local size
 
 测试 `SLIME_GPU_PAT_LOCAL = 64 / 128 / 256`，pattern 2×2：
