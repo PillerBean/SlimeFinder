@@ -2,6 +2,7 @@
 #include "core/CacheManager.h"
 #include "core/SearchTask.h"
 #include "core/SlimeEngine.h"
+#include "core/AfkPlanner.h"
 #include "core/next/Pipeline.h"
 #include "core/next/FusedGpu.h"
 #include "gpu/GpuScanAdapter.h"
@@ -104,11 +105,13 @@ int main()
         task.wait();
         const bool ok = done.load() && oldOut.ok && newOut.ok && same(oldOut.results, newOut.results) &&
                         newOut.totalFound == static_cast<int64_t>(newOut.results.size());
-        std::printf("banded-new: done=%d ok=%d progress=%d final=%.3f live=%lld results=%zu/%lld %s\n",
+        std::printf("banded-new: done=%d ok=%d progress=%d final=%.3f live=%lld scanned=%lld total=%lld results=%zu/%lld %s\n",
                     done.load() ? 1 : 0, newOut.ok ? 1 : 0, sawProgress.load() ? 1 : 0, last,
-                    static_cast<long long>(task.liveMatchCount()), newOut.results.size(),
+                    static_cast<long long>(task.liveMatchCount()),
+                    static_cast<long long>(task.liveScannedCount()),
+                    static_cast<long long>(task.liveTotalCount()), newOut.results.size(),
                     static_cast<long long>(newOut.totalFound), ok ? "SAME" : "DIFF");
-        if (!ok || !sawProgress.load()) ++failures;
+        if (!ok || !sawProgress.load() || task.liveScannedCount() <= 0 || task.liveTotalCount() <= 0) ++failures;
     }
 
     // 2) 完整缓存覆盖：当前原型不接管，应回退旧路径且结果一致
@@ -226,6 +229,30 @@ int main()
             std::printf("fused-cancel: ok=%d cancelled=%d\n", ok ? 1 : 0, cancel.load() ? 1 : 0);
             if (ok || !cancel.load()) ++failures;
         }
+    }
+
+    // 6) 环形/AFK 隔离：feature flag 不应影响 AfkPlanner
+    {
+        slime::AfkPlanOptions a;
+        a.area = slime::Rect{ -8, 8, -8, 8 };
+        a.radius = 64;
+        a.innerRadius = 0;
+        a.topN = 3;
+        a.minSeparation = 8;
+        a.coarseStep = 8;
+        a.maxWindowBlocks = 256;
+        _putenv_s("SLIME_NEXT_PIPELINE", "0");
+        const auto off = slime::AfkPlanner::planForSeed(a, slime::Version::Java, 12345);
+        _putenv_s("SLIME_NEXT_PIPELINE", "1");
+        const auto on = slime::AfkPlanner::planForSeed(a, slime::Version::Java, 12345);
+        bool sameAfk = off.size() == on.size();
+        for (size_t i = 0; sameAfk && i < off.size(); ++i) {
+            sameAfk = off[i].x == on[i].x && off[i].z == on[i].z &&
+                      off[i].coveredBlocks == on[i].coveredBlocks;
+        }
+        std::printf("afk-isolation: candidates=%zu/%zu %s\n", off.size(), on.size(),
+                    sameAfk ? "SAME" : "DIFF");
+        if (!sameAfk || off.empty()) ++failures;
     }
 
     std::printf("PHASE8-COMPAT %s (%d failures)\n", failures == 0 ? "ALL PASS" : "FAIL", failures);

@@ -91,12 +91,24 @@ void SearchTask::start(const SearchOptions& options, const ProgressFn& progress,
                             livePhase]() {
         SearchOutcome out;
         bool usedNext = false;
+        const int64_t area = (static_cast<int64_t>(opt.maxX) - opt.minX + 1) *
+                             (static_cast<int64_t>(opt.maxZ) - opt.minZ + 1);
+        const ProgressFn nextCb = [&](double f, bool scanning, double speed, double eta) {
+            if (liveScanned && area > 0) {
+                const double clamped = (std::max)(0.0, (std::min)(1.0, f));
+                liveScanned->store(static_cast<int64_t>(clamped * static_cast<double>(area)),
+                                   std::memory_order_relaxed);
+            }
+            if (liveTotal) liveTotal->store(area, std::memory_order_relaxed);
+            if (cb) cb(f, scanning, speed, eta);
+        };
         slime::next::ExecutionPlan plan;
         if (nextPipelineEnabled() && canUseNextPipeline(opt, plan)) {
             slime::next::MaterializeResult nr;
             std::string nerr;
             slime::next::PlanExecutor executor;
-            const bool ok = executor.run(opt, plan, static_cast<const std::atomic<bool>&>(m_cancel), nr, &nerr, cb);
+            const bool ok = executor.run(opt, plan, static_cast<const std::atomic<bool>&>(m_cancel), nr, &nerr,
+                                         nextCb);
             if (ok) {
                 out.ok = true;
                 out.results = std::move(nr.results);
@@ -124,8 +136,9 @@ void SearchTask::start(const SearchOptions& options, const ProgressFn& progress,
             else engine.run(opt, static_cast<const std::atomic<bool>&>(m_cancel), cb, out);
         } else {
             if (liveCounter) liveCounter->store(out.totalFound, std::memory_order_relaxed);
-            if (liveScanned) liveScanned->store(out.stats.scannedChunks, std::memory_order_relaxed);
-            if (liveTotal) liveTotal->store(out.stats.scannedChunks, std::memory_order_relaxed);
+            const int64_t scannedUnits = out.stats.scannedChunks > 0 ? out.stats.scannedChunks : area;
+            if (liveScanned) liveScanned->store(scannedUnits, std::memory_order_relaxed);
+            if (liveTotal) liveTotal->store(scannedUnits, std::memory_order_relaxed);
         }
         m_running.store(false, std::memory_order_release);
         if (fn) fn(out);
