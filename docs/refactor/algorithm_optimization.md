@@ -76,26 +76,38 @@ densityHitMaskAvx2 生成命中位掩码
 
 ```text
 match: 2.86 ms -> 1.32 ms
-materialize total: 3.71 ms -> 2.43 ms
+materialize total: 3.71 ms -> 2.22 ms
 ```
 
 对照旧 CPU：
 
 ```text
-旧 CPU 约 2.17~2.32 ms
-新 CPU 约 2.43 ms
+旧 CPU 约 2.29 ms
+新 CPU 约 2.22 ms
 ```
 
-仍有约 10% 差距，但已从约 1.7× 降到约 1.1×。
+已基本持平/略快。
+
+密度路径的关键改动：
+
+```text
+vertSumDiffAvx2 滑动列和
+densityHitMaskAvx2 只枚举命中
+每个 OpenMP 线程使用本地 Collector，最后 merge
+```
+
 
 ## 4. 当前 CPU 状态
 
 | 场景 | 旧 CPU | 新 CPU | 状态 |
 |---|---:|---:|---|
 | Java pattern 2048² | 1.76~1.89 ms | 1.19~1.22 ms | 新更快 |
-| Java density 2048² | 2.17~2.32 ms | 2.43 ms | 新慢约 10% |
+| Java density 2048² | 2.17~2.32 ms | 2.22 ms | 基本持平/略快 |
 | Bedrock pattern 512² | 4.30 ms | 4.22 ms | 基本持平 |
 | Bedrock density 512² | 4.41 ms | 4.32~4.53 ms | 基本持平 |
+
+CPU 图案和密度在 2048² 都不再落后于旧 CPU。
+
 
 ## 5. 验证
 

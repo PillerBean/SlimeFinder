@@ -25,6 +25,7 @@
 | 环形/AFK | feature flag 开关结果 SAME |
 | SearchTask 随机矩阵 | 24 case，结果/进度/live 全通过 |
 | 速度统一采样 | Fused/Banded/Chunked 见 `performance_status.md`；CPU 算法优化见 `algorithm_optimization.md` |
+| CPU 算法优化 | Java pattern 1.21ms < 旧1.76ms；Java density 2.22ms ≈ 旧2.29ms |
 | 默认行为 | flag 关闭仍走旧引擎 |
 
 ## 2. 性能记录
