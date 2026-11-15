@@ -28,6 +28,7 @@ struct SearchReport {
     bool chunked = false;
     bool banded = false;
     bool stoppedEarly = false;
+    bool truncated = false;
     std::string fallbackReason;
     std::string error;
     SearchProgress progress;

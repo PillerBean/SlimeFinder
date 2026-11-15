@@ -581,7 +581,7 @@ fail:
 bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int cols, int w, int h,
                                int axMin, int axMax, int azMin, int azMax, const uint32_t* enableMasks,
                                const uint32_t* greenMasks, uint32_t maxHits, const std::atomic<bool>& cancel,
-                               std::vector<StreamDensityHit>& out, std::string* err)
+                               std::vector<StreamDensityHit>& out, std::string* err, bool* outTruncated)
 {
     out.clear();
     if (!m_ready || !m_impl) {
@@ -722,7 +722,8 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
     m_impl->api.pfnReleaseMemObject(dEn);
     m_impl->api.pfnReleaseMemObject(dGr);
     if (total > maxHits) {
-        if (err) *err = "命中数超过上限";
+        if (outTruncated) *outTruncated = true;
+        if (err) *err = "GPU hit cap exceeded";
         return false;
     }
     return true;
@@ -732,7 +733,8 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
                                     int axMin, int axMax, int azMin, int azMax, uint32_t maxHits,
                                     int64_t startX, int64_t startZ, const std::atomic<bool>& cancel,
                                     std::vector<StreamDensityHit>& out, std::string* err, uint32_t* outTotal,
-                                    bool earlyStop, int64_t earlyStopTarget, uint32_t keepTop)
+                                    bool earlyStop, int64_t earlyStopTarget, uint32_t keepTop,
+                                    bool* outTruncated)
 {
     out.clear();
     if (!m_ready || !m_impl) {
@@ -1314,7 +1316,8 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
         std::fprintf(stderr, "[gpu] matchDensity total %.2f ms (%dx%d n=%u)\n", totalMs, w, h, total);
     }
     if (total > maxHits) {
-        if (err) *err = "命中数超过上限";
+        if (outTruncated) *outTruncated = true;
+        if (err) *err = "GPU hit cap exceeded";
         return false;
     }
     return true;

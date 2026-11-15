@@ -262,6 +262,15 @@ if(WIN32)
     target_link_libraries(slime_mode_bench PRIVATE dbghelp)
 endif()
 
+add_executable(slime_cache_lru_bench
+    tools/bench/cache_lru_bench.cpp
+)
+target_include_directories(slime_cache_lru_bench PRIVATE /src)
+target_link_libraries(slime_cache_lru_bench PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_cache_lru_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
 add_executable(slime_flow_bench
     tools/bench/flow_bench.cpp
 )

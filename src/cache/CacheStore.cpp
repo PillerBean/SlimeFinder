@@ -1,4 +1,4 @@
-﻿#include "cache/CacheStore.h"
+#include "cache/CacheStore.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -111,6 +111,7 @@ void CacheStore::setRoot(std::filesystem::path root)
 
     m_root = std::move(root);
     m_packs.clear();
+    packCacheClearLocked();
 }
 
 std::filesystem::path CacheStore::indexPath() const

@@ -1,4 +1,4 @@
-﻿// SlimeEngine.h - 史莱姆区块查找核心计算引擎（Qt 无关，可在任意线程运行）
+// SlimeEngine.h - 史莱姆区块查找核心计算引擎（Qt 无关，可在任意线程运行）
 //
 // 职责：
 //   1. Java 版 / 基岩版区块判定（精确模拟游戏算法）
@@ -211,6 +211,7 @@ struct DensityMatchParams {
     int64_t startZ = 0;
     int64_t keepCandidates = 0;  // 0 = 不做裁剪；>0 = 只回传最多这么多条最可能进榜的
     int64_t* outTotalFound = nullptr;  // 回传「命中总数」（裁剪前），引擎用它算 totalFound
+    bool* outTruncated = nullptr;      // v3.14.2: GPU cap exceeded
     // v3.10.11.1：结果自优化（仅 GPU 密度流式路径；默认关，行为与旧版一致）
     bool earlyStop = false;        // true = 按距离由近到远派发、凑够 earlyStopTarget 即提前停止
     int64_t earlyStopTarget = 0;   // 需要保留的结果数（通常 = targetCount）
@@ -238,6 +239,7 @@ struct PatternMatchParams {
     const uint32_t* enableMasks = nullptr;   // rows 个：该行参与匹配的列
     const uint32_t* greenMasks = nullptr;    // rows 个：该行要求为史莱姆的列
     int64_t maxResults = 0;                  // 0 = 不限
+    bool* outTruncated = nullptr;            // v3.14.2: GPU cap exceeded
 };
 
 // GpuScan::matchDensity 默认实现：不支持的实现返回 false（引擎回退 CPU）
@@ -425,6 +427,7 @@ struct SearchOutcome {
     bool cacheFirstStopped = false;
     // v3.3.9（任务书 1.1）：缓存构建模式 —— 是否因达到缓存容量上限而停止、以及跳过了多少「已缓存」区块
     bool hitCacheBudget = false;
+    bool truncated = false;          // GPU 命中上限被触发（当前仍会回退 CPU 保证完整）
     int64_t buildSkippedChunks = 0;
     std::string error;               // 校验/运行错误信息（中文，可直接展示）
 

@@ -1392,10 +1392,13 @@ void SlimeEngine::run(const SearchOptions& optIn,
                         pp.enableMasks = en.data();
                         pp.greenMasks = gr.data();
                         pp.maxResults = cap;
+                        bool gpuTruncated = false;
+                        pp.outTruncated = &gpuTruncated;
                         std::vector<MatchResult> gpuRes;
                         std::string gerr;
                         const double mBefore = patMs();
                         const bool mOk = opt.gpuScan->matchPattern(pp, cancel, gpuRes, &gerr);
+                        if (gpuTruncated) out.truncated = true;
                         tMatchMs += patMs() - mBefore;
                         if (!mOk) {
                             allOk = false;
@@ -2092,6 +2095,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         // v3.10.12.1：GPU 只回传「最近的 keep 个」(d2,rank) 候选，最终 TopN 一定在其中；
         //   之前 200×target（20k² 时 1 万条）会把大量命中回传给宿主做二次排序。
         gp.keepCandidates = (std::min)(int64_t{ 200000 }, (std::max)(int64_t{ 256 }, opt.targetCount * 4));
+        bool gpuTruncated = false;
+        gp.outTruncated = &gpuTruncated;
         // v3.10.11.1：结果自优化（用户开关）——仅密度精确 GPU 流式匹配生效
         gp.earlyStop = opt.gpuResultSelfOptimize;
         gp.earlyStopTarget = opt.targetCount;
@@ -2243,6 +2248,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             // the previous bands were already billed, so go straight to the CPU fallback.
             const bool gpuOk = !gpuBandFailed &&
                                opt.gpuScan->matchDensity(gp, cancel, gpuResults, &gerr);
+            if (gpuTruncated) out.truncated = true;
             const auto tMd1 = std::chrono::steady_clock::now();
             if (gpuOk) {
                 out.gpuMatchUsed = true;
@@ -5092,6 +5098,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             // v3.13.8: aggregate GPU/fallback/pruning visibility instead of dropping it.
             out.gpuScanUsed = out.gpuScanUsed || bo.gpuScanUsed;
             out.gpuMatchUsed = out.gpuMatchUsed || bo.gpuMatchUsed;
+            out.truncated = out.truncated || bo.truncated;
             if (out.gpuFallbackReason.empty() && !bo.gpuFallbackReason.empty()) {
                 out.gpuFallbackReason = bo.gpuFallbackReason;
             }

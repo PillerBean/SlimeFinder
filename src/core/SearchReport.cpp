@@ -25,6 +25,7 @@ SearchReport makeSearchReport(const SearchOutcome& out, uint64_t runId, bool can
     r.chunked = out.chunkedPath;
     r.banded = options.cacheBandLoader != nullptr;
     r.stoppedEarly = out.stoppedEarly;
+    r.truncated = out.truncated;
     r.fallbackReason = out.gpuFallbackReason;
     r.error = out.error;
 
