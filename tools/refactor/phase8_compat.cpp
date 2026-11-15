@@ -151,6 +151,7 @@ int main()
     {
         slime::SearchOptions opt = base(slime::Version::Bedrock);
         opt.buildMode = true;
+        opt.useCache = true;
         opt.minX = -64;
         opt.maxX = 63;
         opt.minZ = -64;
@@ -168,7 +169,7 @@ int main()
         task.wait();
         std::printf("build-isolation: done=%d ok=%d entries=%lld\n", done.load() ? 1 : 0,
                     out.ok ? 1 : 0, static_cast<long long>(cache->entryCount()));
-        if (!done.load() || !out.ok) ++failures;
+        if (!done.load() || !out.ok || cache->entryCount() <= 0) ++failures;
     }
 
     // 4) 超大范围 Fused 分带进度（>8192 锚点行才切 band）

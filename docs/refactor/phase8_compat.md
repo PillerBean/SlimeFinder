@@ -40,14 +40,14 @@ full-cache-fallback: done=1 ok=1 SAME
 
 ## 3. 构建模式隔离
 
-`buildMode=true`、`SLIME_NEXT_PIPELINE=1`：
+`buildMode=true`、`useCache=true`、`SLIME_NEXT_PIPELINE=1`：
 
 ```text
-build-isolation: done=1 ok=1
+build-isolation: done=1 ok=1 entries=1744
 ```
 
-构建模式仍走旧引擎，没有被新 Pipeline 误接管。
-（本次 `entries=0` 只说明该小范围没有产出条目，不代表缓存语义验收完成。）
+构建模式仍走旧引擎，没有被新 Pipeline 误接管；
+同时验证了旧路径确实把条目写进 CacheManager（entries>0）。
 
 ## 4. Fused 超大范围进度
 
