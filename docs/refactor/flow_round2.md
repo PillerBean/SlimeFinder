@@ -118,7 +118,32 @@ CacheSnapshot（不可变缓存视图）
 
 这是第 2 轮剩余工作。
 
-## 6. 回归
+## 6. 全链路速度复测
+
+任务层（同引擎、CPU、GPU 关闭，15 样本中位数、奇偶交替顺序）：
+
+| case | legacy | flow | ratio |
+|---|---:|---:|---:|
+| Java pattern 2048 | 0.84 ms | 0.81 ms | 0.97× |
+| Java density 2048 | 1.25 ms | 1.24 ms | 0.99× |
+| Bedrock density 1024 | 0.81 ms | 0.81 ms | 0.99× |
+| Bedrock density 2048 | 1.41 ms | 1.51 ms | 1.07× |
+
+结论：
+
+```text
+任务层整体仍在 ±7% 噪声内
+没有可测的流程退化
+```
+
+Banded / 缓存收益见第 1、2、4 节：
+
+```text
+Banded 全局早停：约 16×（稀疏目标、缓存完整覆盖）
+Pack 解码 LRU：约 5×（直接 fill 基准）
+```
+
+## 7. 回归
 
 ```text
 slime_tests --unit                通过
