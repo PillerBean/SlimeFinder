@@ -6,14 +6,14 @@
 
 | 版本 | 类型 | 下载页 |
 |---|---|---|
-| SlimeFinder v3.13.7 | 正式版 | [v3.13.7](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.7) |
-| SlimeFinder v3.13.6 | 正式版 | [v3.13.6](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.6) |
-| SlimeFinder v3.13.5 | 正式版 | [v3.13.5](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.5) |
-| SlimeFinder v3.13.4 | 正式版 | [v3.13.4](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.4) |
-| SlimeFinder v3.13.3 | 正式版 | [v3.13.3](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.3) |
-| SlimeFinder v3.13.2 | 正式版 | [v3.13.2](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.2) |
-| SlimeFinder v3.13.1 | 正式版 | [v3.13.1](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.1) |
-| SlimeFinder v3.13.0 | 正式版 | [v3.13.0](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.0) |
+| SlimeFinder v3.13.7（测试版） | 测试版 | [v3.13.7](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.7) |
+| SlimeFinder v3.13.6（测试版） | 测试版 | [v3.13.6](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.6) |
+| SlimeFinder v3.13.5（测试版） | 测试版 | [v3.13.5](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.5) |
+| SlimeFinder v3.13.4（测试版） | 测试版 | [v3.13.4](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.4) |
+| SlimeFinder v3.13.3（测试版） | 测试版 | [v3.13.3](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.3) |
+| SlimeFinder v3.13.2（测试版） | 测试版 | [v3.13.2](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.2) |
+| SlimeFinder v3.13.1（测试版） | 测试版 | [v3.13.1](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.1) |
+| SlimeFinder v3.13.0（测试版） | 测试版 | [v3.13.0](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.0) |
 | SlimeFinder v3.12.3 | 正式版 | [v3.12.3](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.12.3) |
 | SlimeFinder v3.12.2（测试版） | 测试版 | [v3.12.2](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.12.2) |
 | SlimeFinder v3.12.0（测试版） | 测试版 | [v3.12.0](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.12.0) |
