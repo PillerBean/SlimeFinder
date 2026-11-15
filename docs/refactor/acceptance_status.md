@@ -30,7 +30,8 @@
 | Bedrock 扩展 | 1024²：t1 0.76~0.94×，t8 0.46~0.50× |
 | GPU 密度优化 | keepCandidates + 原始 totalFound；Java density 0.74ms vs 旧GPU 0.84ms |
 | GPU 基准 | `gpu_only_bench`：设备时间/回读/命中/占用代理，见 `gpu_only_bench.md` |
-| GPU 密度内核 | pair/quad 无稳定收益，已回退；瓶颈为 MT19937 |
+| GPU 密度内核 | 8 条显式 MT 链：2048 kernel 2.84→2.61ms；pair/quad 无效 |
+| GPU pattern 内核 | 同一 8 链 helper：Bedrock 2048 约 2.74→2.45ms |
 | GPU pattern local | 256 最优；128 Java 略快但 Bedrock 慢，默认保持 256 |
 | GPU 独立对拍 | phase4/5/6：512/2048/4096 结果与 totalFound 均 SAME |
 | GPU 阶段结论 | 内核仍未完全优化，暂不进入流程/Hybrid |

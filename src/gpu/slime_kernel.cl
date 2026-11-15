@@ -219,6 +219,50 @@ static inline int dens_row_win_popcount(__local const uint* bits, int row, int x
 }
 
 // v3.8.10：两遍模式 —— mode=0 只统计距离直方图（不写命中），mode=1 只回写 d2 <= cutoffD2 的命中。
+static inline uint bedrock_output(uint m0, uint m1, uint cur);
+
+// 8 explicit MT chains to expose ILP without array indexing.
+static inline void bedrock_oct(int cx0, int cz, uint* h8)
+{
+    const uint czu = (uint)cz;
+    uint m00 = ((uint)(cx0 + 0) * 0x1F1F1F1Fu) ^ czu;
+    uint m01 = ((uint)(cx0 + 1) * 0x1F1F1F1Fu) ^ czu;
+    uint m02 = ((uint)(cx0 + 2) * 0x1F1F1F1Fu) ^ czu;
+    uint m03 = ((uint)(cx0 + 3) * 0x1F1F1F1Fu) ^ czu;
+    uint m04 = ((uint)(cx0 + 4) * 0x1F1F1F1Fu) ^ czu;
+    uint m05 = ((uint)(cx0 + 5) * 0x1F1F1F1Fu) ^ czu;
+    uint m06 = ((uint)(cx0 + 6) * 0x1F1F1F1Fu) ^ czu;
+    uint m07 = ((uint)(cx0 + 7) * 0x1F1F1F1Fu) ^ czu;
+    uint s0 = 1812433253u * (m00 ^ (m00 >> 30u)) + 1u;
+    uint s1 = 1812433253u * (m01 ^ (m01 >> 30u)) + 1u;
+    uint s2 = 1812433253u * (m02 ^ (m02 >> 30u)) + 1u;
+    uint s3 = 1812433253u * (m03 ^ (m03 >> 30u)) + 1u;
+    uint s4 = 1812433253u * (m04 ^ (m04 >> 30u)) + 1u;
+    uint s5 = 1812433253u * (m05 ^ (m05 >> 30u)) + 1u;
+    uint s6 = 1812433253u * (m06 ^ (m06 >> 30u)) + 1u;
+    uint s7 = 1812433253u * (m07 ^ (m07 >> 30u)) + 1u;
+    const uint m10 = s0, m11 = s1, m12 = s2, m13 = s3;
+    const uint m14 = s4, m15 = s5, m16 = s6, m17 = s7;
+    for (uint i = 2u; i <= 397u; ++i) {
+        s0 = 1812433253u * (s0 ^ (s0 >> 30u)) + i;
+        s1 = 1812433253u * (s1 ^ (s1 >> 30u)) + i;
+        s2 = 1812433253u * (s2 ^ (s2 >> 30u)) + i;
+        s3 = 1812433253u * (s3 ^ (s3 >> 30u)) + i;
+        s4 = 1812433253u * (s4 ^ (s4 >> 30u)) + i;
+        s5 = 1812433253u * (s5 ^ (s5 >> 30u)) + i;
+        s6 = 1812433253u * (s6 ^ (s6 >> 30u)) + i;
+        s7 = 1812433253u * (s7 ^ (s7 >> 30u)) + i;
+    }
+    h8[0] = bedrock_output(m00, m10, s0);
+    h8[1] = bedrock_output(m01, m11, s1);
+    h8[2] = bedrock_output(m02, m12, s2);
+    h8[3] = bedrock_output(m03, m13, s3);
+    h8[4] = bedrock_output(m04, m14, s4);
+    h8[5] = bedrock_output(m05, m15, s5);
+    h8[6] = bedrock_output(m06, m16, s6);
+    h8[7] = bedrock_output(m07, m17, s7);
+}
+
 __kernel void density_stream(long worldSeed, int minX, int minZ, int w, int h, int ozBase,
                              int gridSize, int thr, int axMin, int axMax, int azMin, int azMax,
                              int bedrock, uint maxHits,
@@ -256,10 +300,27 @@ __kernel void density_stream(long worldSeed, int minX, int minZ, int w, int h, i
         uint v = 0;
         if (cz < h && ox + wx < w) {
             if (bedrock) {
-                for (int b = 0; b < 32; ++b) {
-                    const int cx = ox + wx + b;
-                    if (cx >= w) break;
-                    v |= (uint)bedrock_is_slime_fast(minX + cx, minZ + cz) << b;
+                for (int b = 0; b < 32; b += 8) {
+                    const int cxA = ox + wx + b;
+                    if (cxA + 7 < w) {
+                        uint h8[8];
+                        bedrock_oct(minX + cxA, minZ + cz, h8);
+                        v |= h8[0] << b;
+                        v |= h8[1] << (b + 1);
+                        v |= h8[2] << (b + 2);
+                        v |= h8[3] << (b + 3);
+                        v |= h8[4] << (b + 4);
+                        v |= h8[5] << (b + 5);
+                        v |= h8[6] << (b + 6);
+                        v |= h8[7] << (b + 7);
+                    } else {
+                        for (int k = 0; k < 8; ++k) {
+                            const int cx = cxA + k;
+                            if (cx >= w) break;
+                            v |= (uint)bedrock_is_slime_fast(minX + cx, minZ + cz) << (b + k);
+                        }
+                        break;
+                    }
                 }
             } else {
                 const ulong rb = java_row_base(worldSeed, minZ + cz);
@@ -468,10 +529,27 @@ __kernel void pattern_stream(long worldSeed, int bedrock, int minX, int minZ, in
         uint v = 0;
         if (cz < h && ox + wx < w) {
             if (bedrock) {
-                for (int b = 0; b < 32; ++b) {
-                    const int cx = ox + wx + b;
-                    if (cx >= w) break;
-                    v |= (uint)bedrock_is_slime_fast(minX + cx, minZ + cz) << b;
+                for (int b = 0; b < 32; b += 8) {
+                    const int cxA = ox + wx + b;
+                    if (cxA + 7 < w) {
+                        uint h8[8];
+                        bedrock_oct(minX + cxA, minZ + cz, h8);
+                        v |= h8[0] << b;
+                        v |= h8[1] << (b + 1);
+                        v |= h8[2] << (b + 2);
+                        v |= h8[3] << (b + 3);
+                        v |= h8[4] << (b + 4);
+                        v |= h8[5] << (b + 5);
+                        v |= h8[6] << (b + 6);
+                        v |= h8[7] << (b + 7);
+                    } else {
+                        for (int k = 0; k < 8; ++k) {
+                            const int cx = cxA + k;
+                            if (cx >= w) break;
+                            v |= (uint)bedrock_is_slime_fast(minX + cx, minZ + cz) << (b + k);
+                        }
+                        break;
+                    }
                 }
             } else {
                 // v3.10.12.4：与密度流式内核一致，用「32 区块一个字的批量内核」代替逐区块判定

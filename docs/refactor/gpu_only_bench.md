@@ -105,15 +105,40 @@ Bedrock 密度内核已经是 MT19937 计算受限
 简单增加每线程链数不能突破
 ```
 
-## 6. 第 2 步结论
+## 6. 第 2 步突破：8 条显式 MT 链
+
+pair/quad 没有收益，但把 8 条链**显式展开**（不用数组索引）有效：
+
+```text
+Bedrock density 2048 device kernel
+  scalar       约 2.84 ms
+  pair/quad    约 2.73~2.95 ms（无稳定收益）
+  8-chain oct  约 2.61 ms      （约 8%）
+```
+
+同一 helper 用在 pattern 内核：
+
+```text
+Bedrock pattern 2048 counter 等待
+  scalar       约 2.74 ms
+  8-chain oct  约 2.45~2.49 ms（约 9%）
+```
+
+关键点：
+
+```text
+数组 s[4]/s[8] + 内层 j 循环会被编译器/占用率吃掉
+显式 s0..s7 才能让编译器排开 8 条独立递推
+```
+
+## 6.1 第 2 步结论
 
 ```text
 窗口统计：内核已按列滑窗，没有明显冗余
 命中筛选/回读压缩：对 Bedrock 2048 收益有限
 Bedrock MT 递推：真正瓶颈
+8 链显式展开：目前唯一稳定收益
 ```
-
-pair/quad 都没有稳定收益，未合入性能补丁。
 
 ## 7. 第 3 步：pattern local size
 
