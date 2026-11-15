@@ -1,16 +1,16 @@
 {
-  "version": "3.13.6",
-  "tag": "v3.13.6",
-  "notes": "# SlimeFinder v3.13.6\n\n## 搜索性能\n\n- **判定位图复用的适用范围扩展**：\n  - 3.13.5 只覆盖精确算法；\n  - 3.13.6 同时覆盖 **分层（Layered）** 和 **保守（Brute）**；\n  - 采样估算仍不复用，避免采样位图被误当成完整判定。\n- 复用条件仍然是：同版本、同种子、同范围、CPU 精确扫描、无缓存，且不超过 64M 区块。\n\n实测（CPU，同区域第二次搜索）：\n\n```text\n分层：\n  扫描 0.98 ms → 0.20 ms\n  总耗时约 6.1 ms → 5.3 ms\n\n保守：\n  扫描 0.99 ms → 0.14 ms\n  匹配阶段仍占主要耗时\n```\n\n命中数、排序与复用时一致。\n\n## 说明\n\n- 这不是缓存格式变更，仍是纯内存位图；\n- GPU 流式、缓存构建、采样模式保持原逻辑；\n- 无代码签名，仅提供手动更新。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 3 语言文本检查：通过\n- 复用/不复用命中数一致",
+  "version": "3.13.7",
+  "tag": "v3.13.7",
+  "notes": "# SlimeFinder v3.13.7\n\n## 基岩版 CPU 判定内核\n\n- 原实现：8 lane × **4 条**独立 MT 链，整段递推中常驻 `m0/m1`，寄存器压力较大。\n- 新实现：8 lane × **8 条**独立链；`m0/m1` 不再全程常驻，改为每批末尾从 seed 重算，\n  腾出寄存器给更多状态链，隐藏 `vpmulld` 延迟。\n- 结果与标量/旧实现逐位一致。\n\n实测（同机同范围）：\n\n```text\n单线程裸内核：\n  4 链 22.35 ns/区块\n  8 链 14.90 ns/区块\n  约 1.50×\n\n引擎 Bedrock 2048² CPU 图案：\n  17.99 ms → 14.50 ms\n  约 1.24×\n\n裸判定 2048²（多线程）：\n  12.50 ms → 9.6~9.8 ms\n  约 1.25~1.30×\n```\n\n## 否证记录\n\n- 10 链、11 链在独立探针里更快，但推进到产品编译后出现回归/崩溃，已拒绝；\n- 12 链因寄存器溢出明显变慢；\n- 最终采用 8 链，是当前产品编译条件下稳定的最优形态。\n\n## 验证\n\n- GUI 自检：通过\n- 单元测试：通过\n- 内核自检：19/19 PASS\n- 标量参考逐位一致\n- 3 语言文本检查：通过\n\n## 说明\n\n- 仅改基岩版 CPU 判定内核，Java/GPU 路径不改；\n- 无代码签名，仅提供手动更新。",
   "assets": [
     {
-      "name": "SlimeFinder-3.13.6-Setup.exe",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.6/SlimeFinder-3.13.6-Setup.exe",
-      "size": 17874602
+      "name": "SlimeFinder-3.13.7-Setup.exe",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.7/SlimeFinder-3.13.7-Setup.exe",
+      "size": 17877913
     },
     {
-      "name": "SHA256SUMS-3.13.6.txt",
-      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.6/SHA256SUMS-3.13.6.txt",
+      "name": "SHA256SUMS-3.13.7.txt",
+      "url": "https://github.com/PillerBean/SlimeFinder/releases/download/v3.13.7/SHA256SUMS-3.13.7.txt",
       "size": 202
     }
   ]

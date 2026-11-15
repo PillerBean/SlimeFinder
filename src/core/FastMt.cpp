@@ -576,6 +576,66 @@ inline void draw32x8(uint32_t cx0, uint32_t czu, uint8_t* out32) noexcept
     }
 }
 
+// v3.13.7：8 lane × 8 链（64 区块/批）。
+//   与旧 draw32x8 的 4 链相比，不在整段递推中保留 m0/m1，只在末尾从 seed 重算，
+//   从而把寄存器让给 8 条独立状态链，隐藏 vpmulld 延迟；结果与原 32 区块批逐位一致。
+inline void draw64x8(uint32_t cx0, uint32_t czu, uint8_t* out64) noexcept
+{
+    const __m256i k = bc(kSeedMul);
+    const __m256i c = bc(kMtInitMul);
+    const __m256i one = bc(1U);
+    const __m256i z = bc(czu);
+    const __m256i stepK = bc(8U * kSeedMul);
+    const __m256i lane = _mm256_setr_epi32(
+        static_cast<int>(cx0), static_cast<int>(cx0 + 1), static_cast<int>(cx0 + 2),
+        static_cast<int>(cx0 + 3), static_cast<int>(cx0 + 4), static_cast<int>(cx0 + 5),
+        static_cast<int>(cx0 + 6), static_cast<int>(cx0 + 7));
+    const __m256i seedBase = _mm256_mullo_epi32(lane, k);
+
+    __m256i s[8];
+    {
+        __m256i base = seedBase;
+        for (int g = 0; g < 8; ++g) {
+            s[g] = _mm256_xor_si256(base, z);
+            base = _mm256_add_epi32(base, stepK);
+        }
+    }
+    for (int g = 0; g < 8; ++g) {
+        const __m256i t = _mm256_xor_si256(s[g], _mm256_srli_epi32(s[g], 30));
+        s[g] = _mm256_add_epi32(_mm256_mullo_epi32(t, c), one);
+    }
+
+    __m256i iv = one;
+    for (int i = 2; i <= kMtIndex397; ++i) {
+        iv = _mm256_add_epi32(iv, one);
+        for (int g = 0; g < 8; ++g) {
+            const __m256i t = _mm256_xor_si256(s[g], _mm256_srli_epi32(s[g], 30));
+            s[g] = _mm256_add_epi32(_mm256_mullo_epi32(t, c), iv);
+        }
+    }
+
+    __m256i base = seedBase;
+    for (int g = 0; g < 8; ++g) {
+        const __m256i m0 = _mm256_xor_si256(base, z);
+        const __m256i t = _mm256_xor_si256(m0, _mm256_srli_epi32(m0, 30));
+        const __m256i m1 = _mm256_add_epi32(_mm256_mullo_epi32(t, c), one);
+        const __m256i y = _mm256_or_si256(_mm256_and_si256(m0, bc(0x80000000U)),
+                                         _mm256_and_si256(m1, bc(0x7FFFFFFFU)));
+        const __m256i parity = _mm256_and_si256(y, one);
+        const __m256i neg = _mm256_sub_epi32(_mm256_setzero_si256(), parity);
+        __m256i v = _mm256_xor_si256(s[g], _mm256_srli_epi32(y, 1));
+        v = _mm256_xor_si256(v, _mm256_and_si256(neg, bc(kTwistMagic)));
+        v = _mm256_xor_si256(v, _mm256_srli_epi32(v, 11));
+        v = _mm256_xor_si256(v, _mm256_and_si256(_mm256_slli_epi32(v, 7), bc(0x9D2C5680U)));
+        v = _mm256_xor_si256(v, _mm256_and_si256(_mm256_slli_epi32(v, 15), bc(0xEFC60000U)));
+        v = _mm256_xor_si256(v, _mm256_srli_epi32(v, 18));
+        alignas(32) uint32_t tmp[8];
+        _mm256_store_si256(reinterpret_cast<__m256i*>(tmp), v);
+        for (int j = 0; j < 8; ++j) out64[g * 8 + j] = slimeFromDraw(tmp[j]);
+        base = _mm256_add_epi32(base, stepK);
+    }
+}
+
 // 连续 cx 的 16 区块：seed = (cx0+j)*K ^ czu；按 K 的倍数递增（乘法对加法分配）
 inline void scan16(uint32_t cxFirst, uint32_t czu, uint8_t* out16) noexcept
 {
@@ -897,6 +957,12 @@ void bedrockSlimeScan(int32_t cx0, int32_t cz, int32_t count, uint8_t* out, bool
                 ++cxs;
                 --n;
             }
+        }
+        while (n >= 64) {
+            draw64x8(cxs, czu, o);   // v3.13.7：8 lane × 8 链
+            cxs += 64;
+            o += 64;
+            n -= 64;
         }
         while (n >= 32) {
             draw32x8(cxs, czu, o);   // v3.6.21：8 lane/链（逐位一致，约 2× 吞吐）

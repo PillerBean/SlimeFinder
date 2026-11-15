@@ -259,6 +259,24 @@ if(WIN32)
     target_link_libraries(slime_mode_bench PRIVATE dbghelp)
 endif()
 
+# 基岩 CPU 链数探针：8 lane/链，改变每批链数（实验工具，不接入产品）
+add_executable(slime_bedrock_chain_probe
+    tools/bench/bedrock_chain_probe.cpp
+)
+target_include_directories(slime_bedrock_chain_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_bedrock_chain_probe PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_bedrock_chain_probe PRIVATE /utf-8 /EHsc /permissive- /O2 /arch:AVX2)
+endif()
+
+# 上限审计微基准：向量乘法峰值 / 内存带宽
+add_executable(slime_roofline_probe
+    tools/bench/roofline_probe.cpp
+)
+if(MSVC)
+    target_compile_options(slime_roofline_probe PRIVATE /utf-8 /EHsc /permissive- /O2 /arch:AVX2)
+endif()
+
 add_executable(slime_ocl_probe
     tools/gpu/ocl_probe.cpp
 )
