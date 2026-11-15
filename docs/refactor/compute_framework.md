@@ -357,6 +357,22 @@ Phase 1 尚未做：
 - 替换任何产品路径；
 - 打包/安装包/Release。
 
+Phase 2 已完成的最小切片：
+
+```text
+CpuDeterminer -> Bitmap -> CpuExactMatcher -> ResultCollector
+  - Java/Bedrock
+  - 严格图案（方向锁定）
+  - 精确密度
+  - target=50，512²，单线程
+  - 与旧 SlimeEngine::run 对拍：结果、总数、排序、density 全一致
+  - 连续四轮 PASS
+```
+
+详见 `docs/refactor/phase2_materialize_parity.md`。
+
+当前仍不接入产品、不打包。
+
 
 ## 8. 从主分支实际流程反推
 
