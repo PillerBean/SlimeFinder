@@ -249,7 +249,8 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
 #pragma omp parallel
 #endif
         {
-            std::vector<int32_t> vert(static_cast<size_t>(w), 0);
+            // vertSumDiffAvx2 按 64 列整字写回，必须按 wpr*64 分配，不能只按 w。
+            std::vector<int32_t> vert(static_cast<size_t>(wpr) * 64, 0);
             std::vector<int32_t> counts(anchorCount);
             std::vector<uint64_t> hitMask(maskWords);
             ResultCollector local(CollectorKind::DistanceTopN, opt.targetCount);

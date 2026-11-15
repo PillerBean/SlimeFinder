@@ -1,46 +1,39 @@
 # 已知问题
 
-## 1. Banded 取消压力测试偶发崩溃
+## 1. Banded 取消压力测试偶发崩溃 —— 已修复
 
-状态：**未解决**
+状态：**已修复**
 
 现象：
 
 ```text
 phase8 / banded-cancel
 退出码 -1073740940 (0xC0000409)
-输出停在 task start / 无输出
 约 1/6 次复现（threads=2）
 ```
 
-已排除/验证：
+根因：
 
 ```text
-CpuExactMatcher 单独循环 20 次：稳定
-CacheManager 填充 Bitmap + matcher 循环：多数稳定
-MatchLimits 分块 matcher 循环：稳定
-Banded 普通不取消：多数稳定
+vertSumDiffAvx2 按 64 列整字写回 vertSum
+它写 wpr*64 个 int，而不是只写 w 个 int
+新 Matcher 的 vert 缓冲只按 w 分配
 ```
 
-仍需继续定位：
+Banded 的 tile 宽度常是 68 这类非 64 对齐值，
+于是 `vertSumDiffAvx2` 越界写堆，破坏后续分配/对象，
+表现为延迟、偶发的 0xC0000409。
 
-```text
-SearchTask 取消 + Banded 的组合
-OpenMP 低线程数（2）下的重复运行
+修复：
+
+```cpp
+std::vector<int32_t> vert(static_cast<size_t>(wpr) * 64, 0);
 ```
 
-影响：
+验证：
 
 ```text
-SLIME_NEXT_PIPELINE 默认关闭
-Banded 仍可手动开启，但取消路径不能算验收通过
-```
-
-在修复前：
-
-```text
-不切换默认
-不宣传 Banded 取消已验收
+phase8 连续 8 次：8/8 ALL PASS
 ```
 
 ## 2. 其他

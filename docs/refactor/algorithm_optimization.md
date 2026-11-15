@@ -161,6 +161,14 @@ Bedrock density 1024²：
 
 结果是 SAME，且 totalFound 仍是完整的 9520/2448。
 
+### 额外修正：vert 缓冲边界
+
+`vertSumDiffAvx2` 按 64 列整字写回，实际写 `wpr*64` 个 int。
+新 Matcher 的缓冲必须按 `wpr*64` 分配，不能只按 `w`。
+
+否则 Banded tile 宽度 68 这类非 64 对齐值会越界写堆，
+表现为偶发 0xC0000409。已修复并在 phase8 连续 8 次验证通过。
+
 ## 7. 当前 CPU 状态
 
 
