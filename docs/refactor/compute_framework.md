@@ -332,6 +332,32 @@ Java/Bedrock 2048²：CPU 与 GPU bitmap 完全一致
 主分支：保持 3.13.7 测试版状态，正式版仍为 3.12.3
 ```
 
+Phase 1 已完成的部分：
+
+```text
+src/core/next/Plan.h        计划家族/策略/资源/进度数据结构
+src/core/next/Planner.cpp   只读 Planner：Search/Build/Banded/Analytic
+src/core/next/Collector.*   距离TopN / 密度TopN / CountOnly
+tools/refactor/collector_test.cpp
+tools/refactor/planner_test.cpp
+```
+
+测试：
+
+```text
+Collector ALL PASS
+Planner ALL PASS
+Phase0 CPU/GPU bitmap parity：mismatch=0
+```
+
+Phase 1 尚未做：
+
+- 把 Planner 接到 SearchTask；
+- Collector 真正供 Matcher 使用；
+- 替换任何产品路径；
+- 打包/安装包/Release。
+
+
 ## 8. 从主分支实际流程反推
 
 只看主分支真实入口和分支，不按理想分层想象。
