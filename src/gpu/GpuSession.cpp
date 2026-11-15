@@ -334,7 +334,7 @@ bool GpuSession::initImpl(std::string* err)
         return false;
     }
     if (dbg) std::fprintf(stderr, "[gpu-dbg] clCreateCommandQueue...\n");
-    m_impl->queue = m_impl->api.pfnCreateCommandQueue(m_impl->ctx, m_impl->device, 0, &rc);
+    m_impl->queue = m_impl->api.pfnCreateCommandQueue(m_impl->ctx, m_impl->device, CL_QUEUE_PROFILING_ENABLE, &rc);
     if (dbg) std::fprintf(stderr, "[gpu-dbg] clCreateCommandQueue rc=%d queue=%p\n", (int)rc, (void*)m_impl->queue);
     if (!m_impl->queue || rc != CL_SUCCESS) {
         m_lastError = std::string("clCreateCommandQueue 失败: ") + clErrorText(rc);
@@ -604,6 +604,8 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
     const int totalTilesZ = (anchorRowsZ + strideZ - 1) / strideZ;
     const bool dbg = std::getenv("SLIME_DEBUG") != nullptr;
     const auto tEnter = std::chrono::steady_clock::now();
+    m_lastStats = LastMatchStats{};
+    size_t dbgGlobal = 0;
     std::lock_guard<std::mutex> lock(m_impl->mu);
     const auto tLock = std::chrono::steady_clock::now();
     cl_kernel k = m_impl->kPatternStream;
@@ -667,6 +669,7 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
                 break;
             }
             ++dispatches;
+            dbgGlobal += global;
         }
     }
     const auto tDispatch = std::chrono::steady_clock::now();
@@ -712,6 +715,24 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
     m_impl->api.pfnReleaseMemObject(dCounter);
     m_impl->api.pfnReleaseMemObject(dEn);
     m_impl->api.pfnReleaseMemObject(dGr);
+    const auto tEndStats = std::chrono::steady_clock::now();
+    const auto msStats = [](auto a, auto b) {
+        return std::chrono::duration<double, std::milli>(b - a).count();
+    };
+    m_lastStats.ok = true;
+    m_lastStats.totalMs = msStats(tEnter, tEndStats);
+    m_lastStats.setupMs = msStats(tEnter, tArgs);
+    m_lastStats.kernelMs = msStats(tArgs, tDispatch);
+    m_lastStats.counterReadMs = msStats(tDispatch, tRead);
+    m_lastStats.hitsReadMs = msStats(tRead, tEndStats);
+    m_lastStats.selectMs = 0.0;
+    m_lastStats.releaseMs = 0.0;
+    m_lastStats.totalHits = total;
+    m_lastStats.returnedHits = static_cast<uint32_t>(out.size());
+    m_lastStats.dispatches = static_cast<uint32_t>(dispatches);
+    m_lastStats.localSize = local;
+    m_lastStats.globalSize = dbgGlobal;
+    m_lastStats.workGroups = local > 0 ? dbgGlobal / local : 0;
     if (total > maxHits) {
         if (err) *err = "命中数超过上限";
         return false;
@@ -1046,6 +1067,12 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
     const int tilesX = (w - g + 1 + strideX - 1) / strideX;
 
     const auto tAllStart = std::chrono::steady_clock::now();
+    m_lastStats = LastMatchStats{};
+    uint32_t dbgDispatches = 0;
+    size_t dbgGlobal = 0;
+    double dbgKernelMs = 0.0, dbgCounterMs = 0.0, dbgHitsMs = 0.0;
+    double dbgDeviceKernelMs = 0.0;
+    std::vector<cl_event> events;
     std::lock_guard<std::mutex> lock(m_impl->mu);
     cl_kernel k = m_impl->kDensityStream;
     cl_int rc = CL_SUCCESS;
@@ -1116,12 +1143,16 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
             ozBase = startTileZ * strideZ;
             if (m_impl->api.pfnSetKernelArg(k, 5, sizeof(ozBase), &ozBase) != CL_SUCCESS) return false;
             const size_t global = static_cast<size_t>(tilesX) * static_cast<size_t>(tilesZBand) * local;
+            cl_event ev = nullptr;
             const cl_int err2 = m_impl->api.pfnEnqueueNDRangeKernel(m_impl->queue, k, 1, nullptr, &global, &local,
-                                                                    0, nullptr, nullptr);
+                                                                    0, nullptr, &ev);
             if (err2 != CL_SUCCESS) {
                 rc = err2;
                 return false;
             }
+            if (ev) events.push_back(ev);
+            ++dbgDispatches;
+            dbgGlobal += global;
         }
         return true;
     };
@@ -1134,6 +1165,7 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
             uint32_t hist[1024] = { 0 };
             const double tDispatchMs =
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tDbg0).count();
+            dbgKernelMs = tDispatchMs;
             if (std::getenv("SLIME_DEBUG")) {
                 std::fprintf(stderr, "[gpu] dispatch+kernel %.2f ms (%dx%d)\n", tDispatchMs, w, h);
             }
@@ -1141,6 +1173,19 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
                                              nullptr);
             const double tCounterMs =
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tDbg0).count();
+            dbgCounterMs = tCounterMs - tDispatchMs;
+            for (cl_event ev : events) {
+                cl_ulong t0 = 0, t1 = 0;
+                if (m_impl->api.pfnGetEventProfilingInfo &&
+                    m_impl->api.pfnGetEventProfilingInfo(ev, CL_PROFILING_COMMAND_START, sizeof(t0), &t0, nullptr) ==
+                        CL_SUCCESS &&
+                    m_impl->api.pfnGetEventProfilingInfo(ev, CL_PROFILING_COMMAND_END, sizeof(t1), &t1, nullptr) ==
+                        CL_SUCCESS) {
+                    dbgDeviceKernelMs += static_cast<double>(t1 - t0) / 1e6;
+                }
+                if (m_impl->api.pfnReleaseEvent) m_impl->api.pfnReleaseEvent(ev);
+            }
+            events.clear();
             if (std::getenv("SLIME_DEBUG")) {
                 std::fprintf(stderr, "[gpu] counter read %.2f ms (%dx%d total=%u)\n", tCounterMs, w, h, total);
             }
@@ -1196,6 +1241,7 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
         if (std::getenv("SLIME_DEBUG")) {
             const double tReadMs =
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tDbg0).count();
+            dbgHitsMs = tReadMs - dbgCounterMs - dbgKernelMs;
             std::fprintf(stderr, "[gpu] hits read %.2f ms (%dx%d n=%u)\n", tReadMs, w, h, n);
         }
         // v3.10.12.1：先在会话内筛出最近的 keepTop 个（(d2,rank) 与引擎同口径）——
@@ -1291,6 +1337,22 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
         (void)afterReadMs;
         std::fprintf(stderr, "[gpu] matchDensity total %.2f ms (%dx%d n=%u)\n", totalMs, w, h, total);
     }
+    const double tEnd =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tAllStart).count();
+    m_lastStats.ok = true;
+    m_lastStats.totalMs = tEnd;
+    m_lastStats.deviceTimeValid = dbgDeviceKernelMs > 0;
+    m_lastStats.kernelMs = dbgDeviceKernelMs;
+    m_lastStats.counterReadMs = dbgCounterMs;
+    m_lastStats.hitsReadMs = dbgHitsMs;
+    m_lastStats.selectMs = (std::max)(0.0, tBeforeRel - dbgKernelMs - dbgCounterMs - dbgHitsMs);
+    m_lastStats.releaseMs = (std::max)(0.0, tEnd - tBeforeRel);
+    m_lastStats.totalHits = total;
+    m_lastStats.returnedHits = static_cast<uint32_t>(out.size());
+    m_lastStats.dispatches = dbgDispatches;
+    m_lastStats.localSize = local;
+    m_lastStats.globalSize = dbgGlobal;
+    m_lastStats.workGroups = local > 0 ? dbgGlobal / local : 0;
     if (total > maxHits) {
         if (err) *err = "命中数超过上限";
         return false;

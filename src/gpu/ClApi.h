@@ -59,6 +59,9 @@ struct ClApi {
                                                cl_uint, const cl_event*, cl_event*) = nullptr;
     cl_int (CL_API_CALL* pfnEnqueueNDRangeKernel)(cl_command_queue, cl_kernel, cl_uint, const size_t*, const size_t*,
                                                   const size_t*, cl_uint, const cl_event*, cl_event*) = nullptr;
+    cl_int (CL_API_CALL* pfnGetEventProfilingInfo)(cl_event, cl_profiling_info, size_t, void*, size_t*) = nullptr;
+    cl_int (CL_API_CALL* pfnReleaseEvent)(cl_event) = nullptr;
+    cl_int (CL_API_CALL* pfnWaitForEvents)(cl_uint, const cl_event*) = nullptr;
     cl_int (CL_API_CALL* pfnFinish)(cl_command_queue) = nullptr;
     cl_int (CL_API_CALL* pfnFlush)(cl_command_queue) = nullptr;
 

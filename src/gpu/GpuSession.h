@@ -91,6 +91,26 @@ public:
                             bool earlyStop = false, int64_t earlyStopTarget = 0,
                             uint32_t keepTop = 0);   // v3.10.12.1：只回传最近的 keepTop 个（0=全部）
 
+    // GPU-only 基准：最近一次 stream 调用的阶段拆分与占用信息。
+    struct LastMatchStats {
+        bool ok = false;
+        bool deviceTimeValid = false;
+        double totalMs = 0.0;
+        double setupMs = 0.0;
+        double kernelMs = 0.0;
+        double counterReadMs = 0.0;
+        double hitsReadMs = 0.0;
+        double selectMs = 0.0;
+        double releaseMs = 0.0;
+        uint32_t totalHits = 0;
+        uint32_t returnedHits = 0;
+        uint32_t dispatches = 0;
+        size_t localSize = 0;
+        size_t globalSize = 0;
+        size_t workGroups = 0;
+    };
+    LastMatchStats lastMatchStats() const noexcept { return m_lastStats; }
+
     // v3.7.6：环形覆盖（占用图逐行前缀和 → 每个候选中心的环带格数）
     bool annulusCoverage(const int* pref2d, int w, int h, int originX, int originZ, int step, int nx,
                          int nz, int firstX, int firstZ, int innerRadius, int outerRadius,
@@ -106,6 +126,7 @@ private:
     GpuDeviceInfo m_device;
     std::string m_modulePath;
     std::string m_lastError;
+    LastMatchStats m_lastStats;
     std::string m_kernelBuildLog; // 内核构建输出（编译失败时并入错误信息）
 
     bool initImpl(std::string* err); // init() 的内部实现（由 init 的异常兜底包裹）

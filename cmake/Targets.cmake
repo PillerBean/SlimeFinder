@@ -478,6 +478,15 @@ if(MSVC)
     target_compile_options(slime_next_phase16_cpu_scale PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
 
+add_executable(slime_gpu_only_bench
+    tools/refactor/gpu_only_bench.cpp
+)
+target_include_directories(slime_gpu_only_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_gpu_only_bench PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_gpu_only_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
 add_executable(slime_next_phase13_attribution
     tools/refactor/phase13_attribution.cpp
 )

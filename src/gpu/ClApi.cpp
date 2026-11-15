@@ -64,6 +64,9 @@ bool tryResolveAll(void* module, ClApi& api)
     RESOLVE(EnqueueWriteBuffer);
     RESOLVE(EnqueueReadBuffer);
     RESOLVE(EnqueueNDRangeKernel);
+    RESOLVE(GetEventProfilingInfo);
+    RESOLVE(ReleaseEvent);
+    RESOLVE(WaitForEvents);
     RESOLVE(Finish);
     RESOLVE(Flush);
     return true;
@@ -223,6 +226,9 @@ ClApi& ClApi::operator=(ClApi&& o) noexcept
         pfnEnqueueWriteBuffer = o.pfnEnqueueWriteBuffer;
         pfnEnqueueReadBuffer = o.pfnEnqueueReadBuffer;
         pfnEnqueueNDRangeKernel = o.pfnEnqueueNDRangeKernel;
+        pfnGetEventProfilingInfo = o.pfnGetEventProfilingInfo;
+        pfnReleaseEvent = o.pfnReleaseEvent;
+        pfnWaitForEvents = o.pfnWaitForEvents;
         pfnFinish = o.pfnFinish;
         pfnFlush = o.pfnFlush;
     }

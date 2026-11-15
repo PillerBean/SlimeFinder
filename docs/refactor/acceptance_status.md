@@ -29,6 +29,7 @@
 | CPU 线程扩展 | phase16：1/2/4/8/12 线程与 4096² 已记录 |
 | Bedrock 扩展 | 1024²：t1 0.76~0.94×，t8 0.46~0.50× |
 | GPU 密度优化 | keepCandidates + 原始 totalFound；Java density 0.74ms vs 旧GPU 0.84ms |
+| GPU 基准 | `gpu_only_bench`：设备时间/回读/命中/占用代理，见 `gpu_only_bench.md` |
 | 已知问题 | Banded 取消偶发崩溃已修复（vert 缓冲按 wpr*64 分配），phase8 8/8 通过 |
 | 默认行为 | flag 关闭仍走旧引擎 |
 
