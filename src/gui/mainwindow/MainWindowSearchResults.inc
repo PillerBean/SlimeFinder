@@ -246,15 +246,18 @@ void MainWindow::startSearch()
     opt.cache = nullptr;
     opt.cacheBandLoader = nullptr;
     if (cacheEnabled && !buildModeActive() && m_cacheStore) {
-        opt.cacheBandMayCover = [this](const slime::Rect& band) {
-            // v3.13.8: metadata query (not "any overlap"); CacheStore now serializes access.
-            return m_cacheStore && m_cacheStore->coversRange(band);
+        // v3.14.3: one immutable pack-index snapshot for the whole run. A cache import/clear
+        // after start cannot change which packs this task sees.
+        const slime::cache::CacheSnapshot cacheSnapshot = m_cacheStore->snapshot();
+        auto* cacheStore = m_cacheStore.get();
+        opt.cacheBandMayCover = [cacheStore, cacheSnapshot](const slime::Rect& band) {
+            return cacheStore->coversRange(cacheSnapshot, band);
         };
-        opt.cacheBandLoader = [this](const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
+        opt.cacheBandLoader = [cacheStore, cacheSnapshot](
+                                  const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
             auto cm = std::make_shared<slime::CacheManager>();
-            if (!m_cacheStore) return cm;
             std::string err;
-            if (!m_cacheStore->fillCacheManagerRange(*cm, band, &err) && !err.empty()) {
+            if (!cacheStore->fillCacheManagerRange(cacheSnapshot, *cm, band, &err) && !err.empty()) {
                 // 失败时返回空缓存继续计算，结果不受影响。
             }
             return cm;

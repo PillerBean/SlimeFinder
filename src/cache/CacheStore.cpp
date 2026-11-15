@@ -615,15 +615,26 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
     return true;
 }
 
-bool CacheStore::coversRange(const slime::Rect& range) const
+CacheSnapshot CacheStore::snapshot() const
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    CacheSnapshot s;
+    s.packs = m_packs;
+    return s;
+}
 
+bool CacheStore::coversRange(const slime::Rect& range) const
+{
+    return coversRange(snapshot(), range);
+}
+
+bool CacheStore::coversRange(const CacheSnapshot& snapshot, const slime::Rect& range) const
+{
     if (!range.valid()) return false;
     std::vector<std::pair<int, int>> intervals;
     for (int64_t z = range.minZ; z <= range.maxZ; ++z) {
         intervals.clear();
-        for (const auto& e : m_packs) {
+        for (const auto& e : snapshot.packs) {
             if (z < e.rect.minZ || z > e.rect.maxZ) continue;
             const int a = (std::max)(static_cast<int>(range.minX), e.rect.minX);
             const int b = (std::min)(static_cast<int>(range.maxX), e.rect.maxX);
@@ -643,8 +654,12 @@ bool CacheStore::coversRange(const slime::Rect& range) const
 
 bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err) const
 {
-    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    return fillCacheManagerRange(snapshot(), target, range, err);
+}
 
+bool CacheStore::fillCacheManagerRange(const CacheSnapshot& snapshot, CacheManager& target,
+                                       const slime::Rect& range, std::string* err) const
+{
     target.clear();
     if (!range.valid()) return true;
 
@@ -657,7 +672,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
     std::vector<std::pair<int, int>> intervals;
     for (int64_t z = range.minZ; z <= range.maxZ && fullyCovered; ++z) {
         intervals.clear();
-        for (const auto& e : m_packs) {
+        for (const auto& e : snapshot.packs) {
             if (z < e.rect.minZ || z > e.rect.maxZ) continue;
             const int a = (std::max)(static_cast<int>(range.minX), e.rect.minX);
             const int b = (std::min)(static_cast<int>(range.maxX), e.rect.maxX);
@@ -675,7 +690,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
 
     if (!fullyCovered) {
         // 部分覆盖：逐个 pack 写入范围位图（引擎按区块读缓存，不做整行快路径）。
-        for (const auto& e : m_packs) {
+        for (const auto& e : snapshot.packs) {
             const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
             if (pr.maxX < range.minX || pr.minX > range.maxX ||
                 pr.maxZ < range.minZ || pr.minZ > range.maxZ) continue;
@@ -693,7 +708,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
     // 不再先构造 fullBits 再逐 bit 写入 CacheManager。
     std::vector<uint64_t> fullWords(static_cast<size_t>(wpr * H), 0ULL);
     std::vector<uint8_t> rowBuf;
-    for (const auto& e : m_packs) {
+    for (const auto& e : snapshot.packs) {
         const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
         if (pr.maxX < range.minX || pr.minX > range.maxX ||
             pr.maxZ < range.minZ || pr.minZ > range.maxZ) continue;

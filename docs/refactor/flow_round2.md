@@ -110,15 +110,34 @@ GPU-RESUME OK
 注意：测试中的 fake GPU 每 tile 用 CPU 填充，因此总耗时不能代表真实 GPU；
 这里验证的是“已集成行没有被 CPU 重算”。
 
-## 5. 尚未完成
+## 5. CacheSnapshot（pack 索引快照）
+
+新增：
 
 ```text
-CacheSnapshot（不可变缓存视图）
+CacheStore::CacheSnapshot
+CacheStore::snapshot()
+CacheStore::coversRange(snapshot, rect)
+CacheStore::fillCacheManagerRange(snapshot, manager, rect)
 ```
 
-这是第 2 轮剩余工作。
+搜索启动时抓取一次 pack 索引快照，整个任务只使用这份快照：
 
-## 6. 全链路速度复测
+- 搜索途中导入/清空/删除缓存不会改变本次任务的 pack 集合；
+- band loader 不再每带读取可变 `m_packs`；
+- 快照只复制 pack 元数据（文件、矩形、大小），不复制位图；
+- 位图仍通过 `readPackBitmap` 读取，并受 pack LRU 加速。
+
+验证：cache store / band / GUI 自检通过。
+
+## 6. 尚未完成
+
+```text
+位图级不可变快照（当前是 pack 索引快照）
+GPU cap 溢出后接受截断结果的策略（当前仍 CPU 回退保证精确）
+```
+
+## 7. 全链路速度复测
 
 任务层（同引擎、CPU、GPU 关闭，15 样本中位数、奇偶交替顺序）：
 
@@ -143,7 +162,7 @@ Banded 全局早停：约 16×（稀疏目标、缓存完整覆盖）
 Pack 解码 LRU：约 5×（直接 fill 基准）
 ```
 
-## 7. 回归
+## 8. 回归
 
 ```text
 slime_tests --unit                通过
