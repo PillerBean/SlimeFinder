@@ -17,7 +17,7 @@ void MainWindow::loadAppSettings()
     s.defaultStopAtTarget = cfgBool(path, "settings.defaultStopAtTarget", s.defaultStopAtTarget);
     s.autoLoadCache = cfgBool(path, "settings.autoLoadCache", s.autoLoadCache);
     s.cacheDir = QString::fromStdString(cfgString(path, "settings.cacheDir", ""));
-    s.cacheMaxMB = cfgInt(path, "settings.cacheMaxMB", s.cacheMaxMB);
+    s.cacheMaxMB = cfgInt(path, "settings.cacheMaxMB", cfgInt(path, "cache.maxSizeMB", s.cacheMaxMB));
     s.logAtStartup = cfgBool(path, "settings.logAtStartup", s.logAtStartup);
     s.logLevel = cfgInt(path, "settings.logLevel", s.logLevel);
     s.logSubDir = QString::fromStdString(cfgString(path, "settings.logSubDir", "logs"));

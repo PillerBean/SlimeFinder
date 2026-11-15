@@ -107,6 +107,8 @@ CacheStore::CacheStore(std::filesystem::path root)
 
 void CacheStore::setRoot(std::filesystem::path root)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     m_root = std::move(root);
     m_packs.clear();
 }
@@ -142,6 +144,8 @@ std::string CacheStore::relativePath(const std::filesystem::path& p) const
 
 bool CacheStore::load(std::string* err, bool scanOrphans)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     m_packs.clear();
     if (!ensureDirs(err)) return false;
     std::ifstream in(indexPath(), std::ios::binary);
@@ -239,6 +243,8 @@ bool CacheStore::load(std::string* err, bool scanOrphans)
 
 bool CacheStore::save(std::string* err)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     if (!ensureDirs(err)) return false;
     const auto tmp = indexPath().string() + ".new";
     std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
@@ -277,6 +283,8 @@ bool CacheStore::save(std::string* err)
 
 int64_t CacheStore::totalCompressedBytes() const noexcept
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     int64_t n = 0;
     for (const auto& p : m_packs) n += static_cast<int64_t>(p.compressedBytes);
     return n;
@@ -284,6 +292,8 @@ int64_t CacheStore::totalCompressedBytes() const noexcept
 
 int64_t CacheStore::totalRawBytes() const noexcept
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     int64_t n = 0;
     for (const auto& p : m_packs) n += static_cast<int64_t>(p.rawBytes);
     return n;
@@ -292,6 +302,8 @@ int64_t CacheStore::totalRawBytes() const noexcept
 bool CacheStore::addPack(const std::filesystem::path& path, const std::string& source,
                          std::string* err, bool persist)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     if (source != kLocalDir && source != kDownloadedDir) {
         if (err) *err = "未知缓存来源";
         return false;
@@ -337,6 +349,8 @@ bool CacheStore::addPack(const std::filesystem::path& path, const std::string& s
 
 bool CacheStore::clearAll(std::string* err)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     std::error_code ec;
     for (const auto& e : m_packs) {
         std::filesystem::remove(m_root / e.file, ec);
@@ -349,6 +363,8 @@ bool CacheStore::clearAll(std::string* err)
 
 bool CacheStore::removePack(const std::string& file, std::string* err)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     const auto it = std::find_if(m_packs.begin(), m_packs.end(), [&](const CachePackEntry& e) {
         return e.file == file;
     });
@@ -372,6 +388,8 @@ bool CacheStore::removePack(const std::string& file, std::string* err)
 
 bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* err)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     if (!ensureDirs(err)) return false;
     const auto& ranges = source.ranges();
     if (ranges.empty()) {
@@ -450,6 +468,8 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
 
 bool CacheStore::replaceLocalFromCacheManager(const CacheManager& source, std::string* err)
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     // 只清 local；downloaded 是只读外部缓存，不能因构建保存被删除。
     for (auto it = m_packs.begin(); it != m_packs.end();) {
         if (it->source == kLocalDir) {
@@ -467,6 +487,8 @@ bool CacheStore::replaceLocalFromCacheManager(const CacheManager& source, std::s
 
 const CachePackEntry* CacheStore::findContaining(int32_t x, int32_t z) const noexcept
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     for (const auto& e : m_packs) {
         if (x >= e.rect.minX && x <= e.rect.maxX && z >= e.rect.minZ && z <= e.rect.maxZ) {
             return &e;
@@ -478,6 +500,8 @@ const CachePackEntry* CacheStore::findContaining(int32_t x, int32_t z) const noe
 bool CacheStore::readPackBitmap(const CachePackEntry& entry, std::vector<uint8_t>& out,
                                 std::string* err) const
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     PackInfo info;
     if (!readPack(m_root / entry.file, info, out, err)) return false;
     if (info.rect.minX != entry.rect.minX || info.rect.maxX != entry.rect.maxX ||
@@ -490,6 +514,8 @@ bool CacheStore::readPackBitmap(const CachePackEntry& entry, std::vector<uint8_t
 
 bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     target.clear();
     std::vector<Rect> ranges;
     std::vector<std::pair<int, int>> slimeChunks;
@@ -535,6 +561,8 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
 
 bool CacheStore::coversRange(const slime::Rect& range) const
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     if (!range.valid()) return false;
     std::vector<std::pair<int, int>> intervals;
     for (int64_t z = range.minZ; z <= range.maxZ; ++z) {
@@ -559,6 +587,8 @@ bool CacheStore::coversRange(const slime::Rect& range) const
 
 bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err) const
 {
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+
     target.clear();
     if (!range.valid()) return true;
 

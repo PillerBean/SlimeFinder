@@ -930,6 +930,9 @@ static int runGpuScanStage(const SearchOptions& opt,
         cRuns.clear();
         if (useCache) {
             cis.clear();
+            // v3.13.8: merger thread may rewrite ranges/bitmaps; snapshot under the cache lock.
+            std::unique_lock<std::mutex> rangesLk;
+            if (opt.cacheReadMu) rangesLk = std::unique_lock<std::mutex>(*opt.cacheReadMu);
             for (const Rect& rc : opt.cache->ranges()) {
                 if (absZ >= rc.minZ && absZ <= rc.maxZ) {
                     const int64_t a = std::max<int64_t>(xA, static_cast<int64_t>(rc.minX));
@@ -1608,6 +1611,13 @@ void SlimeEngine::runZeroThresholdFast(const SearchOptions& opt, const std::atom
         }
         if ((r & 63) == 0 && cancel.load(std::memory_order_relaxed)) break;
     }
+    // v3.13.8：取消时 rows 可能只填了一部分，不能用半张位图算密度并返回成功。
+    if (cancel.load(std::memory_order_relaxed)) {
+        out.cancelled = true;
+        out.ok = false;
+        out.stats.totalMs = elapsedMs();
+        return;
+    }
     out.results.reserve(picked.size());
     for (const Cand& c : picked) {
         int count = 0;
@@ -1626,6 +1636,13 @@ void SlimeEngine::runZeroThresholdFast(const SearchOptions& opt, const std::atom
         out.results.push_back(m);
     }
     out.totalFound = total;
+    if (cancel.load(std::memory_order_relaxed)) {
+        out.cancelled = true;
+        out.ok = false;
+        out.results.clear();
+        out.stats.totalMs = elapsedMs();
+        return;
+    }
     out.ok = true;
     out.stoppedEarly = false;
     out.stats.windowsEvaluated = total;
@@ -1898,6 +1915,13 @@ void SlimeEngine::runBestDensity(const SearchOptions& opt, const std::atomic<boo
     }
 
     // 合并各线程 TopN（总数 ≤ 线程数 × N，很小），再取全局前 N。
+    // v3.13.8：取消后不得把部分 TopN 当成功结果返回（旧版只 break，随后仍 out.ok=true）。
+    if (cancel.load(std::memory_order_relaxed)) {
+        out.cancelled = true;
+        out.ok = false;
+        out.stats.totalMs = elapsedMs();
+        return;
+    }
     std::vector<BestCand> winners;
     for (const auto& w : threadWinners) winners.insert(winners.end(), w.begin(), w.end());
     std::sort(winners.begin(), winners.end(), better);
@@ -2095,6 +2119,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             // v3.10.5：提前停止时（含智能范围）都按行带由近到远派发，才能在凑够 N 后停下；
             //   无早停时保持单次全量派发（速度优先）。
             const bool bandForProgress = opt.stopAtTarget && !opt.smartRange && bandRowsTotal >= 4096;
+            bool gpuBandFailed = false;
             if (bandForProgress) {
                 const int64_t rowLo = gp.azMin, rowHi = gp.azMax;
                 const int64_t rowCount = rowHi - rowLo + 1;
@@ -2124,6 +2149,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     std::vector<MatchResult> part;
                     if (!opt.gpuScan->matchDensity(bp, cancel, part, &gerr)) {
                         bandOk = false;
+                        gpuBandFailed = true;
                         break;
                     }
                     bandTotal += partTotal > 0 ? partTotal : static_cast<int64_t>(part.size());
@@ -2213,7 +2239,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     std::fflush(stderr);
                 }
             }
-            const bool gpuOk = opt.gpuScan->matchDensity(gp, cancel, gpuResults, &gerr);
+            // v3.13.8: after a banded attempt failed, do NOT re-dispatch the whole region to GPU;
+            // the previous bands were already billed, so go straight to the CPU fallback.
+            const bool gpuOk = !gpuBandFailed &&
+                               opt.gpuScan->matchDensity(gp, cancel, gpuResults, &gerr);
             const auto tMd1 = std::chrono::steady_clock::now();
             if (gpuOk) {
                 out.gpuMatchUsed = true;
@@ -2530,6 +2559,9 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         segs.clear();
         std::vector<std::pair<int64_t, int64_t>> cis; // 缓存覆盖区间
         if (useCache) {
+            // v3.13.8: merger thread may rewrite ranges/bitmaps; snapshot under the cache lock.
+            std::unique_lock<std::mutex> rangesLk;
+            if (opt.cacheReadMu) rangesLk = std::unique_lock<std::mutex>(*opt.cacheReadMu);
             for (const Rect& rc : opt.cache->ranges()) {
                 if (absZ >= rc.minZ && absZ <= rc.maxZ) {
                     const int64_t a = std::max<int64_t>(0, static_cast<int64_t>(rc.minX) - x0);
@@ -4634,6 +4666,12 @@ void SlimeEngine::runChunked(const SearchOptions& opt,
                     if (slot >= nChunks) break;
                     const int64_t ci = chunkOrder[static_cast<size_t>(slot)];
                     if (cancel.load(std::memory_order_relaxed)) break;
+                    // v3.13.8: once the build budget is hit, stop scheduling new chunks instead of
+                    // scanning to the natural end (the header promises an immediate stop).
+                    if (opt.buildMode && budgetStop.load(std::memory_order_relaxed)) {
+                        chunksDone.fetch_add(1, std::memory_order_relaxed);
+                        continue;
+                    }
                     // v3.3.8.1（任务书 1.1：缓存 + 及时反馈联动）：**缓存优先阶段已凑够目标数 ⇒ 立即停**，
                     // 不再扩展扫描未覆盖区（「及时反馈」语义 = 缓存内够数即停；不保证全局最近 N）。
                     // 仅在「存在缓存覆盖块」的排序生效时启用；无缓存时保持 v3.3.7 的无损剪枝行为。
@@ -4900,6 +4938,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     const int64_t totalBands = nx * nz;
     // 单带无 halo 仅用于小范围；大范围绝不一次性把整张缓存位图读进内存。
     const int64_t totalChunks = (x1 - x0 + 1) * (z1 - z0 + 1);
+    // v3.13.8: the banded path must publish one global denominator; inner runs must not overwrite it.
+    if (optIn.liveTotal) optIn.liveTotal->store(totalChunks, std::memory_order_relaxed);
     const bool safeSingleBand = (totalBands == 1) && (totalChunks <= 4LL * 1024 * 1024);
 
     const bool byDensity = optIn.ignoreThreshold; // 最优候选：结果按窗口史莱姆数排序
@@ -5014,6 +5054,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             bandOpt.maxZ = loaded.maxZ;
             bandOpt.stopAtTarget = false;
             bandOpt.smartRange = false;
+            // Outer runBanded owns the global denominator; inner run() must not store per-band totals.
+            bandOpt.liveTotal = nullptr;
 
             const auto bandProgress = [&](double frac, bool scanning, double cps, double eta) {
                 if (progress) {
@@ -5035,6 +5077,14 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
                 return;
             }
             anyOk = true;
+            // v3.13.8: aggregate GPU/fallback/pruning visibility instead of dropping it.
+            out.gpuScanUsed = out.gpuScanUsed || bo.gpuScanUsed;
+            out.gpuMatchUsed = out.gpuMatchUsed || bo.gpuMatchUsed;
+            if (out.gpuFallbackReason.empty() && !bo.gpuFallbackReason.empty()) {
+                out.gpuFallbackReason = bo.gpuFallbackReason;
+            }
+            out.windowsSkipped += bo.windowsSkipped;
+            out.hitCacheBudget = out.hitCacheBudget || bo.hitCacheBudget;
             scanned += bo.stats.scannedChunks;
             windows += bo.stats.windowsEvaluated;
             chunksPruned += bo.chunksPruned;
@@ -5084,6 +5134,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     }
 
     out.ok = true;
+    out.ignoredThreshold = byDensity;
     out.results = std::move(results);
     // halo 内重复命中只影响统计，不应改变最终显示结果。
     out.totalFound = static_cast<int64_t>(out.results.size());

@@ -484,6 +484,7 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
                 .arg(QString::fromStdWString(m_cacheFile.wstring()));
         }
         if (sub == QLatin1String("clear")) {
+            if (m_running || m_buildActive) return slime::ui::t("ui.cf0237994529");
             m_cache->clear();
             std::error_code ec;
             std::filesystem::remove(m_cacheFile, ec);
@@ -491,6 +492,7 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
             return slime::ui::t("ui.20563af38637");
         }
         if (sub == QLatin1String("import")) {
+            if (m_running || m_buildActive) return slime::ui::t("ui.cf0237994529");
             const QString path = args.mid(1).join(QLatin1Char(' ')).trimmed();
             if (path.isEmpty()) return slime::ui::t("ui.7a449b293047");
             const int64_t before = m_cache->entryCount();

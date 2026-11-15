@@ -1,4 +1,4 @@
-﻿// v3.12.0：语言、版本、预设、缓存、遥测与对话框服务。
+// v3.12.0：语言、版本、预设、缓存、遥测与对话框服务。
 
 void MainWindow::applyLanguage()
 {
@@ -797,6 +797,11 @@ bool MainWindow::saveV3Cache()
 void MainWindow::reloadV3CacheAfterImport()
 {
     if (!m_cacheStore) return;
+    // v3.13.8: never reload/mutate the pack index while a search or build is reading it.
+    if (m_running || m_buildActive) {
+        Logger::info("搜索或构建运行中，延后刷新缓存索引");
+        return;
+    }
     // 重新读取 index.json 并扫描导入的 pack；只刷新界面和覆盖地图，
     // 不在此处展开全部下载 pack（那会在大量导入时造成新的内存峰值）。
     std::string err;
@@ -832,6 +837,11 @@ void MainWindow::refreshCacheUi()
             del->setObjectName(QStringLiteral("miniButton"));
             const std::string file = e.file;
             connect(del, &QPushButton::clicked, this, [this, file]() {
+                if (m_running || m_buildActive) {
+                    QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
+                                         QStringLiteral("搜索或缓存构建运行中，不能删除缓存包。"));
+                    return;
+                }
                 std::string err;
                 if (!m_cacheStore->removePack(file, &err)) {
                     QMessageBox::warning(this, slime::ui::t("ui.cache.pack.delete"),
@@ -912,6 +922,13 @@ void MainWindow::importCache()
 
 void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialog, bool showResultDialogs)
 {
+    if (m_running || m_buildActive) {
+        if (showResultDialogs) {
+            QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
+                                 QStringLiteral("搜索或缓存构建运行中，不能导入缓存。"));
+        }
+        return;
+    }
     const auto srcPath = std::filesystem::path(path.toStdWString());
     std::error_code ec;
     const auto fileBytes = std::filesystem::file_size(srcPath, ec);
@@ -1012,6 +1029,11 @@ void MainWindow::importCacheFromPath(const QString& path, bool showProgressDialo
 
 void MainWindow::clearCache()
 {
+    if (m_running || m_buildActive) {
+        QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
+                             QStringLiteral("搜索或缓存构建运行中，不能清空缓存。"));
+        return;
+    }
     if (QMessageBox::question(this, slime::ui::t("ui.b56d9ac6c5a0"),
                               slime::ui::t("ui.b41f2a3ce538")) != QMessageBox::Yes) {
         return;

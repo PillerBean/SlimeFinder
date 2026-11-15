@@ -1,4 +1,4 @@
-﻿// CacheStore.h - v3.12.3 本地缓存目录与 index.json 管理（仅 Bedrock）
+// CacheStore.h - v3.12.3 本地缓存目录与 index.json 管理（仅 Bedrock）
 //
 // 目录布局：
 //   <root>/index.json
@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -90,6 +91,7 @@ private:
     std::string relativePath(const std::filesystem::path& p) const;
 
     std::filesystem::path m_root;
+    mutable std::recursive_mutex m_mutex;
     std::vector<CachePackEntry> m_packs;
 };
 

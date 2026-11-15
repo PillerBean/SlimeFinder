@@ -247,13 +247,8 @@ void MainWindow::startSearch()
     opt.cacheBandLoader = nullptr;
     if (cacheEnabled && !buildModeActive() && m_cacheStore) {
         opt.cacheBandMayCover = [this](const slime::Rect& band) {
-            if (!m_cacheStore) return false;
-            for (const auto& e : m_cacheStore->packs()) {
-                if (e.rect.maxX < band.minX || e.rect.minX > band.maxX ||
-                    e.rect.maxZ < band.minZ || e.rect.minZ > band.maxZ) continue;
-                return true;
-            }
-            return false;
+            // v3.13.8: metadata query (not "any overlap"); CacheStore now serializes access.
+            return m_cacheStore && m_cacheStore->coversRange(band);
         };
         opt.cacheBandLoader = [this](const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
             auto cm = std::make_shared<slime::CacheManager>();
@@ -667,6 +662,20 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
         QMessageBox::warning(this, slime::ui::t("ui.073cf8d38324"), slime::ui::t("ui.9d61509a4e27"));
         return false;
     }
+    // v3.13.8: build mode reads/writes the in-memory CacheManager. It must start from the
+    // existing local packs, otherwise the first save deletes the previous session's cache
+    // and every restart re-scans the whole region.
+    if (m_cacheStore && m_cache && m_cache->ranges().empty()) {
+        std::string hydrateErr;
+        if (!m_cacheStore->fillCacheManager(*m_cache, &hydrateErr) && !hydrateErr.empty()) {
+            Logger::warning("构建前加载本地缓存失败: " + hydrateErr);
+            QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
+                                 QString::fromStdString("构建前加载本地缓存失败：" + hydrateErr));
+            return false;
+        }
+        Logger::info("构建前已加载本地缓存：" + std::to_string(m_cache->ranges().size()) + " 区域 / " +
+                     std::to_string(m_cache->entryCount()) + " 区块");
+    }
     // ① 构建前预估（任务书 1.1）：范围面积 × 密度 10% × 每区块字节数（旧口径）+ 位图口径
     const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
     const double legacyMB = static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0);
@@ -864,13 +873,19 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
     const bool cancelled = out.cancelled;
     const bool budgetHit = out.hitCacheBudget;
     const bool failed = !out.ok && !cancelled;
+    const bool more = !cancelled && !budgetHit && (m_buildBandIndex + 1 < m_buildBands.size());
 
-    // 落盘（原子替换；失败不影响内存内容）—— 这就是「中断续传」的检查点
+    // v3.13.8: saving the entire cache after EVERY segment is O(segments^2) and freezes the
+    // GUI thread. Keep checkpoints (every 5 segments + final/cancel/budget), not every segment.
+    const bool shouldSave = failed || cancelled || budgetHit || !more || ((m_buildBandIndex + 1) % 5 == 0);
     std::string serr;
     const bool selftestMode = !qEnvironmentVariableIsEmpty("SLIME_SELFTEST");
-    const bool saved = selftestMode ? m_cache->saveFile(m_cacheFile, serr) : saveV3Cache();
-    if (saved && selftestMode) saveV3Cache();
-    updateCacheStatusUi();
+    bool saved = false;
+    if (shouldSave) {
+        saved = selftestMode ? m_cache->saveFile(m_cacheFile, serr) : saveV3Cache();
+        if (saved && selftestMode) saveV3Cache();
+        updateCacheStatusUi();
+    }
 
     if (failed) {
         m_buildActive = false;
@@ -883,7 +898,6 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
         return;
     }
 
-    const bool more = !cancelled && !budgetHit && (m_buildBandIndex + 1 < m_buildBands.size());
     std::fprintf(stderr, "[构建] 段 %zu/%zu 结束：cancelled=%d budget=%d 已记录累计=%lld 已跳过累计=%lld 保存=%d\n",
                  m_buildBandIndex + 1, m_buildBands.size(), cancelled ? 1 : 0, budgetHit ? 1 : 0,
                  static_cast<long long>(m_buildDoneChunks), static_cast<long long>(m_buildSkippedTotal),
@@ -1101,6 +1115,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
                                                      QString::fromStdString(out.error)));
         }
         QMessageBox::critical(this, slime::ui::t("ui.680a503add20"), QString::fromStdString(out.error));
+        addError(QString::fromStdString(out.error));
         Logger::error("搜索错误: " + out.error);
         updateNavBadges();
         slime::IncidentLog::note("搜索错误：" + out.error + " | " + slime::IncidentLog::memorySummary());
@@ -1250,7 +1265,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
     // v3.9.10：过程摘要（阶段耗时 / GPU / 停止语义）进反馈与日志，GPU 回退必须可见
     {
         const QString summary = processSummaryText(out);
-        addFeedback(3, summary);
+        addFeedback(2, summary); // Info: FeedbackPanel intentionally filters Success
         Logger::info("过程摘要 | " + summary.toStdString());
         if (!out.gpuFallbackReason.empty()) {
             addFeedback(2, slime::ui::t("ui.b32dcdccbfa4").arg(QString::fromStdString(out.gpuFallbackReason)));

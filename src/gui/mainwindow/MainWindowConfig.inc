@@ -1,4 +1,4 @@
-﻿// v3.12.0：配置/GPU 探测/主题/菜单与工具栏等基础逻辑。
+// v3.12.0：配置/GPU 探测/主题/菜单与工具栏等基础逻辑。
 
 int MainWindow::versionBound() const noexcept
 {
@@ -115,7 +115,10 @@ static std::string jsonEscapeUtf8(const QString& s)
 void MainWindow::writeConfigFile(bool gpuEnabled, const QStringList& terminalHistory)
 {
     const auto path = appDirPath() / kConfigFileName;
-    const int cacheMB = cfgInt(path, "cache.maxSizeMB", 10240);
+    // v3.13.8: use the live setting. Re-reading the old file here wrote the stale value back,
+    // so "raise cache limit" / settings changes never survived a restart.
+    const int cacheMB = (m_settings.cacheMaxMB > 0) ? m_settings.cacheMaxMB
+                                                    : cfgInt(path, "cache.maxSizeMB", 10240);
     const char* mode = "exact";
     if (m_w && m_w->algLayeredRadio && m_w->algLayeredRadio->isChecked()) mode = "layered";
     else if (m_w && m_w->algSampleRadio && m_w->algSampleRadio->isChecked()) mode = "sample";

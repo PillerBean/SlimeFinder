@@ -1,4 +1,4 @@
-﻿# check.ps1 - 分档验证（v3.6.15）
+# check.ps1 - 分档验证（v3.6.15）
 #
 #   -Level fast      : 增量构建 + 单元测试
 #   -Level standard  : + 内核 + 111 参考 + GUI 自检(关 GPU)
@@ -61,7 +61,7 @@ if ($Level -ne "fast") {
         Get-Content (Join-Path $LogDir "kernel.log") | Select-String "RESULT"
     }
     $timings["reference"] = Step "reference 111" {
-        & py -3 tests\verify_against_reference.py *> (Join-Path $LogDir "reference.log")
+        & py -3 tests\reference\verify_against_reference.py *> (Join-Path $LogDir "reference.log")
         if ($LASTEXITCODE -ne 0) { Get-Content (Join-Path $LogDir "reference.log") | Select-Object -Last 10; throw "reference failed" }
         Get-Content (Join-Path $LogDir "reference.log") | Select-String "汇总"
     }

@@ -1,4 +1,4 @@
-﻿// MainWindow.cpp - 主窗口实现（v3.2.1）
+// MainWindow.cpp - 主窗口实现（v3.2.1）
 #include "i18n/UiText.h"
 #include "gui/mainwindow/MainWindow.h"
 #include "gui/widgets/CacheCoverageMap.h"
@@ -181,7 +181,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.13.7";
+constexpr const char* kAppVersion = "v3.13.8";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置）
 constexpr int kNavCount = 3; // v3.10.12.13：移除更新历史，导航 3 项
@@ -1247,6 +1247,15 @@ void MainWindow::updateGpuBenchmarkUi()
 #include "MainWindowSearchResults.inc"
 void MainWindow::closeEvent(QCloseEvent* ev)
 {
+    // v3.13.8: ring search uses a worker joined inside runRingSearch(). Closing the window
+    // while it is running would destroy the captured stack / GUI state under the worker.
+    // Refuse the close, request cancellation, and let the next close proceed after join.
+    if (m_ringSearching) {
+        m_ringCancel.store(true, std::memory_order_relaxed);
+        setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
+        ev->ignore();
+        return;
+    }
     if (m_task.running()) {
         m_task.cancel();
         m_task.wait();

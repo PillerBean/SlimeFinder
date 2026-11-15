@@ -672,8 +672,9 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
     const auto tDispatch = std::chrono::steady_clock::now();
     uint32_t total = 0;
     if (ok) {
-        m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounter, CL_TRUE, 0, sizeof(total), &total, 0, nullptr,
-                                         nullptr);
+        rc = m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounter, CL_TRUE, 0, sizeof(total), &total, 0, nullptr,
+                                              nullptr);
+        ok = (rc == CL_SUCCESS);
     }
     const auto tRead = std::chrono::steady_clock::now();
     if (!ok) {
@@ -688,8 +689,16 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
     out.resize(n);
     if (n > 0) {
         std::vector<cl_int2> pos(n);
-        m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dHits, CL_TRUE, 0, n * sizeof(cl_int2), pos.data(), 0,
-                                         nullptr, nullptr);
+        const cl_int hitsRc = m_impl->api.pfnEnqueueReadBuffer(
+            m_impl->queue, dHits, CL_TRUE, 0, n * sizeof(cl_int2), pos.data(), 0, nullptr, nullptr);
+        if (hitsRc != CL_SUCCESS) {
+            m_impl->api.pfnReleaseMemObject(dHits);
+            m_impl->api.pfnReleaseMemObject(dCounter);
+            m_impl->api.pfnReleaseMemObject(dEn);
+            m_impl->api.pfnReleaseMemObject(dGr);
+            if (err) *err = std::string("pattern hits read failed: ") + clErrorText(hitsRc);
+            return false;
+        }
         for (uint32_t i = 0; i < n; ++i) {
             out[i].x = pos[i].s[0];
             out[i].z = pos[i].s[1];
@@ -1137,15 +1146,19 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
             if (std::getenv("SLIME_DEBUG")) {
                 std::fprintf(stderr, "[gpu] dispatch+kernel %.2f ms (%dx%d)\n", tDispatchMs, w, h);
             }
-            m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounter, CL_TRUE, 0, sizeof(total), &total, 0, nullptr,
-                                             nullptr);
+            rc = m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounter, CL_TRUE, 0, sizeof(total), &total, 0,
+                                                  nullptr, nullptr);
+            if (rc != CL_SUCCESS) {
+                ok = false;
+            }
             const double tCounterMs =
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tDbg0).count();
             if (std::getenv("SLIME_DEBUG")) {
                 std::fprintf(stderr, "[gpu] counter read %.2f ms (%dx%d total=%u)\n", tCounterMs, w, h, total);
             }
-            m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dHist, CL_TRUE, 0, sizeof(hist), hist, 0, nullptr,
-                                             nullptr);
+            rc = m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dHist, CL_TRUE, 0, sizeof(hist), hist, 0, nullptr,
+                                                  nullptr);
+            if (rc != CL_SUCCESS) ok = false;
             // v3.9.8（正确性优先）：暂不启用回读裁剪 —— 实测裁剪后与 CPU 结果偶有不一致；
             //   先保证「命中 < 上限时全部回传」，密集超限仍回退 CPU。
             const uint32_t keepTarget = 0xFFFFFFFFu;
@@ -1163,8 +1176,9 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
                     const int64_t cutD2 = ((static_cast<int64_t>(cutBucket) + 1) << bucketShift) - 1;
                     ok = runPass(1, cutD2);
                     if (ok) {
-                        m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounter, CL_TRUE, 0, sizeof(total), &total,
-                                                         0, nullptr, nullptr);
+                        rc = m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounter, CL_TRUE, 0, sizeof(total),
+                                                              &total, 0, nullptr, nullptr);
+                        if (rc != CL_SUCCESS) ok = false;
                     }
                 }
             }
@@ -1188,11 +1202,19 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
         std::vector<cl_int2> pos(n);
         std::vector<unsigned char> cnts(n);
         // v3.10.12.2：两个回读异步入队、只 Finish 一次（小到中等区域能省一次驱动往返）
-        m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dHits, CL_FALSE, 0, n * sizeof(cl_int2), pos.data(), 0,
-                                         nullptr, nullptr);
-        m_impl->api.pfnEnqueueReadBuffer(m_impl->queue, dCounts, CL_FALSE, 0, n * sizeof(cl_uchar), cnts.data(), 0,
-                                         nullptr, nullptr);
-        m_impl->api.pfnFinish(m_impl->queue);
+        const cl_int hitsRc = m_impl->api.pfnEnqueueReadBuffer(
+            m_impl->queue, dHits, CL_FALSE, 0, n * sizeof(cl_int2), pos.data(), 0, nullptr, nullptr);
+        const cl_int cntsRc = m_impl->api.pfnEnqueueReadBuffer(
+            m_impl->queue, dCounts, CL_FALSE, 0, n * sizeof(cl_uchar), cnts.data(), 0, nullptr, nullptr);
+        const cl_int finishRc = m_impl->api.pfnFinish(m_impl->queue);
+        if (hitsRc != CL_SUCCESS || cntsRc != CL_SUCCESS || finishRc != CL_SUCCESS) {
+            m_impl->api.pfnReleaseMemObject(dHits);
+            m_impl->api.pfnReleaseMemObject(dCounts);
+            m_impl->api.pfnReleaseMemObject(dCounter);
+            m_impl->api.pfnReleaseMemObject(dHist);
+            if (err) *err = "density hits read failed";
+            return false;
+        }
         if (std::getenv("SLIME_DEBUG")) {
             const double tReadMs =
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tDbg0).count();
