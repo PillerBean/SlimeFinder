@@ -867,6 +867,7 @@ static int runGpuScanStage(const SearchOptions& opt,
                            Emitter& scanEm,
                            BitGrid& grid,
                            std::vector<std::pair<int, int>>& newChunks,
+                           std::vector<uint8_t>& completedRows,
                            std::string& errOut) noexcept
 {
     using clock = std::chrono::steady_clock;
@@ -879,6 +880,8 @@ static int runGpuScanStage(const SearchOptions& opt,
     const int64_t W = static_cast<int64_t>(opt.maxX) - opt.minX + 1;
     const int64_t H = static_cast<int64_t>(opt.maxZ) - opt.minZ + 1;
     const int64_t totalChunks = W * H;
+    std::vector<int64_t> rowPixels(static_cast<size_t>(H), 0);
+    completedRows.assign(static_cast<size_t>(H), 0);
     // v3.4.13：本函数读缓存的路径没有加锁语义（在 GPU 阶段里）⇒ 存在并发写者（构建模式）时
     //   改为不读缓存：collectNew 会退化成「整区未覆盖」⇒ 全量重算（结果正确，只是不用缓存捷径）。
     const bool useCache = (opt.version == Version::Bedrock) && opt.useCache &&
@@ -1085,6 +1088,11 @@ static int runGpuScanStage(const SearchOptions& opt,
                 for (int64_t rz = 0; rz < t.tz; ++rz) {
                     integrateRowPiece(z0 + t.zA + rz, x0 + t.xs, x0 + t.xs + t.tw, b.data() + rz * t.tw);
                 }
+            }
+            for (int64_t rz = 0; rz < t.tz; ++rz) {
+                const int64_t row = t.zA + rz;
+                rowPixels[static_cast<size_t>(row)] += t.tw;
+                if (rowPixels[static_cast<size_t>(row)] >= W) completedRows[static_cast<size_t>(row)] = 1;
             }
             chunksDone += t.tw * t.tz;
             const double el = elapsedMs();
@@ -2425,15 +2433,20 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     //   （20k²：110 vs 89 ms；40k² 基本持平；100k² 起 GPU 明显占优 2125 vs 2711 ms）。
     //   因此图案模式仅在区域 ≥ 3e9 区块时启用 GPU 扫描；密度模式不受影响。
     const bool patternGpuScanOk = (opt.mode != Mode::Strict) || totalChunks >= 3000000000LL;
+    std::vector<uint8_t> gpuCompletedRows;
     if (!bitmapReused && !sampleScan && !opt.buildMode && opt.gpuScan && opt.gpuScan->available() && patternGpuScanOk &&
         totalChunks >= gpuMinChunksForDevice(opt)) {
-        gpuStage = runGpuScanStage(opt, cancel, scanEm, grid, threadNew[0], gpuStageErr);
+        gpuStage = runGpuScanStage(opt, cancel, scanEm, grid, threadNew[0], gpuCompletedRows, gpuStageErr);
         if (gpuStage == 0 && std::getenv("SLIME_DEBUG")) {
             std::fprintf(stderr, "[engine] GPU 扫描不可用，回退 CPU：%s\n", gpuStageErr.c_str());
             std::fflush(stderr);
         }
     }
     out.gpuScanUsed = (gpuStage == 1);
+    if (gpuStage == 0) {
+        out.gpuRowsResumed = static_cast<int64_t>(
+            std::count(gpuCompletedRows.begin(), gpuCompletedRows.end(), uint8_t{ 1 }));
+    }
     if (gpuStage == 0 && !gpuStageErr.empty() && out.gpuFallbackReason.empty()) {
         out.gpuFallbackReason = "扫描：" + gpuStageErr;
     }
@@ -2701,6 +2714,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         for (int64_t ri = rBegin; ri < rEnd; ++ri) {
             if (cancel.load(std::memory_order_relaxed)) return;
             const int64_t r = rowOrder[static_cast<size_t>(ri)];
+            if (!gpuCompletedRows.empty() && gpuCompletedRows[static_cast<size_t>(r)]) {
+                done += W;
+                continue;
+            }
             const int64_t absZ = z0 + r;
             // v3.3.8（任务 3+5 第 3 步）：整行被缓存位图覆盖 ⇒ 直接 memcpy 该行，跳过填充判定
             // v3.3.9.1（任务书 1.2）：构建模式下**不做位图直取** —— 位图读取会与其它线程的归并

@@ -428,6 +428,7 @@ struct SearchOutcome {
     // v3.3.9（任务书 1.1）：缓存构建模式 —— 是否因达到缓存容量上限而停止、以及跳过了多少「已缓存」区块
     bool hitCacheBudget = false;
     bool truncated = false;          // GPU 命中上限被触发（当前仍会回退 CPU 保证完整）
+    int64_t gpuRowsResumed = 0;      // GPU 扫描失败后，CPU 回退沿用的完整行数
     int64_t buildSkippedChunks = 0;
     std::string error;               // 校验/运行错误信息（中文，可直接展示）
 

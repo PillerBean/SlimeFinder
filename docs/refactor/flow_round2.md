@@ -74,22 +74,58 @@ GpuSession::patternStream / matchDensityStream 的 outTruncated
 - 当前仍返回 false，让引擎回退 CPU，保证结果完整；
 - 标志让上层知道发生了 cap 溢出，而不是只看到普通回退。
 
-## 4. 尚未完成
+## 4. GPU 扫描失败后的行续扫
+
+`runGpuScanStage` 现在维护：
+
+```text
+completedRows[z] = 1  当该 z 行的所有 x tile 都已集成
+```
+
+GPU 扫描失败回退 CPU 时，`scanTask` 跳过这些完整行，只补算剩余行。
+
+新增诊断字段：
+
+```text
+SearchOutcome::gpuRowsResumed
+SearchReport::gpuRowsResumed
+```
+
+测试：
+
+```text
+tests/integration/gpu_resume_test.cpp
+```
+
+注入“前两个 tile 成功、第三个失败”：
+
+```text
+CPU 参考 50 条
+GPU 失败回退 50 条
+结果 SAME
+gpuRowsResumed = 4096
+GPU-RESUME OK
+```
+
+注意：测试中的 fake GPU 每 tile 用 CPU 填充，因此总耗时不能代表真实 GPU；
+这里验证的是“已集成行没有被 CPU 重算”。
+
+## 5. 尚未完成
 
 ```text
 CacheSnapshot（不可变缓存视图）
-GPU 失败从已完成 tile 续扫
 ```
 
-这两项仍是第 2 轮剩余工作。
+这是第 2 轮剩余工作。
 
-## 5. 回归
+## 6. 回归
 
 ```text
 slime_tests --unit                通过
 slime_search_job_tests            ALL PASS
 slime_cache_store_tests           OK
 slime_cache_band_tests            OK
-GUI 自检（GPU off）               exit=0
+slime_gpu_resume_tests            GPU-RESUME OK
 slime_ocl_probe                   PASS
+GUI 自检（GPU off）               exit=0
 ```

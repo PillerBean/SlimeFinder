@@ -29,6 +29,7 @@ struct SearchReport {
     bool banded = false;
     bool stoppedEarly = false;
     bool truncated = false;
+    int64_t gpuRowsResumed = 0;
     std::string fallbackReason;
     std::string error;
     SearchProgress progress;

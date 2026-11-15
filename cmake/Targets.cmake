@@ -381,6 +381,15 @@ if(MSVC)
     target_compile_options(slime_search_job_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_gpu_resume_tests
+    tests/integration/gpu_resume_test.cpp
+)
+target_include_directories(slime_gpu_resume_tests PRIVATE /src)
+target_link_libraries(slime_gpu_resume_tests PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_gpu_resume_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )
