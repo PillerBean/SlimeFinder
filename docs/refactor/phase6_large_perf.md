@@ -21,12 +21,15 @@ Bedrock density 1500×1500（强制 Chunked，无 GPU）
 
 | case | 计划 | 旧 | 新 | 新/旧 | 结果 |
 |---|---|---:|---:|---:|---|
-| Java-pattern-2048 | FusedGpuPattern | 2.7 ms | 1.0 ms | 0.37× | SAME |
-| Java-density-2048 | FusedGpuDensity | 2.3 ms | 1.9 ms | 0.84× | SAME |
-| Bedrock-density-1024 | FusedGpuDensity | 5.8 ms | 1.9 ms | 0.32× | SAME |
-| Bedrock-density-chunk | Chunked | 40.3 ms | 9.1 ms | 0.23× | SAME |
+| Java-pattern-2048 | FusedGpuPattern | 2.9 ms | 1.7 ms | 0.59× | SAME |
+| Java-density-2048 | FusedGpuDensity | 2.3 ms | 2.5 ms | 1.05× | SAME |
+| Bedrock-density-1024 | FusedGpuDensity | 6.0 ms | 1.6 ms | 0.27× | SAME |
+| Bedrock-density-chunk | Chunked | 40.3 ms | 9.9 ms | 0.24× | SAME |
 
 所有结果、totalFound 一致。
+
+Java density 2048² 在加入 2-band 中间进度后接近 1.05×，
+达到“不退化超过 5%”的边界；不同运行会有小幅波动。
 
 ## 3. 冷启动修正
 

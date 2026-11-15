@@ -26,9 +26,10 @@ void addResult(const slime::SearchOptions& opt, const int64_t azMin, const int64
 
 int64_t bandRowsFor(int64_t totalRows)
 {
-    // 小/中范围保持单次 GPU 调用，避免 dispatch 固定开销压过计算；
-    // 只有超大范围才切成少量 band，用于中间进度和取消机会。
-    if (totalRows <= 8192) return totalRows;
+    // 常见小范围保持单次 GPU 调用；2048² 这类范围切 2 段，
+    // 给 GUI 一次中间进度/取消点，同时把 dispatch 开销控制在低位。
+    if (totalRows <= 1024) return totalRows;
+    if (totalRows <= 8192) return (totalRows + 1) / 2;
     return (std::max)(int64_t{ 2048 }, (totalRows + 3) / 4);
 }
 

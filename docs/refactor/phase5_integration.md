@@ -141,8 +141,9 @@ Collector ALL PASS
 ```text
 Banded 2D tile / 部分缓存：已完成并 SAME
 ≥1M 区块大范围：结果 SAME
-性能（预热后）：Java pattern 0.37×，Java density 0.84×，
-              Bedrock density 0.32×，Chunked 0.23×
+性能（预热后，Fused 2-band）：
+  Java pattern 0.59×，Java density 1.05×，
+  Bedrock density 0.27×，Chunked 0.24×
 CPU Materialize/Chunked 原型仍偏慢；SearchTask feature flag 只开放
 Fused GPU 或 Banded，CPU 新路径不进入产品自动选择。
 ```
