@@ -22,6 +22,11 @@ public:
     bool run(const slime::SearchOptions& opt, const std::atomic<bool>& cancel,
              MaterializeResult& out, std::string* err,
              const slime::ProgressFn& progress = slime::ProgressFn()) const;
+
+    // 按锚点 z 行分块；每块扫描自己的 halo，但只匹配本块拥有的锚点行。
+    bool runChunked(const slime::SearchOptions& opt, int64_t rowsPerChunk,
+                    const std::atomic<bool>& cancel, MaterializeResult& out, std::string* err,
+                    const slime::ProgressFn& progress = slime::ProgressFn()) const;
 };
 
 } // namespace slime::next

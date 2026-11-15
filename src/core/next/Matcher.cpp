@@ -33,7 +33,7 @@ AnchorDims anchorDims(const Bitmap& bitmap, int cols, int rows)
 
 bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
                           const std::atomic<bool>& cancel, ResultCollector& collector,
-                          MatchStats& stats, std::string* err, const slime::ProgressFn& progress) const
+                          MatchStats& stats, std::string* err, const slime::ProgressFn& progress, const MatchLimits& limits) const
 {
     if (opt.smartRange || opt.stopAtTarget || opt.ignoreThreshold) {
         if (err) *err = "Phase2 CPU matcher 暂不支持 smart/stop/best";
@@ -83,14 +83,24 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             stats.totalFound = 0;
             return true;
         }
-        const AnchorDims d = anchorDims(bitmap, cols, patRows);
+        AnchorDims d = anchorDims(bitmap, cols, patRows);
         if (d.axMax < d.axMin || d.azMax < d.azMin) {
             stats.ms = 0.0;
             stats.windows = 0;
             stats.totalFound = 0;
             return true;
         }
+        if (limits.zLimited) {
+            d.azMin = (std::max)(d.azMin, limits.azMin);
+            d.azMax = (std::min)(d.azMax, limits.azMax);
+            if (d.azMax < d.azMin) {
+                stats.ms = 0.0; stats.windows = 0; stats.totalFound = 0; return true;
+            }
+        }
         const int64_t nAz = d.azMax - d.azMin + 1;
+        const int64_t rankXMin = limits.zLimited ? limits.rankXMin : d.axMin;
+        const int64_t rankZMin = limits.zLimited ? limits.rankZMin : d.azMin;
+        const int64_t rankAzCount = limits.zLimited ? limits.rankAzCount : nAz;
         const size_t anchorCount = static_cast<size_t>(d.axMax - d.axMin + 1);
         const uint64_t colMask = (cols >= 64) ? ~0ULL : ((1ULL << cols) - 1ULL);
         const int reportEvery = (std::max)(1, static_cast<int>(nAz / 100));
@@ -104,7 +114,7 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             c.result.maxZ = static_cast<int>(az + patRows - 1);
             c.result.density = 0.0f;
             c.d2 = off2x * off2x + off2z * off2z;
-            c.rank = (ax - d.axMin) * nAz + (az - d.azMin);
+            c.rank = (ax - rankXMin) * rankAzCount + (az - rankZMin);
             collector.add(c);
         };
 
@@ -141,14 +151,27 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             if (err) *err = "密度窗口非法";
             return false;
         }
-        const AnchorDims d = anchorDims(bitmap, g, g);
+        AnchorDims d = anchorDims(bitmap, g, g);
         if (d.axMax < d.axMin || d.azMax < d.azMin) {
             stats.ms = 0.0;
             stats.windows = 0;
             stats.totalFound = 0;
             return true;
         }
+        if (limits.zLimited) {
+            d.azMin = (std::max)(d.azMin, limits.azMin);
+            d.azMax = (std::min)(d.azMax, limits.azMax);
+            if (d.azMax < d.azMin) {
+                stats.ms = 0.0;
+                stats.windows = 0;
+                stats.totalFound = 0;
+                return true;
+            }
+        }
         const int64_t nAz = d.azMax - d.azMin + 1;
+        const int64_t rankXMin = limits.zLimited ? limits.rankXMin : d.axMin;
+        const int64_t rankZMin = limits.zLimited ? limits.rankZMin : d.azMin;
+        const int64_t rankAzCount = limits.zLimited ? limits.rankAzCount : nAz;
         const size_t anchorCount = static_cast<size_t>(d.axMax - d.axMin + 1);
         const double area = static_cast<double>(g) * g;
         const int reportEvery = (std::max)(1, static_cast<int>(nAz / 100));
@@ -163,7 +186,7 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             c.result.density = static_cast<float>(count) / static_cast<float>(area);
             c.density = c.result.density;
             c.d2 = off2x * off2x + off2z * off2z;
-            c.rank = (ax - d.axMin) * nAz + (az - d.azMin);
+            c.rank = (ax - rankXMin) * rankAzCount + (az - rankZMin);
             collector.add(c);
         };
 

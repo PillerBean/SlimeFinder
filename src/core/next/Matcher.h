@@ -15,6 +15,16 @@ struct MatchStats {
     int64_t totalFound = 0;
 };
 
+// 分块时只允许 Matcher 处理本块拥有的锚点行，但 rank 必须保持全局口径。
+struct MatchLimits {
+    bool zLimited = false;
+    int64_t azMin = 0;
+    int64_t azMax = -1;
+    int64_t rankXMin = 0;
+    int64_t rankZMin = 0;
+    int64_t rankAzCount = 0;
+};
+
 class Matcher {
 public:
     virtual ~Matcher() = default;
@@ -22,7 +32,8 @@ public:
     virtual bool run(const Bitmap& bitmap, const slime::SearchOptions& opt,
                      const std::atomic<bool>& cancel, ResultCollector& collector,
                      MatchStats& stats, std::string* err,
-                     const slime::ProgressFn& progress = slime::ProgressFn()) const = 0;
+                     const slime::ProgressFn& progress = slime::ProgressFn(),
+                     const MatchLimits& limits = MatchLimits()) const = 0;
 };
 
 class CpuExactMatcher final : public Matcher {
@@ -31,7 +42,8 @@ public:
     bool run(const Bitmap& bitmap, const slime::SearchOptions& opt,
              const std::atomic<bool>& cancel, ResultCollector& collector,
              MatchStats& stats, std::string* err,
-             const slime::ProgressFn& progress = slime::ProgressFn()) const override;
+             const slime::ProgressFn& progress = slime::ProgressFn(),
+             const MatchLimits& limits = MatchLimits()) const override;
 };
 
 } // namespace slime::next

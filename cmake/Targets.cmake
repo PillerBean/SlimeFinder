@@ -368,6 +368,20 @@ if(MSVC)
     target_compile_options(slime_next_phase2_progress PRIVATE /utf-8 /EHsc /permissive- /O2 /openmp)
 endif()
 
+add_executable(slime_next_phase3_chunked
+    tools/refactor/phase3_chunked_parity.cpp
+    src/core/next/Determiner.cpp
+    src/core/next/Matcher.cpp
+    src/core/next/Pipeline.cpp
+    src/core/next/Collector.cpp
+)
+target_include_directories(slime_next_phase3_chunked PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase3_chunked PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_next_phase3_chunked PRIVATE /utf-8 /EHsc /permissive- /O2 /openmp)
+endif()
+
+
 
 
 
