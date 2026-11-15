@@ -27,7 +27,15 @@ MaterializePipeline::runBanded
 rank 仍使用全局锚点原点/行数
 ```
 
-当前部分缓存使用逐点 `lookup` + 标量补齐，正确优先，不是最终性能实现。
+当前部分缓存填充：
+
+```text
+按行合并 cache.ranges() 的覆盖区间
+覆盖区间用 cache.isSlime
+未覆盖区间用 fillSlimeRowJava/Bedrock 整段填充
+```
+
+这比逐点标量补齐快，但仍不是按缓存位图字级拷贝的最终实现。
 
 ## 2. 对拍
 

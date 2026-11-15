@@ -187,14 +187,45 @@ bool fillBitmapPartial(const slime::CacheManager& cache, const slime::Rect& rect
         if (err) *err = "缓存位图分配失败";
         return false;
     }
+    const int width = rect.maxX - rect.minX + 1;
+    std::vector<uint8_t> row(static_cast<size_t>(width));
+    std::vector<std::pair<int, int>> covered;
     for (int z = rect.minZ; z <= rect.maxZ; ++z) {
         if (cancel.load(std::memory_order_relaxed)) return false;
-        for (int x = rect.minX; x <= rect.maxX; ++x) {
-            const int cached = cache.lookup(x, z);
-            const bool slime = cached >= 0 ? cached != 0
-                                           : slime::SlimeEngine::isSlimeChunk(version, seed, x, z);
-            if (slime) bmp.setSlime(x, z);
+        covered.clear();
+        for (const slime::Rect& r : cache.ranges()) {
+            if (z < r.minZ || z > r.maxZ) continue;
+            const int a = (std::max)(rect.minX, r.minX);
+            const int b = (std::min)(rect.maxX, r.maxX);
+            if (a <= b) covered.emplace_back(a, b);
         }
+        std::sort(covered.begin(), covered.end());
+        std::vector<std::pair<int, int>> merged;
+        for (const auto& seg : covered) {
+            if (merged.empty() || seg.first > merged.back().second + 1) merged.push_back(seg);
+            else merged.back().second = (std::max)(merged.back().second, seg.second);
+        }
+        const auto fillGap = [&](int a, int b) {
+            if (a > b) return;
+            const int n = b - a + 1;
+            if (version == slime::Version::Java) {
+                slime::SlimeEngine::fillSlimeRowJava(seed, z, a, n, row.data());
+            } else {
+                slime::SlimeEngine::fillSlimeRowBedrock(z, a, n, row.data());
+            }
+            for (int i = 0; i < n; ++i) {
+                if (row[static_cast<size_t>(i)]) bmp.setSlime(a + i, z);
+            }
+        };
+        int x = rect.minX;
+        for (const auto& seg : merged) {
+            if (seg.first > x) fillGap(x, seg.first - 1);
+            for (int xi = seg.first; xi <= seg.second; ++xi) {
+                if (cache.isSlime(xi, z)) bmp.setSlime(xi, z);
+            }
+            x = seg.second + 1;
+        }
+        if (x <= rect.maxX) fillGap(x, rect.maxX);
     }
     return true;
 }
