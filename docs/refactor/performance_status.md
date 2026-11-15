@@ -10,6 +10,9 @@ target：50
 
 > 旧路径均为 `SlimeEngine` CPU（`gpuScan=nullptr`）。
 > 这是“新分支路径 vs 旧 CPU 路径”，不是“新 GPU vs 旧 GPU”。
+>
+> **重要修正：不能把这张表直接当作“重构收益”。**
+> 旧引擎的生产 GPU 路径更快；见 `performance_attribution.md`。
 
 ## 1. 总表
 
@@ -22,6 +25,28 @@ target：50
 | Bedrock banded 1024² 全缓存 | 20.53 ms | 7.95 ms | **0.39×** | SAME |
 
 所有 case 的结果坐标、target 数量、`totalFound` 一致。
+
+## 2. 旧 GPU 路径对照
+
+旧引擎在生产中并不是只能用 CPU。同机实测：
+
+| 场景 | 旧 CPU | 旧 GPU 路径 | 新 Fused |
+|---|---:|---:|---:|
+| Java pattern 2048² | 2.09 ms | 1.91 ms | **0.62 ms** |
+| Java density 2048² | 2.36 ms | **0.84 ms** | 2.23 ms |
+| Bedrock density 1024² | 9.09 ms | **1.39 ms** | 1.43 ms |
+
+结论：
+
+```text
+Java pattern：新 Fused 确实更快
+Java density：新 Fused 比旧 GPU 慢约 2.6×
+Bedrock density：新旧 GPU 基本持平
+```
+
+反馈开关测试的波动在噪声范围内（约 -9%~+1%），
+没有证据表明“进度/实时计数”是旧版慢的主因。
+详见 `performance_attribution.md`。
 
 ## 2. 对照：新 CPU Materialize
 
@@ -94,10 +119,18 @@ GPU 显存边界
 ## 5. 当前结论
 
 ```text
-GPU Fused / Banded：有明确速度收益，已开放到 SLIME_NEXT_PIPELINE
-CPU Materialize/Chunked：结果正确但更慢，仍只在测试工具中
+Java pattern Fused：比旧路径快，收益明确
+Java density Fused：比旧 GPU 路径慢，不能算收益
+Bedrock density Fused：与旧 GPU 基本持平
+Banded：比旧 runBanded 快，但属于独立计划差异
+CPU Materialize/Chunked：结果正确但更慢，不开放
 默认路径：未切换
 ```
+
+因此不能据此说“重构收益很高”；更准确的说法是：
+
+> 新框架在部分计划上选到了更合适的执行路径，
+> 但同类路径对比并没有全面胜出。
 
 ## 6. 复现
 
