@@ -107,12 +107,22 @@ Bedrock 行扫描仍然由 `bedrockSlimeScan` 生成 0/1 字节；
 4 次拼成一个 64 位字
 ```
 
-Phase2 Bedrock pattern 512²：
+Phase2 Bedrock pattern 512²（1 线程）：
 
 ```text
 旧 CPU 4.35 ms
 新 CPU 3.96 ms
 ```
+
+Bedrock 1024² 线程扩展（新/旧）：
+
+```text
+pattern t=1 0.76×  t=2 0.93×  t=4 0.75×  t=8 0.50×
+density t=1 0.94×  t=2 0.89×  t=4 0.98×  t=8 0.46×
+```
+
+Bedrock 的剩余成本主要在 MT19937 递归本身；
+位图打包已改成 SSE2，但低线程/小范围收益仍受限。
 
 尾部读取按 `ceil(w/64)*64+16` 分配，避免非 64 对齐宽度的越界读。
 

@@ -133,7 +133,7 @@ int main()
         one("Java pattern 2048", slime::Version::Java, slime::Mode::Strict, 2048, 2048, t, 3);
         one("Java density 2048", slime::Version::Java, slime::Mode::Density, 2048, 2048, t, 3);
     }
-    for (int t : { 2, 4, 8 }) {
+    for (int t : { 1, 2, 4, 8 }) {
         one("Bedrock pattern 1024", slime::Version::Bedrock, slime::Mode::Strict, 1024, 1024, t, 3);
         one("Bedrock density 1024", slime::Version::Bedrock, slime::Mode::Density, 1024, 1024, t, 3);
     }
