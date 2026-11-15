@@ -108,12 +108,43 @@ Bedrock 密度内核已经是 MT19937 计算受限
 ## 6. 第 2 步结论
 
 ```text
-窗口统计：内核已按列滑窗，算法本身没有明显冗余
-命中筛选：当前回读量/select 不是 Bedrock 2048 的主要成本
-回读压缩：对 9.7k 命中收益有限
-Bedrock MT 递推：真正瓶颈，需要重构内核而不能微调
+窗口统计：内核已按列滑窗，没有明显冗余
+命中筛选/回读压缩：对 Bedrock 2048 收益有限
+Bedrock MT 递推：真正瓶颈
 ```
 
-因此第 2 步没有合入性能补丁；下一步需要设计新的 Bedrock 内核并行方案，
-而不是继续试链数。
+pair/quad 都没有稳定收益，未合入性能补丁。
+
+## 7. 第 3 步：pattern local size
+
+测试 `SLIME_GPU_PAT_LOCAL = 64 / 128 / 256`，pattern 2×2：
+
+| local | Java 1024 | Java 2048 | Bedrock 1024 | Bedrock 2048 |
+|---:|---:|---:|---:|---:|
+| 64 | 0.31 | 0.40 | 3.95 | 6.05 |
+| 128 | 0.26 | 0.31 | 1.17 | 3.25 |
+| 256 | 0.28 | 0.33 | 1.12 | 3.00 |
+
+结论：
+
+```text
+local=256 对 Bedrock 最好
+local=128 对 Java 略好但差距在噪声内
+默认保持 256
+```
+
+pattern 内核的 Task 循环已改为 `get_local_size(0)`，并保留环境变量作为 A/B 钩子；
+默认行为不变。
+
+## 8. 第 3 步结论
+
+```text
+local size：256 已是当前最优
+lane/chain：pattern Bedrock 仍受 MT 递推限制
+Java pattern：kernel 很小，counter/hits 回读占主导
+```
+
+下一步若继续，只能重构 pattern 内核的 MT 计算方式，
+而不是继续调 local size。
+
 

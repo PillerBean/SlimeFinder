@@ -649,7 +649,11 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
               setArg(16, sizeof(cl_mem), &dHits) && setArg(17, sizeof(cl_mem), &dCounter);
     const auto tArgs = std::chrono::steady_clock::now();
     const int tilesPerBand = (std::max)(1, 1024 / strideZ);
-    const size_t local = 256;
+    size_t local = 256;
+    if (const char* e = std::getenv("SLIME_GPU_PAT_LOCAL")) {
+        const int v = std::atoi(e);
+        if (v >= 32 && v <= 256) local = static_cast<size_t>(v);
+    }
     size_t dispatches = 0;
     if (ok) {
         for (int startTileZ = 0; startTileZ < totalTilesZ; startTileZ += tilesPerBand) {

@@ -30,7 +30,8 @@
 | Bedrock 扩展 | 1024²：t1 0.76~0.94×，t8 0.46~0.50× |
 | GPU 密度优化 | keepCandidates + 原始 totalFound；Java density 0.74ms vs 旧GPU 0.84ms |
 | GPU 基准 | `gpu_only_bench`：设备时间/回读/命中/占用代理，见 `gpu_only_bench.md` |
-| GPU 密度内核 | pair/quad 尝试无稳定收益，已回退；瓶颈为 MT19937 计算受限 |
+| GPU 密度内核 | pair/quad 无稳定收益，已回退；瓶颈为 MT19937 |
+| GPU pattern local | 256 最优；128 Java 略快但 Bedrock 慢，默认保持 256 |
 | 已知问题 | Banded 取消偶发崩溃已修复（vert 缓冲按 wpr*64 分配），phase8 8/8 通过 |
 | 默认行为 | flag 关闭仍走旧引擎 |
 

@@ -497,7 +497,7 @@ __kernel void pattern_stream(long worldSeed, int bedrock, int minX, int minZ, in
     //   每个线程都有活干（每行 8 组，256 线程可跑 2 行）。
     const int groupsX32 = (strideX + 31) >> 5;
     const int totalTasks = strideZ * groupsX32;
-    for (int task = lid; task < totalTasks; task += 256) {
+    for (int task = lid; task < totalTasks; task += (int)get_local_size(0)) {
         const int az = task / groupsX32;
         const int A = (task % groupsX32) * 32;
         uint ok = 0xFFFFFFFFu;
