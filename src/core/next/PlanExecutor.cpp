@@ -61,8 +61,8 @@ bool PlanExecutor::run(const slime::SearchOptions& opt, const ExecutionPlan& pla
         FusedGpuStats stats;
         FusedGpuPipeline fused;
         const bool ok = plan.matcher == MatcherKind::FusedGpuPattern
-                            ? fused.runPattern(opt, opt.gpuScan, cancel, collector, stats, err)
-                            : fused.runDensity(opt, opt.gpuScan, cancel, collector, stats, err);
+                            ? fused.runPattern(opt, opt.gpuScan, cancel, collector, stats, err, progress)
+                            : fused.runDensity(opt, opt.gpuScan, cancel, collector, stats, err, progress);
         if (!ok) return false;
         out.results = collector.results();
         out.totalFound = collector.totalFound();

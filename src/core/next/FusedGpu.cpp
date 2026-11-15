@@ -8,7 +8,7 @@ namespace slime::next {
 
 namespace {
 
-bool addResult(const slime::SearchOptions& opt, const int64_t azMin, const int64_t anchorRows,
+void addResult(const slime::SearchOptions& opt, const int64_t azMin, const int64_t anchorRows,
                const slime::MatchResult& m, ResultCollector& collector)
 {
     const int64_t w = static_cast<int64_t>(m.maxX) - m.minX + 1;
@@ -22,14 +22,22 @@ bool addResult(const slime::SearchOptions& opt, const int64_t azMin, const int64
              (static_cast<int64_t>(m.minZ) - azMin);
     c.density = m.density;
     collector.add(c);
-    return true;
+}
+
+int64_t bandRowsFor(int64_t totalRows)
+{
+    // 小/中范围保持单次 GPU 调用，避免 dispatch 固定开销压过计算；
+    // 只有超大范围才切成少量 band，用于中间进度和取消机会。
+    if (totalRows <= 8192) return totalRows;
+    return (std::max)(int64_t{ 2048 }, (totalRows + 3) / 4);
 }
 
 } // namespace
 
 bool FusedGpuPipeline::runPattern(const slime::SearchOptions& opt, const slime::GpuScan* gpu,
                                  const std::atomic<bool>& cancel, ResultCollector& collector,
-                                 FusedGpuStats& stats, std::string* err) const
+                                 FusedGpuStats& stats, std::string* err,
+                                 const slime::ProgressFn& progress) const
 {
     if (!gpu || !gpu->available()) {
         if (err) *err = "GPU 不可用";
@@ -52,6 +60,7 @@ bool FusedGpuPipeline::runPattern(const slime::SearchOptions& opt, const slime::
     const int64_t azMax = static_cast<int64_t>(opt.maxZ) - rows + 1;
     if (axMax < axMin || azMax < azMin) {
         stats = FusedGpuStats{};
+        if (progress) progress(1.0, false, 0.0, 0.0);
         return true;
     }
     std::vector<uint32_t> enable(static_cast<size_t>(rows), 0);
@@ -64,34 +73,45 @@ bool FusedGpuPipeline::runPattern(const slime::SearchOptions& opt, const slime::
             if (s == slime::CellState::Green) green[static_cast<size_t>(r)] |= 1u << c;
         }
     }
-    slime::PatternMatchParams p;
-    p.version = opt.version;
-    p.worldSeed = opt.worldSeed;
-    p.axMin = axMin;
-    p.axMax = axMax;
-    p.azMin = azMin;
-    p.azMax = azMax;
-    p.rows = rows;
-    p.cols = cols;
-    p.enableMasks = enable.data();
-    p.greenMasks = green.data();
-    p.maxResults = 4000000;
-
-    std::vector<slime::MatchResult> hits;
+    const int64_t totalRows = azMax - azMin + 1;
+    const int64_t step = bandRowsFor(totalRows);
     const auto t0 = std::chrono::steady_clock::now();
-    if (!gpu->matchPattern(p, cancel, hits, err)) return false;
-    const auto t1 = std::chrono::steady_clock::now();
-    const int64_t anchorRows = azMax - azMin + 1;
-    for (const auto& m : hits) addResult(opt, azMin, anchorRows, m, collector);
-    stats.ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-    stats.windows = static_cast<int64_t>(hits.size());
-    stats.totalFound = static_cast<int64_t>(hits.size());
+    int64_t totalHits = 0;
+    if (progress) progress(0.0, true, 0.0, 0.0);
+    for (int64_t b0 = azMin; b0 <= azMax; b0 += step) {
+        if (cancel.load(std::memory_order_relaxed)) return false;
+        const int64_t b1 = (std::min)(azMax, b0 + step - 1);
+        slime::PatternMatchParams p;
+        p.version = opt.version;
+        p.worldSeed = opt.worldSeed;
+        p.axMin = axMin;
+        p.axMax = axMax;
+        p.azMin = b0;
+        p.azMax = b1;
+        p.rows = rows;
+        p.cols = cols;
+        p.enableMasks = enable.data();
+        p.greenMasks = green.data();
+        p.maxResults = 4000000;
+        std::vector<slime::MatchResult> hits;
+        if (!gpu->matchPattern(p, cancel, hits, err)) return false;
+        for (const auto& m : hits) addResult(opt, azMin, totalRows, m, collector);
+        totalHits += static_cast<int64_t>(hits.size());
+        if (progress) {
+            progress(static_cast<double>(b1 - azMin + 1) / static_cast<double>(totalRows), true, 0.0, 0.0);
+        }
+    }
+    stats.ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    stats.windows = totalRows;
+    stats.totalFound = totalHits;
+    if (progress) progress(1.0, false, 0.0, 0.0);
     return true;
 }
 
 bool FusedGpuPipeline::runDensity(const slime::SearchOptions& opt, const slime::GpuScan* gpu,
                                   const std::atomic<bool>& cancel, ResultCollector& collector,
-                                  FusedGpuStats& stats, std::string* err) const
+                                  FusedGpuStats& stats, std::string* err,
+                                  const slime::ProgressFn& progress) const
 {
     if (!gpu || !gpu->available()) {
         if (err) *err = "GPU 不可用";
@@ -113,33 +133,44 @@ bool FusedGpuPipeline::runDensity(const slime::SearchOptions& opt, const slime::
     const int64_t azMax = static_cast<int64_t>(opt.maxZ) - g + 1;
     if (axMax < axMin || azMax < azMin) {
         stats = FusedGpuStats{};
+        if (progress) progress(1.0, false, 0.0, 0.0);
         return true;
     }
-    slime::DensityMatchParams p;
-    p.version = opt.version;
-    p.worldSeed = opt.worldSeed;
-    p.axMin = axMin;
-    p.axMax = axMax;
-    p.azMin = azMin;
-    p.azMax = azMax;
-    p.gridSize = g;
-    p.minDensity = opt.minDensity;
-    p.maxResults = 4000000;
-    p.startX = opt.startX;
-    p.startZ = opt.startZ;
-    p.keepCandidates = 0;
-    int64_t total = 0;
-    p.outTotalFound = &total;
-
-    std::vector<slime::MatchResult> hits;
+    const int64_t totalRows = azMax - azMin + 1;
+    const int64_t step = bandRowsFor(totalRows);
     const auto t0 = std::chrono::steady_clock::now();
-    if (!gpu->matchDensity(p, cancel, hits, err)) return false;
-    const auto t1 = std::chrono::steady_clock::now();
-    const int64_t anchorRows = azMax - azMin + 1;
-    for (const auto& m : hits) addResult(opt, azMin, anchorRows, m, collector);
-    stats.ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-    stats.windows = total;
-    stats.totalFound = total;
+    int64_t totalFound = 0;
+    if (progress) progress(0.0, true, 0.0, 0.0);
+    for (int64_t b0 = azMin; b0 <= azMax; b0 += step) {
+        if (cancel.load(std::memory_order_relaxed)) return false;
+        const int64_t b1 = (std::min)(azMax, b0 + step - 1);
+        slime::DensityMatchParams p;
+        p.version = opt.version;
+        p.worldSeed = opt.worldSeed;
+        p.axMin = axMin;
+        p.axMax = axMax;
+        p.azMin = b0;
+        p.azMax = b1;
+        p.gridSize = g;
+        p.minDensity = opt.minDensity;
+        p.maxResults = 4000000;
+        p.startX = opt.startX;
+        p.startZ = opt.startZ;
+        p.keepCandidates = 0;
+        int64_t bandTotal = 0;
+        p.outTotalFound = &bandTotal;
+        std::vector<slime::MatchResult> hits;
+        if (!gpu->matchDensity(p, cancel, hits, err)) return false;
+        for (const auto& m : hits) addResult(opt, azMin, totalRows, m, collector);
+        totalFound += bandTotal;
+        if (progress) {
+            progress(static_cast<double>(b1 - azMin + 1) / static_cast<double>(totalRows), true, 0.0, 0.0);
+        }
+    }
+    stats.ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    stats.windows = totalFound;
+    stats.totalFound = totalFound;
+    if (progress) progress(1.0, false, 0.0, 0.0);
     return true;
 }
 

@@ -424,6 +424,16 @@ if(MSVC)
     target_compile_options(slime_next_phase7_pattern_perf PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
 
+add_executable(slime_next_phase8_compat
+    tools/refactor/phase8_compat.cpp
+)
+target_include_directories(slime_next_phase8_compat PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase8_compat PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_next_phase8_compat PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
+
 
 
 

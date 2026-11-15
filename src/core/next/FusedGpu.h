@@ -20,12 +20,14 @@ public:
     // 严格图案（方向锁定）直接调用 GPU 流式匹配，结果写入 Collector。
     bool runPattern(const slime::SearchOptions& opt, const slime::GpuScan* gpu,
                     const std::atomic<bool>& cancel, ResultCollector& collector,
-                    FusedGpuStats& stats, std::string* err) const;
+                    FusedGpuStats& stats, std::string* err,
+                    const slime::ProgressFn& progress = slime::ProgressFn()) const;
 
     // 精确密度直接调用 GPU 流式匹配。
     bool runDensity(const slime::SearchOptions& opt, const slime::GpuScan* gpu,
                     const std::atomic<bool>& cancel, ResultCollector& collector,
-                    FusedGpuStats& stats, std::string* err) const;
+                    FusedGpuStats& stats, std::string* err,
+                    const slime::ProgressFn& progress = slime::ProgressFn()) const;
 };
 
 } // namespace slime::next
