@@ -86,6 +86,15 @@ bool GpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
     bool ok = m_gpu->scanRectWords(opt.version, opt.worldSeed, static_cast<int>(opt.minX),
                                    static_cast<int>(opt.minZ), w, h, words, err);
     if (ok && words.size() == static_cast<size_t>(wpr) * h) {
+        // GPU 打包字内核按 64 区块整字输出，不会自动清掉最后一字的行尾越界位。
+        // 新框架的 Bitmap 合同是“只含 [x0,x0+w)”，这里在边界统一裁剪。
+        const int rem = w & 63;
+        if (rem != 0) {
+            const uint64_t mask = (uint64_t{ 1 } << rem) - 1ULL;
+            for (int z = 0; z < h; ++z) {
+                words[static_cast<size_t>(z) * wpr + (wpr - 1)] &= mask;
+            }
+        }
         bmp.words() = std::move(words);
     } else {
         std::vector<uint8_t> bytes;

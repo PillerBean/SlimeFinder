@@ -628,7 +628,12 @@ __kernel void scan_bedrock_words(int minX, int minZ, int w, int h, int wpr,
             bits |= (ulong)ha << b;
             bits |= (ulong)hb << (b + 32);
         } else {
-            if (cxA < cxEnd) bits |= (ulong)(uint)bedrock_is_slime_fast(cxA, cz) << b;
+            // 最后一字：cxB 越界后，cxA 仍可能覆盖 b..31 的多个有效位。
+            for (; b < 32; ++b) {
+                const int cx = cxBase + b;
+                if (cx >= cxEnd) break;
+                bits |= (ulong)(uint)bedrock_is_slime_fast(cx, cz) << b;
+            }
             break;
         }
     }
