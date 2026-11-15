@@ -79,11 +79,41 @@ Java density 2048：有效
 这不是 0 时间，而是 profiling 信息不可用。
 下一步要么修 event 查询（wait/finish 顺序），要么改用设备端计时缓冲区。
 
-## 5. 下一步优化目标
+## 5. 第 2 步尝试：Bedrock 密度内核
+
+尝试把密度内核里的 Bedrock 逐位生成改成：
 
 ```text
-A. Bedrock density 2048 内核：窗口统计/命中筛选
-B. Pattern：减少 counter/hits 回读延迟
-C. Java density：降低 select/构造开销
-D. 修 event profiling，拿到全部 device time
+bedrock_pair：一次两条 MT 链
+bedrock_quad：一次四条 MT 链
 ```
+
+结果（Bedrock density 2048 device kernel）：
+
+```text
+原始 scalar：约 2.84 ms
+bedrock_pair：约 2.73~2.94 ms
+bedrock_quad：约 2.95 ms
+```
+
+没有稳定收益，register 压力/占用率抵消了 ILP，已全部回退。
+
+结论：
+
+```text
+Bedrock 密度内核已经是 MT19937 计算受限
+简单增加每线程链数不能突破
+```
+
+## 6. 第 2 步结论
+
+```text
+窗口统计：内核已按列滑窗，算法本身没有明显冗余
+命中筛选：当前回读量/select 不是 Bedrock 2048 的主要成本
+回读压缩：对 9.7k 命中收益有限
+Bedrock MT 递推：真正瓶颈，需要重构内核而不能微调
+```
+
+因此第 2 步没有合入性能补丁；下一步需要设计新的 Bedrock 内核并行方案，
+而不是继续试链数。
+
