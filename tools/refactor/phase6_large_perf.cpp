@@ -112,6 +112,35 @@ int main()
         { "Bedrock-density-chunk", slime::Version::Bedrock, slime::Mode::Density, 1500, 1500, 12345, 50, false,
           100000 },
     };
+
+    // 预热 OpenCL，避免把首次编译/初始化算进 Java pattern。
+    if (gpu) {
+        slime::SearchOptions warm;
+        warm.version = slime::Version::Java;
+        warm.worldSeed = 12345;
+        warm.minX = -128;
+        warm.maxX = 127;
+        warm.minZ = -128;
+        warm.maxZ = 127;
+        warm.mode = slime::Mode::Density;
+        warm.algorithm = slime::Algorithm::Exact;
+        warm.gridSize = 5;
+        warm.minDensity = 0.3;
+        warm.targetCount = 10;
+        warm.threads = 8;
+        warm.gpuScan = gpu.get();
+        slime::next::PlannerInput pin;
+        pin.options = warm;
+        pin.caps.gpuAvailable = true;
+        pin.caps.gpuIsAmd = true;
+        const auto plan = slime::next::makeExecutionPlan(pin);
+        slime::next::MaterializeResult ignored;
+        slime::next::PlanExecutor executor;
+        std::atomic<bool> cancel{ false };
+        std::string werr;
+        executor.run(warm, plan, cancel, ignored, &werr);
+    }
+
     int failures = 0;
     for (const Case& c : cases) {
         if (!runCase(c, gpu.get())) ++failures;

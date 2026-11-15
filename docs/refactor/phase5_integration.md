@@ -48,6 +48,16 @@ SearchTask
   → 支持的走新计划，不支持的自动回退旧引擎
 ```
 
+生产 flag 当前只开放：
+
+```text
+FusedGpuPattern / FusedGpuDensity
+Banded
+```
+
+CPU Materialize / Chunked 仍只在测试工具中启用；
+原因是 Phase7 实测它们仍慢于旧 CPU，不跟着 flag 进入产品。
+
 **默认仍关闭**；产品界面没有开关，当前只是开发验收用环境变量。
 
 ### 验证
@@ -131,10 +141,14 @@ Collector ALL PASS
 ```text
 Banded 2D tile / 部分缓存：已完成并 SAME
 ≥1M 区块大范围：结果 SAME
-性能：Java pattern 2048 新/旧 = 1.34×，未达到 ≤1.05× 门槛
+性能（预热后）：Java pattern 0.37×，Java density 0.84×，
+              Bedrock density 0.32×，Chunked 0.23×
+CPU Materialize/Chunked 原型仍偏慢；SearchTask feature flag 只开放
+Fused GPU 或 Banded，CPU 新路径不进入产品自动选择。
 ```
 
-详见 `phase6_large_perf.md`。因此仍不切换默认。
+详见 `phase6_large_perf.md` 和 `phase7_pattern_perf.cpp`。因此仍不切换默认，
+但已开放的 GPU 路径通过性能门槛。
 
 
 ## 5. 明确回退

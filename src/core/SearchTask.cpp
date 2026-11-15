@@ -41,7 +41,12 @@ bool canUseNextPipeline(const SearchOptions& opt, slime::next::ExecutionPlan& pl
                            name.find("gfx") != std::string::npos;
     }
     plan = slime::next::makeExecutionPlan(in);
-    return slime::next::PlanExecutor::supported(opt, plan);
+    if (!slime::next::PlanExecutor::supported(opt, plan)) return false;
+    // 生产 feature flag 只开放“GPU 融合”或“分带缓存”；
+    // CPU Materialize/Chunked 原型仍然偏慢，留在测试工具里，不跟着 flag 进入产品。
+    const bool fused = plan.matcher == slime::next::MatcherKind::FusedGpuPattern ||
+                       plan.matcher == slime::next::MatcherKind::FusedGpuDensity;
+    return fused || plan.family == slime::next::PlanFamily::Banded;
 }
 
 } // namespace

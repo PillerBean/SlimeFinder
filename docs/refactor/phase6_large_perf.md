@@ -21,32 +21,63 @@ Bedrock density 1500×1500（强制 Chunked，无 GPU）
 
 | case | 计划 | 旧 | 新 | 新/旧 | 结果 |
 |---|---|---:|---:|---:|---|
-| Java-pattern-2048 | FusedGpuPattern | 3.0 ms | 4.0 ms | 1.34× | SAME |
-| Java-density-2048 | FusedGpuDensity | 2.3 ms | 2.4 ms | 1.04× | SAME |
-| Bedrock-density-1024 | FusedGpuDensity | 5.9 ms | 2.0 ms | 0.34× | SAME |
-| Bedrock-density-chunk | Chunked | 40.2 ms | 9.5 ms | 0.23× | SAME |
+| Java-pattern-2048 | FusedGpuPattern | 2.7 ms | 1.0 ms | 0.37× | SAME |
+| Java-density-2048 | FusedGpuDensity | 2.3 ms | 1.9 ms | 0.84× | SAME |
+| Bedrock-density-1024 | FusedGpuDensity | 5.8 ms | 1.9 ms | 0.32× | SAME |
+| Bedrock-density-chunk | Chunked | 40.3 ms | 9.1 ms | 0.23× | SAME |
 
 所有结果、totalFound 一致。
 
-## 3. 结论
+## 3. 冷启动修正
+
+第一次测量 Java pattern 时得到：
+
+```text
+old=3.0ms new=4.0ms ratio=1.34x
+```
+
+其中包含 OpenCL 首次初始化/编译。加入预热后：
+
+```text
+old=2.7ms new=1.0ms ratio=0.37x
+```
+
+Phase7 单独拆分：
+
+```text
+old-CPU              median 1.76ms
+new-CPU-materialize  median 4.38ms
+new-CPU-chunked      median 4.59ms
+new-fused-GPU        median 0.41ms
+```
+
+结论：
+
+- Fused GPU 预热后明显快于旧 CPU；
+- **新 CPU Materialize/Chunked 仍比旧 CPU 慢**；
+- 因此 SearchTask feature flag 只开放 Fused GPU 或 Banded，
+  CPU Materialize/Chunked 仍留在测试工具里，不跟着 flag 进产品。
+
+## 4. 结论
 
 - 大范围结果正确性通过；
-- Bedrock GPU/Chunked 在这组测试中明显更快；
-- **Java pattern 2048 仍比旧 CPU 慢 34%**，不满足“性能不退化 ≤5%”的切换门槛；
-- 这组数据只说明当前机器/当前参数，不构成产品性能验收。
+- GPU fused 计划在这组测试中不退化且更快；
+- CPU 新路径未达到性能门槛，已从生产 flag 的自动选择中排除；
+- 这组数据只说明当前机器/当前参数，不构成最终产品性能承诺。
 
-## 4. 切换结论
+## 5. 切换结论
 
 ```text
 不切换默认路径
 SLIME_NEXT_PIPELINE 仍默认关闭
 ```
 
-必须先解决 Java pattern 的固定开销/路径选择，再谈切换。
+性能门槛对“已开放的 Fused/Banded”基本满足；全量切换仍缺 GUI/缓存构建/环形隔离验收。
 
-## 5. 下一步
+## 6. 下一步
 
-1. 查 Java pattern 2048 的 1.34×：GPU 启动/回读/Collector 还是计划选择不合适；
-2. 增加 CPU pattern 大范围对比；
-3. 部分缓存快速混合填充；
-4. 更新验收门槛记录。
+1. 继续验收 Banded 部分缓存性能（当前逐点补齐）；
+2. 缓存构建/环形明确继续旧路径；
+3. GUI 进度/取消/统计兼容性；
+4. 再决定是否切换默认。
+
