@@ -203,6 +203,31 @@ int main()
         }
     }
 
+    // 5) Fused 超大范围在 band 之间取消
+    {
+        slime::SearchOptions opt = base(slime::Version::Java);
+        opt.minX = -32;
+        opt.maxX = 31;
+        opt.minZ = -4200;
+        opt.maxZ = 4200;
+        opt.targetCount = 10;
+        std::string gpuErr;
+        auto gpu = slimegpu::createGpuScanAdapter(&gpuErr);
+        if (gpu && gpu->available()) {
+            opt.gpuScan = gpu.get();
+            std::atomic<bool> cancel{ false };
+            slime::next::ResultCollector collector(slime::next::CollectorKind::DistanceTopN, opt.targetCount);
+            slime::next::FusedGpuStats stats;
+            slime::next::FusedGpuPipeline fused;
+            const bool ok = fused.runDensity(opt, gpu.get(), cancel, collector, stats, &gpuErr,
+                                             [&](double f, bool, double, double) {
+                                                 if (f >= 0.2) cancel.store(true, std::memory_order_relaxed);
+                                             });
+            std::printf("fused-cancel: ok=%d cancelled=%d\n", ok ? 1 : 0, cancel.load() ? 1 : 0);
+            if (ok || !cancel.load()) ++failures;
+        }
+    }
+
     std::printf("PHASE8-COMPAT %s (%d failures)\n", failures == 0 ? "ALL PASS" : "FAIL", failures);
     return failures == 0 ? 0 : 1;
 }

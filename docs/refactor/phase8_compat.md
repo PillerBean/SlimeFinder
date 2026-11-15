@@ -67,19 +67,30 @@ fused-large-progress:
 注意：常见 2048² 范围仍是一次 GPU 调用，没有中间进度；
 这是刻意保留性能的选择。
 
-## 5. 仍未覆盖
+## 5. Fused 分带取消
+
+在超大范围 band 之间取消：
+
+```text
+fused-cancel: ok=0 cancelled=1
+```
+
+说明 Fused 新路径至少在大范围分带时可以在 band 边界响应取消。
+
+## 6. 仍未覆盖
 
 - Fused GPU 常见范围没有中间进度，SearchTask 只在结束时报告；
-- 长任务取消在 Fused GPU 上还没有做真实计时测试；
+- 常见范围取消只能在 GPU 调用返回后生效；
 - GUI 的实时扫描计数在 Fused 路径上仍只在结束后更新；
 - 构建模式缓存内容仍需专门验收。
 
-## 6. 结论
+## 7. 结论
 
 ```text
 Banded 的 SearchTask 进度/结果/liveMatches 兼容性通过
 完整缓存/构建模式回退隔离通过
 Fused 超大范围分带进度通过
+Fused 超大范围分带取消通过
 Fused 常见范围细粒度进度/取消仍是验收缺口
 ```
 
