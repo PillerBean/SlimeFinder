@@ -150,6 +150,18 @@ Fused GPU 或 Banded，CPU 新路径不进入产品自动选择。
 详见 `phase6_large_perf.md` 和 `phase7_pattern_perf.cpp`。因此仍不切换默认，
 但已开放的 GPU 路径通过性能门槛。
 
+补充（Phase 8）：
+
+```text
+Banded SearchTask 进度/结果/liveMatches：通过
+完整缓存覆盖：自动回退旧路径，通过
+构建模式：自动回退旧路径，通过
+Fused 超大范围分带进度：通过
+Fused 常见范围细粒度进度/取消：仍未覆盖
+```
+
+详见 `phase8_compat.md`。
+
 
 ## 5. 明确回退
 
