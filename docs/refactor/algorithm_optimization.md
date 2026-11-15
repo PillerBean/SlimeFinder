@@ -134,7 +134,35 @@ Phase2 Java density 512²：
 
 大范围保留更多 block 以平衡负载。
 
-## 6. 当前 CPU 状态
+## 6. GPU 密度：keepCandidates + 原始 total + 单 band
+
+三个问题一起修：
+
+```text
+1. keepCandidates = min(200000, max(256, target*4))
+2. PlanExecutor 使用 GPU 原始 totalFound，不用 Collector 的 kept 数量
+3. 密度中范围单 band，只有超大范围才分带
+```
+
+2048² Java density：
+
+```text
+旧 CPU     2.3 ms
+旧 GPU     0.84 ms
+新 Fused   0.74 ms
+```
+
+Bedrock density 1024²：
+
+```text
+旧 GPU     1.39 ms
+新 Fused   1.35 ms
+```
+
+结果是 SAME，且 totalFound 仍是完整的 9520/2448。
+
+## 7. 当前 CPU 状态
+
 
 
 | 场景 | 旧 CPU | 新 CPU | 状态 |
@@ -147,7 +175,7 @@ Phase2 Java density 512²：
 CPU 图案和密度在 2048² 都不再落后于旧 CPU。
 
 
-## 7. 验证
+## 8. 验证
 
 ```text
 PHASE2 ALL PASS
@@ -165,13 +193,13 @@ PHASE14-PATTERN-VARIANTS ALL PASS
 PARITY ALL PASS
 ```
 
-## 8. 剩余算法工作
+## 9. 剩余算法工作
 
 ```text
 Java density 小范围/多线程余量
 CPU 大范围/低线程扩展
-GPU density 2-band 固定开销与 totalFound
-GPU 图案/密度同路径对比
+GPU pattern 大范围/低线程
+Banded 取消路径稳定性
 ```
 
 流程层保持冻结，不新增 Hybrid 实现。

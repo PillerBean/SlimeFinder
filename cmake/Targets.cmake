@@ -469,7 +469,6 @@ if(MSVC)
     target_compile_options(slime_next_phase14_pattern_variants PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
 
-
 add_executable(slime_next_phase13_attribution
     tools/refactor/phase13_attribution.cpp
 )

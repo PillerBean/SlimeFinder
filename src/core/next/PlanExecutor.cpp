@@ -65,7 +65,7 @@ bool PlanExecutor::run(const slime::SearchOptions& opt, const ExecutionPlan& pla
                             : fused.runDensity(opt, opt.gpuScan, cancel, collector, stats, err, progress);
         if (!ok) return false;
         out.results = collector.results();
-        out.totalFound = collector.totalFound();
+        out.totalFound = stats.totalFound > 0 ? stats.totalFound : collector.totalFound();
         out.scan.ms = 0.0;
         out.scan.backend = "gpu-fused";
         out.scan.gpuUsed = true;

@@ -138,7 +138,9 @@ bool FusedGpuPipeline::runDensity(const slime::SearchOptions& opt, const slime::
         return true;
     }
     const int64_t totalRows = azMax - azMin + 1;
-    const int64_t step = bandRowsFor(totalRows);
+    // 密度对 GPU dispatch 更敏感：中范围保持单次调用；
+    // 图案仍按 2-band 提供中间进度。
+    const int64_t step = totalRows <= 4096 ? totalRows : bandRowsFor(totalRows);
     const auto t0 = std::chrono::steady_clock::now();
     int64_t totalFound = 0;
     if (progress) progress(0.0, true, 0.0, 0.0);
@@ -157,7 +159,10 @@ bool FusedGpuPipeline::runDensity(const slime::SearchOptions& opt, const slime::
         p.maxResults = 4000000;
         p.startX = opt.startX;
         p.startZ = opt.startZ;
-        p.keepCandidates = 0;
+        p.keepCandidates = opt.targetCount > 0
+                               ? (std::min)(int64_t{ 200000 }, (std::max)(int64_t{ 256 },
+                                                                           opt.targetCount * 4))
+                               : 0;
         int64_t bandTotal = 0;
         p.outTotalFound = &bandTotal;
         std::vector<slime::MatchResult> hits;

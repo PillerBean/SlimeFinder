@@ -26,6 +26,8 @@
 | SearchTask 随机矩阵 | 24 case，结果/进度/live 全通过 |
 | 速度统一采样 | Fused/Banded/Chunked 见 `performance_status.md`；CPU 算法优化见 `algorithm_optimization.md` |
 | CPU 算法优化 | Java pattern 1.21ms < 旧1.76ms；Java density 2.22ms ≈ 旧2.29ms |
+| GPU 密度优化 | keepCandidates + 原始 totalFound；Java density 0.74ms vs 旧GPU 0.84ms |
+| 已知问题 | Banded 取消压力测试偶发崩溃，见 `known_issues.md` |
 | 默认行为 | flag 关闭仍走旧引擎 |
 
 ## 2. 性能记录

@@ -68,13 +68,14 @@ int main()
                                 ? fused.runPattern(opt, gpu.get(), cancel, collector, stats, &err)
                                 : fused.runDensity(opt, gpu.get(), cancel, collector, stats, &err);
             const auto newResults = collector.results();
+            const int64_t fusedTotal = stats.totalFound > 0 ? stats.totalFound : collector.totalFound();
             const bool sameRes = ok && same(oldOut.results, newResults) &&
-                                 oldOut.totalFound == collector.totalFound();
+                                 oldOut.totalFound == fusedTotal;
             std::printf("%-8s %-8s old=%zu/%lld fused=%zu/%lld %.2fms %s\n",
                         version == slime::Version::Java ? "Java" : "Bedrock",
                         mode == slime::Mode::Strict ? "pattern" : "density", oldOut.results.size(),
                         static_cast<long long>(oldOut.totalFound), newResults.size(),
-                        static_cast<long long>(collector.totalFound()), stats.ms,
+                        static_cast<long long>(fusedTotal), stats.ms,
                         sameRes ? "SAME" : "DIFF");
             if (!sameRes) {
                 std::printf("  err=%s\n", err.c_str());

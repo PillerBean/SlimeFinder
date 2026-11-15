@@ -237,7 +237,8 @@ int main()
                                                  last = f;
                                              });
             const bool sameRes = ok && oldOut.ok && same(oldOut.results, collector.results()) &&
-                                 oldOut.totalFound == collector.totalFound();
+                                 oldOut.totalFound ==
+                                     (stats.totalFound > 0 ? stats.totalFound : collector.totalFound());
             std::printf("fused-large-progress: ok=%d progressCount=%d final=%.3f %s\n", ok ? 1 : 0,
                         progressCount.load(), last, sameRes ? "SAME" : "DIFF");
             if (!sameRes || progressCount.load() < 2) ++failures;

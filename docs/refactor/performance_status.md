@@ -19,7 +19,7 @@ target：50
 | 场景 | 旧路径 | 新路径 | 新/旧 | 结果 |
 |---|---:|---:|---:|---|
 | Java pattern 2048² | 1.89 ms | 0.62 ms | **0.33×** | SAME |
-| Java density 2048² | 2.27 ms | 2.23 ms | **0.98×** | SAME |
+| Java density 2048² | 2.32 ms | 0.74 ms | **0.32×** | SAME |
 | Bedrock density 1024² | 6.67 ms | 1.43 ms | **0.21×** | SAME |
 | Bedrock chunked 1500² | 39.87 ms | 9.07 ms | **0.23×** | SAME |
 | Bedrock banded 1024² 全缓存 | 20.53 ms | 7.95 ms | **0.39×** | SAME |
@@ -33,14 +33,14 @@ target：50
 | 场景 | 旧 CPU | 旧 GPU 路径 | 新 Fused |
 |---|---:|---:|---:|
 | Java pattern 2048² | 2.09 ms | 1.91 ms | **0.62 ms** |
-| Java density 2048² | 2.36 ms | **0.84 ms** | 2.23 ms |
-| Bedrock density 1024² | 9.09 ms | **1.39 ms** | 1.43 ms |
+| Java density 2048² | 2.36 ms | 0.84 ms | **0.74 ms** |
+| Bedrock density 1024² | 9.09 ms | 1.39 ms | **1.35 ms** |
 
 结论：
 
 ```text
 Java pattern：新 Fused 确实更快
-Java density：新 Fused 比旧 GPU 慢约 2.6×
+Java density：新 Fused 与旧 GPU 基本持平/略快
 Bedrock density：新旧 GPU 基本持平
 ```
 
@@ -84,7 +84,7 @@ Java pattern Fused       0.33×
 ### 基本持平
 
 ```text
-Java density Fused       0.98×
+Java density Fused       0.32×
 ```
 
 2048² Java 密度是 2-band Fused；GPU dispatch 与回读占比不低，
@@ -122,13 +122,13 @@ Banded 只测完整缓存
 GPU 显存边界
 ```
 
-小毫秒级数据有噪声；上表使用 5 次中位数，但 Java density 仍可能落在 0.95~1.05×。
+小毫秒级数据有噪声；上表使用 5 次中位数，Java density 仍可能落在 0.70~0.85 ms。
 
 ## 5. 当前结论
 
 ```text
 Java pattern Fused：比旧路径快，收益明确
-Java density Fused：比旧 GPU 路径慢，不能算收益
+Java density Fused：与旧 GPU 路径基本持平/略快
 Bedrock density Fused：与旧 GPU 基本持平
 Banded：比旧 runBanded 快，但属于独立计划差异
 CPU Materialize/Chunked：图案/密度已不低于旧 CPU，仍暂不开放
