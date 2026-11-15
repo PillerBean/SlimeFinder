@@ -442,6 +442,16 @@ if(MSVC)
     target_compile_options(slime_next_phase9_banded_perf PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
 
+add_executable(slime_next_phase11_searchtask_random
+    tools/refactor/phase11_searchtask_random.cpp
+)
+target_include_directories(slime_next_phase11_searchtask_random PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase11_searchtask_random PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_next_phase11_searchtask_random PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
+
 
 
 

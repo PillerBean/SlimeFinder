@@ -164,6 +164,12 @@ Fused 超大范围分带进度/取消：通过
 Fused 512² 细粒度进度：短任务缺口
 ```
 
+补充（Phase 11）：SearchTask feature flag 随机矩阵 24 case：
+
+```text
+PHASE11-SEARCHTASK-RANDOM cases=24 failures=0 ALL PASS
+```
+
 详见 `phase8_compat.md`。
 
 补充（Phase 9）：

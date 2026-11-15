@@ -23,6 +23,7 @@
 | SearchTask 实时计数 | liveScanned/liveTotal 同口径 |
 | 构建模式 | 回退旧路径，entries=1744=独立判定 |
 | 环形/AFK | feature flag 开关结果 SAME |
+| SearchTask 随机矩阵 | 24 case，结果/进度/live 全通过 |
 | 默认行为 | flag 关闭仍走旧引擎 |
 
 ## 2. 性能记录
