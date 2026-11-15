@@ -138,20 +138,20 @@ Phase2 Java density 512²：
 Phase16 CPU 扩展性（新/旧）：
 
 ```text
-Java pattern 2048  t=1 1.15×  t=4 0.78×  t=8 0.88×
-Java density 2048  t=1 1.17×  t=4 1.14×  t=8 1.13×
-Java density 4096  t=8 0.88×
-Bedrock pattern 1024 t=8 0.40×
-Bedrock density 1024 t=8 0.56×
+Java pattern 2048  t=1 0.91×  t=2 0.88×  t=4 0.82×  t=8 0.61×
+Java density 2048  t=1 1.00×  t=2 1.04×  t=4 1.24×  t=8 0.99×  t=12 1.15×
+Java density 4096  t=8 0.94×
+Bedrock pattern 1024 t=8 0.43×
+Bedrock density 1024 t=8 0.48×
 ```
 
 结论：
 
 ```text
-图案路径多线程明显快于旧 CPU
-密度单线程仍慢约 17%
-密度中等线程慢约 10~14%
-密度 4096 已反超
+图案路径全线程段快于旧 CPU
+密度 1/2/8 线程基本持平或略快
+密度 4/12 线程仍慢约 15~24%
+密度 4096 已略快
 ```
 
 ## 6. GPU 密度：keepCandidates + 原始 total + 单 band

@@ -51,59 +51,83 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
 #endif
     if (progress) progress(0.0, true, 0.0, 0.0);
     const auto t0 = std::chrono::steady_clock::now();
-    std::atomic<int64_t> rowsDone{ 0 };
     const int reportEvery = (std::max)(1, h / 100);
     const bool javaFast = (opt.version == Version::Java) && fastjava::available();
+    const auto fillRow = [&](int rz, std::vector<uint8_t>& row) {
+        const int z = static_cast<int>(opt.minZ) + rz;
+        uint64_t* dst = bmp.row(z);
+        if (javaFast) {
+            const uint64_t rowBase = javaRowBaseLocal(opt.worldSeed, static_cast<int32_t>(z));
+            const int fullWords = w / 64;
+            const int rem = w - fullWords * 64;
+            if (fullWords > 0) fastjava::scanWordsOr(rowBase, static_cast<int32_t>(opt.minX), fullWords, dst);
+            if (rem > 0) {
+                uint64_t tail = 0;
+                fastjava::scanRowJava(rowBase, static_cast<int32_t>(opt.minX + fullWords * 64), rem, &tail);
+                dst[fullWords] = tail;
+            }
+            return;
+        }
+        if (opt.version == Version::Java) {
+            SlimeEngine::fillSlimeRowJava(opt.worldSeed, z, static_cast<int>(opt.minX), w, row.data());
+            for (int x = 0; x < w; ++x) {
+                if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+            }
+            return;
+        }
+        SlimeEngine::fillSlimeRowBedrock(z, static_cast<int>(opt.minX), w, row.data());
+        const int wprRow = (w + 63) / 64;
+#if defined(_M_X64) || defined(_M_IX86) || defined(__SSE2__)
+        const __m128i zero = _mm_setzero_si128();
+        for (int wi = 0; wi < wprRow; ++wi) {
+            const int base = wi * 64;
+            const int n = (std::min)(64, w - base);
+            uint64_t acc = 0;
+            for (int lane = 0; lane < 4; ++lane) {
+                const __m128i v = _mm_loadu_si128(
+                    reinterpret_cast<const __m128i*>(row.data() + base + lane * 16));
+                const uint32_t nonSlime =
+                    static_cast<uint32_t>(_mm_movemask_epi8(_mm_cmpeq_epi8(v, zero))) & 0xFFFFu;
+                acc |= static_cast<uint64_t>(~nonSlime & 0xFFFFu) << (lane * 16);
+            }
+            if (n < 64) acc &= ((1ULL << n) - 1ULL);
+            dst[wi] = acc;
+        }
+#else
+        for (int x = 0; x < w; ++x) {
+            if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+        }
+#endif
+    };
+
+    if (opt.threads == 1) {
+        std::vector<uint8_t> row(static_cast<size_t>((w + 63) / 64 * 64) + 16);
+        int64_t done = 0;
+        for (int rz = 0; rz < h; ++rz) {
+            if (cancel.load(std::memory_order_relaxed)) break;
+            fillRow(rz, row);
+            ++done;
+            if (progress && (done % reportEvery == 0 || done == h)) {
+                progress(static_cast<double>(done) / static_cast<double>(h), true, 0.0, 0.0);
+            }
+        }
+    } else {
+        std::atomic<int64_t> rowsDone{ 0 };
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
-    {
-        std::vector<uint8_t> row(static_cast<size_t>((w + 63) / 64 * 64) + 16);
+        {
+            std::vector<uint8_t> row(static_cast<size_t>((w + 63) / 64 * 64) + 16);
 #ifdef _OPENMP
 #pragma omp for schedule(dynamic, 8)
 #endif
-        for (int rz = 0; rz < h; ++rz) {
-            if (cancel.load(std::memory_order_relaxed)) continue;
-            const int z = static_cast<int>(opt.minZ) + rz;
-            uint64_t* dst = bmp.row(z);
-            if (javaFast) {
-                const uint64_t rowBase = javaRowBaseLocal(opt.worldSeed, static_cast<int32_t>(z));
-                fastjava::scanRowJava(rowBase, static_cast<int32_t>(opt.minX), w, dst);
-            } else {
-                if (opt.version == Version::Java) {
-                    SlimeEngine::fillSlimeRowJava(opt.worldSeed, z, static_cast<int>(opt.minX), w, row.data());
-                    for (int x = 0; x < w; ++x) {
-                        if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
-                    }
-                } else {
-                    SlimeEngine::fillSlimeRowBedrock(z, static_cast<int>(opt.minX), w, row.data());
-                    const int wprRow = (w + 63) / 64;
-#if defined(_M_X64) || defined(_M_IX86) || defined(__SSE2__)
-                    const __m128i zero = _mm_setzero_si128();
-                    for (int wi = 0; wi < wprRow; ++wi) {
-                        const int base = wi * 64;
-                        const int n = (std::min)(64, w - base);
-                        uint64_t acc = 0;
-                        for (int lane = 0; lane < 4; ++lane) {
-                            const __m128i v = _mm_loadu_si128(
-                                reinterpret_cast<const __m128i*>(row.data() + base + lane * 16));
-                            const uint32_t nonSlime =
-                                static_cast<uint32_t>(_mm_movemask_epi8(_mm_cmpeq_epi8(v, zero))) & 0xFFFFu;
-                            acc |= static_cast<uint64_t>(~nonSlime & 0xFFFFu) << (lane * 16);
-                        }
-                        if (n < 64) acc &= ((1ULL << n) - 1ULL);
-                        dst[wi] = acc;
-                    }
-#else
-                    for (int x = 0; x < w; ++x) {
-                        if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
-                    }
-#endif
+            for (int rz = 0; rz < h; ++rz) {
+                if (cancel.load(std::memory_order_relaxed)) continue;
+                fillRow(rz, row);
+                const int64_t done = rowsDone.fetch_add(1, std::memory_order_relaxed) + 1;
+                if (progress && (done % reportEvery == 0 || done == h)) {
+                    progress(static_cast<double>(done) / static_cast<double>(h), true, 0.0, 0.0);
                 }
-            }
-            const int64_t done = rowsDone.fetch_add(1, std::memory_order_relaxed) + 1;
-            if (progress && (done % reportEvery == 0 || done == h)) {
-                progress(static_cast<double>(done) / static_cast<double>(h), true, 0.0, 0.0);
             }
         }
     }

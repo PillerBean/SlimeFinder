@@ -51,6 +51,8 @@ struct Timed {
     double median = 0;
     size_t results = 0;
     int64_t total = 0;
+    double scanMs = 0.0;
+    double matchMs = 0.0;
     std::vector<slime::MatchResult> vec;
 };
 
@@ -73,6 +75,8 @@ Timed runOld(const slime::SearchOptions& input, int samples)
     r.median = t[t.size() / 2];
     r.results = last.results.size();
     r.total = last.totalFound;
+    r.scanMs = last.stats.scanMs;
+    r.matchMs = last.stats.matchMs;
     r.vec = last.results;
     return r;
 }
@@ -104,6 +108,8 @@ Timed runNew(const slime::SearchOptions& opt, int samples)
     r.median = t[t.size() / 2];
     r.results = last.results.size();
     r.total = last.totalFound;
+    r.scanMs = last.scan.ms;
+    r.matchMs = last.match.ms;
     r.vec = last.results;
     return r;
 }
@@ -114,8 +120,9 @@ void one(const char* name, slime::Version v, slime::Mode m, int w, int h, int th
     const Timed o = runOld(opt, samples);
     const Timed n = runNew(opt, samples);
     const bool ok = same(o.vec, n.vec) && o.total == n.total;
-    std::printf("%-22s t=%2d old=%7.2fms new=%7.2fms ratio=%5.2fx %s\n", name, threads, o.median,
-                n.median, n.median / o.median, ok ? "SAME" : "DIFF");
+    std::printf("%-22s t=%2d old=%7.2fms new=%7.2fms ratio=%5.2fx %s | old s/m %.2f/%.2f new s/m %.2f/%.2f\n",
+                name, threads, o.median, n.median, n.median / o.median, ok ? "SAME" : "DIFF",
+                o.scanMs, o.matchMs, n.scanMs, n.matchMs);
 }
 } // namespace
 
