@@ -67,7 +67,8 @@ Java density：
 新 CPU Materialize  2.22 ms
 ```
 
-新 CPU 图案/密度在 2048² 都已不低于旧 CPU（密度基本持平/略快）。
+新 CPU 图案在 2048² 已快于旧 CPU；密度在 8 线程约慢 10~13%，
+单线程约慢 17%，4096² 密度已反超。
 SearchTask feature flag 仍只开放 FusedGpu 和 Banded；CPU 路径还没有进入产品开关。
 
 ## 3. 怎么解读
@@ -94,7 +95,8 @@ Java density Fused       0.32×
 
 ```text
 Java pattern   新 CPU 已快于旧 CPU
-Java density   新 CPU 基本持平/略快
+Java density   多线程约慢 10%，单线程约慢 17%
+Java density 4096² 已反超
 Bedrock        基本持平
 ```
 
