@@ -1,5 +1,6 @@
 // 新框架 Phase 0 对拍：CpuDeterminer vs GpuDeterminer vs 单区块判定。
 #include "core/next/Bitmap.h"
+#include "core/next/Plan.h"
 #include "gpu/GpuScanAdapter.h"
 
 #include <atomic>

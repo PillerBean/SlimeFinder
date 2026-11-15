@@ -331,3 +331,152 @@ Java/Bedrock 2048²：CPU 与 GPU bitmap 完全一致
 基线：main @ d199e4e
 主分支：保持 3.13.7 测试版状态，正式版仍为 3.12.3
 ```
+
+## 8. 从主分支实际流程反推
+
+只看主分支真实入口和分支，不按理想分层想象。
+
+| 实际功能 | 入口/条件 | 实际行为 | 框架必须支持 |
+|---|---|---|---|
+| 普通图案/密度搜索 | `MainWindow::startSearch` → `SearchTask` → `engine.run` | 归一化严格算法；顶层 GPU 图案；否则 `runImpl` | SearchPlan；可选 GPU fused |
+| GPU 图案流式 | 顶层条件：AMD + 方向锁定 + 无缓存/构建 + 阈值 | 判定+匹配融合，直接入堆，不产位图 | `Matcher=FusedGpuPattern`, `Determiner=None` |
+| GPU 密度流式 | `runImpl` 内 `gpuMatchWanted` | 判定+窗口统计融合，只回传命中 | `FusedGpuDensity`，不要求 Bitmap |
+| 普通 Bedrock 缓存读取 | GUI 设置 `cacheBandLoader`；`SearchTask` 选择 `runBanded` | 按 band 懒加载缓存，halo，跨带合并 | `BandedPlan` 外层；内层 SearchPlan |
+| 缓存完整覆盖 | `cacheFillSkipped` | 跳过 GPU/判定，直接缓存位图 | `Determiner=Cache`, `allowGpu=false` |
+| 缓存构建 | 构建页/`buildMode=true` | 只判定+写缓存；不匹配；分段续跑；预算停止 | `CacheBuildPlan`，`Matcher=None`, `Collector=CountOnly` |
+| 最优候选 | `ignoreThreshold` | 按窗口史莱姆数降序，不走距离 TopN；大范围分块 | `Collector=DensityTopN`；Analytic/搜索混合 |
+| 最小密度 0 | `minDensity<=0` 且精确密度 | 解析求最近 N，不扫描全图 | `AnalyticPlan` |
+| 提前停止/智能范围 | `stopAtTarget` / `smartRange` | 按距离顺序、跨块剪枝、全局下界 | `Collector=DistanceTopN` + `PartitionPlan.cacheFirst/order` |
+| 大范围分块 | 位图字数超限/构建/缓存+提前停止 | 分块并发、halo、跨块剪枝、增量缓存合并 | `Partition=Chunked`；外层归并 |
+| 位图复用 | 同范围/种子/版本，无缓存，CPU精确 | 跳过判定，只跑匹配 | 可选 Bitmap artifact；不能强制所有计划 |
+| 环形/AFK | `runRingSearch` | 占用图/候选中心/环带覆盖，不是全图搜索 | `RingPlan` 独立；共享内核/取消，不塞进 SearchPlan |
+| 搜索估算 | `estimateSearch` | 采样估算，不执行完整搜索 | Planner 的只读估算接口 |
+| 进度/取消/统计 | 所有路径 | 阶段0~0.75/0.75~1；构建有 recorded/skipped/phase | `ProgressPlan` 显式化；`Stats` 公共合同 |
+
+### 8.1 反推出来的硬约束
+
+1. **不能把 Bitmap 作为强制边界**：GPU 图案/密度融合路径不产位图。
+2. **匹配不一定存在**：缓存构建只判定+写缓存。
+3. **判定不一定存在**：缓存命中、解析路径、GPU 融合可能不做独立判定。
+4. **结果排序不止一种**：距离 TopN、密度 TopN、仅计数。
+5. **缓存是副作用**：读/写/构建影响计划、预算、进度和停止条件，不能藏在 Determiner 里。
+6. **分块/分带是外层计划**：内层仍是 SearchPlan；不能把 halo/合并散在 matcher。
+7. **采样是稀疏工件**：`Algorithm::Sample` 不是完整位图 + 普通 matcher 的简单组合。
+8. **环形搜索是独立产品流程**：可以共享内核，但不能强行套全图搜索管线。
+9. **进度权重/阶段可配置**：普通、构建、分带、环形各不相同。
+10. **取消必须跨层生效**：band/chunk/GPU 派发/结果合并都要检查。
+
+## 9. 修正后的计划模型
+
+### 9.1 计划家族
+
+```text
+Job
+ └─ Planner
+     ├─ SearchPlan
+     │    ├─ Partition: Single / Chunked
+     │    ├─ Determiner: Cpu / Gpu / Cache / Sample / None
+     │    ├─ Matcher: CpuPattern / CpuDensity / FusedGpuPattern / FusedGpuDensity / None
+     │    ├─ Collector: DistanceTopN / DensityTopN / CountOnly
+     │    └─ CacheSideEffect: None / ReadOnly / Write
+     ├─ BandedPlan
+     │    └─ band iterator + halo + child SearchPlan + merge
+     ├─ CacheBuildPlan
+     │    └─ determiner + cache writer + count-only collector
+     ├─ AnalyticPlan
+     │    └─ zero-threshold / best-density analytical result
+     └─ RingPlan
+          └─ coverage/annulus, separate executor
+```
+
+`src/core/next/Plan.h` 已把上述计划字段落成数据结构。
+
+### 9.2 统一合同，不统一数据形状
+
+统一的是：
+
+```text
+Cancel
+ProgressPlan
+Stats
+ResultCollector policy
+Cache request/side-effect
+```
+
+不统一的是：
+
+```text
+Bitmap         仅 Materialize 计划
+StreamingHits  仅 Fused 计划
+AnalyticResult 仅解析计划
+```
+
+强制统一数据形状会牺牲融合路径性能。
+
+### 9.3 Planner 的输入
+
+Planner 不是“再写一个 if 大山”，而是一个**只读能力评估**：
+
+```text
+硬件能力：CPU 核数/GPU 可用/设备厂商
+任务形状：版本、模式、算法、范围、目标数
+缓存状态：覆盖/可读/可写/预算
+资源约束：线程/CPU上限/内存预算
+语义开关：停止/智能范围/最优候选/构建
+```
+
+输出 `ExecutionPlan`，执行器不再判断“是否 GPU/是否分块”。
+
+### 9.4 构建模式为什么必须单独成计划
+
+构建模式与普通搜索的差异不是“匹配器换一个”：
+
+- 不排序、不返回结果；
+- 只写缓存，且达到预算即停止；
+- 分段续跑/跳过已覆盖块；
+- 进度是 recorded/skipped/phase，不是 scan/match；
+- 必须强制分块；
+- 普通搜索不允许写缓存。
+
+把这些塞进 SearchPlan 的 `Matcher=None` 可以表达一部分，但预算/续跑/进度需要
+`CacheBuildPlan` 自己的生命周期。
+
+### 9.5 环形搜索为什么不能塞进 SearchPlan
+
+环形搜索的核心是：
+
+- 占用图/候选中心；
+- 环带覆盖统计；
+- AFK 点排序/过滤；
+- 不是“整幅位图 + 图案/密度窗口”。
+
+它可以复用判定内核、取消、进度、缓存，但应作为 `RingPlan` 独立编排。
+
+### 9.6 修正后的迁移顺序
+
+```text
+Phase 0  Bitmap + Determiner 原型/对拍                 已完成
+Phase 1  Plan.h + Collector 策略 + 只读 Planner         当前
+Phase 2  Materialize SearchPlan（CPU 经典/分块）对拍
+Phase 3  FusedGpuPattern/FusedGpuDensity 计划对拍
+Phase 4  BandedPlan / CacheBuildPlan / AnalyticPlan / RingPlan
+Phase 5  功能开关切换 + 旧 runImpl 回退适配器
+```
+
+Phase 1 不直接替换产品路径，只建立计划数据和结果合同。
+
+## 10. 当前是否“最优”
+
+仍不能保证。
+
+但修正后的框架至少满足：
+
+- 融合 GPU 路径不被强制 Bitmap；
+- 缓存构建/分带/解析/环形都有明确计划位置；
+- 结果排序和缓存副作用不再藏进 Matching 热循环；
+- 进度/取消/统计有公共合同；
+- 可以先按计划逐个对拍、逐个切换，而不是一次性重写。
+
+这比“把所有东西塞进统一的 Determiner→Bitmap→Matcher”更接近实际产品约束，
+但仍需要用 Phase 2~5 的基准和回归来证明。
+
