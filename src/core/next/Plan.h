@@ -105,4 +105,22 @@ struct Job {
     std::string tag;
 };
 
+struct MachineCaps {
+    bool gpuAvailable = false;
+    bool gpuIsAmd = false;
+    int64_t patternGpuMinChunks = int64_t{ 16 } << 10;
+    int64_t densityGpuMinChunks = int64_t{ 64 } << 10;
+    int64_t classicChunkLimit = int64_t{ 64 } << 20; // 经典位图区块上限（可调）
+};
+
+struct PlannerInput {
+    slime::SearchOptions options;
+    MachineCaps caps;
+    bool cacheCovers = false; // 当前范围是否已有完整缓存位图
+};
+
+// 只读 Planner：把 SearchOptions + 能力/缓存状态变成 ExecutionPlan。
+// 不访问 GPU、不扫位图、不产生结果。
+ExecutionPlan makeExecutionPlan(const PlannerInput& input);
+
 } // namespace slime::next
