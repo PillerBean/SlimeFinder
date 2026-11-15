@@ -371,6 +371,26 @@ CpuDeterminer -> Bitmap -> CpuExactMatcher -> ResultCollector
 
 详见 `docs/refactor/phase2_materialize_parity.md`。
 
+Phase 3 已完成的最小切片：
+
+```text
+runChunked：分块、halo、全局 rank、Collector 合并
+runBanded ：完整 band 缓存填充 / 否则整带扫描
+```
+
+详见 `docs/refactor/phase3_chunked.md`、`phase3_banded.md`。
+
+Phase 4 已完成的最小切片：
+
+```text
+FusedGpuPattern / FusedGpuDensity
+  - 直接调用 GpuScan 流式匹配
+  - 不经过 Bitmap
+  - 与旧 CPU 精确搜索对拍一致
+```
+
+详见 `docs/refactor/phase4_fused.md`。
+
 当前仍不接入产品、不打包。
 
 

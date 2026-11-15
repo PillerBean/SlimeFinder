@@ -27,6 +27,11 @@ public:
     bool runChunked(const slime::SearchOptions& opt, int64_t rowsPerChunk,
                     const std::atomic<bool>& cancel, MaterializeResult& out, std::string* err,
                     const slime::ProgressFn& progress = slime::ProgressFn()) const;
+
+    // 按 cacheBandLoader 分带：带内完整缓存直接用位图填充，否则回退 CPU 判定。
+    bool runBanded(const slime::SearchOptions& opt, const std::atomic<bool>& cancel,
+                   MaterializeResult& out, std::string* err,
+                   const slime::ProgressFn& progress = slime::ProgressFn()) const;
 };
 
 } // namespace slime::next
