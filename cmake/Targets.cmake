@@ -406,6 +406,16 @@ if(MSVC)
     target_compile_options(slime_next_phase5_feature_flag PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
 
+add_executable(slime_next_phase6_large
+    tools/refactor/phase6_large_perf.cpp
+)
+target_include_directories(slime_next_phase6_large PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_next_phase6_large PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_next_phase6_large PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
+
 
 
 

@@ -73,6 +73,37 @@ int main()
                 continue;
             }
 
+            // 部分缓存：只覆盖中央子区域，验证 cache lookup + 未覆盖处标量回退。
+            {
+                slime::SearchOptions subOpt = opt;
+                subOpt.minX = -120;
+                subOpt.maxX = 120;
+                subOpt.minZ = -120;
+                subOpt.maxZ = 120;
+                slime::next::Bitmap subBmp;
+                slime::next::ScanStats subScan;
+                if (cd.run(subOpt, cancel, subBmp, subScan, &err)) {
+                    auto partialCache = std::make_shared<slime::CacheManager>();
+                    const slime::Rect subRect{ subOpt.minX, subOpt.maxX, subOpt.minZ, subOpt.maxZ };
+                    if (partialCache->addPackedWords(subRect, subBmp.words().data(), subBmp.words().size())) {
+                        slime::next::MaterializeResult partialOut;
+                        slime::next::MaterializePipeline pipeline;
+                        slime::SearchOptions partial = opt;
+                        partial.useCache = true;
+                        partial.cacheBandSize = 64;
+                        partial.cacheBandLoader = [partialCache](const slime::Rect&) { return partialCache; };
+                        const bool partialOk = pipeline.runBanded(partial, cancel, partialOut, &err);
+                        const bool samePartial = oldOut.ok && partialOk && same(oldOut.results, partialOut.results) &&
+                                                 oldOut.totalFound == partialOut.totalFound;
+                        std::printf("%-8s %-8s band= 64 partial=%s backend=%s\n",
+                                    version == slime::Version::Java ? "Java" : "Bedrock",
+                                    mode == slime::Mode::Strict ? "pattern" : "density",
+                                    samePartial ? "SAME" : "DIFF", partialOut.scan.backend.c_str());
+                        if (!samePartial) ++failures;
+                    }
+                }
+            }
+
             for (int band : { 64, 100 }) {
                 slime::next::MaterializeResult cachedOut, plainOut;
                 slime::next::MaterializePipeline pipeline;

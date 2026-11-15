@@ -14,19 +14,20 @@ MaterializePipeline::runBanded
 行为：
 
 ```text
-按锚点 z 行分带
-每个 band 通过 cacheBandLoader 请求 [minX,maxX] × [a0,a1+height-1] 的缓存
+按锚点 x/z 分成 2D tile
+每个 tile 通过 cacheBandLoader 请求自己的数据矩形
 若缓存完整覆盖该数据矩形：
     直接用 CacheManager 位图填充 Bitmap
+否则若缓存有部分数据：
+    已覆盖点用 cache.lookup，未覆盖点用标量判定补齐
 否则：
-    CpuDeterminer 扫描整个数据矩形（不用部分缓存）
-匹配只处理本 band 拥有的锚点行
+    CpuDeterminer 扫描整个数据矩形
+匹配只处理本 tile 拥有的锚点行/列
 结果合并到全局 Collector
 rank 仍使用全局锚点原点/行数
 ```
 
-重要限制：当前是**完整 band 缓存才用缓存**；部分缓存会保守地整带重扫，
-不会错用缺失位，但还没有做 partial-cache 混合填充。
+当前部分缓存使用逐点 `lookup` + 标量补齐，正确优先，不是最终性能实现。
 
 ## 2. 对拍
 
@@ -39,28 +40,31 @@ threads=1
 bandRows=64 / 100
 ```
 
-缓存构造：先用新 `CpuDeterminer` 生成整幅 Bitmap，再 `CacheManager::addPackedWords` 建完整缓存。
+缓存构造：
 
-| case | band | 有缓存 | 无缓存 | 旧CPU |
-|---|---:|---|---|---|
-| Java pattern | 64 | SAME | SAME | SAME |
-| Java pattern | 100 | SAME | SAME | SAME |
-| Java density | 64 | SAME | SAME | SAME |
-| Java density | 100 | SAME | SAME | SAME |
-| Bedrock pattern | 64 | SAME | SAME | SAME |
-| Bedrock pattern | 100 | SAME | SAME | SAME |
-| Bedrock density | 64 | SAME | SAME | SAME |
-| Bedrock density | 100 | SAME | SAME | SAME |
+- 完整缓存：整幅 Bitmap → `CacheManager::addPackedWords`；
+- 部分缓存：只建中央 [-120,120]×[-120,120] 的子区域。
 
-有缓存时统计显示 `backend=cache+banded`；无缓存为 `cpu-banded`。
+| case | band | 完整缓存 | 部分缓存 | 无缓存 | 旧CPU |
+|---|---:|---|---|---|---|
+| Java pattern | 64 | SAME | SAME | SAME | SAME |
+| Java pattern | 100 | SAME | — | SAME | SAME |
+| Java density | 64 | SAME | SAME | SAME | SAME |
+| Java density | 100 | SAME | — | SAME | SAME |
+| Bedrock pattern | 64 | SAME | SAME | SAME | SAME |
+| Bedrock pattern | 100 | SAME | — | SAME | SAME |
+| Bedrock density | 64 | SAME | SAME | SAME | SAME |
+| Bedrock density | 100 | SAME | — | SAME | SAME |
+
+有完整缓存时统计显示 `backend=cache+banded`；
+部分缓存为 `cache-partial+banded`；无缓存为 `cpu-banded`。
 
 ## 3. 当前限制
 
-- 部分缓存尚未混合填充；
-- 分带是 z 方向，不是旧版 2D tile；
-- 分块/分带目前串行；
+- 部分缓存逐点补齐，未做按 range 的快速混合填充；
+- tile 目前串行；
 - 缓存写入/构建未接入；
-- 进度是 band 级粗粒度；
+- 进度是 tile 级粗粒度；
 - 未接 GPU fused。
 
 ## 4. 下一步

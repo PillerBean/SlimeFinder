@@ -126,6 +126,17 @@ Collector ALL PASS
 
 当前只完成第 1 项的核心部分；**还不满足全量切换条件**。
 
+补充（Phase 6）：
+
+```text
+Banded 2D tile / 部分缓存：已完成并 SAME
+≥1M 区块大范围：结果 SAME
+性能：Java pattern 2048 新/旧 = 1.34×，未达到 ≤1.05× 门槛
+```
+
+详见 `phase6_large_perf.md`。因此仍不切换默认。
+
+
 ## 5. 明确回退
 
 ```text

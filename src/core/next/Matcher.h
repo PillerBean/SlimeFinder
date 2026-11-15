@@ -15,11 +15,14 @@ struct MatchStats {
     int64_t totalFound = 0;
 };
 
-// 分块时只允许 Matcher 处理本块拥有的锚点行，但 rank 必须保持全局口径。
+// 分块时只允许 Matcher 处理本块拥有的锚点行/列，但 rank 必须保持全局口径。
 struct MatchLimits {
     bool zLimited = false;
     int64_t azMin = 0;
     int64_t azMax = -1;
+    bool xLimited = false;
+    int64_t axMin = 0;
+    int64_t axMax = -1;
     int64_t rankXMin = 0;
     int64_t rankZMin = 0;
     int64_t rankAzCount = 0;

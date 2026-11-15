@@ -97,6 +97,13 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
                 stats.ms = 0.0; stats.windows = 0; stats.totalFound = 0; return true;
             }
         }
+        if (limits.xLimited) {
+            d.axMin = (std::max)(d.axMin, limits.axMin);
+            d.axMax = (std::min)(d.axMax, limits.axMax);
+            if (d.axMax < d.axMin) {
+                stats.ms = 0.0; stats.windows = 0; stats.totalFound = 0; return true;
+            }
+        }
         const int64_t nAz = d.azMax - d.azMin + 1;
         const int64_t rankXMin = limits.zLimited ? limits.rankXMin : d.axMin;
         const int64_t rankZMin = limits.zLimited ? limits.rankZMin : d.azMin;
@@ -162,6 +169,16 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
             d.azMin = (std::max)(d.azMin, limits.azMin);
             d.azMax = (std::min)(d.azMax, limits.azMax);
             if (d.azMax < d.azMin) {
+                stats.ms = 0.0;
+                stats.windows = 0;
+                stats.totalFound = 0;
+                return true;
+            }
+        }
+        if (limits.xLimited) {
+            d.axMin = (std::max)(d.axMin, limits.axMin);
+            d.axMax = (std::min)(d.axMax, limits.axMax);
+            if (d.axMax < d.axMin) {
                 stats.ms = 0.0;
                 stats.windows = 0;
                 stats.totalFound = 0;
