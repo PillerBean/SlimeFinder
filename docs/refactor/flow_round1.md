@@ -167,7 +167,51 @@ slime_tests.exe --unit                 通过
 GUI 自检（GPU off）                    exit=0
 ```
 
-## 6. 本轮不包含
+## 6. 速度回归
+
+工具：
+
+```text
+tools/bench/flow_bench.cpp
+build/slime_flow_bench.exe
+```
+
+对比对象：
+
+```text
+legacy = 旧 SearchTask 等价线程体（std::thread + SlimeEngine）
+flow   = 新 SearchTask → SearchJob → SlimeEngine
+```
+
+两者使用同一个引擎、同一份搜索参数、同一台机器；15 个样本取中位数，
+并按样本奇偶交替执行顺序，避免缓存/预热总是偏向 flow。
+
+结果（CPU，GPU 关闭）：
+
+| case | legacy | flow | ratio |
+|---|---:|---:|---:|
+| Java pattern 2048 | 0.79 ms | 0.76 ms | 0.96× |
+| Java density 2048 | 1.18 ms | 1.13 ms | 0.96× |
+| Bedrock density 1024 | 0.79 ms | 0.75 ms | 0.95× |
+| Bedrock density 2048 | 1.20 ms | 1.21 ms | 1.01× |
+
+结论：
+
+```text
+第 1 轮是控制流/正确性架构，不是算力优化
+端到端差异在 ±5% 噪声内，没有可测的流程退化
+```
+
+取消：
+
+```text
+启动 30ms 后 cancel()
+cancel() 调用耗时 0.6~1.0 us
+从 cancel 到 Finished 0.26~0.37ms
+status=Cancelled, results 清空
+```
+
+## 7. 本轮不包含
 
 ```text
 CacheSnapshot / 不可变缓存视图
@@ -180,7 +224,7 @@ Banded 全局早停
 
 这些属于第 2 轮，等第 1 轮验收后再开始。
 
-## 7. 已知边界
+## 8. 已知边界
 
 - 引擎内部仍使用旧的 `ProgressFn` 发布，SearchJob 在外层做契约收敛；
   后续可把引擎各路径改为直接发 `SearchProgress`。
