@@ -4989,6 +4989,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     struct BandInfo {
         int64_t cx0 = 0, cx1 = 0, cz0 = 0, cz1 = 0;
         bool cached = false;
+        double distance = 0.0;
     };
     std::vector<BandInfo> bands;
     bands.reserve(static_cast<size_t>(totalBands));
@@ -5003,14 +5004,25 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
                 b.cached = optIn.cacheBandMayCover(Rect{ static_cast<int>(b.cx0), static_cast<int>(b.cx1),
                                                           static_cast<int>(b.cz0), static_cast<int>(b.cz1) });
             }
+            b.distance = distToRect(static_cast<double>(optIn.startX), static_cast<double>(optIn.startZ),
+                                    static_cast<double>(b.cx0), static_cast<double>(b.cx1),
+                                    static_cast<double>(b.cz0), static_cast<double>(b.cz1));
             bands.push_back(b);
         }
     }
     // 缓存优先：先处理有缓存的 band，尽早命中并减少无效计算；最终仍按原排序合并结果。
-    std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
-        return a.cached && !b.cached;
-    });
-    for (const BandInfo& band : bands) {
+    const bool spatialStop = optIn.stopAtTarget || optIn.smartRange;
+    if (spatialStop) {
+        std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
+            return a.distance < b.distance;
+        });
+    } else {
+        std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
+            return a.cached && !b.cached;
+        });
+    }
+    for (size_t bandPos = 0; bandPos < bands.size(); ++bandPos) {
+        const BandInfo& band = bands[bandPos];
         const int64_t cx0 = band.cx0;
         const int64_t cx1 = band.cx1;
         const int64_t cz0 = band.cz0;
@@ -5108,6 +5120,24 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
                 auto it = merged.find(key);
                 if (it == merged.end() || better(r, it->second)) merged[key] = r;
             }
+
+            if (optIn.stopAtTarget && spatialStop && !byDensity && optIn.targetCount > 0 &&
+                static_cast<int64_t>(merged.size()) >= optIn.targetCount && bandPos + 1 < bands.size()) {
+                std::vector<MatchResult> top;
+                top.reserve(merged.size());
+                for (const auto& kv : merged) top.push_back(kv.second);
+                std::sort(top.begin(), top.end(), better);
+                top.resize(static_cast<size_t>(optIn.targetCount));
+                const double worst = 0.5 * std::sqrt(static_cast<double>(dist2(top.back())));
+                const int winMax = (optIn.mode == Mode::Density)
+                                       ? (std::max)(1, optIn.gridSize)
+                                       : (std::max)(optIn.pattern.rows(), optIn.pattern.cols());
+                const double margin = winMax * 0.5 + 2.0;
+                if (worst + margin <= bands[bandPos + 1].distance) {
+                    stoppedEarly = true;
+                    break;
+                }
+            }
         }
         ++bandIndex;
     }
@@ -5152,6 +5182,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     out.stats.totalMs = totalMs + cacheLoadMs;
     out.chunksPruned = chunksPruned;
     out.chunkedPath = true;
+    if (progress) progress(1.0, false, 0.0, 0.0);
 }
 } // namespace slime
 

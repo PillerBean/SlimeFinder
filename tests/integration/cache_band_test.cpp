@@ -1,4 +1,4 @@
-﻿#include "core/SlimeEngine.h"
+#include "core/SlimeEngine.h"
 #include "core/CacheManager.h"
 #include "cache/CacheStore.h"
 
@@ -114,6 +114,29 @@ int main()
             return 1;
         }
         std::printf("cached-bedrock OK results=%zu\n", plain.results.size());
+
+        // v3.14.1: global early stop must return the same nearest-N as a full scan.
+        slime::SearchOptions stopOpt = cached;
+        stopOpt.minX = -512;
+        stopOpt.maxX = 511;
+        stopOpt.minZ = -512;
+        stopOpt.maxZ = 511;
+        stopOpt.cacheBandSize = 64;
+        stopOpt.targetCount = 3;
+        stopOpt.stopAtTarget = true;
+        slime::SearchOptions fullOpt = stopOpt;
+        fullOpt.stopAtTarget = false;
+        slime::SearchOutcome full;
+        engine.run(fullOpt, std::atomic<bool>{}, {}, full);
+        slime::SearchOutcome early;
+        engine.runBanded(stopOpt, std::atomic<bool>{}, {}, early);
+        if (!full.ok || !early.ok || !sameResults(full.results, early.results)) {
+            std::printf("banded-stop RESULT MISMATCH full=%zu early=%zu stopped=%d\n",
+                        full.results.size(), early.results.size(), early.stoppedEarly ? 1 : 0);
+            return 1;
+        }
+        std::printf("banded-stop OK results=%zu stoppedEarly=%d scanned=%lld\n", early.results.size(),
+                    early.stoppedEarly ? 1 : 0, static_cast<long long>(early.stats.scannedChunks));
     }
     // 真实 CacheStore：只加载与 band 相交的 pack，结果应与无缓存一致。
     if (const char* root = std::getenv("SLIME_TEST_CACHE")) {

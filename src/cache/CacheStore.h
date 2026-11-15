@@ -13,7 +13,10 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <list>
+#include <memory>
 #include <mutex>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -93,6 +96,15 @@ private:
     std::filesystem::path m_root;
     mutable std::recursive_mutex m_mutex;
     std::vector<CachePackEntry> m_packs;
+
+    // v3.14.1: decoded-pack LRU. Adjacent bands frequently intersect the same 8192 pack;
+    // decompressing it again dominated banded cache preparation.
+    void packCacheClearLocked() noexcept;
+    void packCacheTouchLocked(const std::string& file) const;
+    mutable std::list<std::string> m_packLru;
+    mutable std::unordered_map<std::string, std::shared_ptr<std::vector<uint8_t>>> m_packCache;
+    mutable int64_t m_packCacheBytes = 0;
+    mutable int64_t m_packCacheLimit = -1;
 };
 
 } // namespace slime::cache
