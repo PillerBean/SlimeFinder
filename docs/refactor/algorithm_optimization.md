@@ -122,6 +122,7 @@ Phase2 Bedrock pattern 512²：
 
 ```text
 nAz <= 1024：blocks = 线程数
+线程数 <= 4：blocks = 线程数 × 4
 1024 < nAz <= 4096：blocks = 线程数 × 2
 nAz > 4096：blocks = 线程数 × 4
 ```
@@ -139,7 +140,7 @@ Phase16 CPU 扩展性（新/旧）：
 
 ```text
 Java pattern 2048  t=1 0.91×  t=2 0.88×  t=4 0.82×  t=8 0.61×
-Java density 2048  t=1 1.00×  t=2 1.04×  t=4 1.24×  t=8 0.99×  t=12 1.15×
+Java density 2048  t=1 1.00~1.06×  t=2 0.98~1.04×  t=4 1.11×  t=8 0.99~1.04×  t=12 1.15×
 Java density 4096  t=8 0.94×
 Bedrock pattern 1024 t=8 0.43×
 Bedrock density 1024 t=8 0.48×
@@ -149,8 +150,8 @@ Bedrock density 1024 t=8 0.48×
 
 ```text
 图案路径全线程段快于旧 CPU
-密度 1/2/8 线程基本持平或略快
-密度 4/12 线程仍慢约 15~24%
+密度 1/2/4/8 线程基本持平或略快
+密度 12 线程仍慢约 15%（SMT/内存带宽边界）
 密度 4096 已略快
 ```
 

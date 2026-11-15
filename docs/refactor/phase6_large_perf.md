@@ -23,6 +23,8 @@ Bedrock density 1500×1500（强制 Chunked，无 GPU）
 |---|---|---:|---:|---:|---|
 | Java-pattern-2048 | FusedGpuPattern | 2.9 ms | 1.7 ms | 0.59× | SAME |
 | Java-density-2048 | FusedGpuDensity | 2.3 ms | 0.7 ms | 0.32× | SAME |
+| Java-pattern-4096 | FusedGpuPattern | 5.1 ms | 1.4 ms | 0.27× | SAME |
+| Java-density-4096 | FusedGpuDensity | 6.6 ms | 1.6 ms | 0.25× | SAME |
 | Bedrock-density-1024 | FusedGpuDensity | 6.0 ms | 1.6 ms | 0.27× | SAME |
 | Bedrock-density-chunk | Chunked | 40.3 ms | 9.9 ms | 0.24× | SAME |
 

@@ -239,7 +239,7 @@ bool CpuExactMatcher::run(const Bitmap& bitmap, const slime::SearchOptions& opt,
         const int64_t threads = (std::max)(int64_t{ 1 }, static_cast<int64_t>(omp_get_max_threads()));
         const int64_t wantedBlocks = nAz <= 1024
                                          ? threads
-                                         : (nAz <= 4096 ? threads * 2 : threads * 4);
+                                         : (threads <= 4 ? threads * 4 : (nAz <= 4096 ? threads * 2 : threads * 4));
         const int64_t blocks = (std::min)(nAz, wantedBlocks);
 #else
         const int64_t blocks = 1;
