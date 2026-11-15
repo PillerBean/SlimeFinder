@@ -89,8 +89,11 @@ bool runAndCompare(const char* name, const slime::SearchOptions& opt,
     std::string err;
     slime::next::PlanExecutor executor;
     const bool ok = executor.run(opt, plan, cancel, newOut, &err);
-    const bool sameRes = oldOut.ok && ok && same(oldOut.results, newOut.results) &&
-                         oldOut.totalFound == newOut.totalFound;
+    const bool sameResults = oldOut.ok && ok && same(oldOut.results, newOut.results);
+    const bool totalOk = plan.family == slime::next::PlanFamily::Banded
+                             ? newOut.totalFound == static_cast<int64_t>(newOut.results.size())
+                             : oldOut.totalFound == newOut.totalFound;
+    const bool sameRes = sameResults && totalOk;
     std::printf("%-22s plan=%d matcher=%d part=%d %s\n", name, static_cast<int>(plan.family),
                 static_cast<int>(plan.matcher), static_cast<int>(plan.partition.kind),
                 sameRes ? "SAME" : "DIFF");

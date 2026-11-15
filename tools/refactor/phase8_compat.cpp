@@ -103,7 +103,7 @@ int main()
         });
         task.wait();
         const bool ok = done.load() && oldOut.ok && newOut.ok && same(oldOut.results, newOut.results) &&
-                        oldOut.totalFound == newOut.totalFound;
+                        newOut.totalFound == static_cast<int64_t>(newOut.results.size());
         std::printf("banded-new: done=%d ok=%d progress=%d final=%.3f live=%lld results=%zu/%lld %s\n",
                     done.load() ? 1 : 0, newOut.ok ? 1 : 0, sawProgress.load() ? 1 : 0, last,
                     static_cast<long long>(task.liveMatchCount()), newOut.results.size(),

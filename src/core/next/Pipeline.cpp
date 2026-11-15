@@ -355,7 +355,8 @@ bool MaterializePipeline::runBanded(const slime::SearchOptions& opt, const std::
     }
 
     out.results = all.results();
-    out.totalFound = all.totalFound();
+    // 与旧 runBanded 保持一致：tile 边界去重后，totalFound 按最终显示结果数报告。
+    out.totalFound = static_cast<int64_t>(out.results.size());
     out.scan = scanTotal;
     out.match = matchTotal;
     out.cancelled = false;

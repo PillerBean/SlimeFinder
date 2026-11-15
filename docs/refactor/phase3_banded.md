@@ -67,6 +67,15 @@ bandRows=64 / 100
 有完整缓存时统计显示 `backend=cache+banded`；
 部分缓存为 `cache-partial+banded`；无缓存为 `cpu-banded`。
 
+Banded 的 `totalFound` 与旧 `runBanded` 保持一致：
+
+```text
+tile 边界去重后，totalFound = 最终显示结果数（results.size()）
+```
+
+因此 target=50 且命中很多时，`totalFound` 报告 50，而不是原始窗口数。
+普通 `run`/`runChunked` 仍报告原始命中数。
+
 ## 3. 当前限制
 
 - 部分缓存逐点补齐，未做按 range 的快速混合填充；

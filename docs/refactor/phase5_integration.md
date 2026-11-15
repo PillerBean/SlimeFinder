@@ -162,6 +162,18 @@ Fused 常见范围细粒度进度/取消：仍未覆盖
 
 详见 `phase8_compat.md`。
 
+补充（Phase 9）：
+
+```text
+Banded 完整缓存 1024²：
+  旧 runBanded 20.49ms
+  新 runBanded 10.02ms
+  ratio 0.49×，结果 SAME
+Banded totalFound 已对齐旧语义（最终结果数）
+```
+
+详见 `phase9_banded_perf.md`。
+
 
 ## 5. 明确回退
 

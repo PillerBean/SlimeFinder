@@ -12,8 +12,8 @@ done=1
 ok=1
 progress=1
 final=1.000
-liveMatches=203
-results=20 / totalFound=203
+liveMatches=20
+results=20 / totalFound=20
 SAME
 ```
 
@@ -21,7 +21,8 @@ SAME
 
 - SearchTask 能走新的 Banded 计划；
 - 进度回调至少触发一次并最终到 1.0；
-- liveMatches 在完成后与 totalFound 一致；
+- liveMatches 在完成后与 `totalFound` 一致；
+- Banded 的 totalFound 按旧 `runBanded` 语义等于最终结果数；
 - 结果与旧 CPU 无缓存路径一致。
 
 ## 2. 完整缓存覆盖回退

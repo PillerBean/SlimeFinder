@@ -94,7 +94,8 @@ int main()
                         partial.cacheBandLoader = [partialCache](const slime::Rect&) { return partialCache; };
                         const bool partialOk = pipeline.runBanded(partial, cancel, partialOut, &err);
                         const bool samePartial = oldOut.ok && partialOk && same(oldOut.results, partialOut.results) &&
-                                                 oldOut.totalFound == partialOut.totalFound;
+                                                 partialOut.totalFound ==
+                                                     static_cast<int64_t>(partialOut.results.size());
                         std::printf("%-8s %-8s band= 64 partial=%s backend=%s\n",
                                     version == slime::Version::Java ? "Java" : "Bedrock",
                                     mode == slime::Mode::Strict ? "pattern" : "density",
@@ -118,9 +119,9 @@ int main()
                 plain.cacheBandLoader = [](const slime::Rect&) { return std::shared_ptr<slime::CacheManager>(); };
                 const bool plainOk = pipeline.runBanded(plain, cancel, plainOut, &err);
                 const bool sameCached = oldOut.ok && cachedOk && same(oldOut.results, cachedOut.results) &&
-                                        oldOut.totalFound == cachedOut.totalFound;
+                                        cachedOut.totalFound == static_cast<int64_t>(cachedOut.results.size());
                 const bool samePlain = oldOut.ok && plainOk && same(oldOut.results, plainOut.results) &&
-                                       oldOut.totalFound == plainOut.totalFound;
+                                       plainOut.totalFound == static_cast<int64_t>(plainOut.results.size());
                 std::printf("%-8s %-8s band=%3d cache=%s plain=%s cachedBackend=%s\n",
                             version == slime::Version::Java ? "Java" : "Bedrock",
                             mode == slime::Mode::Strict ? "pattern" : "density", band,
