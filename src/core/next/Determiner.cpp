@@ -8,6 +8,10 @@
 #include <chrono>
 #include <vector>
 
+#if defined(_M_X64) || defined(_M_IX86) || defined(__SSE2__)
+#include <emmintrin.h>
+#endif
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -54,7 +58,7 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
 #pragma omp parallel
 #endif
     {
-        std::vector<uint8_t> row(static_cast<size_t>(w));
+        std::vector<uint8_t> row(static_cast<size_t>((w + 63) / 64 * 64) + 16);
 #ifdef _OPENMP
 #pragma omp for schedule(dynamic, 8)
 #endif
@@ -68,11 +72,33 @@ bool CpuDeterminer::run(const slime::SearchOptions& opt, const std::atomic<bool>
             } else {
                 if (opt.version == Version::Java) {
                     SlimeEngine::fillSlimeRowJava(opt.worldSeed, z, static_cast<int>(opt.minX), w, row.data());
+                    for (int x = 0; x < w; ++x) {
+                        if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+                    }
                 } else {
                     SlimeEngine::fillSlimeRowBedrock(z, static_cast<int>(opt.minX), w, row.data());
-                }
-                for (int x = 0; x < w; ++x) {
-                    if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+                    const int wprRow = (w + 63) / 64;
+#if defined(_M_X64) || defined(_M_IX86) || defined(__SSE2__)
+                    const __m128i zero = _mm_setzero_si128();
+                    for (int wi = 0; wi < wprRow; ++wi) {
+                        const int base = wi * 64;
+                        const int n = (std::min)(64, w - base);
+                        uint64_t acc = 0;
+                        for (int lane = 0; lane < 4; ++lane) {
+                            const __m128i v = _mm_loadu_si128(
+                                reinterpret_cast<const __m128i*>(row.data() + base + lane * 16));
+                            const uint32_t nonSlime =
+                                static_cast<uint32_t>(_mm_movemask_epi8(_mm_cmpeq_epi8(v, zero))) & 0xFFFFu;
+                            acc |= static_cast<uint64_t>(~nonSlime & 0xFFFFu) << (lane * 16);
+                        }
+                        if (n < 64) acc &= ((1ULL << n) - 1ULL);
+                        dst[wi] = acc;
+                    }
+#else
+                    for (int x = 0; x < w; ++x) {
+                        if (row[static_cast<size_t>(x)]) dst[x >> 6] |= 1ULL << (x & 63);
+                    }
+#endif
                 }
             }
             const int64_t done = rowsDone.fetch_add(1, std::memory_order_relaxed) + 1;

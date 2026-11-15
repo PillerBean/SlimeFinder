@@ -97,7 +97,45 @@ densityHitMaskAvx2 只枚举命中
 ```
 
 
-## 4. 当前 CPU 状态
+## 4. Bedrock 位图打包
+
+Bedrock 行扫描仍然由 `bedrockSlimeScan` 生成 0/1 字节；
+打包阶段改为 SSE2：
+
+```text
+16 bytes -> _mm_cmpeq_epi8 / _mm_movemask_epi8 -> 16 bits
+4 次拼成一个 64 位字
+```
+
+Phase2 Bedrock pattern 512²：
+
+```text
+旧 CPU 4.35 ms
+新 CPU 3.96 ms
+```
+
+尾部读取按 `ceil(w/64)*64+16` 分配，避免非 64 对齐宽度的越界读。
+
+## 5. 密度分块数自适应
+
+小范围使用较少 block，避免每块重复初始化 g 行：
+
+```text
+nAz <= 1024：blocks = 线程数
+否则：blocks = 线程数 × 4
+```
+
+Phase2 Java density 512²：
+
+```text
+新 CPU 0.80 ms -> 0.48 ms
+旧 CPU 0.43~0.49 ms
+```
+
+大范围保留更多 block 以平衡负载。
+
+## 6. 当前 CPU 状态
+
 
 | 场景 | 旧 CPU | 新 CPU | 状态 |
 |---|---:|---:|---|
@@ -109,7 +147,7 @@ densityHitMaskAvx2 只枚举命中
 CPU 图案和密度在 2048² 都不再落后于旧 CPU。
 
 
-## 5. 验证
+## 7. 验证
 
 ```text
 PHASE2 ALL PASS
@@ -127,13 +165,13 @@ PHASE14-PATTERN-VARIANTS ALL PASS
 PARITY ALL PASS
 ```
 
-## 6. 剩余算法工作
+## 8. 剩余算法工作
 
 ```text
-Bedrock 行扫描的位图打包
-Java density 最后约 10%
-CPU 大范围/低线程性能
-GPU density 2-band 固定开销
+Java density 小范围/多线程余量
+CPU 大范围/低线程扩展
+GPU density 2-band 固定开销与 totalFound
+GPU 图案/密度同路径对比
 ```
 
 流程层保持冻结，不新增 Hybrid 实现。
