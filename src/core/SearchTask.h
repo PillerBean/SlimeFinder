@@ -14,6 +14,7 @@ namespace slime {
 class SearchTask {
 public:
     using DoneFn = std::function<void(const SearchOutcome& outcome)>;
+    using ReportDoneFn = std::function<void(const SearchReport& report)>;
 
     SearchTask() = default;
     ~SearchTask();
@@ -26,6 +27,8 @@ public:
 
     // 启动后台搜索（若已有任务在运行则先取消并等待）。
     void start(const SearchOptions& options, const ProgressFn& progress, const DoneFn& done);
+    // v3.14.4: native SearchProgress/SearchReport entry for the GUI contract migration.
+    void startReport(const SearchOptions& options, const SearchProgressSink& progress, const ReportDoneFn& done);
 
     // 阶段一：请求取消，立即返回（不 join）。兼容旧调用。
     void cancel() noexcept;

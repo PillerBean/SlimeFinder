@@ -201,6 +201,7 @@ private:
     void setStatus(const QString& text);
     void logSearchParams(const SearchOptions& opt);
     void onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId); // v3.3.7：带运行编号（陈旧事件丢弃）
+    void onSearchFinishedReport(const SearchReport& report, const RunInfo& info, int runId);
     QString describeResultsText(const SearchOutcome& out, const RunInfo& info) const;
     // v3.9.10（过程可视化）：把搜索过程（阶段耗时 / GPU 使用与回退原因 / 停止语义）汇成多行文本
     QString processSummaryText(const SearchOutcome& out) const;
@@ -379,6 +380,7 @@ private:
     QString m_lastResultText; // 最近一次完整结果文本（供“复制结果”）
     // v3.3.3：保留最近一次搜索结果，用于结果区排序（只改显示顺序）
     SearchOutcome m_lastOutcome;
+    SearchReport m_lastReport;
     RunInfo m_lastInfo;
     bool m_hasLastOutcome = false;
     bool m_stageWasMatching = false; // v3.3.3：进度阶段文字（扫描→匹配 切换提示只显示一次）
