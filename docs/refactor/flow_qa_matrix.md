@@ -79,9 +79,21 @@ unit         通过
 ## 仍未覆盖
 
 ```text
-环形规划内部仍无细粒度取消点（取消只在阶段边界生效）
-真实数十 GB 构建未执行；现在会被 RAM 守卫拒绝
 高命中截断后的“质量”仍以距离为主
+真实数十 GB 构建未执行；现在会被 RAM 守卫拒绝
+```
+
+环形规划已增加取消检查点：
+
+```text
+AfkPlanner::plan / planChunkCoarse / measureExactRows / measureStrictForCandidates
+```
+
+回归：
+
+```text
+AFK-CANCEL OK
+cancel_response=1.0ms total=37.7ms results=0
 ```
 
 ## 结论
