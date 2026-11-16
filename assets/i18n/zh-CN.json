@@ -1352,5 +1352,6 @@
   "ui.cache.zip.err.packRange": "缓存包范围与 manifest 不一致：%1",
   "ui.cache.zip.err.sameRangeConflict": "同范围缓存已存在且内容不同，拒绝覆盖：%1",
   "ui.cache.zip.err.downloadedDir": "无法写入下载缓存目录",
-  "ui.cache.zip.err.indexRebuild": "缓存索引重建失败：%1"
+  "ui.cache.zip.err.indexRebuild": "缓存索引重建失败：%1",
+  "ui.truncated_results": "结果已截断：命中数量超过上限，已保留质量更高的结果；部分远距离/低密度命中未返回。"
 }

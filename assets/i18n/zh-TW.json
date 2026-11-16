@@ -1352,5 +1352,6 @@
   "ui.cache.zip.err.packRange": "快取包範圍與 manifest 不一致：%1",
   "ui.cache.zip.err.sameRangeConflict": "同範圍快取已存在且內容不同，拒絕覆寫：%1",
   "ui.cache.zip.err.downloadedDir": "無法寫入下載快取目錄",
-  "ui.cache.zip.err.indexRebuild": "快取索引重建失敗：%1"
+  "ui.cache.zip.err.indexRebuild": "快取索引重建失敗：%1",
+  "ui.truncated_results": "結果已截斷：命中數量超過上限，已保留品質較高的結果；部分遠距離/低密度命中未回傳。"
 }

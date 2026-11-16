@@ -1352,5 +1352,6 @@
   "ui.cache.zip.err.packRange": "Cache pack range does not match manifest: %1",
   "ui.cache.zip.err.sameRangeConflict": "A cache pack with the same range exists with different content: %1",
   "ui.cache.zip.err.downloadedDir": "Cannot write downloaded cache directory",
-  "ui.cache.zip.err.indexRebuild": "Failed to rebuild cache index: %1"
+  "ui.cache.zip.err.indexRebuild": "Failed to rebuild cache index: %1",
+  "ui.truncated_results": "Results were truncated: the hit count exceeded the cap. Higher-quality hits were kept; some distant/low-density hits were not returned."
 }

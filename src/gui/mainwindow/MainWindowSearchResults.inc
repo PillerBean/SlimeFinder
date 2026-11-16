@@ -1273,6 +1273,9 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         if (!out.gpuFallbackReason.empty()) {
             addFeedback(2, slime::ui::t("ui.b32dcdccbfa4").arg(QString::fromStdString(out.gpuFallbackReason)));
         }
+        if (out.truncated) {
+            addFeedback(2, slime::ui::t("ui.truncated_results"));
+        }
     }
 
     const double totalS = out.stats.totalMs / 1000.0;

@@ -2918,7 +2918,6 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     const bool countMode = false;   // v3.10.10.3 试验已回退（保留占位避免误用）
     TopNHeap heap(opt.targetCount);
     const double effectiveMinDensity = opt.minDensity;
-    int64_t totalFound = 0;
     bool earlyStop = false;
     // v3.10.5（用户反馈：数量够就停没生效）：提前停止只有在「先扫近处」时才有意义。
     //   用户没勾「由近及远」时，这里自动按距离排序行（仅影响扫描顺序，结果仍为最近 N）。
@@ -2951,6 +2950,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
 
     int64_t variantBase = 0;
     int64_t globalWinDone = 0;
+    int64_t totalFound = 0;
     int64_t totalSkipped = 0; // v3.3.0：被剪枝/未采样而未评估的窗口数（分层/估算模式）
     // v3.3.8.1（任务书 1.1）：缓存优先阶段凑够目标数后「立即停」是否触发
     int64_t slideUsTotal = 0; // v3.3.8（E3）：跨变体累加的滑窗耗时（微秒）
@@ -4995,7 +4995,6 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     };
 
     std::map<std::tuple<int, int, int, int>, MatchResult> merged;
-    int64_t totalFound = 0;
     int64_t scanned = 0;
     int64_t windows = 0;
     int64_t chunksPruned = 0;
@@ -5128,7 +5127,6 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             matchMs += bo.stats.matchMs;
             totalMs += bo.stats.totalMs;
             if (bo.stoppedEarly) stoppedEarly = true;
-            totalFound += bo.totalFound;
             cacheHitPoints += bo.cacheHitPoints;
             cacheFirstChunks += bo.cacheFirstChunks;
             cacheFillSkipped = cacheFillSkipped || bo.cacheFillSkipped;
@@ -5189,9 +5187,10 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
 
     out.ok = true;
     out.ignoredThreshold = byDensity;
+    // v3.14.4: totalFound is the unique in-region hit count, before targetCount truncation.
+    const int64_t uniqueFound = static_cast<int64_t>(merged.size());
     out.results = std::move(results);
-    // halo 内重复命中只影响统计，不应改变最终显示结果。
-    out.totalFound = static_cast<int64_t>(out.results.size());
+    out.totalFound = uniqueFound;
     out.stoppedEarly = stoppedEarly;
     out.cacheHitPoints = cacheHitPoints;
     out.cacheFillSkipped = cacheFillSkipped;

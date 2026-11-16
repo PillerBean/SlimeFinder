@@ -143,9 +143,17 @@ int main()
                         full.results.size(), early.results.size(), early.stoppedEarly ? 1 : 0);
             return 1;
         }
-        std::printf("banded-stop OK results=%zu stoppedEarly=%d scanned=%lld fullScanned=%lld "
+        if (early.totalFound < static_cast<int64_t>(early.results.size()) ||
+            full.totalFound < static_cast<int64_t>(full.results.size())) {
+            std::printf("banded totalFound invalid early=%lld earlyResults=%zu full=%lld fullResults=%zu\n",
+                        static_cast<long long>(early.totalFound), early.results.size(),
+                        static_cast<long long>(full.totalFound), full.results.size());
+            return 1;
+        }
+        std::printf("banded-stop OK results=%zu totalFound=%lld stoppedEarly=%d scanned=%lld fullScanned=%lld "
                     "fullMs=%.1f earlyMs=%.1f\n",
-                    early.results.size(), early.stoppedEarly ? 1 : 0,
+                    early.results.size(), static_cast<long long>(early.totalFound),
+                    early.stoppedEarly ? 1 : 0,
                     static_cast<long long>(early.stats.scannedChunks),
                     static_cast<long long>(full.stats.scannedChunks), fullMs, earlyMs);
     }
