@@ -1363,7 +1363,11 @@ void SlimeEngine::run(const SearchOptions& optIn,
                     // v3.10.12.2：图案 GPU 流式命中上限提高到 400 万（与密度流式一致）——
                     //   100k² 2x2 图案命中约 100 万，旧上限 20 万会直接回退 CPU（3000 ms）。
                     // v3.10.12.3：固定 400 万容量（100k² 图案约 103 万命中；旧公式对 target=50 只有 100 万，刚好溢出回退）
-                    const int64_t cap = 4000000;
+                    int64_t cap = 4000000;
+                    if (opt.gpuHostBudgetBytes > 0) {
+                        cap = (std::max)(int64_t{ 256 },
+                                         (std::min)(cap, opt.gpuHostBudgetBytes / 32));
+                    }
                     TopNHeap heap(opt.targetCount);
                     // v3.8.7：单变体（方向锁定）时不会有跨变体重复，直接入堆即可 ——
                     //   实测 std::map 去重占了钩子时间的约 40%（6924 条 ≈ 2.9 ms）。
@@ -2095,14 +2099,23 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         gp.minDensity = opt.minDensity;
         // v3.8.1：流式匹配每命中只占 12 字节，上限放宽到 400 万（超过则回退 CPU 保证语义）
         // v3.10.12.8 实测：小区域把上限降到 200 万对耗时无可测收益（差异在噪声内），保持 400 万。
-        const int64_t gpuCap =
+        int64_t gpuCap =
             (std::min)(int64_t{ 8000000 }, (std::max)(int64_t{ 4000000 }, opt.targetCount * 1000));
+        if (opt.gpuHostBudgetBytes > 0) {
+            gpuCap = (std::max)(int64_t{ 256 }, (std::min)(gpuCap, opt.gpuHostBudgetBytes / 32));
+        }
         gp.maxResults = gpuCap;
         gp.startX = opt.startX;
         gp.startZ = opt.startZ;
         // v3.10.12.1：GPU 只回传「最近的 keep 个」(d2,rank) 候选，最终 TopN 一定在其中；
         //   之前 200×target（20k² 时 1 万条）会把大量命中回传给宿主做二次排序。
-        gp.keepCandidates = (std::min)(int64_t{ 200000 }, (std::max)(int64_t{ 256 }, opt.targetCount * 4));
+        int64_t keepCandidates =
+            (std::min)(int64_t{ 200000 }, (std::max)(int64_t{ 256 }, opt.targetCount * 4));
+        if (opt.gpuHostBudgetBytes > 0) {
+            keepCandidates = (std::min)(keepCandidates,
+                                        (std::max)(int64_t{ 256 }, opt.gpuHostBudgetBytes / 64));
+        }
+        gp.keepCandidates = keepCandidates;
         bool gpuTruncated = false;
         gp.outTruncated = &gpuTruncated;
         // v3.10.11.1：结果自优化（用户开关）——仅密度精确 GPU 流式匹配生效

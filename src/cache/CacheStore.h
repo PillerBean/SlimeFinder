@@ -88,6 +88,8 @@ public:
     bool coversRange(const slime::Rect& range) const;
     bool coversRange(const CacheSnapshot& snapshot, const slime::Rect& range) const;
     CacheSnapshot snapshot() const;
+    // Host-RAM budget for decoded-pack LRU (0 = disabled). Applied immediately; evicts as needed.
+    void setPackCacheLimitBytes(int64_t bytes);
 
     // 把现有 CacheManager 的完整 1024 对齐子区域写成 local packs。
     // 未对齐/不足一个 1024 块的边缘不会被写入（避免把未计算区域声明为已覆盖）。

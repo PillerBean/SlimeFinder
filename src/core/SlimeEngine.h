@@ -368,6 +368,8 @@ struct SearchOptions {
     std::atomic<int>* livePhase = nullptr;
     // v3.3.9（任务书 2.1）：内存上限（字节；0 = 自动。设置栏 → 分块位图预算/并发收敛）
     int64_t memBudgetBytes = 0;
+    // v3.14.3: host RAM reserved for GPU hit/readback staging (0 = engine default).
+    int64_t gpuHostBudgetBytes = 0;
     // v3.3.9（任务书 2.2）：CPU 占用率上限（10~100；100 = 不限。GUI 据此收敛生效线程数）
     int cpuLimitPercent = 100;
 

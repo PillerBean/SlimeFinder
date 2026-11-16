@@ -123,8 +123,17 @@ void MainWindow::startSearch()
             }
         }
     }
-    opt.memBudgetBytes =
-        (m_settings.memLimitMB > 0) ? static_cast<int64_t>(m_settings.memLimitMB) * 1024 * 1024 : 0;
+    const slime::MemoryBudget memoryBudget = slime::MemoryBudget::fromSettingMB(m_settings.memLimitMB);
+    opt.memBudgetBytes = memoryBudget.chunkBitmapBytes;
+    opt.gpuHostBudgetBytes = memoryBudget.gpuHostBytes;
+    if (m_cacheStore) m_cacheStore->setPackCacheLimitBytes(memoryBudget.packCacheBytes);
+    Logger::info("RAM预算: " + std::string(memoryBudget.automatic ? "自动" : "手动") +
+                 " 总量=" + std::to_string(memoryBudget.totalBytes / (1024 * 1024)) +
+                 "MB 分块=" + std::to_string(memoryBudget.chunkBitmapBytes / (1024 * 1024)) +
+                 "MB packLRU=" + std::to_string(memoryBudget.packCacheBytes / (1024 * 1024)) +
+                 "MB 构建=" + std::to_string(memoryBudget.buildWorkingBytes / (1024 * 1024)) +
+                 "MB GPU主机=" + std::to_string(memoryBudget.gpuHostBytes / (1024 * 1024)) +
+                 "MB" + (memoryBudget.clamped ? "（已按可用内存收敛）" : ""));
     opt.cpuLimitPercent = std::clamp(m_settings.cpuLimitPercent, 10, 100);
     m_lastEffectiveThreads = opt.threads; // v3.3.9（二）：供自检核对「CPU 上限确实收敛了线程数」
     // v3.3.0：搜索算法（分层/估算/保守仅在密度搜索下生效；引擎侧对误配做兜底）

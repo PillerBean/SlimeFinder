@@ -1,4 +1,4 @@
-﻿// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
+// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
 //
 // 交互流程：游戏版本 → 种子 → 范围(快速预设/边界截断) → 模式（严格图案 / 密度）→
 // 搜索算法（精确 / 分层 / 快速估算 / 保守）→ 查询起点 → 开始搜索；
@@ -38,6 +38,7 @@ class QToolButton;     // v3.4.1：左导航（上图案下文字）
 #include <vector>
 
 #include "core/CacheManager.h"
+#include "core/MemoryBudget.h"
 #include "cache/CacheStore.h"
 #include "core/SearchTask.h"
 #include "core/SlimeEngine.h"
