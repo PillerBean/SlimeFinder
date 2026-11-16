@@ -476,6 +476,12 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         m_w->progress->setValue(1000);
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
     }
+    if (result->cancelled) {
+        m_lastAfk.clear();
+        m_lastOutcome = SearchOutcome{};
+        m_hasLastOutcome = false;
+        return;
+    }
     if (result->outOfMemory)
         setStatus(slime::ui::tr(slime::ui::t("ui.a7216f4a8a80")));
     else if (result->emptyAfterFilter)

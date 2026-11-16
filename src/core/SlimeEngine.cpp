@@ -1311,6 +1311,12 @@ void SlimeEngine::run(const SearchOptions& optIn,
         normalized.algorithm = Algorithm::Exact;
         normalized.layerRatio = 1.0;
     }
+    const int64_t requestedTarget = normalized.targetCount;
+    if (!normalized.allowHomogeneousResults && normalized.mode == Mode::Density &&
+        requestedTarget > 0 && requestedTarget < (int64_t{ 1 } << 40)) {
+        // Need candidates beyond the nearest N to find N distinct qualities.
+        normalized.targetCount = (std::min)(requestedTarget * 64, int64_t{ 1 } << 40);
+    }
     const SearchOptions& opt = normalized;
 
     // v3.3.7.2（任务书步骤 2 / P1-D）：经典路径也给出 cpu.sample / search.summary，
@@ -1409,8 +1415,12 @@ void SlimeEngine::run(const SearchOptions& optIn,
                         std::vector<MatchResult> gpuRes;
                         std::string gerr;
                         const double mBefore = patMs();
-                        const bool mOk = opt.gpuScan->matchPattern(pp, cancel, gpuRes, &gerr);
-                        if (gpuTruncated) out.truncated = true;
+                        bool mOk = opt.gpuScan->matchPattern(pp, cancel, gpuRes, &gerr);
+                        if (mOk && gpuTruncated && opt.allowHomogeneousResults) {
+                            mOk = false;   // exact nearest N cannot be guaranteed from a capped hit set
+                            gerr = "GPU hit cap exceeded; exact mode falls back to CPU";
+                        }
+                        if (mOk && gpuTruncated) out.truncated = true;
                         tMatchMs += patMs() - mBefore;
                         if (!mOk) {
                             allOk = false;
@@ -1483,6 +1493,22 @@ void SlimeEngine::run(const SearchOptions& optIn,
     }
 
     runImpl(opt, cancel, progress, out, true);
+    // v3.14.6: optional quality deduplication. With the switch off, "nearest N"
+    // means nearest N distinct density qualities (may return fewer than N).
+    if (out.ok && !opt.allowHomogeneousResults && opt.mode == Mode::Density) {
+        std::unordered_set<int> seen;
+        std::vector<MatchResult> kept;
+        kept.reserve(out.results.size());
+        for (const MatchResult& r : out.results) {
+            const int q = static_cast<int>(std::lround(static_cast<double>(r.density) * 1000.0));
+            if (!seen.insert(q).second) continue;
+            kept.push_back(r);
+        }
+        if (requestedTarget > 0 && static_cast<int64_t>(kept.size()) > requestedTarget) {
+            kept.resize(static_cast<size_t>(requestedTarget));
+        }
+        out.results.swap(kept);
+    }
     // 分块路径已在自己的收尾处写 search.summary（块级事件在那里），这里只在经典路径补一份
     if (out.chunkedPath) return;
     double cpuEnd = 0.0, cpuAllEnd = 0.0, wsEnd = 0.0;
@@ -2146,6 +2172,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             //   无早停时保持单次全量派发（速度优先）。
             const bool bandForProgress = opt.stopAtTarget && !opt.smartRange && bandRowsTotal >= 4096;
             bool gpuBandFailed = false;
+            bool bandTruncated = false;
             if (bandForProgress) {
                 const int64_t rowLo = gp.azMin, rowHi = gp.azMax;
                 const int64_t rowCount = rowHi - rowLo + 1;
@@ -2164,6 +2191,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 TopNHeap bandHeap(opt.targetCount);
                 int64_t bandTotal = 0;
                 bool bandOk = true;
+                bool bandStopped = false;
                 double lastL = 0.0;
                 for (size_t bi = 0; bi < bands.size(); ++bi) {
                     if (cancel.load(std::memory_order_relaxed)) break;
@@ -2172,9 +2200,15 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     bp.azMax = bands[bi].second.second;
                     int64_t partTotal = 0;
                     bp.outTotalFound = &partTotal;
+                    bp.outTruncated = &bandTruncated;
                     std::vector<MatchResult> part;
                     if (!opt.gpuScan->matchDensity(bp, cancel, part, &gerr)) {
                         bandOk = false;
+                        gpuBandFailed = true;
+                        break;
+                    }
+                    if (bandTruncated && opt.allowHomogeneousResults) {
+                        bandOk = false;   // exact mode: do not accept a partial band
                         gpuBandFailed = true;
                         break;
                     }
@@ -2238,7 +2272,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                                                           static_cast<double>(bands[rj].second.second) + half));
                         }
                         const double margin = gp.gridSize * 0.5 + 1.0;
-                        if (bandHeap.worstDist() + margin <= lastL) break;   // 留余量，避开并列/边界歧义
+                        if (bandHeap.worstDist() + margin <= lastL) {
+                            bandStopped = true;
+                            break;   // 留余量，避开并列/边界歧义
+                        }
                     }
                 }
                 if (bandOk && !cancel.load(std::memory_order_relaxed)) {
@@ -2248,7 +2285,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     out.stats.scannedChunks = totalChunks;
                     for (const Scored& s : bandHeap.sorted()) out.results.push_back(s.m);
                     out.totalFound = bandTotal;
-                    out.stoppedEarly = opt.stopAtTarget && bandHeap.full();
+                    out.truncated = bandTruncated;
+                    out.stoppedEarly = bandStopped;
                     out.stats.matchMs = elapsedMs();
                     out.stats.totalMs = out.stats.matchMs;
                     if (progress) progress(kMatchFrac1, false, 0.0, 0.0);
@@ -2267,12 +2305,16 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             }
             // v3.13.8: after a banded attempt failed, do NOT re-dispatch the whole region to GPU;
             // the previous bands were already billed, so go straight to the CPU fallback.
-            const bool gpuOk = !gpuBandFailed &&
+            bool gpuOk = !gpuBandFailed &&
                                opt.gpuScan->matchDensity(gp, cancel, gpuResults, &gerr);
-            if (gpuTruncated) out.truncated = true;
+            if (gpuOk && gpuTruncated && opt.allowHomogeneousResults) {
+                gpuOk = false;   // exact mode: fall back to CPU rather than return a partial nearest-N
+                gerr = "GPU hit cap exceeded; exact mode falls back to CPU";
+            }
             const auto tMd1 = std::chrono::steady_clock::now();
             if (gpuOk) {
                 out.gpuMatchUsed = true;
+                out.truncated = gpuTruncated;
                 // v3.10.4：单次派发没有中间进度 ⇒ 完成时一次性补记「已扫描区块数」，
                 //   保证结果统计/过程摘要不出现「扫描 0 区块」的误导。
                 if (opt.liveScanned) opt.liveScanned->fetch_add(totalChunks, std::memory_order_relaxed);
@@ -5091,6 +5133,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     int64_t cacheFirstChunks = 0;
     bool cacheFillSkipped = false;
     bool cacheFirstOrder = false;
+    bool cacheFirstStopped = false;
+    int64_t gpuRowsResumed = 0;
     bool stoppedEarly = false;
     bool anyOk = false;
     int64_t bandIndex = 0;
@@ -5218,6 +5262,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             cacheFirstChunks += bo.cacheFirstChunks;
             cacheFillSkipped = cacheFillSkipped || bo.cacheFillSkipped;
             cacheFirstOrder = cacheFirstOrder || bo.cacheFirstOrder;
+            cacheFirstStopped = cacheFirstStopped || bo.cacheFirstStopped;
+            gpuRowsResumed += bo.gpuRowsResumed;
 
             for (const auto& r : bo.results) {
                 // 只接收锚点位于核心带内的结果；halo 只用于计算，不用于输出。
@@ -5283,6 +5329,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     out.cacheFillSkipped = cacheFillSkipped;
     out.cacheFirstOrder = cacheFirstOrder;
     out.cacheFirstChunks = cacheFirstChunks;
+    out.cacheFirstStopped = cacheFirstStopped;
+    out.gpuRowsResumed = gpuRowsResumed;
     out.stats.threadsUsed = optIn.threads;
     out.stats.scannedChunks = scanned;
     out.stats.windowsEvaluated = windows;

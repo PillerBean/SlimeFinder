@@ -291,6 +291,9 @@ struct SearchOptions {
     // 密度搜索参数
     int gridSize = 5;        // 网格边长（区块）
     double minDensity = 0.3; // 最小密度阈值 0~1
+    // true：允许同密度不同距离的结果同时存在，严格按最近 N；
+    // false：每个密度质量只保留最近一个，结果数量可能不足 N。
+    bool allowHomogeneousResults = true;
 
     // 查询起点（区块坐标）
     int64_t startX = 0;

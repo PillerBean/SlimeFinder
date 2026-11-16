@@ -3098,6 +3098,7 @@ int MainWindow::runSelfTest()
                                   now.defaultThreads == def.defaultThreads &&
                                   now.defaultTargetCount == def.defaultTargetCount &&
                                   now.cpuLimitPercent == def.cpuLimitPercent && now.memLimitMB == def.memLimitMB &&
+                                  now.allowHomogeneousResults == def.allowHomogeneousResults &&
                                   now.crashDump == def.crashDump && now.debugMode == def.debugMode &&
                                   now.logMaxLines == def.logMaxLines && now.cacheMaxMB == def.cacheMaxMB;
                 std::fprintf(stderr, "[UI自检]   恢复所有设置后：主题=%s 轮滚=%d CPU上限=%d 内存上限=%d 与出厂一致=%d\n",
@@ -3890,6 +3891,7 @@ int MainWindow::runSelfTest()
                            .arg(s.logSubDir).arg(s.logKeepDays).arg(s.logAutoScroll).arg(s.logMaxLines);
                 out += QStringLiteral("cpu%1mem%2ag%3ur%4cd%5dm%6").arg(s.cpuLimitPercent).arg(s.memLimitMB)
                            .arg(s.autoCheckGpuAtStartup).arg(s.updateReminderDays).arg(s.crashDump).arg(s.debugMode);
+                out += QStringLiteral("hg%1").arg(s.allowHomogeneousResults ? 1 : 0);
                 // v3.5.18：高级调试参数
                 out += QStringLiteral("ri%1ro%2rc%3rb%4").arg(s.afkRingInner).arg(s.afkRingOuter)
                            .arg(s.ringCoarseStep).arg(s.ringStatBands);

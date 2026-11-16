@@ -1354,8 +1354,12 @@
   "ui.cache.zip.err.downloadedDir": "無法寫入下載快取目錄",
   "ui.cache.zip.err.indexRebuild": "快取索引重建失敗：%1",
   "ui.truncated_results": "結果已截斷：命中數量超過上限，已保留品質較高的結果；部分遠距離/低密度命中未回傳。",
-  "ui.high_hit_warning": "預計命中約 %1 個（候選視窗 %2，取樣 %3）。命中過多時將按距離/有效格數品質截斷並繼續，不回退 CPU。",
+  "ui.high_hit_warning": "預計命中約 %1 個（候選視窗 %2，取樣 %3）。GPU 路徑命中超上限時會按距離/有效格數截斷並繼續，不回退 CPU；CPU 路徑會完整掃描。",
   "ui.high_hit_confirm_title": "高命中搜尋",
   "ui.ram_build_guard": "建置需要約 %1MB 位圖，但 RAM 預算中的建置工作集只有 %2MB。請提高記憶體預算或縮小建置範圍。",
-  "ui.ring_async_start_failed": "環形搜尋啟動失敗（背景執行緒未能建立）"
+  "ui.ring_async_start_failed": "環形搜尋啟動失敗（背景執行緒未能建立）",
+  "ui.allow_homogeneous": "允許同質化結果",
+  "ui.allow_homogeneous_label": "允許結果同質化",
+  "ui.allow_homogeneous_tip": "開啟：允許同密度、不同距離的結果同時存在，嚴格按最近 N。關閉：每個密度品質只保留最近一個，「最近 N」指不同品質的最近 N 個結果。",
+  "ui.homogeneous_off_note": "已關閉結果同質化：每個密度品質只保留最近一個，「最近 N」指不同品質的最近 N 個結果，數量可能少於目標 N。"
 }

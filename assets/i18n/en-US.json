@@ -1354,8 +1354,12 @@
   "ui.cache.zip.err.downloadedDir": "Cannot write downloaded cache directory",
   "ui.cache.zip.err.indexRebuild": "Failed to rebuild cache index: %1",
   "ui.truncated_results": "Results were truncated: the hit count exceeded the cap. Higher-quality hits were kept; some distant/low-density hits were not returned.",
-  "ui.high_hit_warning": "Estimated hits: about %1 (candidate windows %2, sampled %3). If hits are excessive, results will be quality-truncated and the run will continue without CPU fallback.",
+  "ui.high_hit_warning": "Estimated hits: about %1 (candidate windows %2, sampled %3). If the GPU path exceeds its cap, it keeps quality-ranked hits and continues without CPU fallback; the CPU path still scans fully.",
   "ui.high_hit_confirm_title": "High-hit search",
   "ui.ram_build_guard": "This build needs about %1MB of bitmaps, but only %2MB is reserved for build working memory. Increase the RAM budget or reduce the build range.",
-  "ui.ring_async_start_failed": "Ring search could not start (the background worker was not created)"
+  "ui.ring_async_start_failed": "Ring search could not start (the background worker was not created)",
+  "ui.allow_homogeneous": "Allow homogeneous results",
+  "ui.allow_homogeneous_label": "Allow homogeneous results",
+  "ui.allow_homogeneous_tip": "On: same-density hits at different distances are kept, strictly nearest N. Off: one nearest hit per density quality; “nearest N” means nearest N distinct qualities.",
+  "ui.homogeneous_off_note": "Homogeneous results are disabled: one nearest hit per density quality; “nearest N” means nearest N distinct qualities and may be fewer than the target."
 }

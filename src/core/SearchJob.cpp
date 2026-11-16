@@ -130,6 +130,7 @@ bool SearchJob::start(const SearchOptions& options, SearchProgressSink progress,
             });
         } catch (...) {
             m_impl->state = State::Finished;
+            m_impl->cv.notify_all();
             return false;
         }
     }

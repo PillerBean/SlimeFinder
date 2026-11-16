@@ -1077,6 +1077,7 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
         std::vector<std::vector<Hit>> bandHits(static_cast<size_t>(colCount));
 #pragma omp parallel for schedule(dynamic, 1) num_threads(nThreads)
         for (int b = 0; b < colCount; ++b) {
+            if (cancel && cancel->load(std::memory_order_relaxed)) continue;
             const int jx0 = b * colW;
             const int jx1 = (std::min)(nX, jx0 + colW) - 1;
             if (jx0 > jx1) continue;
@@ -1143,6 +1144,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
                 }
             }
         }
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         for (const auto& bh : bandHits) hits.insert(hits.end(), bh.begin(), bh.end());
     }
     }   // end seedCandidates empty branch
@@ -1191,6 +1193,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
     // v3.5.25 诊断：refineChunk 内部三段耗时（SLIME_PROFILE=1 时打印）
     static std::atomic<long long> s_profWin{ 0 }, s_profAcc{ 0 }, s_profPick{ 0 }, s_profN{ 0 };
     const auto refineChunk = [&](int ccx, int ccz, ChunkBest& out) {
+        if (cancel && cancel->load(std::memory_order_relaxed)) return false;
         const auto rt0 = std::chrono::steady_clock::now();
         out = ChunkBest{};
         std::vector<uint8_t> winOcc(static_cast<size_t>(kk) * kk, 0);
@@ -1319,6 +1322,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
     std::vector<uint8_t> refinedOk(keep, 0);
 #pragma omp parallel for schedule(dynamic, 1) num_threads(nThreads)
     for (int i = 0; i < static_cast<int>(keep); ++i) {
+        if (cancel && cancel->load(std::memory_order_relaxed)) continue;
         ChunkBest cb;
         if (!refineChunk(hits[static_cast<size_t>(i)].cx, hits[static_cast<size_t>(i)].cz, cb)) continue;
         refined[static_cast<size_t>(i)] = toCandidate(cb);
@@ -1326,6 +1330,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
     }
     std::fprintf(stderr, "[环形] 内核精修：%zu 个（%.1f ms）\n", refined.size(),
                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - stageT0).count());
+    if (cancel && cancel->load(std::memory_order_relaxed)) return none;
     {
         size_t w = 0;
         for (size_t i = 0; i < keep; ++i) {
@@ -1348,6 +1353,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
                           [&](size_t a, size_t b) { return scoreOf(refined[a]) > scoreOf(refined[b]); });
 #pragma omp parallel for schedule(dynamic, 1) num_threads(nThreads)
         for (int i = 0; i < static_cast<int>(polishN); ++i) {
+            if (cancel && cancel->load(std::memory_order_relaxed)) continue;
             AfkCandidate& base = refined[orderIdx[static_cast<size_t>(i)]];
             ChunkBest best;
             ChunkBest cur;
@@ -1367,6 +1373,7 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
             if (scoreOf(c) > scoreOf(base)) base = c;
         }
     }
+    if (cancel && cancel->load(std::memory_order_relaxed)) return none;
     if (slimeProfileEnabled())
         std::fprintf(stderr, "[剖面] refineChunk 调用 %lld 次：建窗 %.1f ms｜累加 %.1f ms\n",
                      (long long)s_profN.load(), s_profWin.load() / 1e6, s_profAcc.load() / 1e6);

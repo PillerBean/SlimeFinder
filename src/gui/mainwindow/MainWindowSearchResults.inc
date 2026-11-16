@@ -150,6 +150,10 @@ void MainWindow::startSearch()
     const slime::MemoryBudget memoryBudget = slime::MemoryBudget::fromSettingMB(m_settings.memLimitMB);
     opt.memBudgetBytes = memoryBudget.chunkBitmapBytes;
     opt.gpuHostBudgetBytes = memoryBudget.gpuHostBytes;
+    opt.allowHomogeneousResults = m_settings.allowHomogeneousResults;
+    if (!buildModeActive() && opt.mode == Mode::Density && !opt.allowHomogeneousResults) {
+        addFeedback(2, slime::ui::t("ui.homogeneous_off_note"));
+    }
     if (m_cacheStore) m_cacheStore->setPackCacheLimitBytes(memoryBudget.packCacheBytes);
     Logger::info("RAM预算: " + std::string(memoryBudget.automatic ? "自动" : "手动") +
                  " 总量=" + std::to_string(memoryBudget.totalBytes / (1024 * 1024)) +
@@ -715,21 +719,6 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
         QMessageBox::warning(this, slime::ui::t("ui.073cf8d38324"), slime::ui::t("ui.9d61509a4e27"));
         return false;
     }
-    // v3.13.8: build mode reads/writes the in-memory CacheManager. It must start from the
-    // existing local packs, otherwise the first save deletes the previous session's cache
-    // and every restart re-scans the whole region.
-    if (m_cacheStore && m_cache && m_cache->ranges().empty()) {
-        std::string hydrateErr;
-        if (!m_cacheStore->fillCacheManager(*m_cache, &hydrateErr) && !hydrateErr.empty()) {
-            Logger::warning("构建前加载本地缓存失败: " + hydrateErr);
-            QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
-                                 QString::fromStdString("构建前加载本地缓存失败：" + hydrateErr));
-            return false;
-        }
-        Logger::info("构建前已加载本地缓存：" + std::to_string(m_cache->ranges().size()) + " 区域 / " +
-                     std::to_string(m_cache->entryCount()) + " 区块");
-    }
-    // ① 构建前预估（任务书 1.1）：范围面积 × 密度 10% × 每区块字节数（旧口径）+ 位图口径
     const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
     const double legacyMB = static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0);
     // v3.14.5: a build keeps the whole CacheManager in RAM until it is saved.
@@ -749,6 +738,21 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
             return false;
         }
     }
+    // v3.13.8: build mode reads/writes the in-memory CacheManager. It must start from the
+    // existing local packs, otherwise the first save deletes the previous session's cache
+    // and every restart re-scans the whole region.
+    if (m_cacheStore && m_cache && m_cache->ranges().empty()) {
+        std::string hydrateErr;
+        if (!m_cacheStore->fillCacheManagerRange(*m_cache, opt.region(), &hydrateErr) && !hydrateErr.empty()) {
+            Logger::warning("构建前加载本地缓存失败: " + hydrateErr);
+            QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
+                                 QString::fromStdString("构建前加载本地缓存失败：" + hydrateErr));
+            return false;
+        }
+        Logger::info("构建前已加载本地缓存：" + std::to_string(m_cache->ranges().size()) + " 区域 / " +
+                     std::to_string(m_cache->entryCount()) + " 区块");
+    }
+    // ① 构建前预估（任务书 1.1）：范围面积 × 密度 10% × 每区块字节数（旧口径）+ 位图口径
     const int64_t capMB = cacheMaxBytes() / (1024 * 1024);
     const bool overCap = cacheMaxBytes() > 0 && bitmapMB > static_cast<double>(capMB);
     if (!m_uiQuiet) {
@@ -964,7 +968,8 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
         setRunningUi(false);
         setInputsEnabled(true);
         setStatus(slime::ui::tr(slime::ui::t("ui.1242b3d3624e")));
-        QMessageBox::critical(this, slime::ui::t("ui.1242b3d3624e"), QString::fromStdString(out.error));
+        if (!m_uiQuiet)
+            QMessageBox::critical(this, slime::ui::t("ui.1242b3d3624e"), QString::fromStdString(out.error));
         Logger::error("缓存构建出错：" + out.error);
         return;
     }
@@ -1076,7 +1081,7 @@ QString MainWindow::searchOptionsFingerprint(const SearchOptions& opt) const
     return QStringLiteral(
                "ver=%1 mode=%2 alg=%3 g=%4 thr=%5 target=%6 stop=%7 smart=%8 ignore=%9 "
                "lock=%10 layer=%11/%12 sample=%13/%14 threads=%15 cpuLimit=%16 memMB=%17 "
-               "cache=%18 gpu=%19 patternStream=%20 start=(%21,%22) area=%23x%24 selfOpt=%25")
+               "cache=%18 gpu=%19 patternStream=%20 start=(%21,%22) area=%23x%24 selfOpt=%25 homogeneous=%26")
         .arg(opt.version == slime::Version::Bedrock ? QStringLiteral("bedrock") : QStringLiteral("java"))
         .arg(opt.mode == slime::Mode::Strict ? QStringLiteral("strict") : QStringLiteral("density"))
         .arg(static_cast<int>(opt.algorithm))
@@ -1101,7 +1106,8 @@ QString MainWindow::searchOptionsFingerprint(const SearchOptions& opt) const
         .arg(opt.startZ)
         .arg(static_cast<qint64>(opt.maxX) - opt.minX + 1)
         .arg(static_cast<qint64>(opt.maxZ) - opt.minZ + 1)
-        .arg(m_settings.gpuResultSelfOptimize ? 1 : 0);
+        .arg(m_settings.gpuResultSelfOptimize ? 1 : 0)
+        .arg(opt.allowHomogeneousResults ? 1 : 0);
 }
 
 void MainWindow::logSearchParams(const SearchOptions& opt)
@@ -1141,8 +1147,9 @@ void MainWindow::logSearchParams(const SearchOptions& opt)
 // ---------------- 完成 ----------------
 void MainWindow::onSearchFinishedReport(const SearchReport& report, const RunInfo& info, int runId)
 {
-    m_lastReport = report;
     onSearchFinished(report.outcome, info, runId);
+    // Only publish the report after the stale-run guard accepted this completion.
+    if (runId == m_runId) m_lastReport = report;
 }
 
 void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId)
@@ -1195,7 +1202,8 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
                                                 .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")),
                                                      QString::fromStdString(out.error)));
         }
-        QMessageBox::critical(this, slime::ui::t("ui.680a503add20"), QString::fromStdString(out.error));
+        if (!m_uiQuiet)
+            QMessageBox::critical(this, slime::ui::t("ui.680a503add20"), QString::fromStdString(out.error));
         addError(QString::fromStdString(out.error));
         Logger::error("搜索错误: " + out.error);
         updateNavBadges();

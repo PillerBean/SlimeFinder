@@ -26,6 +26,7 @@ int main()
     opt.gridSize = 5;
     opt.minDensity = 0.3;
     opt.targetCount = 50;
+    opt.allowHomogeneousResults = false;
     opt.gpuScan = gpu.get();
     opt.gpuHostBudgetBytes = 8192; // engine caps result staging to >=256 hits
     slime::SlimeEngine engine;
@@ -36,7 +37,7 @@ int main()
                 out.gpuFallbackReason.c_str(), out.results.size(),
                 static_cast<long long>(out.totalFound));
     if (!out.ok || !out.gpuMatchUsed || !out.truncated || !out.gpuFallbackReason.empty()) return 1;
-    if (out.results.size() != 50) return 1;
+    if (out.results.empty() || out.results.size() > 50) return 1;
     if (out.totalFound <= 50) return 1;
     std::printf("GPU-CAP-REAL OK\n");
     return 0;

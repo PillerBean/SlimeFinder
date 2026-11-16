@@ -58,6 +58,7 @@ int main()
     opt.targetCount = 50;
     opt.threads = 2;
     CappedGpu gpu;
+    opt.allowHomogeneousResults = false;
     opt.gpuScan = &gpu;
 
     slime::SlimeEngine engine;
@@ -71,8 +72,17 @@ int main()
     if (!out.gpuMatchUsed) return 1;
     if (!out.truncated) return 1;
     if (!out.gpuFallbackReason.empty()) return 1;
-    if (out.results.size() != 50) return 1;
+    if (out.results.empty() || out.results.size() > 50) return 1;
     if (out.totalFound != 1000000) return 1;
     std::printf("GPU-TRUNCATION OK\n");
+
+    // Exact nearest-N mode must not accept a capped GPU result: fall back to CPU.
+    opt.allowHomogeneousResults = true;
+    slime::SearchOutcome exact;
+    engine.run(opt, std::atomic<bool>{}, slime::ProgressFn(), exact);
+    std::printf("exact_mode ok=%d gpuUsed=%d truncated=%d fallback='%s' results=%zu\n",
+                exact.ok ? 1 : 0, exact.gpuMatchUsed ? 1 : 0, exact.truncated ? 1 : 0,
+                exact.gpuFallbackReason.c_str(), exact.results.size());
+    if (!exact.ok || exact.gpuMatchUsed || exact.truncated) return 1;
     return 0;
 }
