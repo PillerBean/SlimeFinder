@@ -376,6 +376,7 @@ private:
     bool m_uiQuiet = false; // 自检时抑制模态对话框
     int64_t m_searchStartMs = 0; // 本次搜索开始时刻（epoch ms，性能日志用）
     SearchTask m_task;
+    SearchJob m_ringJob;
     QString m_lastResultText; // 最近一次完整结果文本（供“复制结果”）
     // v3.3.3：保留最近一次搜索结果，用于结果区排序（只改显示顺序）
     SearchOutcome m_lastOutcome;
