@@ -69,6 +69,30 @@ QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
                .arg(basis);
 }
 
+bool MainWindow::confirmHighHitEstimate(const slime::HitEstimate& estimate, bool forceModal)
+{
+    if (!estimate.ok || estimate.estimatedHits < 1000000) return true;
+    const QString detail =
+        slime::ui::t("ui.high_hit_warning")
+            .arg(static_cast<qlonglong>(estimate.estimatedHits))
+            .arg(static_cast<qlonglong>(estimate.candidateWindows))
+            .arg(static_cast<qlonglong>(estimate.sampledWindows));
+    addFeedback(2, detail);
+    if (!forceModal && estimate.estimatedHits < 4000000) return true;
+    if (m_uiQuiet && !forceModal) return true;
+
+    QMessageBox box(this);
+    box.setWindowTitle(slime::ui::t("ui.high_hit_confirm_title"));
+    box.setText(detail);
+    box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    box.setDefaultButton(QMessageBox::No);
+    if (forceModal) {
+        // UI automation: close the real modal through the event loop, not by bypassing it.
+        QTimer::singleShot(50, &box, [&box]() { box.done(QMessageBox::Yes); });
+    }
+    return box.exec() == QMessageBox::Yes;
+}
+
 void MainWindow::startSearch()
 {
     if (m_running) {
@@ -362,22 +386,11 @@ void MainWindow::startSearch()
     if (!buildModeActive()) {
         const slime::HitEstimate hitEstimate = SlimeEngine::estimateHits(opt);
         if (hitEstimate.ok && hitEstimate.estimatedHits >= 1000000) {
-            const QString detail =
-                slime::ui::t("ui.high_hit_warning")
-                    .arg(static_cast<qlonglong>(hitEstimate.estimatedHits))
-                    .arg(static_cast<qlonglong>(hitEstimate.candidateWindows))
-                    .arg(static_cast<qlonglong>(hitEstimate.sampledWindows));
             Logger::info("高命中预估 | 预计=" + std::to_string(hitEstimate.estimatedHits) +
                          " 候选=" + std::to_string(hitEstimate.candidateWindows) +
                          " 采样=" + std::to_string(hitEstimate.sampledWindows) +
                          " 命中率=" + std::to_string(hitEstimate.hitRate));
-            addFeedback(2, detail);
-            if (hitEstimate.estimatedHits >= 4000000 && !m_uiQuiet) {
-                if (QMessageBox::question(this, slime::ui::t("ui.high_hit_confirm_title"), detail) !=
-                    QMessageBox::Yes) {
-                    return;
-                }
-            }
+            if (!confirmHighHitEstimate(hitEstimate)) return;
         }
     }
 

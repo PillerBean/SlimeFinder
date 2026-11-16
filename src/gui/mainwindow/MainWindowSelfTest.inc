@@ -56,6 +56,17 @@ int MainWindow::runSelfTest()
         }
     };
 
+    // High-hit modal automation: exercise the real QMessageBox and close it via the event loop.
+    {
+        slime::HitEstimate est;
+        est.ok = true;
+        est.estimatedHits = 5000000;
+        est.candidateWindows = 6000000;
+        est.sampledWindows = 256;
+        est.hitRate = 0.83;
+        check(confirmHighHitEstimate(est, true), "高命中模态警告可确认并继续");
+    }
+
     // v3.3.4（任务书 1.4）：不做折叠 —— 6 个设置分组始终展开，无需额外复位。
     // v3.3.4（任务书 4.1）：种子默认空 —— 自检先把种子填成合法值，
     // 保证后续各组的真实搜索都能正常执行（空种子的拦截行为在 13.9 单独验证）。

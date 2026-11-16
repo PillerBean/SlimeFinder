@@ -203,6 +203,7 @@ private:
     void logSearchParams(const SearchOptions& opt);
     void onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId); // v3.3.7：带运行编号（陈旧事件丢弃）
     void onSearchFinishedReport(const SearchReport& report, const RunInfo& info, int runId);
+    bool confirmHighHitEstimate(const slime::HitEstimate& estimate, bool forceModal = false);
     QString describeResultsText(const SearchOutcome& out, const RunInfo& info) const;
     // v3.9.10（过程可视化）：把搜索过程（阶段耗时 / GPU 使用与回退原因 / 停止语义）汇成多行文本
     QString processSummaryText(const SearchOutcome& out) const;
