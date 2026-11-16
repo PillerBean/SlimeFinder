@@ -1353,5 +1353,7 @@
   "ui.cache.zip.err.sameRangeConflict": "同范围缓存已存在且内容不同，拒绝覆盖：%1",
   "ui.cache.zip.err.downloadedDir": "无法写入下载缓存目录",
   "ui.cache.zip.err.indexRebuild": "缓存索引重建失败：%1",
-  "ui.truncated_results": "结果已截断：命中数量超过上限，已保留质量更高的结果；部分远距离/低密度命中未返回。"
+  "ui.truncated_results": "结果已截断：命中数量超过上限，已保留质量更高的结果；部分远距离/低密度命中未返回。",
+  "ui.high_hit_warning": "预计命中约 %1 个（候选窗口 %2，采样 %3）。命中过多时将按距离/有效格数质量截断并继续，不回退 CPU。",
+  "ui.high_hit_confirm_title": "高命中搜索"
 }

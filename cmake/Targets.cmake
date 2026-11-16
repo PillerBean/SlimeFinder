@@ -390,6 +390,24 @@ if(MSVC)
     target_compile_options(slime_gpu_resume_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_gpu_truncation_tests
+    tests/integration/gpu_truncation_test.cpp
+)
+target_include_directories(slime_gpu_truncation_tests PRIVATE /src)
+target_link_libraries(slime_gpu_truncation_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_gpu_truncation_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_hit_estimate_tests
+    tests/integration/hit_estimate_test.cpp
+)
+target_include_directories(slime_hit_estimate_tests PRIVATE /src)
+target_link_libraries(slime_hit_estimate_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_hit_estimate_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )

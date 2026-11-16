@@ -723,8 +723,7 @@ bool GpuSession::patternStream(int64_t worldSeed, bool bedrock, int rows, int co
     m_impl->api.pfnReleaseMemObject(dGr);
     if (total > maxHits) {
         if (outTruncated) *outTruncated = true;
-        if (err) *err = "GPU hit cap exceeded";
-        return false;
+        if (err) *err = "GPU hit cap exceeded; quality-truncated";
     }
     return true;
 }
@@ -1317,8 +1316,7 @@ bool GpuSession::matchDensityStream(int64_t worldSeed, bool bedrock, int gridSiz
     }
     if (total > maxHits) {
         if (outTruncated) *outTruncated = true;
-        if (err) *err = "GPU hit cap exceeded";
-        return false;
+        if (err) *err = "GPU hit cap exceeded; quality-truncated";
     }
     return true;
 }

@@ -4854,6 +4854,80 @@ void SlimeEngine::runChunked(const SearchOptions& opt,
     if (progress) progress(1.0, false, 0.0, 0.0);
 }
 
+// ============================ v3.14.4 命中量估算 ============================
+HitEstimate SlimeEngine::estimateHits(const SearchOptions& opt, int maxSamples) noexcept
+{
+    HitEstimate est;
+    const int64_t W = static_cast<int64_t>(opt.maxX) - opt.minX + 1;
+    const int64_t H = static_cast<int64_t>(opt.maxZ) - opt.minZ + 1;
+    if (W <= 0 || H <= 0) return est;
+
+    const bool strict = (opt.mode == Mode::Strict);
+    const int64_t winRows = strict ? opt.pattern.rows() : opt.gridSize;
+    const int64_t winCols = strict ? opt.pattern.cols() : opt.gridSize;
+    if (winRows <= 0 || winCols <= 0) return est;
+    const int64_t candX = W - winCols + 1;
+    const int64_t candZ = H - winRows + 1;
+    if (candX <= 0 || candZ <= 0) {
+        est.ok = true;
+        return est;
+    }
+    const int variants = strict && !opt.directionLocked ? 4 : 1;
+    est.candidateWindows = candX * candZ * variants;
+
+    // Keep the estimator cheap even for a 512x512 density window: at most ~1M cell tests.
+    const int64_t windowCells = winRows * winCols;
+    const int maxByCells = static_cast<int>((std::max)(int64_t{ 1 }, int64_t{ 1 } << 20) / windowCells);
+    maxSamples = (std::max)(1, (std::min)(maxSamples, maxByCells));
+    const int side = std::clamp(static_cast<int>(std::sqrt(static_cast<double>((std::max)(1, maxSamples)))), 1, 16);
+    const int nx = static_cast<int>(std::min<int64_t>(candX, side));
+    const int nz = static_cast<int>(std::min<int64_t>(candZ, side));
+    int64_t sampled = 0;
+    int64_t hits = 0;
+    for (int iz = 0; iz < nz; ++iz) {
+        const int64_t az = candZ <= 1 ? opt.minZ : opt.minZ + (static_cast<int64_t>(iz) * (candZ - 1)) / (nz - 1);
+        for (int ix = 0; ix < nx; ++ix) {
+            const int64_t ax = candX <= 1 ? opt.minX : opt.minX + (static_cast<int64_t>(ix) * (candX - 1)) / (nx - 1);
+            bool hit = false;
+            if (strict) {
+                hit = true;
+                for (int r = 0; r < opt.pattern.rows() && hit; ++r) {
+                    for (int c = 0; c < opt.pattern.cols(); ++c) {
+                        const CellState st = opt.pattern.at(r, c);
+                        if (st == CellState::Ignore) continue;
+                        const bool slime = isSlimeChunk(opt.version, opt.worldSeed, ax + c, az + r);
+                        if ((st == CellState::Green && !slime) || (st == CellState::White && slime)) {
+                            hit = false;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                int count = 0;
+                for (int r = 0; r < opt.gridSize; ++r) {
+                    for (int c = 0; c < opt.gridSize; ++c) {
+                        if (isSlimeChunk(opt.version, opt.worldSeed, ax + c, az + r)) ++count;
+                    }
+                }
+                hit = densityWindowMeets(count, opt.gridSize, opt.minDensity, nullptr);
+            }
+            ++sampled;
+            if (hit) ++hits;
+        }
+    }
+    est.ok = sampled > 0;
+    est.sampledWindows = sampled;
+    est.sampleHits = hits;
+    est.hitRate = sampled > 0 ? static_cast<double>(hits) / static_cast<double>(sampled) : 0.0;
+    if (est.ok) {
+        long double e = static_cast<long double>(est.hitRate) * static_cast<long double>(est.candidateWindows);
+        est.estimatedHits = static_cast<int64_t>(std::llround(e));
+        if (est.sampleHits > 0 && est.estimatedHits < 1) est.estimatedHits = 1;
+        if (est.estimatedHits > est.candidateWindows) est.estimatedHits = est.candidateWindows;
+    }
+    return est;
+}
+
 // ============================ v3.1.1 耗时估算 ============================
 bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEstimate& est) noexcept
 {

@@ -402,6 +402,16 @@ struct SearchEstimate {
     int chunkRows = 0;          // 每块数据行数（含重叠）
 };
 
+// v3.14.4: approximate hit count before a run, for the high-hit warning.
+struct HitEstimate {
+    bool ok = false;
+    int64_t candidateWindows = 0;
+    int64_t sampledWindows = 0;
+    int64_t sampleHits = 0;
+    int64_t estimatedHits = 0;
+    double hitRate = 0.0;
+};
+
 struct SearchOutcome {
     bool ok = false;                 // 是否成功（失败时 error 有内容）
     bool cancelled = false;          // 是否被取消
@@ -485,6 +495,8 @@ public:
 
     // v3.1.1：估算一次搜索的耗时（含整图分块模式），不修改任何状态
     static bool estimateSearch(const SearchOptions& options, int threads, SearchEstimate& out) noexcept;
+    // v3.14.4: deterministic stratified sampling estimate of the total hit count.
+    static HitEstimate estimateHits(const SearchOptions& options, int maxSamples = 256) noexcept;
 
     // 密度窗口判定（独立接口；预留 biomeWeight 权重参数，默认 nullptr = 权重 1.0，
     // 当前仅占位不参与计算，供后续群系权重扩展）

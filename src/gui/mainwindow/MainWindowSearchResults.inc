@@ -349,6 +349,29 @@ void MainWindow::startSearch()
         return;
     }
 
+    // v3.14.4: high-hit warning. The estimate is stratified sampling, not a hard promise.
+    if (!buildModeActive()) {
+        const slime::HitEstimate hitEstimate = SlimeEngine::estimateHits(opt);
+        if (hitEstimate.ok && hitEstimate.estimatedHits >= 1000000) {
+            const QString detail =
+                slime::ui::t("ui.high_hit_warning")
+                    .arg(static_cast<qlonglong>(hitEstimate.estimatedHits))
+                    .arg(static_cast<qlonglong>(hitEstimate.candidateWindows))
+                    .arg(static_cast<qlonglong>(hitEstimate.sampledWindows));
+            Logger::info("高命中预估 | 预计=" + std::to_string(hitEstimate.estimatedHits) +
+                         " 候选=" + std::to_string(hitEstimate.candidateWindows) +
+                         " 采样=" + std::to_string(hitEstimate.sampledWindows) +
+                         " 命中率=" + std::to_string(hitEstimate.hitRate));
+            addFeedback(2, detail);
+            if (hitEstimate.estimatedHits >= 4000000 && !m_uiQuiet) {
+                if (QMessageBox::question(this, slime::ui::t("ui.high_hit_confirm_title"), detail) !=
+                    QMessageBox::Yes) {
+                    return;
+                }
+            }
+        }
+    }
+
     RunInfo info;
     info.version = opt.version;
     info.mode = opt.mode;
