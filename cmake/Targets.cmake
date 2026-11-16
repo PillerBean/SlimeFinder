@@ -400,6 +400,15 @@ if(MSVC)
     target_compile_options(slime_gpu_resume_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_afk_cancel_tests
+    tests/integration/afk_cancel_test.cpp
+)
+target_include_directories(slime_afk_cancel_tests PRIVATE /src)
+target_link_libraries(slime_afk_cancel_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_afk_cancel_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_gpu_cap_real_tests
     tests/integration/gpu_cap_real_test.cpp
 )
