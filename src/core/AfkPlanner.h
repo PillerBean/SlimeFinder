@@ -12,6 +12,7 @@
 //   4) 先按 4 格步长粗扫，再对前若干名在 ±3 格内按 1 格精修 ⇒ 既保证 1/16 区块精度，又不慢。
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -74,7 +75,8 @@ using SlimeChunkPredicate = std::function<bool(int chunkX, int chunkZ)>;
 class AfkPlanner {
 public:
     // 规划挂机点（按覆盖面积降序，最多 topN 个；area 非法/超出窗口上限时返回空）
-    static std::vector<AfkCandidate> plan(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime);
+    static std::vector<AfkCandidate> plan(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime,
+                                         const std::atomic<bool>* cancel = nullptr);
 
     // 便捷入口：按游戏版本 + 世界种子判定
     static std::vector<AfkCandidate> planForSeed(const AfkPlanOptions& opt, Version version, int64_t worldSeed);
@@ -97,7 +99,7 @@ public:
     //   countChunks 只有一带设为 true（区块计数与行带无关，重复算会多计）。
     static ExactMetrics measureExactRows(int blockX, int blockZ, const AfkPlanOptions& opt,
                                          const SlimeChunkPredicate& isSlime, int dzFrom, int dzTo,
-                                         bool countChunks);
+                                         bool countChunks, const std::atomic<bool>* cancel = nullptr);
 
     // v3.5.14：对候选列表做「严格 1 格」重算（候选 × 行带 摊成任务并行走；每线程自带一个 BiomeMap）。
     //   useBiome = false（基岩版/无群系）时按 1.0 权重统计。结果写回 cands 的统计字段。
@@ -107,7 +109,8 @@ public:
     };
     static StrictStatsInfo measureStrictForCandidates(std::vector<AfkCandidate>& cands, const AfkPlanOptions& opt,
                                                       const SlimeChunkPredicate& isSlime, int javaVersionId,
-                                                      int64_t seed, bool useBiome);
+                                                      int64_t seed, bool useBiome,
+                                                      const std::atomic<bool>* cancel = nullptr);
 
     // 某点的圆内覆盖（格 / 区块数），供地图预览与自检复用
     static AfkCandidate evaluate(int blockX, int blockZ, int radius, const SlimeChunkPredicate& isSlime);
@@ -117,7 +120,8 @@ public:
 
     // v3.5.6：大范围（远距离找点）专用 —— 区块级粗扫 + 局部 1 格精修。
     // 半径 R 始终是「生物刷新半径」（固定），area 只是允许放置挂机点的搜索范围。
-    static std::vector<AfkCandidate> planChunkCoarse(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime);
+    static std::vector<AfkCandidate> planChunkCoarse(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime,
+                                                      const std::atomic<bool>* cancel = nullptr);
 
     // 粗扫阶段建议的步长（区块）：超大范围时自动 >1，最终点仍是 1 格精度
     static int coarseChunkStride(int spanChunks);
@@ -134,7 +138,8 @@ private:
     // 由 plan() 在「无加权的小范围」时调用；planChunkCoarse 的抛光步骤也直接调它（不再经过路由，
     // 因此不会出现 plan ⇄ planChunkCoarse 的相互递归）。
     static std::vector<AfkCandidate> planExactBlockLevel(const AfkPlanOptions& opt,
-                                                         const SlimeChunkPredicate& isSlime);
+                                                         const SlimeChunkPredicate& isSlime,
+                                                         const std::atomic<bool>* cancel = nullptr);
 };
 
 } // namespace slime

@@ -328,8 +328,8 @@ void MainWindow::runRingSearch()
             if (cancelRequested()) {
                 ringCancelled = true;
             } else {
-                cands = slime::AfkPlanner::plan(o, pred);
-                // 取消可能发生在规划期间：plan() 不接收取消标志，返回后立刻复核并丢弃结果。
+                cands = slime::AfkPlanner::plan(o, pred, &m_ringCancel);
+                // 规划器已在主循环内检查取消；返回后仍复核一次并丢弃不完整结果。
                 if (cancelRequested()) {
                     ringCancelled = true;
                     cands.clear();
@@ -349,7 +349,12 @@ void MainWindow::runRingSearch()
         // v3.5.14：把「候选 × 行带」摊成任务并行走（8 个候选 × 6 条行带 = 48 个任务），
         //           每个线程自带一个 BiomeMap，不必每个候选都重建生成器。实现见 core（基准也复用它）。
         const slime::AfkPlanner::StrictStatsInfo info =
-            slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed, !bedrock);
+            slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed, !bedrock,
+                                                          &m_ringCancel);
+        if (m_ringCancel.load(std::memory_order_relaxed)) {
+            ringCancelled = true;
+            cands.clear();
+        }
         if (info.cells > 0)
             std::fprintf(stderr, "[环形] 候选权重网格：按需采样 %zu / %zu 格（%.1f%%）\n", info.samples,
                          info.cells, info.samples * 100.0 / static_cast<double>(info.cells));

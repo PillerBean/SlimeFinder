@@ -338,7 +338,7 @@ std::vector<AfkCandidate> pickSpread(std::vector<AfkCandidate>& all, int topN, i
 //   各带结果相加 == 整圆/整环的结果（区块计数只在 countChunks 的那一带算一次）。
 AfkPlanner::ExactMetrics measureRowsImpl(int blockX, int blockZ, const AfkPlanOptions& opt,
                                          const SlimeChunkPredicate& isSlime, int dzFrom, int dzTo,
-                                         bool countChunks)
+                                         bool countChunks, const std::atomic<bool>* cancel = nullptr)
 {
     AfkPlanner::ExactMetrics m;
     if (!isSlime || opt.radius <= 0) return m;
@@ -350,6 +350,7 @@ AfkPlanner::ExactMetrics measureRowsImpl(int blockX, int blockZ, const AfkPlanOp
     dzTo = (std::min)(dzTo, r);
     // 逐行：用圆方程求该行的 x 范围，再按「内圆外」跳过中间段
     for (int dz = dzFrom; dz <= dzTo; ++dz) {
+        if (cancel && cancel->load(std::memory_order_relaxed) && ((dz - dzFrom) & 63) == 0) break;
         const int64_t remOut = R2 - static_cast<int64_t>(dz) * dz;
         if (remOut < 0) continue;
         int halfOut = static_cast<int>(std::sqrt(static_cast<double>(remOut)));
@@ -402,7 +403,8 @@ AfkPlanner::ExactMetrics measureRowsImpl(int blockX, int blockZ, const AfkPlanOp
 
 } // namespace
 
-std::vector<AfkCandidate> AfkPlanner::plan(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime)
+std::vector<AfkCandidate> AfkPlanner::plan(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime,
+                                            const std::atomic<bool>* cancel)
 {
     std::vector<AfkCandidate> none;
     if (!isSlime || !opt.area.valid() || opt.radius <= 0 || opt.topN <= 0) return none;
@@ -424,17 +426,19 @@ std::vector<AfkCandidate> AfkPlanner::plan(const AfkPlanOptions& opt, const Slim
     const int exactLimit = weightedIn ? 0 : opt.maxWindowBlocks;
     if (opt.forceCoarse || w <= 0 || h <= 0 || w > exactLimit || h > exactLimit) {
         // v3.5.6：范围很大时改走「区块级粗扫 + 局部精修」（半径仍是固定 R）
-        return planChunkCoarse(opt, isSlime);
+        return planChunkCoarse(opt, isSlime, cancel);
     }
-    return planExactBlockLevel(opt, isSlime);
+    return planExactBlockLevel(opt, isSlime, cancel);
 }
 
 // 块级精确路径：方块分辨率前缀和 + 粗扫 + ±step 精修（窗口上限见下）
 std::vector<AfkCandidate> AfkPlanner::planExactBlockLevel(const AfkPlanOptions& opt,
-                                                          const SlimeChunkPredicate& isSlime)
+                                                          const SlimeChunkPredicate& isSlime,
+                                                          const std::atomic<bool>* cancel)
 {
     std::vector<AfkCandidate> none;
     if (!isSlime || !opt.area.valid() || opt.radius <= 0 || opt.topN <= 0) return none;
+    if (cancel && cancel->load(std::memory_order_relaxed)) return none;
     int bx0, bz0, bx1, bz1;
     chunkRectToBlocks(opt.area, bx0, bz0, bx1, bz1);
     if ((bx1 - bx0 + 1) * (bz1 - bz0 + 1) <= 0) return none;
@@ -454,6 +458,7 @@ std::vector<AfkCandidate> AfkPlanner::planExactBlockLevel(const AfkPlanOptions& 
     const int c0x = floorDiv16(wx0), c1x = floorDiv16(wx1);
     const int c0z = floorDiv16(wz0), c1z = floorDiv16(wz1);
     for (int chz = c0z; chz <= c1z; ++chz) {
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         for (int chx = c0x; chx <= c1x; ++chx) {
             if (!isSlime(chx, chz)) continue;
             const int sx = (std::max)(chx * 16, wx0);
@@ -475,6 +480,7 @@ std::vector<AfkCandidate> AfkPlanner::planExactBlockLevel(const AfkPlanOptions& 
     occ.h = h;
     occ.sum.assign(static_cast<size_t>(w + 1) * (h + 1), 0);
     for (int z = 0; z < h; ++z) {
+        if (cancel && cancel->load(std::memory_order_relaxed) && (z & 63) == 0) return none;
         int32_t rowAcc = 0;
         const uint8_t* src = occv.data() + static_cast<size_t>(z) * w;
         int32_t* cur = occ.sum.data() + static_cast<size_t>(z + 1) * (w + 1);
@@ -500,6 +506,7 @@ std::vector<AfkCandidate> AfkPlanner::planExactBlockLevel(const AfkPlanOptions& 
         wt.h = h;
         wt.sum.assign(static_cast<size_t>(w + 1) * (h + 1), 0);
         for (int z = 0; z < h; ++z) {
+            if (cancel && cancel->load(std::memory_order_relaxed) && (z & 63) == 0) return none;
             int32_t rowAcc = 0;
             const uint8_t* src = occv.data() + static_cast<size_t>(z) * w;
             int32_t* cur = wt.sum.data() + static_cast<size_t>(z + 1) * (w + 1);
@@ -584,6 +591,7 @@ std::vector<AfkCandidate> AfkPlanner::planExactBlockLevel(const AfkPlanOptions& 
     }
     if (!coarseDoneByGpu) {
         for (int z = bz0; z <= bz1; z += step) {
+            if (cancel && cancel->load(std::memory_order_relaxed)) return none;
             for (int x = bx0; x <= bx1; x += step) {
                 int64_t blocks = 0, wsum = 0;
                 annulusRows(occ, weighted ? &wt : nullptr, x, z, coarseOuterRows, coarseInnerPtr, blocks,
@@ -626,6 +634,7 @@ std::vector<AfkCandidate> AfkPlanner::planExactBlockLevel(const AfkPlanOptions& 
     std::vector<AfkCandidate> refined;
     const int keep = (std::max)(opt.topN * 8, 24);
     for (const Coarse& c0 : order) {
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         if (static_cast<int>(refined.size()) >= keep) break;
         bool tooClose = false;
         const int sep2 = (std::max)(step, opt.minSeparation) * (std::max)(step, opt.minSeparation);
@@ -825,9 +834,11 @@ static const std::vector<int16_t>& subOffsetKernels(int R, int inner)
 // v3.5.6：大范围环形规划 —— 区块级卷积粗扫 + 局部 1 格精修
 // v3.5.16：范围不再卡 4096x4096（跟随「半径」设定值）；粗扫改成按 z 带流式处理 ——
 //   峰值内存与范围大小无关（每带 (spanX+2k) × (bandRows+2k)），精修/抛光按需取局部窗口。
-std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime)
+std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime,
+                                                      const std::atomic<bool>* cancel)
 {
     std::vector<AfkCandidate> none;
+    if (cancel && cancel->load(std::memory_order_relaxed)) return none;
     if (!isSlime || !opt.area.valid() || opt.radius <= 0 || opt.topN <= 0) return none;
     const int ax0 = opt.area.minX, ax1 = opt.area.maxX;
     const int az0 = opt.area.minZ, az1 = opt.area.maxZ;
@@ -987,6 +998,7 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
         all.reserve(static_cast<size_t>(nx) * nz);
 #pragma omp parallel for schedule(dynamic, 1) num_threads(nThreads)
         for (int j = 0; j < nz; ++j) {
+            if (cancel && cancel->load(std::memory_order_relaxed)) continue;
             std::vector<Hit> local;
             local.reserve(static_cast<size_t>(nx));
             const int cz = az0 + j * ss;
@@ -1005,11 +1017,13 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
 #pragma omp critical
             all.insert(all.end(), local.begin(), local.end());
         }
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         hits.swap(all);
         std::fprintf(stderr, "[环形] 抽样粗扫：候选 %zu（%.1f ms）\n", hits.size(),
                      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - stageT0).count());
     } else
     for (int bz0 = az0; bz0 <= az1; bz0 += bandRows) {
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         const int bz1 = (std::min)(az1, bz0 + bandRows - 1);
         const int oz0 = bz0 - k;
         const int oh = (bz1 - bz0 + 1) + 2 * k;
@@ -1024,6 +1038,7 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
         const int occThreads = doParallel ? nThreads : 1;
 #pragma omp parallel for schedule(static) num_threads(occThreads) if (doParallel)
         for (int s = 0; s < (doParallel ? strips : 1); ++s) {
+            if (cancel && cancel->load(std::memory_order_relaxed)) continue;
             const int j0 = (doParallel ? s * 32 : 0);
             const int j1 = (doParallel ? (std::min)(oh - 1, j0 + 31) : oh - 1);
             std::vector<uint8_t> rowBuf;
@@ -1048,6 +1063,7 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
                 }
             }
         }
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         // 2b) 合并本带区块并按列带分桶（每块最多进两个桶）
         std::vector<std::vector<std::pair<int, int>>> buckets(static_cast<size_t>(colCount));
         for (const auto& list : stripChunks) {
@@ -1380,22 +1396,24 @@ for (int t = 0; t < n; ++t) dst[t] += kp[t] * wm;
 AfkPlanner::ExactMetrics AfkPlanner::measureExact(int blockX, int blockZ, const AfkPlanOptions& opt,
                                                   const SlimeChunkPredicate& isSlime)
 {
-    return measureRowsImpl(blockX, blockZ, opt, isSlime, -opt.radius, opt.radius, true);
+    return measureRowsImpl(blockX, blockZ, opt, isSlime, -opt.radius, opt.radius, true, nullptr);
 }
 
 // v3.5.14：只统计一段行（供 GUI 把 8 个候选 × 若干行带并行铺满所有核心）
 AfkPlanner::ExactMetrics AfkPlanner::measureExactRows(int blockX, int blockZ, const AfkPlanOptions& opt,
                                                       const SlimeChunkPredicate& isSlime, int dzFrom,
-                                                      int dzTo, bool countChunks)
+                                                      int dzTo, bool countChunks,
+                                                      const std::atomic<bool>* cancel)
 {
-    return measureRowsImpl(blockX, blockZ, opt, isSlime, dzFrom, dzTo, countChunks);
+    return measureRowsImpl(blockX, blockZ, opt, isSlime, dzFrom, dzTo, countChunks, cancel);
 }
 
 // v3.5.14：候选列表的「严格 1 格」重算 —— 候选 × 行带 摊成任务并行，每线程自带一个 BiomeMap。
 AfkPlanner::StrictStatsInfo AfkPlanner::measureStrictForCandidates(std::vector<AfkCandidate>& cands,
                                                                   const AfkPlanOptions& opt,
                                                                   const SlimeChunkPredicate& isSlime,
-                                                                  int javaVersionId, int64_t seed, bool useBiome)
+                                                                  int javaVersionId, int64_t seed, bool useBiome,
+                                                                  const std::atomic<bool>* cancel)
 {
     StrictStatsInfo info;
     const int nCands = static_cast<int>(cands.size());
@@ -1415,6 +1433,7 @@ AfkPlanner::StrictStatsInfo AfkPlanner::measureStrictForCandidates(std::vector<A
         }
 #pragma omp for schedule(dynamic, 1)
         for (int t = 0; t < nCands * bands; ++t) {
+            if (cancel && cancel->load(std::memory_order_relaxed)) continue;
             const int ci = t / bands, b = t % bands;
             const auto& cd = cands[static_cast<size_t>(ci)];
             AfkPlanOptions weightedOpt = opt;
@@ -1430,7 +1449,7 @@ AfkPlanner::StrictStatsInfo AfkPlanner::measureStrictForCandidates(std::vector<A
             }
             const int r0 = -rAll + static_cast<int>(static_cast<long long>(rows) * b / bands);
             const int r1 = -rAll + static_cast<int>(static_cast<long long>(rows) * (b + 1) / bands) - 1;
-            parts[static_cast<size_t>(t)] = measureExactRows(cd.x, cd.z, weightedOpt, isSlime, r0, r1, b == 0);
+            parts[static_cast<size_t>(t)] = measureExactRows(cd.x, cd.z, weightedOpt, isSlime, r0, r1, b == 0, cancel);
             sampleCnt[static_cast<size_t>(t)] = wgrid.samples();
             cellCnt[static_cast<size_t>(t)] = wgrid.cells();
         }
