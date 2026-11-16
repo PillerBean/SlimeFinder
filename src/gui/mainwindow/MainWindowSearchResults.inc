@@ -426,9 +426,14 @@ void MainWindow::startSearch()
     m_runMode = runMode; // v3.3.7.2：供取消/完成/出错等后续路径复用同一口径
     m_runAlg = runAlg;
 
-    m_task.start(
+    m_task.startReport(
         opt,
-        [this, postToUi, runId, runMode, runAlg](double frac, bool scanning, double cps, double etaSec) {
+        [this, postToUi, runId, runMode, runAlg](const SearchProgress& progress) {
+            const double frac = progress.fraction;
+            const bool scanning = progress.phase == SearchPhase::Preparing ||
+                                  progress.phase == SearchPhase::Scanning;
+            const double cps = progress.chunksPerSec;
+            const double etaSec = progress.etaSec;
             postToUi([this, frac, scanning, cps, etaSec, runId, runMode, runAlg]() {
                 if (!m_running || runId != m_runId) return; // 陈旧运行的事件：直接丢弃
                 // v3.3.9（任务书 1.1/1.4）：构建模式用「四项进度」+ 缓存扫描/新区域扫描区分
@@ -479,8 +484,8 @@ void MainWindow::startSearch()
                 }
             });
         },
-        [this, postToUi, info, runId](const SearchOutcome& out) {
-            postToUi([this, out, info, runId]() { onSearchFinished(out, info, runId); });
+        [this, postToUi, info, runId](const SearchReport& report) {
+            postToUi([this, report, info, runId]() { onSearchFinishedReport(report, info, runId); });
         });
 
     if (m_w->threads->value() == 1) {
@@ -796,17 +801,18 @@ void MainWindow::launchBuildBand()
     m_runMode = opt.mode;
     m_runAlg = opt.algorithm;
     m_task.resetBuildCounters();
-    m_task.start(
+    m_task.startReport(
         opt,
-        [this, postToUi, runId](double frac, bool scanning, double, double) {
-            postToUi([this, frac, scanning, runId]() {
+        [this, postToUi, runId](const SearchProgress& progress) {
+            const bool scanning = progress.phase == SearchPhase::Preparing ||
+                                  progress.phase == SearchPhase::Scanning;
+            postToUi([this, scanning, runId]() {
                 if (!m_running || runId != m_runId) return;
                 updateBuildProgressUi(scanning);
-                (void)frac;
             });
         },
-        [this, postToUi, info, runId](const SearchOutcome& out) {
-            postToUi([this, out, info, runId]() { onSearchFinished(out, info, runId); });
+        [this, postToUi, info, runId](const SearchReport& report) {
+            postToUi([this, report, info, runId]() { onSearchFinishedReport(report, info, runId); });
         });
     std::fprintf(stderr, "[构建] 段 %zu/%zu 启动：Z(%d~%d)\n", m_buildBandIndex + 1, m_buildBands.size(),
                  band.minZ, band.maxZ);
@@ -1067,6 +1073,12 @@ void MainWindow::logSearchParams(const SearchOptions& opt)
 }
 
 // ---------------- 完成 ----------------
+void MainWindow::onSearchFinishedReport(const SearchReport& report, const RunInfo& info, int runId)
+{
+    m_lastReport = report;
+    onSearchFinished(report.outcome, info, runId);
+}
+
 void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId)
 {
     // v3.3.9（任务书 1.1）：缓存构建模式的分段续跑（每段落盘 → 继续下一段 / 收尾）
