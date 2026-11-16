@@ -26,7 +26,8 @@ GPU: gfx1031 (AMD)
 | SearchJob | ALL PASS |
 | RAM 预算 | ALL PASS |
 | 命中估算 | HIT-ESTIMATE OK |
-| GPU cap 截断 | GPU-TRUNCATION OK |
+| GPU cap 截断（fake） | GPU-TRUNCATION OK |
+| GPU cap 截断（真实 GPU，cap=256） | GPU-CAP-REAL OK，total=39542，fallback 空 |
 | GPU 扫描续行 | GPU-RESUME OK |
 | 模式基准（两种版本 × 四种算法） | 完成，结果符合预期 |
 | CLI 组合（版本/智能/提前停止/线程） | 全部 rc=0 |
@@ -60,7 +61,6 @@ GPU: gfx1031 (AMD)
 ## 仍未覆盖
 
 ```text
-真实 GPU cap 溢出（目前只用 fake GPU 验证“不回退 CPU”）
 高命中模态警告的真实 UI 流程
 环形 runRingSearch 的完全异步化/关闭竞态
 亚正常 RAM 下超大规模缓存构建
