@@ -1133,11 +1133,20 @@ MainWindow::~MainWindow()
     // v3.14.5（flow-ring-async）：环形 SearchJob 必须在成员销毁前收口 ——
     //   工作线程会读 m_ringCancel / m_gpuScan，SearchJob 析构时的 join 若发生在这两个成员
     //   销毁之后就是 use-after-free（成员按声明逆序析构，m_ringJob 声明得比它们早）。
-    //   注意：未启动过环形任务时 state=Idle，SearchJob::wait() 会一直等 Finished，
-    //   所以这里只 requestCancel + join（join 在无 worker 时是空操作）。
-    m_ringCancel.store(true, std::memory_order_relaxed);
+    // v3.15.x（flow-ring-cancel2）：worker 现在只按值持有取消标志/结果状态的 shared_ptr，
+    //   完成回调经 m_ringUiGate 判活；因此这里用「请求取消 + 5s 有界等待」收口，
+    //   超时则安全丢弃（detach）线程 —— 绝不在 UI 线程无限 join，也不会访问已销毁的 this。
+    m_ringCancel->store(true, std::memory_order_relaxed);
     m_ringJob.requestCancel();
-    m_ringJob.join();
+    {
+        std::lock_guard<std::mutex> lk(m_ringUiGate->mu);
+        m_ringUiGate->window = nullptr;   // 此后 worker 不再向 this 投递完成事件
+    }
+    if (!m_ringJob.waitFor(5000)) {
+        Logger::warning("环形规划在 5s 内未响应取消：安全丢弃后台线程（worker 不访问窗口成员）");
+        m_ringJob.abandon();
+    }
+    m_ringJob.join();   // 已 Finished 时立即返回；已 abandon 时为空操作
     // v3.3.7（P0-2）：**无条件**取消并 join。
     // 旧写法 `if (m_task.running())` 会漏掉「线程已置 running=false、尚未执行结果回调」的窄窗口：
     // 那个窗口里线程仍会回调 GUI（访问正在析构的 this），是「取消后崩溃」的候选根因之一。

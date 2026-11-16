@@ -41,6 +41,10 @@ public:
     void wait();
     // Wait+join; for legacy SearchTask::wait() and shutdown paths.
     void join();
+    // v3.15.x：安全丢弃 —— 把 worker 线程 detach（Impl 由线程自身 shared_ptr 保活）。
+    //   仅当 Runner/DoneFn 不再访问宿主对象（例如按值持有 shared_ptr 状态）时可用；
+    //   用于窗口析构时「5s 有界等待仍失败」的兜底，避免 UI 线程无限 join。
+    void abandon() noexcept;
     State state() const noexcept;
     bool active() const noexcept;
     uint64_t runId() const noexcept;

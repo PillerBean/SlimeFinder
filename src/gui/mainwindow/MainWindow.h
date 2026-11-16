@@ -35,6 +35,7 @@ class QToolButton;     // v3.4.1：左导航（上图案下文字）
 #include <atomic>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include "core/CacheManager.h"
@@ -224,6 +225,13 @@ private:
     //   完成回调经 QMetaObject::invokeMethod 排队回到 GUI 线程，再由 finishRingSearch 落地。
     struct RingSearchResult;
     using RingSearchResultPtr = std::shared_ptr<RingSearchResult>;
+    // v3.15.x（flow-ring-cancel2）：worker → GUI 完成事件的投递门。
+    //   worker 只在持有 mu 且 window 非空时投递；析构先持锁把 window 置空，
+    //   因此「安全丢弃（detach）后台线程」之后也不会再向正在销毁的 this 投递事件。
+    struct RingUiGate {
+        std::mutex mu;
+        MainWindow* window = nullptr;
+    };
     void finishRingSearch(const RingSearchResultPtr& result);
     // 关闭窗口 / GUI 自检共用：两阶段取消 + 有界等待；返回是否已到 Finished。
     bool stopRingSearchForShutdown(int timeoutMs);
@@ -433,7 +441,10 @@ private:
     int m_lastRingOuter = 0;      // v3.6.18：本次环形搜索的有效外沿（模拟距离可能收窄）
     double m_minDensityBeforeRing = 0.3;  // v3.10.12.10：切回正方形时恢复环形前的阈值
     double m_minDensityCommitted = 0.3;   // v3.10.12.11：焦点离开后才判断“最小密度被改”
-    std::atomic<bool> m_ringCancel{ false };  // v3.10.12.11：环形自动预筛的取消标志
+    // v3.15.x（flow-ring-cancel2）：取消标志用 shared_ptr 持有 —— 工作线程按值捕获它，
+    //   即使窗口析构后线程被安全丢弃，也不会解引用 MainWindow 成员。
+    std::shared_ptr<std::atomic<bool>> m_ringCancel = std::make_shared<std::atomic<bool>>(false);
+    std::shared_ptr<RingUiGate> m_ringUiGate = std::make_shared<RingUiGate>();
     bool m_ringSearching = false;             // v3.10.12.11：环形搜索（含预筛）进行中
     bool m_ringFinishDiscard = false;         // v3.14.5：关闭窗口时丢弃排队中的完成回调（不触碰销毁中的控件）
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器

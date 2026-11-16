@@ -3626,7 +3626,7 @@ int MainWindow::runSelfTest()
                 runRingSearch();
                 const bool cancelWasRunning = m_ringSearching;
                 cancelSearch();
-                const bool cancelFlagSet = m_ringCancel.load(std::memory_order_relaxed);
+                const bool cancelFlagSet = m_ringCancel->load(std::memory_order_relaxed);
                 const bool cancelIdle = waitForRingSearchIdle(60000);
                 check(cancelWasRunning && cancelFlagSet, "环形取消：运行中 cancelSearch 置位取消标志");
                 check(cancelIdle && !m_ringSearching && !m_ringJob.active(), "环形取消：后台任务两阶段取消后结束");

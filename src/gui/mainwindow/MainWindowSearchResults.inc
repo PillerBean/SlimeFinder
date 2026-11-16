@@ -1056,7 +1056,7 @@ void MainWindow::cancelSearch()
     // v3.14.5（flow-ring-async）：环形规划在后台 SearchJob 中运行 —— 取消按钮只做
     //   两阶段取消（置标志 + requestCancel），立即返回；结果收尾统一由 finishRingSearch 完成。
     if (m_ringSearching || m_ringJob.active()) {
-        m_ringCancel.store(true, std::memory_order_relaxed);
+        m_ringCancel->store(true, std::memory_order_relaxed);
         m_ringJob.requestCancel();
         if (m_w && m_w->cancel) m_w->cancel->setEnabled(false);
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));

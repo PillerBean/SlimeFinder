@@ -75,6 +75,8 @@ using SlimeChunkPredicate = std::function<bool(int chunkX, int chunkZ)>;
 class AfkPlanner {
 public:
     // 规划挂机点（按覆盖面积降序，最多 topN 个；area 非法/超出窗口上限时返回空）
+    // v3.15.x（flow-ring-cancel2）：cancel 非空时所有长循环都会周期性检查；一旦取消，
+    //   返回空结果（绝不返回半截候选表）。
     static std::vector<AfkCandidate> plan(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime,
                                          const std::atomic<bool>* cancel = nullptr);
 
@@ -97,12 +99,14 @@ public:
 
     // v3.5.14：只统计 dz ∈ [dzFrom, dzTo] 的行带（多线程分行带并行累加；各带相加 == 整体结果）。
     //   countChunks 只有一带设为 true（区块计数与行带无关，重复算会多计）。
+    //   cancel 非空时取消会立即逐行退出；取消后返回全 0 指标（不返回半截行带）。
     static ExactMetrics measureExactRows(int blockX, int blockZ, const AfkPlanOptions& opt,
                                          const SlimeChunkPredicate& isSlime, int dzFrom, int dzTo,
                                          bool countChunks, const std::atomic<bool>* cancel = nullptr);
 
     // v3.5.14：对候选列表做「严格 1 格」重算（候选 × 行带 摊成任务并行走；每线程自带一个 BiomeMap）。
     //   useBiome = false（基岩版/无群系）时按 1.0 权重统计。结果写回 cands 的统计字段。
+    //   cancel 非空时：取消路径**不写回** cands（避免半截统计覆盖原值）。
     struct StrictStatsInfo {
         size_t samples = 0;   // 实际采样的 1:4 格子数
         size_t cells = 0;     // 窗口总格子数
@@ -120,6 +124,7 @@ public:
 
     // v3.5.6：大范围（远距离找点）专用 —— 区块级粗扫 + 局部 1 格精修。
     // 半径 R 始终是「生物刷新半径」（固定），area 只是允许放置挂机点的搜索范围。
+    // cancel 非空时粗扫/散射/精修/抛光都会检查取消；取消后返回空结果。
     static std::vector<AfkCandidate> planChunkCoarse(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime,
                                                       const std::atomic<bool>* cancel = nullptr);
 
