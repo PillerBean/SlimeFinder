@@ -179,6 +179,18 @@ void SearchJob::join()
     if (worker.joinable()) worker.join();
 }
 
+void SearchJob::abandon() noexcept
+{
+    if (!m_impl) return;
+    std::thread worker;
+    {
+        std::lock_guard<std::mutex> lk(m_impl->mu);
+        if (m_impl->worker.joinable()) worker = std::move(m_impl->worker);
+    }
+    // 线程闭包持有 Impl 的 shared_ptr，detach 后仍安全；本对象析构时不再 join 它。
+    if (worker.joinable()) worker.detach();
+}
+
 SearchJob::State SearchJob::state() const noexcept
 {
     if (!m_impl) return State::Idle;

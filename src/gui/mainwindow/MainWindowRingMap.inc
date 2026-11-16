@@ -41,7 +41,7 @@ void MainWindow::runRingSearch()
     // v3.14.5：环形规划在后台运行，同一时刻只允许一个。重复入口（命令终端/快捷键）
     //   等价于「取消当前」：先两阶段取消，完成后由 finishRingSearch 复位按钮。
     if (m_ringSearching || m_ringJob.active()) {
-        m_ringCancel.store(true, std::memory_order_relaxed);
+        m_ringCancel->store(true, std::memory_order_relaxed);
         m_ringJob.requestCancel();
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
         return;
@@ -240,7 +240,7 @@ void MainWindow::runRingSearch()
     // 预筛/覆盖计算用到的 GPU 会话用 shared_ptr 持有，避免后台线程读到已被释放的成员。
     if (m_gpuScan && m_gpuAvailable) state->gpu = m_gpuScan;
 
-    m_ringCancel.store(false, std::memory_order_relaxed);
+    m_ringCancel->store(false, std::memory_order_relaxed);
     m_ringSearching = true;
     m_ringFinishDiscard = false;
     {
@@ -266,7 +266,10 @@ void MainWindow::runRingSearch()
     }
     // v3.14.5（flow-ring-async）：工作线程只做纯计算，结果/标志直接写入 shared state；
     //   捕获的都是值拷贝（含 state），runRingSearch() 返回后不会悬空。
-    const auto ringRunner = [this, state, autoPrescan, minX, maxX, minZ, maxZ, v, seed, pred,
+    // v3.15.x（flow-ring-cancel2）：取消标志也按值捕获 shared_ptr —— worker 不再通过 this
+    //   访问 MainWindow 成员，窗口析构时即使线程被安全丢弃也不会 UAF。
+    const auto ringCancel = m_ringCancel;
+    const auto ringRunner = [state, ringCancel, autoPrescan, minX, maxX, minZ, maxZ, v, seed, pred,
                              bedrock](const SearchOptions&,
                                       const std::atomic<bool>& jobCancel,
                                       const ProgressFn&) -> SearchOutcome {
@@ -283,11 +286,11 @@ void MainWindow::runRingSearch()
         auto& prescanUsed = state->prescanUsed;
         auto& prescanFallback = state->prescanFallback;
         auto& ringCancelled = state->cancelled;
-        const auto cancelRequested = [this, &jobCancel]() {
+        const auto cancelRequested = [&jobCancel, ringCancel]() {
             return jobCancel.load(std::memory_order_relaxed) ||
-                   m_ringCancel.load(std::memory_order_relaxed);
+                   ringCancel->load(std::memory_order_relaxed);
         };
-        if (cancelRequested()) m_ringCancel.store(true, std::memory_order_relaxed);
+        if (cancelRequested()) ringCancel->store(true, std::memory_order_relaxed);
         try {
             if (autoPrescan) {
                 if (state->gpu) {
@@ -306,7 +309,7 @@ void MainWindow::runRingSearch()
                     pp.minSeparation = 16;
                     std::vector<slime::DensitySeed> seeds;
                     std::string perr;
-                    if (state->gpu->prescanDensitySeeds(pp, m_ringCancel, seeds, &perr) &&
+                    if (state->gpu->prescanDensitySeeds(pp, *ringCancel, seeds, &perr) &&
                         !seeds.empty() && !cancelRequested()) {
                         o.seedCandidates.reserve(seeds.size());
                         for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
@@ -328,7 +331,7 @@ void MainWindow::runRingSearch()
             if (cancelRequested()) {
                 ringCancelled = true;
             } else {
-                cands = slime::AfkPlanner::plan(o, pred, &m_ringCancel);
+                cands = slime::AfkPlanner::plan(o, pred, ringCancel.get());
                 // 规划器已在主循环内检查取消；返回后仍复核一次并丢弃不完整结果。
                 if (cancelRequested()) {
                     ringCancelled = true;
@@ -350,8 +353,8 @@ void MainWindow::runRingSearch()
         //           每个线程自带一个 BiomeMap，不必每个候选都重建生成器。实现见 core（基准也复用它）。
         const slime::AfkPlanner::StrictStatsInfo info =
             slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed, !bedrock,
-                                                          &m_ringCancel);
-        if (m_ringCancel.load(std::memory_order_relaxed)) {
+                                                          ringCancel.get());
+        if (ringCancel->load(std::memory_order_relaxed)) {
             ringCancelled = true;
             cands.clear();
         }
@@ -405,11 +408,20 @@ void MainWindow::runRingSearch()
         return SearchOutcome{};
     };
     state->runId = m_ringJob.runId() + 1;
-    const auto ringDone = [this, state](const slime::SearchReport&) {
-        // DoneFn 在工作线程执行：只投递事件，绝不直接触碰 UI 或窗口成员。
-        //   QMetaObject::invokeMethod 以 this 为接收者，窗口销毁时 Qt 会自动移除未投递事件。
-        QMetaObject::invokeMethod(
-            this, [this, state]() { finishRingSearch(state); }, Qt::QueuedConnection);
+    {
+        // 允许本窗口接收完成事件。析构会把 window 置空，之后 worker 不会再投递。
+        std::lock_guard<std::mutex> lk(m_ringUiGate->mu);
+        m_ringUiGate->window = this;
+    }
+    const auto ringUiGate = m_ringUiGate;
+    const auto ringDone = [ringUiGate, state](const slime::SearchReport&) {
+        // DoneFn 在工作线程执行：只在窗口仍存活时经 Qt 队列投递到 GUI 线程。
+        // v3.15.x：用 shared gate + 互斥锁与「窗口析构」握手 —— 持锁期间才允许调用
+        //   invokeMethod，析构方先把 window 置空，因此不会向已销毁的 this 投递。
+        std::lock_guard<std::mutex> lk(ringUiGate->mu);
+        MainWindow* w = ringUiGate->window;
+        if (!w) return;
+        QMetaObject::invokeMethod(w, [w, state]() { w->finishRingSearch(state); }, Qt::QueuedConnection);
     };
     if (!m_ringJob.start(SearchOptions{}, SearchProgressSink{}, ringDone, ringRunner)) {
         // 启动失败（线程未创建/状态机拒绝）也必须恢复界面，不能在运行态卡死。
@@ -607,9 +619,14 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
 bool MainWindow::stopRingSearchForShutdown(int timeoutMs)
 {
     if (!m_ringSearching && !m_ringJob.active()) return true;
-    m_ringCancel.store(true, std::memory_order_relaxed);
+    m_ringCancel->store(true, std::memory_order_relaxed);
     m_ringJob.requestCancel();
-    if (!m_ringJob.waitFor(timeoutMs)) return false;
+    if (!m_ringJob.waitFor(timeoutMs)) {
+        // v3.15.x（flow-ring-cancel2）：规划器所有长循环都能及时取消，正常应在亚秒级退出；
+        //   超时说明仍有未覆盖的盲区。这里不阻塞关闭（由 closeEvent 决定 ignore），只记录证据。
+        Logger::warning("环形任务在 " + std::to_string(timeoutMs) + "ms 内未响应取消，放弃本次关闭");
+        return false;
+    }
     // 已到 Finished：完成回调可能仍在队列里。窗口即将关闭，置标志丢弃，
     // 保证它不会在窗口销毁后触碰 this 的控件。
     m_ringFinishDiscard = true;
