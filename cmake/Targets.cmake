@@ -400,6 +400,15 @@ if(MSVC)
     target_compile_options(slime_gpu_resume_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_gpu_cap_real_tests
+    tests/integration/gpu_cap_real_test.cpp
+)
+target_include_directories(slime_gpu_cap_real_tests PRIVATE /src)
+target_link_libraries(slime_gpu_cap_real_tests PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_gpu_cap_real_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_gpu_truncation_tests
     tests/integration/gpu_truncation_test.cpp
 )
