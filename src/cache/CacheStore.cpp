@@ -615,6 +615,25 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
     return true;
 }
 
+void CacheStore::setPackCacheLimitBytes(int64_t bytes)
+{
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    m_packCacheLimit = (std::max)(int64_t{ 0 }, bytes);
+    if (m_packCacheLimit == 0) {
+        packCacheClearLocked();
+        return;
+    }
+    while (m_packCacheBytes > m_packCacheLimit && !m_packLru.empty()) {
+        const std::string victim = m_packLru.back();
+        m_packLru.pop_back();
+        auto it = m_packCache.find(victim);
+        if (it != m_packCache.end()) {
+            m_packCacheBytes -= static_cast<int64_t>(it->second->size());
+            m_packCache.erase(it);
+        }
+    }
+}
+
 CacheSnapshot CacheStore::snapshot() const
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);

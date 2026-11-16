@@ -60,6 +60,7 @@ add_library(slime_core STATIC
     src/core/SearchProgress.cpp
     src/core/SearchReport.cpp
     src/core/SearchJob.cpp
+    src/core/MemoryBudget.cpp
     src/core/AfkPlanner.cpp   # v3.5.2（任务 1）：环形覆盖挂机点规划（1/16 区块精度）
     src/core/BiomeMap.cpp     # v3.5.2（任务 2/3）：cubiomes 群系地图（彩色预览 / 权重数据底座）
     src/core/SpawnWeights.cpp # v3.5.2（任务 3）：群系 → 史莱姆刷怪效率权重（Wiki 数据）
@@ -379,6 +380,15 @@ target_include_directories(slime_search_job_tests PRIVATE /src)
 target_link_libraries(slime_search_job_tests PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_search_job_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_memory_budget_tests
+    tests/integration/memory_budget_test.cpp
+)
+target_include_directories(slime_memory_budget_tests PRIVATE /src)
+target_link_libraries(slime_memory_budget_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_memory_budget_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
 add_executable(slime_gpu_resume_tests
