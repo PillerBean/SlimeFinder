@@ -1,4 +1,4 @@
-# check.ps1 - 分档验证（v3.6.15）
+﻿# check.ps1 - 分档验证（v3.6.15）
 #
 #   -Level fast      : 增量构建 + 单元测试
 #   -Level standard  : + 内核 + 111 参考 + GUI 自检(关 GPU)
