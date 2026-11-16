@@ -1130,6 +1130,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
 MainWindow::~MainWindow()
 {
+    // v3.14.5（flow-ring-async）：环形 SearchJob 必须在成员销毁前收口 ——
+    //   工作线程会读 m_ringCancel / m_gpuScan，SearchJob 析构时的 join 若发生在这两个成员
+    //   销毁之后就是 use-after-free（成员按声明逆序析构，m_ringJob 声明得比它们早）。
+    //   注意：未启动过环形任务时 state=Idle，SearchJob::wait() 会一直等 Finished，
+    //   所以这里只 requestCancel + join（join 在无 worker 时是空操作）。
+    m_ringCancel.store(true, std::memory_order_relaxed);
+    m_ringJob.requestCancel();
+    m_ringJob.join();
     // v3.3.7（P0-2）：**无条件**取消并 join。
     // 旧写法 `if (m_task.running())` 会漏掉「线程已置 running=false、尚未执行结果回调」的窄窗口：
     // 那个窗口里线程仍会回调 GUI（访问正在析构的 this），是「取消后崩溃」的候选根因之一。
@@ -1247,15 +1255,16 @@ void MainWindow::updateGpuBenchmarkUi()
 #include "MainWindowSearchResults.inc"
 void MainWindow::closeEvent(QCloseEvent* ev)
 {
-    // v3.13.8: ring search uses a worker joined inside runRingSearch(). Closing the window
-    // while it is running would destroy the captured stack / GUI state under the worker.
-    // Refuse the close, request cancellation, and let the next close proceed after join.
-    if (m_ringSearching) {
-        m_ringCancel.store(true, std::memory_order_relaxed);
-        m_ringJob.requestCancel();
+    // v3.14.5（flow-ring-async）：环形规划在后台 SearchJob 中运行。
+    //   关闭时先两阶段取消（m_ringCancel + requestCancel），再做 5s 有界等待：
+    //   * 到 Finished 才允许关闭；
+    //   * 完成回调由 m_ringFinishDiscard 标志丢弃，保证窗口销毁过程中不会触碰 this 的控件。
+    if (m_ringSearching || m_ringJob.active()) {
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
-        ev->ignore();
-        return;
+        if (!stopRingSearchForShutdown(5000)) {
+            ev->ignore();
+            return;
+        }
     }
     if (m_task.running()) {
         m_task.cancel();

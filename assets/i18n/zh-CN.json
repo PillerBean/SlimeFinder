@@ -1356,5 +1356,6 @@
   "ui.truncated_results": "结果已截断：命中数量超过上限，已保留质量更高的结果；部分远距离/低密度命中未返回。",
   "ui.high_hit_warning": "预计命中约 %1 个（候选窗口 %2，采样 %3）。命中过多时将按距离/有效格数质量截断并继续，不回退 CPU。",
   "ui.high_hit_confirm_title": "高命中搜索",
-  "ui.ram_build_guard": "构建需要约 %1MB 位图，但 RAM 预算中的构建工作集只有 %2MB。请提高内存预算或缩小构建范围。"
+  "ui.ram_build_guard": "构建需要约 %1MB 位图，但 RAM 预算中的构建工作集只有 %2MB。请提高内存预算或缩小构建范围。",
+  "ui.ring_async_start_failed": "环形搜索启动失败（后台线程未能创建）"
 }
