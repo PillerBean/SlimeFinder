@@ -219,6 +219,14 @@ private:
     // v3.3.4：结果以文本形式显示在右侧 QTextEdit（可选中、可右键复制命令）
     void populateResultText(const SearchOutcome& out, const RunInfo& info);
     void runRingSearch();   // v3.5.5：环形覆盖搜索分支
+    // v3.14.5（flow-ring-async）：环形规划交给后台 SearchJob；worker 结果放在 shared_ptr 里，
+    //   完成回调经 QMetaObject::invokeMethod 排队回到 GUI 线程，再由 finishRingSearch 落地。
+    struct RingSearchResult;
+    using RingSearchResultPtr = std::shared_ptr<RingSearchResult>;
+    void finishRingSearch(const RingSearchResultPtr& result);
+    // 关闭窗口 / GUI 自检共用：两阶段取消 + 有界等待；返回是否已到 Finished。
+    bool stopRingSearchForShutdown(int timeoutMs);
+    bool waitForRingSearchIdle(int timeoutMs);   // GUI 自检：泵事件直到环形任务结束
     void updateSearchShapeEnabled(); // v3.5.6：环形模式下置灰无关选项
     void toggleResultPane();
     void adjustMapSquare();
@@ -426,6 +434,7 @@ private:
     double m_minDensityCommitted = 0.3;   // v3.10.12.11：焦点离开后才判断“最小密度被改”
     std::atomic<bool> m_ringCancel{ false };  // v3.10.12.11：环形自动预筛的取消标志
     bool m_ringSearching = false;             // v3.10.12.11：环形搜索（含预筛）进行中
+    bool m_ringFinishDiscard = false;         // v3.14.5：关闭窗口时丢弃排队中的完成回调（不触碰销毁中的控件）
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器
     QPushButton* m_mapIconBtn = nullptr;   // v3.6.1：左栏图标条里的地图开关
     void updateMapFromForm();

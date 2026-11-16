@@ -1355,5 +1355,6 @@
   "ui.cache.zip.err.indexRebuild": "快取索引重建失敗：%1",
   "ui.truncated_results": "結果已截斷：命中數量超過上限，已保留品質較高的結果；部分遠距離/低密度命中未回傳。",
   "ui.high_hit_warning": "預計命中約 %1 個（候選視窗 %2，取樣 %3）。命中過多時將按距離/有效格數品質截斷並繼續，不回退 CPU。",
-  "ui.high_hit_confirm_title": "高命中搜尋"
+  "ui.high_hit_confirm_title": "高命中搜尋",
+  "ui.ring_async_start_failed": "環形搜尋啟動失敗（背景執行緒未能建立）"
 }

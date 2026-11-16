@@ -1355,5 +1355,6 @@
   "ui.cache.zip.err.indexRebuild": "Failed to rebuild cache index: %1",
   "ui.truncated_results": "Results were truncated: the hit count exceeded the cap. Higher-quality hits were kept; some distant/low-density hits were not returned.",
   "ui.high_hit_warning": "Estimated hits: about %1 (candidate windows %2, sampled %3). If hits are excessive, results will be quality-truncated and the run will continue without CPU fallback.",
-  "ui.high_hit_confirm_title": "High-hit search"
+  "ui.high_hit_confirm_title": "High-hit search",
+  "ui.ring_async_start_failed": "Ring search could not start (the background worker was not created)"
 }
