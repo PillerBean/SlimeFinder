@@ -58,12 +58,30 @@ GPU: gfx1031 (AMD)
 `cache-build/*/index.json` 是本地索引，不是流式 manifest（缺 `totalPacks`）。
 用带 `totalPacks + packs` 的 manifest 验证通过。
 
+## 本轮追加修复
+
+```text
+环形搜索完全异步化：runRingSearch 立即返回，finishRingSearch 回 GUI 线程收尾
+高命中模态警告：真实 QMessageBox + QTimer 自动确认，selftest 断言
+超大构建 RAM 守卫：预计位图 > 构建工作集预算时拒绝启动
+```
+
+合并后验证：
+
+```text
+GUI off      exit=0
+GUI on       exit=0
+GUI 低 RAM   exit=0
+SearchJob    ALL PASS
+unit         通过
+```
+
 ## 仍未覆盖
 
 ```text
-高命中模态警告的真实 UI 流程
-环形 runRingSearch 的完全异步化/关闭竞态
-亚正常 RAM 下超大规模缓存构建
+环形规划内部仍无细粒度取消点（取消只在阶段边界生效）
+真实数十 GB 构建未执行；现在会被 RAM 守卫拒绝
+高命中截断后的“质量”仍以距离为主
 ```
 
 ## 结论
@@ -72,4 +90,5 @@ GPU: gfx1031 (AMD)
 缓存开关/构建/ZIP、GUI、环形、取消、低 RAM 组合中，
 没有发现新的明显产品级功能失败。
 
-主要问题集中在测试基础设施，并已修复两项。
+主要问题集中在测试基础设施，并已修复两项；本轮 3 个高风险项
+均已补上代码/自动化或守卫。
