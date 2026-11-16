@@ -1011,6 +1011,7 @@ void MainWindow::cancelSearch()
 {
     if (m_ringSearching) {
         m_ringCancel.store(true, std::memory_order_relaxed);
+        m_ringJob.requestCancel();
         if (m_w && m_w->cancel) m_w->cancel->setEnabled(false);
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
         return;

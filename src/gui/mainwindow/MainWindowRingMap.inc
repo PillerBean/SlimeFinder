@@ -186,6 +186,10 @@ void MainWindow::runRingSearch()
     bool ringCancelled = false;
     m_ringCancel.store(false, std::memory_order_relaxed);
     m_ringSearching = true;
+    if (m_ringJob.active()) {
+        m_ringJob.requestCancel();
+        m_ringJob.waitFor(1000);
+    }
     {
         const QString scanText = autoPrescan ? slime::ui::t("ui.7ae0cd5f9a0b")
                                              : ((o.scanStride == 1) ? slime::ui::t("ui.277ba15949a6")
@@ -207,11 +211,15 @@ void MainWindow::runRingSearch()
         m_w->progress->setRange(0, 0);   // v3.5.26：环形没有细粒度进度 → 忙碌滚动
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("…"));
     }
-    std::thread ringWorker([&]() {
+    // v3.14.4: ring planning is now executed by SearchJob (state machine + cancel/wait),
+    // not an ad-hoc std::thread. The GUI still pumps events until it finishes.
+    const auto ringRunner = [&](const SearchOptions&, const std::atomic<bool>& jobCancel,
+                                const ProgressFn&) -> SearchOutcome {
         // v3.5.26：后台降到「低于普通」优先级，避免把 UI 线程饿死（精确模式尤其明显）
 #ifdef _WIN32
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
 #endif
+        if (jobCancel.load(std::memory_order_relaxed)) m_ringCancel.store(true, std::memory_order_relaxed);
         try {
             if (autoPrescan) {
                 if (m_gpuScan && m_gpuAvailable) {
@@ -311,18 +319,27 @@ void MainWindow::runRingSearch()
 
         ringComputeSecs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         ringDone.store(true, std::memory_order_release);
-    });
+        return SearchOutcome{};
+    };
+    m_ringJob.start(SearchOptions{}, SearchProgressSink{}, SearchJob::DoneFn{}, ringRunner);
+    if (m_ringJob.state() == slime::SearchJob::State::Idle) {
+        ringCancelled = true;
+        ringDone.store(true, std::memory_order_release);
+    }
     {
         QEventLoop waitLoop;
         QTimer poll;
         poll.setInterval(2);   // v3.5.24：轮询要细，否则异步等待本身就给用户加延迟
         QObject::connect(&poll, &QTimer::timeout, &waitLoop, [&]() {
-            if (ringDone.load(std::memory_order_acquire)) waitLoop.quit();
+            if (ringDone.load(std::memory_order_acquire) ||
+                m_ringJob.state() == slime::SearchJob::State::Finished) {
+                waitLoop.quit();
+            }
         });
         poll.start();
         waitLoop.exec();
     }
-    ringWorker.join();
+    m_ringJob.join();
     m_ringSearching = false;
     updateStartEnabled();
     if (ringCancelled) {

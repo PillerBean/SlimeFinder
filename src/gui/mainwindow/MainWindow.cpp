@@ -1252,6 +1252,7 @@ void MainWindow::closeEvent(QCloseEvent* ev)
     // Refuse the close, request cancellation, and let the next close proceed after join.
     if (m_ringSearching) {
         m_ringCancel.store(true, std::memory_order_relaxed);
+        m_ringJob.requestCancel();
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
         ev->ignore();
         return;
