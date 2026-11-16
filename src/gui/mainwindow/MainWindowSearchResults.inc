@@ -719,6 +719,23 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
     // ① 构建前预估（任务书 1.1）：范围面积 × 密度 10% × 每区块字节数（旧口径）+ 位图口径
     const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
     const double legacyMB = static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0);
+    // v3.14.5: a build keeps the whole CacheManager in RAM until it is saved.
+    // Refuse an obviously impossible build before it can OOM the process.
+    {
+        const MemoryBudget buildMem = MemoryBudget::fromSettingMB(m_settings.memLimitMB);
+        const int64_t estimatedBits = total / 8;
+        if (buildMem.buildWorkingBytes > 0 && estimatedBits > buildMem.buildWorkingBytes) {
+            Logger::warning("构建内存预算不足：预计位图 " + std::to_string(estimatedBits / (1024 * 1024)) +
+                            "MB，构建预算 " + std::to_string(buildMem.buildWorkingBytes / (1024 * 1024)) + "MB");
+            if (!m_uiQuiet) {
+                QMessageBox::warning(this, slime::ui::t("ui.9d43e3b73ab4"),
+                                     slime::ui::t("ui.ram_build_guard")
+                                         .arg(estimatedBits / (1024 * 1024))
+                                         .arg(buildMem.buildWorkingBytes / (1024 * 1024)));
+            }
+            return false;
+        }
+    }
     const int64_t capMB = cacheMaxBytes() / (1024 * 1024);
     const bool overCap = cacheMaxBytes() > 0 && bitmapMB > static_cast<double>(capMB);
     if (!m_uiQuiet) {
