@@ -1349,8 +1349,9 @@ void SlimeEngine::run(const SearchOptions& optIn,
     SearchOptions normalized = optIn;
     if (normalized.mode == Mode::Strict &&
         (normalized.algorithm == Algorithm::Layered || normalized.algorithm == Algorithm::Sample)) {
-        normalized.algorithm = Algorithm::Exact;
-        normalized.layerRatio = 1.0;
+        out.ok = false;
+        out.error = "严格图案模式仅支持精确算法。";
+        return;
     }
     const int64_t requestedTarget = normalized.targetCount;
     const SearchOptions& opt = normalized;
