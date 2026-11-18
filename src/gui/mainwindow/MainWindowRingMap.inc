@@ -494,6 +494,11 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         m_hasLastOutcome = false;
         return;
     }
+    if (result->version == Version::Bedrock && !m_bedrockRiverNoticeShown) {
+        m_bedrockRiverNoticeShown = true;
+        addFeedback(1, slime::ui::t("ui.bedrock_river_bug"));
+        Logger::warning("基岩版 MCPE-161245：河流群系中的环形覆盖可能高估；本工具未自动排除河流群系");
+    }
     if (result->outOfMemory)
         setStatus(slime::ui::tr(slime::ui::t("ui.a7216f4a8a80")));
     else if (result->emptyAfterFilter)

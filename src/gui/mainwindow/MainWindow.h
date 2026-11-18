@@ -402,6 +402,7 @@ private:
     SearchReport m_lastReport;
     RunInfo m_lastInfo;
     bool m_hasLastOutcome = false;
+    bool m_bedrockRiverNoticeShown = false;
     bool m_stageWasMatching = false; // v3.3.3：进度阶段文字（扫描→匹配 切换提示只显示一次）
 
     // ---- v3.3.4：中央分区 / 底部面板（v3.3.6：改为左竖排导航 + 右内容区）----

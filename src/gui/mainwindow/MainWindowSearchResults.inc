@@ -1362,6 +1362,11 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         if (out.truncated) {
             addFeedback(2, slime::ui::t("ui.truncated_results"));
         }
+        if (info.version == Version::Bedrock && !m_bedrockRiverNoticeShown) {
+            m_bedrockRiverNoticeShown = true;
+            addFeedback(1, slime::ui::t("ui.bedrock_river_bug"));
+            Logger::warning("基岩版 MCPE-161245：河流群系中的史莱姆区块可能不生成史莱姆；本工具未自动排除河流群系");
+        }
     }
 
     const double totalS = out.stats.totalMs / 1000.0;

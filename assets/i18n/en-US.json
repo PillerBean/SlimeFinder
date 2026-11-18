@@ -1361,5 +1361,6 @@
   "ui.allow_homogeneous": "Allow homogeneous results",
   "ui.allow_homogeneous_label": "Allow homogeneous results",
   "ui.allow_homogeneous_tip": "On: same-density hits at different distances are kept, strictly nearest N. Off: one nearest hit per density quality; “nearest N” means nearest N distinct qualities.",
-  "ui.homogeneous_off_note": "Homogeneous results are disabled: one nearest hit per density quality; “nearest N” means nearest N distinct qualities and may be fewer than the target."
+  "ui.homogeneous_off_note": "Homogeneous results are disabled: one nearest hit per density quality; “nearest N” means nearest N distinct qualities and may be fewer than the target.",
+  "ui.bedrock_river_bug": "Bedrock notice: confirmed bug MCPE-161245 means slime chunks inside river biomes do not spawn slimes at any underground Y level. This tool still lists mathematical slime chunks and does not exclude river biomes automatically."
 }
