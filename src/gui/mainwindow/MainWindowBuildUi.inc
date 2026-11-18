@@ -983,6 +983,7 @@ void MainWindow::buildUi()
         tb->setEditTriggers(QAbstractItemView::NoEditTriggers);
         tb->horizontalHeader()->setSectionsClickable(true);
         tb->horizontalHeader()->setSortIndicatorShown(true);
+        tb->setSortingEnabled(true);
         tb->horizontalHeader()->setStretchLastSection(true);
         static OneDecimalDelegate oneDecimal;
         tb->setItemDelegateForColumn(3, &oneDecimal);
@@ -1003,14 +1004,26 @@ void MainWindow::buildUi()
             const auto* xi = m_w->resultTable->item(row, 1);
             const auto* zi = m_w->resultTable->item(row, 2);
             if (!xi || !zi) return;
+            const auto* idxItem = m_w->resultTable->item(row, 0);
+            const int original = idxItem ? idxItem->data(Qt::UserRole).toInt() : -1;
+            if (!m_lastAfk.empty() && original >= 0 && original < static_cast<int>(m_lastAfk.size())) {
+                focusAfkCandidate(original);
+                return;
+            }
+            if (m_map && idxItem) m_map->setFocusedResult(original);
             const int bx = xi->data(Qt::UserRole).toInt();
             const int bz = zi->data(Qt::UserRole).toInt();
             focusMapOnChunk(bx >= 0 ? bx >> 4 : -((-bx + 15) >> 4), bz >= 0 ? bz >> 4 : -((-bz + 15) >> 4));
         });
         // v3.5.10：点结果行 = 选中该环形候选（地图只画这一条环，并联动脉动选中行）
         connect(tb, &QTableWidget::cellClicked, this, [this](int row, int) {
-            if (!m_lastAfk.empty() && row >= 0 && row < static_cast<int>(m_lastAfk.size()))
-                focusAfkCandidate(row);
+            if (!m_w || !m_w->resultTable || row < 0) return;
+            const auto* idxItem = m_w->resultTable->item(row, 0);
+            const int original = idxItem ? idxItem->data(Qt::UserRole).toInt() : -1;
+            if (!m_lastAfk.empty() && original >= 0 && original < static_cast<int>(m_lastAfk.size()))
+                focusAfkCandidate(original);
+            else if (m_map)
+                m_map->setFocusedResult(original);
         });
     }
     m_rightSplit->addWidget(m_resultPane);

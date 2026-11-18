@@ -461,6 +461,7 @@ void MainWindow::fillResultTable()
                                        static_cast<double>(blockZ >> 4) - m_lastInfo.startZ);
         auto* it0 = new QTableWidgetItem();
         it0->setData(Qt::DisplayRole, i + 1);
+        it0->setData(Qt::UserRole, i);
         auto* it1 = new QTableWidgetItem();
         it1->setData(Qt::DisplayRole, blockX);
         it1->setData(Qt::UserRole, blockX);
@@ -487,12 +488,25 @@ void MainWindow::fillResultTable()
         auto* jump = new QPushButton(slime::ui::t("ui.28cd2efd8fa8"), t);
         jump->setAutoDefault(false);
         jump->setToolTip(slime::ui::t("ui.b208126e95ab"));
-        const int bx = blockX;
-        const int bz = blockZ;
-        connect(jump, &QPushButton::clicked, this, [this, i, ring, bx, bz]() {
-            if (ring && i < static_cast<int>(m_lastAfk.size())) {
-                focusAfkCandidate(i);   // v3.5.10：只显示这一条候选的环
+        connect(jump, &QPushButton::clicked, this, [this, ring, jump]() {
+            auto* table = m_w ? m_w->resultTable : nullptr;
+            if (!table) return;
+            int row = -1;
+            for (int rr = 0; rr < table->rowCount(); ++rr) {
+                if (table->cellWidget(rr, 6) == jump) { row = rr; break; }
+            }
+            if (row < 0) return;
+            const auto* idxItem = table->item(row, 0);
+            const auto* xi = table->item(row, 1);
+            const auto* zi = table->item(row, 2);
+            if (!idxItem || !xi || !zi) return;
+            const int original = idxItem->data(Qt::UserRole).toInt();
+            const int bx = xi->data(Qt::UserRole).toInt();
+            const int bz = zi->data(Qt::UserRole).toInt();
+            if (ring && original >= 0 && original < static_cast<int>(m_lastAfk.size())) {
+                focusAfkCandidate(original);
             } else {
+                if (m_map) m_map->setFocusedResult(original);
                 focusMapOnChunk(bx >= 0 ? bx >> 4 : -((-bx + 15) >> 4), bz >= 0 ? bz >> 4 : -((-bz + 15) >> 4));
             }
         });
@@ -506,6 +520,7 @@ void MainWindow::fillResultTable()
                                                             : QString())
                                             : slime::ui::t("ui.a535edb5149b"));
     }
+    t->setSortingEnabled(wasSorting);
 }
 
 // v3.9.12：结果要求冲突裁决 —— 忽略阈值（最优候选）时阈值/早停/智能范围无效；

@@ -100,6 +100,11 @@ int MainWindow::runSelfTest()
     m_w->maxZ->setValue(123456789);
     clampRangeToBound();
     check(m_w->maxZ->value() == 131072, "基岩边界截断");
+    applyPreset(1000000);
+    check(m_w->maxX->value() == kBedrockBoundChunk && m_w->minX->value() == -kBedrockBoundChunk,
+          "基岩版全局预设不超世界边界");
+    applyPreset(200000);
+    check(m_w->maxX->value() == kBedrockBoundChunk / 2, "基岩版局部预设按边界缩放");
     check(m_w->seedEdit->isEnabled(), "基岩版种子框可用（仅用于地图上色，判定与种子无关）");
     check(m_w->presetWorld->isEnabled() == false && m_w->presetBedrock->isEnabled() == true,
           "基岩版预设可用性");
@@ -3299,6 +3304,7 @@ int MainWindow::runSelfTest()
             MatchResult mr;
             mr.minX = 0; mr.maxX = 3; mr.minZ = 0; mr.maxZ = 3;
             md.setResults(std::vector<MatchResult>{ mr });
+            check(md.map()->focusedResult() == 0, "地图结果默认只聚焦第一个结果框");
             md.computeAfk();
             const double s0 = md.map()->pxPerBlock();
             md.map()->zoomAt(1.25, md.map()->rect().center());
@@ -3790,12 +3796,24 @@ int MainWindow::runSelfTest()
                     check(m_map && m_map->focusedAfk() == 0, "点「跳转」同时选中该行的环（只显示一条）");
                 }
                 // 按距离列排序
+                check(m_w->resultTable->isSortingEnabled(), "结果列表有结果时仍可按列排序");
                 m_w->resultTable->sortItems(3, Qt::AscendingOrder);
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
                 const double d0 = m_w->resultTable->item(0, 3)->data(Qt::DisplayRole).toDouble();
                 const double dN = m_w->resultTable->item(rows - 1, 3)->data(Qt::DisplayRole).toDouble();
                 std::fprintf(stderr, "[UI自检]   列表排序：首行距离=%.1f 末行距离=%.1f\n", d0, dN);
                 check(d0 <= dN + 1e-6, "结果列表可按列排序");
+                if (auto* jump0 = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 6))) {
+                    const int bx0 = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
+                    const int bz0 = m_w->resultTable->item(0, 2)->data(Qt::UserRole).toInt();
+                    jump0->click();
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
+                    const QPointF ctr = m_map->centerBlock();
+                    const double cx = bx0 + 0.5;
+                    const double cz = bz0 + 0.5;
+                    check(std::abs(ctr.x() - cx) < 2.0 && std::abs(ctr.y() - cz) < 2.0,
+                          "排序后结果行跳转仍对应本行坐标");
+                }
             }
             // 折叠/展开
             const bool before = m_w->resultTable->isVisible();

@@ -70,6 +70,14 @@ void MapPreviewWidget::centerOnChunk(int chunkX, int chunkZ)
 void MapPreviewWidget::setResults(const std::vector<slime::MatchResult>& r)
 {
     m_results = r;
+    m_focusedResult = m_results.empty() ? -1 : 0;
+    update();
+}
+
+void MapPreviewWidget::setFocusedResult(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_results.size())) m_focusedResult = -1;
+    else m_focusedResult = index;
     update();
 }
 
@@ -647,14 +655,15 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
 
     // 4) 搜索结果（环形模式下改用候选圆点表示，不画方块，避免杂乱）
     if (m_layer.showResults && m_afk.empty()) {
-        p.setPen(QPen(QColor(236, 120, 26), 2));
-        p.setBrush(QColor(236, 120, 26, 30));
-        for (const auto& r : m_results) {
+        if (m_focusedResult >= 0 && m_focusedResult < static_cast<int>(m_results.size())) {
+            const auto& r = m_results[static_cast<size_t>(m_focusedResult)];
+            p.setPen(QPen(QColor(236, 120, 26), 2));
+            p.setBrush(QColor(236, 120, 26, 30));
             const QPointF tl = blockToPx(QPointF(r.minX * kChunk, r.minZ * kChunk));
             const QPointF br = blockToPx(QPointF((r.maxX + 1) * kChunk, (r.maxZ + 1) * kChunk));
             p.drawRect(QRectF(tl, br));
+            p.setBrush(Qt::NoBrush);
         }
-        p.setBrush(Qt::NoBrush);
     }
 
     // 5) 挂机点候选：v3.5.10 只给「选中」的候选画环，其余只留小圆点（避免多环叠加显得杂乱）

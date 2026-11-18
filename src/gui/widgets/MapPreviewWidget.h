@@ -47,6 +47,9 @@ public:
     // v3.5.22：把视图中心移到指定区块（搜索结果自动定位用）
     void centerOnChunk(int chunkX, int chunkZ);
     void setResults(const std::vector<slime::MatchResult>& r);
+    // 只给“当前跳转/选中”的结果画橙色框，避免多个结果框叠在一起。
+    void setFocusedResult(int index);
+    int focusedResult() const noexcept { return m_focusedResult; }
     void setAfkCandidates(const std::vector<slime::AfkCandidate>& c);
     // v3.5.10：只给「选中」的候选画环（点环心/结果行切换），其余只留小圆点
     void setFocusedAfk(int index);
@@ -117,6 +120,7 @@ private:
     QPointF m_center{ 0.0, 0.0 };
     double m_scale = 2.0;
     std::vector<slime::MatchResult> m_results;
+    int m_focusedResult = -1;   // -1 = 不画结果框；否则只画这一条
     std::vector<slime::AfkCandidate> m_afk;
     int m_focusedAfk = -1;   // v3.5.10：当前选中的候选（-1 = 不画任何环）
     std::function<void(int)> m_afkFocusHandler;
