@@ -282,6 +282,16 @@ if(MSVC)
     target_compile_options(slime_flow_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
 endif()
 
+# 环形全图实战基准：方形预筛 + 精扫，加权覆盖 top1
+add_executable(slime_ring_fullmap_bench
+    tools/bench/ring_fullmap_bench.cpp
+)
+target_include_directories(slime_ring_fullmap_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_ring_fullmap_bench PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_ring_fullmap_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
 # 基岩 CPU 链数探针：8 lane/链，改变每批链数（实验工具，不接入产品）
 add_executable(slime_bedrock_chain_probe
     tools/bench/bedrock_chain_probe.cpp
