@@ -6,6 +6,7 @@
 
 | 版本 | 类型 | 下载页 |
 |---|---|---|
+| SlimeFinder v3.13.9（测试版） | 测试版 | [v3.13.9-test](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.9-test) |
 | SlimeFinder v3.13.8 | 正式版 | [v3.13.8](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.8) |
 | SlimeFinder v3.13.7（测试版） | 测试版 | [v3.13.7](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.7) |
 | SlimeFinder v3.13.6（测试版） | 测试版 | [v3.13.6](https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.6) |
