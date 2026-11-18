@@ -1,6 +1,7 @@
 #include "core/SlimeEngine.h"
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <set>
@@ -23,15 +24,21 @@ int main()
     slime::SlimeEngine engine;
     opt.allowHomogeneousResults = true;
     slime::SearchOutcome a;
+    const auto t0 = std::chrono::steady_clock::now();
     engine.run(opt, std::atomic<bool>{}, slime::ProgressFn(), a);
+    const auto t1 = std::chrono::steady_clock::now();
     opt.allowHomogeneousResults = false;
     slime::SearchOutcome b;
     engine.run(opt, std::atomic<bool>{}, slime::ProgressFn(), b);
+    const auto t2 = std::chrono::steady_clock::now();
+    const double allowMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    const double denyMs = std::chrono::duration<double, std::milli>(t2 - t1).count();
     std::set<int> qa, qb;
     for (const auto& r : a.results) qa.insert(static_cast<int>(std::lround(r.density * 1000.0)));
     for (const auto& r : b.results) qb.insert(static_cast<int>(std::lround(r.density * 1000.0)));
-    std::printf("allow=%zu/%zu distinct=%zu deny=%zu/%zu distinct=%zu\n", a.results.size(), a.totalFound,
-                qa.size(), b.results.size(), b.totalFound, qb.size());
+    std::printf("allow=%zu/%zu distinct=%zu deny=%zu/%zu distinct=%zu allowMs=%.2f denyMs=%.2f\n",
+                a.results.size(), a.totalFound, qa.size(), b.results.size(), b.totalFound, qb.size(),
+                allowMs, denyMs);
     if (!a.ok || !b.ok) return 1;
     if (a.results.empty() || b.results.empty()) return 1;
     if (qb.size() != b.results.size()) return 1;
