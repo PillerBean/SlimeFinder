@@ -27,6 +27,7 @@
 #include <thread>
 #include <tuple>
 #include <unordered_set>
+#include <unordered_map>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -545,10 +546,11 @@ inline bool betterThan(const Scored& a, const Scored& b) noexcept
 // 以 betterThan 作为堆比较子时，堆顶 = 比较序最大者 = 当前最差者。
 class TopNHeap {
 public:
-    explicit TopNHeap(int64_t cap, bool byCount = false)
-        : m_cap(std::max<int64_t>(1, cap)), m_byCount(byCount)
+    explicit TopNHeap(int64_t cap, bool byCount = false, bool dedupeQuality = false)
+        : m_cap(std::max<int64_t>(1, cap)), m_byCount(byCount), m_dedupe(dedupeQuality)
     {
         m_v.reserve(static_cast<size_t>(std::min<int64_t>(m_cap, 1 << 20)));
+        if (m_dedupe) m_unique.reserve(static_cast<size_t>(std::min<int64_t>(m_cap * 4, 1 << 20)));
     }
 
     bool byCount() const noexcept { return m_byCount; }
@@ -561,6 +563,16 @@ public:
     }
     void push(const Scored& s)
     {
+        if (m_dedupe) {
+            const int key = s.count;
+            auto it = m_unique.find(key);
+            if (it == m_unique.end()) {
+                m_unique.emplace(key, s);
+            } else if (betterEq(s, it->second)) {
+                it->second = s;
+            }
+            return;
+        }
         auto cmp = [this](const Scored& a, const Scored& b) { return betterEq(a, b); };
         if (static_cast<int64_t>(m_v.size()) < m_cap) {
             m_v.push_back(s);
@@ -571,16 +583,43 @@ public:
             std::push_heap(m_v.begin(), m_v.end(), cmp);
         }
     }
-    double worstDist() const noexcept { return m_v.empty() ? std::numeric_limits<double>::infinity() : m_v.front().dist; }
+    double worstDist() const noexcept
+    {
+        if (m_dedupe) {
+            if (m_unique.empty()) return std::numeric_limits<double>::infinity();
+            const Scored* w = &m_unique.begin()->second;
+            for (const auto& kv : m_unique)
+                if (betterEq(*w, kv.second)) w = &kv.second;
+            return w->dist;
+        }
+        return m_v.empty() ? std::numeric_limits<double>::infinity() : m_v.front().dist;
+    }
     // v3.8.0：当前最差者的整数平方距离（INT64_MAX = 还没满，无需剪枝）
     int64_t worstD2() const noexcept
     {
+        if (m_dedupe) {
+            if (m_unique.empty()) return std::numeric_limits<int64_t>::max();
+            const Scored* w = &m_unique.begin()->second;
+            for (const auto& kv : m_unique)
+                if (betterEq(*w, kv.second)) w = &kv.second;
+            return w->d2;
+        }
         return m_v.empty() ? std::numeric_limits<int64_t>::max() : m_v.front().d2;
     }
-    bool full() const noexcept { return static_cast<int64_t>(m_v.size()) >= m_cap; }
+    bool full() const noexcept
+    {
+        return m_dedupe ? static_cast<int64_t>(m_unique.size()) >= m_cap
+                        : static_cast<int64_t>(m_v.size()) >= m_cap;
+    }
     std::vector<Scored> sorted() const
     {
-        std::vector<Scored> r = m_v;
+        std::vector<Scored> r;
+        if (m_dedupe) {
+            r.reserve(m_unique.size());
+            for (const auto& kv : m_unique) r.push_back(kv.second);
+        } else {
+            r = m_v;
+        }
         auto cmp = [this](const Scored& a, const Scored& b) { return betterEq(a, b); };
         std::sort(r.begin(), r.end(), cmp);
         return r;
@@ -589,7 +628,9 @@ public:
 private:
     int64_t m_cap;
     bool m_byCount = false;
+    bool m_dedupe = false;
     std::vector<Scored> m_v;
+    std::unordered_map<int, Scored> m_unique;
 };
 
 // 图案旋转变体（含掩码预计算）
@@ -1312,11 +1353,6 @@ void SlimeEngine::run(const SearchOptions& optIn,
         normalized.layerRatio = 1.0;
     }
     const int64_t requestedTarget = normalized.targetCount;
-    if (!normalized.allowHomogeneousResults && normalized.mode == Mode::Density &&
-        requestedTarget > 0 && requestedTarget < (int64_t{ 1 } << 40)) {
-        // Need candidates beyond the nearest N to find N distinct qualities.
-        normalized.targetCount = (std::min)(requestedTarget * 64, int64_t{ 1 } << 40);
-    }
     const SearchOptions& opt = normalized;
 
     // v3.3.7.2（任务书步骤 2 / P1-D）：经典路径也给出 cpu.sample / search.summary，
@@ -1495,7 +1531,7 @@ void SlimeEngine::run(const SearchOptions& optIn,
     runImpl(opt, cancel, progress, out, true);
     // v3.14.6: optional quality deduplication. With the switch off, "nearest N"
     // means nearest N distinct density qualities (may return fewer than N).
-    if (out.ok && !opt.allowHomogeneousResults && opt.mode == Mode::Density) {
+    if (out.ok && !opt.allowHomogeneousResults && !opt.ignoreThreshold && opt.mode == Mode::Density) {
         std::unordered_set<int> seen;
         std::vector<MatchResult> kept;
         kept.reserve(out.results.size());
@@ -2188,7 +2224,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 }
                 std::stable_sort(bands.begin(), bands.end(),
                                  [](const auto& a, const auto& b) { return a.first < b.first; });
-                TopNHeap bandHeap(opt.targetCount);
+                TopNHeap bandHeap(opt.targetCount, false, opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
                 int64_t bandTotal = 0;
                 bool bandOk = true;
                 bool bandStopped = false;
@@ -2240,6 +2276,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                         s.m = m;
                         s.d2 = d2;
                         s.dist = 0.5 * std::sqrt(static_cast<double>(d2));
+                        s.count = static_cast<int>(std::lround(m.density * static_cast<float>(gp.gridSize) * gp.gridSize));
                         bandHeap.push(s);
                     }
                     // v3.10.2：真实扫描量（本带覆盖 blocked 数）+ 速率 + 预计剩余，让 GPU 干活可见
@@ -2328,7 +2365,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 out.stats.threadsUsed = nthreads;
                 out.stats.scannedChunks = totalChunks;
                 const auto tConv0 = std::chrono::steady_clock::now();
-                TopNHeap heap(opt.targetCount);
+                TopNHeap heap(opt.targetCount, false,
+                              opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
                 const int64_t nAz = gp.azMax - gp.azMin + 1;
                 for (const MatchResult& m : gpuResults) {
                     // v3.8.1：先用整数平方距离判断能否进榜（命中可能上百万，逐次 hypot + 堆操作很贵）
@@ -2340,7 +2378,9 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     if (heap.full() && d2 > heap.worstD2()) continue;
                     const double dist = 0.5 * std::sqrt(static_cast<double>(d2));
                     const int64_t rank = (m.minX - gp.axMin) * nAz + (m.minZ - gp.azMin);
-                    heap.push(Scored{ m, dist, rank, d2 });
+                    Scored s{ m, dist, rank, d2, 0 };
+                    s.count = static_cast<int>(std::lround(m.density * static_cast<float>(gp.gridSize) * gp.gridSize));
+                    heap.push(s);
                 }
                 const auto tConv1 = std::chrono::steady_clock::now();
                 for (const Scored& s : heap.sorted()) out.results.push_back(s.m);
@@ -2971,7 +3011,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     Emitter matchEm(progress, kMatchFrac0, kMatchFrac1, false);
     // v3.10.10.3：忽略阈值（最优 N 个）在精确密度模式下复用本内核（计数 TopN，AVX2/多线程/分块）
     const bool countMode = false;   // v3.10.10.3 试验已回退（保留占位避免误用）
-    TopNHeap heap(opt.targetCount);
+    TopNHeap heap(opt.targetCount, false,
+                  opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
     const double effectiveMinDensity = opt.minDensity;
     bool earlyStop = false;
     // v3.10.5（用户反馈：数量够就停没生效）：提前停止只有在「先扫近处」时才有意义。
@@ -3217,9 +3258,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 mr.density = static_cast<float>(cnt) / static_cast<float>(static_cast<int64_t>(wSize) * wSize);
             }
             Scored sc{ mr, dist, rank, d2, 0 };
-            if (h.byCount()) {
-                sc.count = static_cast<int>(std::lround(mr.density * static_cast<float>(wSize) * wSize));
-            }
+            sc.count = static_cast<int>(std::lround(mr.density * static_cast<float>(wSize) * wSize));
             if (!strict || opt.directionLocked) {
                 h.push(sc);
                 ++foundCnt;
@@ -3881,7 +3920,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 const int64_t uEnd = (std::min)(nUnits, uBegin + batchUnits);
                 std::vector<TopNHeap> heaps;
                 heaps.reserve(static_cast<size_t>(nw));
-                for (int w = 0; w < nw; ++w) heaps.emplace_back(opt.targetCount);
+                for (int w = 0; w < nw; ++w) heaps.emplace_back(opt.targetCount, false,
+                                                            opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
                 std::vector<int64_t> found(static_cast<size_t>(nw), 0);
                 std::vector<int64_t> skippedPer(static_cast<size_t>(nw), 0);
                 std::atomic<int64_t> nextU{ uBegin };
