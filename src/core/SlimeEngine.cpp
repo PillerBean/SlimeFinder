@@ -2206,7 +2206,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             //   ⇒ GPU 搜索期间进度条可能长时间停在 0（单次派发无法上报中间进度），完成后直接到 100%。
             // v3.10.5：提前停止时（含智能范围）都按行带由近到远派发，才能在凑够 N 后停下；
             //   无早停时保持单次全量派发（速度优先）。
-            const bool bandForProgress = opt.stopAtTarget && !opt.smartRange && bandRowsTotal >= 4096;
+            const bool bandForProgress = opt.mode == Mode::Density && bandRowsTotal >= 4096 &&
+                                         (opt.stopAtTarget || !opt.allowHomogeneousResults);
             bool gpuBandFailed = false;
             bool bandTruncated = false;
             if (bandForProgress) {
