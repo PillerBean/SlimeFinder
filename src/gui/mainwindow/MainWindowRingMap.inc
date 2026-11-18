@@ -1,5 +1,7 @@
 // v3.12.0：环形搜索、地图联动与挂机点逻辑。
 
+#include <unordered_set>
+
 // v3.14.5（flow-ring-async）：环形规划的工作线程产物。
 //   * 只在 worker 中写入，完成后由 GUI 线程的 finishRingSearch() 读取；
 //   * 用 shared_ptr 传递，runRingSearch() 返回后不会留下悬空的栈引用；
@@ -22,6 +24,8 @@ struct MainWindow::RingSearchResult {
     int startZ = 0;
     int gridSize = 5;
     int targetCount = 1;
+    int requestedTopN = 1;
+    bool allowHomogeneousResults = false;
     int simDistance = 0;
     double uiMinDensity = 0.0;
     bool autoPrescan = false;
@@ -101,9 +105,14 @@ void MainWindow::runRingSearch()
     m_lastRingOuter = kRingOuter;   // v3.6.18：自检/状态可见的有效外沿
     o.innerRadius = kRingInner;
     o.topN = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 5));
+    const int requestedTopN = o.topN;
+    if (!m_settings.allowHomogeneousResults) {
+        // Need extra candidates to find requestedTopN distinct quality values.
+        o.topN = (std::min)(4000, (std::max)(o.topN * 8, o.topN + 8));
+    }
     o.minDensity = m_w->minDensity ? (std::max)(0.0, (std::min)(1.0, m_w->minDensity->value())) : 0.0;
     // v3.6.0：目标数量较大时放宽最小间距（24 → 8 区块），否则密集区域挑不出足够多结果
-    o.minSeparation = (o.topN > 8) ? 8 : 24;
+    o.minSeparation = (requestedTopN > 8) ? 8 : 24;
     o.coarseStep = std::clamp(m_settings.ringCoarseStep, 1, 64);
     // v3.10.3：超大范围自动加大粗扫步长 —— 保持「粗扫 ≤ ~512² 个采样中心」，
     //   否则全图级环形搜索会跑几个数量级太久（表现为界面像卡死）。
@@ -233,6 +242,8 @@ void MainWindow::runRingSearch()
     state->gridSize = m_w->gridSize ? m_w->gridSize->value() : 5;
     state->uiMinDensity = m_w->minDensity ? m_w->minDensity->value() : 0.3;
     state->targetCount = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
+    state->requestedTopN = requestedTopN;
+    state->allowHomogeneousResults = m_settings.allowHomogeneousResults;
     state->simDistance = m_w->simDistance ? m_w->simDistance->value() : 0;
     state->autoPrescan = autoPrescan;
     state->bedrock = bedrock;
@@ -387,15 +398,27 @@ void MainWindow::runRingSearch()
                 if (cands.empty()) ringEmptyAfterFilter = true;
             }
         }
-        if (static_cast<int>(cands.size()) > o.topN)
-            cands.resize(static_cast<size_t>(o.topN));
+        if (!state->allowHomogeneousResults) {
+            std::unordered_set<int64_t> seenQuality;
+            std::vector<slime::AfkCandidate> kept;
+            kept.reserve(cands.size());
+            for (const auto& c : cands) {
+                if (!seenQuality.insert(c.coveredBlocks).second) continue;
+                kept.push_back(c);
+            }
+            cands.swap(kept);
+        }
+        if (static_cast<int>(cands.size()) > state->requestedTopN)
+            cands.resize(static_cast<size_t>(state->requestedTopN));
         // v3.6.1：结果少于目标数量时在日志里说明被什么限制（避免以为程序只能出这么几个）
-        if (static_cast<int>(cands.size()) < o.topN)
-            std::fprintf(stderr, "[环形] 结果 %zu < 目标 %d：受最小密度(%.3f)/间距(%d)或候选池限制\n",
-                         cands.size(), o.topN, o.minDensity, o.minSeparation);
-        std::fprintf(stderr, "[环形] 严格 1 格重算完成：%zu 个候选（最优 %lld 格 / 权重 %lld）\n", cands.size(),
-                     static_cast<long long>(cands.front().coveredBlocks),
-                     static_cast<long long>(cands.front().coveredWeight));
+        if (static_cast<int>(cands.size()) < state->requestedTopN)
+            std::fprintf(stderr, "[环形] 结果 %zu < 目标 %d：受最小密度(%.3f)/间距(%d)/质量种类限制\n",
+                         cands.size(), state->requestedTopN, o.minDensity, o.minSeparation);
+        if (!cands.empty()) {
+            std::fprintf(stderr, "[环形] 严格 1 格重算完成：%zu 个候选（最优 %lld 格 / 权重 %lld）\n",
+                         cands.size(), static_cast<long long>(cands.front().coveredBlocks),
+                         static_cast<long long>(cands.front().coveredWeight));
+        }
     }
 
         // 取消发生在严格统计期间：最重的一步跑完后不再把结果交给界面。
@@ -557,7 +580,7 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         QJsonObject st;
         st.insert(QStringLiteral("radius"), o.radius);
         st.insert(QStringLiteral("inner_radius"), o.innerRadius);
-        st.insert(QStringLiteral("target"), static_cast<double>(o.topN));
+        st.insert(QStringLiteral("target"), static_cast<double>(result->requestedTopN));
         st.insert(QStringLiteral("min_density"), o.minDensity);
         st.insert(QStringLiteral("min_separation"), o.minSeparation);
         st.insert(QStringLiteral("sim_distance"), result->simDistance);
