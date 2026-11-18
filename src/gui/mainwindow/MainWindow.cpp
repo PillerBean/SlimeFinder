@@ -1130,6 +1130,23 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
 MainWindow::~MainWindow()
 {
+    // v3.14.5（flow-ring-async）：环形 SearchJob 必须在成员销毁前收口 ——
+    //   工作线程会读 m_ringCancel / m_gpuScan，SearchJob 析构时的 join 若发生在这两个成员
+    //   销毁之后就是 use-after-free（成员按声明逆序析构，m_ringJob 声明得比它们早）。
+    // v3.15.x（flow-ring-cancel2）：worker 现在只按值持有取消标志/结果状态的 shared_ptr，
+    //   完成回调经 m_ringUiGate 判活；因此这里用「请求取消 + 5s 有界等待」收口，
+    //   超时则安全丢弃（detach）线程 —— 绝不在 UI 线程无限 join，也不会访问已销毁的 this。
+    m_ringCancel->store(true, std::memory_order_relaxed);
+    m_ringJob.requestCancel();
+    {
+        std::lock_guard<std::mutex> lk(m_ringUiGate->mu);
+        m_ringUiGate->window = nullptr;   // 此后 worker 不再向 this 投递完成事件
+    }
+    if (!m_ringJob.waitFor(5000)) {
+        Logger::warning("环形规划在 5s 内未响应取消：安全丢弃后台线程（worker 不访问窗口成员）");
+        m_ringJob.abandon();
+    }
+    m_ringJob.join();   // 已 Finished 时立即返回；已 abandon 时为空操作
     // v3.3.7（P0-2）：**无条件**取消并 join。
     // 旧写法 `if (m_task.running())` 会漏掉「线程已置 running=false、尚未执行结果回调」的窄窗口：
     // 那个窗口里线程仍会回调 GUI（访问正在析构的 this），是「取消后崩溃」的候选根因之一。
@@ -1247,18 +1264,25 @@ void MainWindow::updateGpuBenchmarkUi()
 #include "MainWindowSearchResults.inc"
 void MainWindow::closeEvent(QCloseEvent* ev)
 {
-    // v3.13.8: ring search uses a worker joined inside runRingSearch(). Closing the window
-    // while it is running would destroy the captured stack / GUI state under the worker.
-    // Refuse the close, request cancellation, and let the next close proceed after join.
-    if (m_ringSearching) {
-        m_ringCancel.store(true, std::memory_order_relaxed);
+    // v3.14.5（flow-ring-async）：环形规划在后台 SearchJob 中运行。
+    //   关闭时先两阶段取消（m_ringCancel + requestCancel），再做 5s 有界等待：
+    //   * 到 Finished 才允许关闭；
+    //   * 完成回调由 m_ringFinishDiscard 标志丢弃，保证窗口销毁过程中不会触碰 this 的控件。
+    if (m_ringSearching || m_ringJob.active()) {
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
-        ev->ignore();
-        return;
+        if (!stopRingSearchForShutdown(5000)) {
+            ev->ignore();
+            return;
+        }
     }
     if (m_task.running()) {
         m_task.cancel();
-        m_task.wait();
+        // v3.14.0: two-phase cancel; never block the GUI indefinitely on a long engine step.
+        if (!m_task.waitFor(5000)) {
+            setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
+            ev->ignore();
+            return;
+        }
     }
     // v3.3.5（优化 5 / 5.1）：主界面当前的搜索相关选项自动成为下次默认值；
     // 窗口尺寸与位置按「窗口大小记忆」开关保存（均写入同一份 config.json）。

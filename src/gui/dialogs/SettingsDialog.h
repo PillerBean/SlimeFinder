@@ -75,6 +75,8 @@ struct AppSettings {
     // v3.10.11.1：结果自优化（GPU 密度匹配提前停止；默认关，行为与旧版一致）
     bool gpuResultSelfOptimize = false;
     int memLimitMB = 0;                 // 内存上限（MB；0 = 自动 = 1.5GB 分块位图预算）
+    // true：允许同密度不同距离的结果；false：每个密度质量只保留最近一个
+    bool allowHomogeneousResults = false;
     // v3.3.9.1（任务书 2.1）：启动时自动检测 GPU 状态（默认关闭；无/异常 OpenCL 驱动下探测有原生崩溃风险）
     bool autoCheckGpuAtStartup = false;
     // ---- 高级 ----
@@ -190,6 +192,7 @@ private:
     QSpinBox* m_cpuLimit = nullptr;
     QSpinBox* m_gpuLimit = nullptr;   // v3.7.1：GPU 占用率上限
     QSpinBox* m_memLimit = nullptr;
+    QCheckBox* m_allowHomogeneous = nullptr;
     QCheckBox* m_autoCheckGpu = nullptr; // v3.3.9.1（任务书 2.1）：启动时自动检查 GPU 状态
     // v3.3.6：崩溃转储 / 调试模式 / 重置所有设置
     QCheckBox* m_crashDump = nullptr;

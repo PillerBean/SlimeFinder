@@ -1,8 +1,55 @@
 // v3.12.0：环形搜索、地图联动与挂机点逻辑。
 
+#include <unordered_set>
+
+// v3.14.5（flow-ring-async）：环形规划的工作线程产物。
+//   * 只在 worker 中写入，完成后由 GUI 线程的 finishRingSearch() 读取；
+//   * 用 shared_ptr 传递，runRingSearch() 返回后不会留下悬空的栈引用；
+//   * options 里含 weightAt/rowSlime 等 std::function（各自按值持有数据），可安全跨线程移动。
+struct MainWindow::RingSearchResult {
+    slime::AfkPlanOptions options;
+    std::vector<slime::AfkCandidate> candidates;
+    std::shared_ptr<slime::GpuScan> gpu;   // 预筛/覆盖计算用到的 GPU 会话（可为空）
+    slime::Version version = slime::Version::Java;
+    int64_t seed = 0;
+    int biomeVersion = 0;
+    Rect region;
+    std::chrono::steady_clock::time_point started;
+    double computeSecs = 0.0;
+    int ringInner = 24;
+    int ringOuter = 128;
+    int spanX = 0;
+    int spanZ = 0;
+    int startX = 0;
+    int startZ = 0;
+    int gridSize = 5;
+    int targetCount = 1;
+    int requestedTopN = 1;
+    bool allowHomogeneousResults = false;
+    int simDistance = 0;
+    double uiMinDensity = 0.0;
+    bool autoPrescan = false;
+    bool bedrock = false;
+    bool gpuScanEnabled = false;
+    bool prescanUsed = false;
+    bool prescanFallback = false;
+    bool cancelled = false;
+    bool outOfMemory = false;
+    bool emptyAfterFilter = false;
+    uint64_t runId = 0;
+};
+
 void MainWindow::runRingSearch()
 {
     if (!m_w) return;
+    // v3.14.5：环形规划在后台运行，同一时刻只允许一个。重复入口（命令终端/快捷键）
+    //   等价于「取消当前」：先两阶段取消，完成后由 finishRingSearch 复位按钮。
+    if (m_ringSearching || m_ringJob.active()) {
+        m_ringCancel->store(true, std::memory_order_relaxed);
+        m_ringJob.requestCancel();
+        setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
+        return;
+    }
     // v3.10.12.12：图案模式下「区域形状」面板被隐藏，但环形单选按钮可能仍是 checked。
     //   这里必须优先按当前模式判断，否则会继续跑环形搜索并显示环形结果。
     if (m_w->strictRadio && m_w->strictRadio->isChecked()) {
@@ -58,9 +105,11 @@ void MainWindow::runRingSearch()
     m_lastRingOuter = kRingOuter;   // v3.6.18：自检/状态可见的有效外沿
     o.innerRadius = kRingInner;
     o.topN = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 5));
+    const int requestedTopN = o.topN;
+    // 同质化关闭时不扩大候选池：质量种类不足时返回少于 N，并明确提示。
     o.minDensity = m_w->minDensity ? (std::max)(0.0, (std::min)(1.0, m_w->minDensity->value())) : 0.0;
     // v3.6.0：目标数量较大时放宽最小间距（24 → 8 区块），否则密集区域挑不出足够多结果
-    o.minSeparation = (o.topN > 8) ? 8 : 24;
+    o.minSeparation = (requestedTopN > 8) ? 8 : 24;
     o.coarseStep = std::clamp(m_settings.ringCoarseStep, 1, 64);
     // v3.10.3：超大范围自动加大粗扫步长 —— 保持「粗扫 ≤ ~512² 个采样中心」，
     //   否则全图级环形搜索会跑几个数量级太久（表现为界面像卡死）。
@@ -172,27 +221,43 @@ void MainWindow::runRingSearch()
     // v3.6.19：环形搜索同样要先清掉上一次的结果（此前只有引擎路径清），
     //   否则「环形搜索无果」时列表/地图仍显示旧内容，切换方式后看起来像没生效。
     clearResultsForNewSearch();
-    const auto t0 = std::chrono::steady_clock::now();
-    // v3.5.22（用户反馈）：环形搜索一按下去界面就卡死（精确模式更明显）——
-    //   计算放到后台线程，UI 用局部事件循环等待，期间窗口仍能重绘、响应关闭等事件。
-    const int biomeVersionForStats = m_mapJavaVersionId;
-    double ringComputeSecs = 0.0;
-    std::vector<slime::AfkCandidate> cands;
-    std::atomic<bool> ringDone{ false };
-    bool ringEmptyAfterFilter = false;
-    std::atomic<bool> ringOutOfMemory{ false };
-    bool prescanUsed = false;
-    bool prescanFallback = false;
-    bool ringCancelled = false;
-    m_ringCancel.store(false, std::memory_order_relaxed);
+    // v3.14.5（flow-ring-async）：环形规划完全异步 —— 结果放进 shared_ptr，
+    //   runRingSearch() 只准备参数、切运行态并启动 SearchJob，随后立即返回。
+    auto state = std::make_shared<RingSearchResult>();
+    state->options = std::move(o);
+    state->version = v;
+    state->seed = seed;
+    state->biomeVersion = m_mapJavaVersionId;
+    state->region = slime::Rect{ minX, maxX, minZ, maxZ };
+    state->started = std::chrono::steady_clock::now();
+    state->ringInner = kRingInner;
+    state->ringOuter = kRingOuter;
+    state->spanX = spanX;
+    state->spanZ = spanZ;
+    state->startX = m_w->startX ? m_w->startX->value() : 0;
+    state->startZ = m_w->startZ ? m_w->startZ->value() : 0;
+    state->gridSize = m_w->gridSize ? m_w->gridSize->value() : 5;
+    state->uiMinDensity = m_w->minDensity ? m_w->minDensity->value() : 0.3;
+    state->targetCount = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
+    state->requestedTopN = requestedTopN;
+    state->allowHomogeneousResults = m_settings.allowHomogeneousResults;
+    state->simDistance = m_w->simDistance ? m_w->simDistance->value() : 0;
+    state->autoPrescan = autoPrescan;
+    state->bedrock = bedrock;
+    state->gpuScanEnabled = (state->options.gpuScan != nullptr);
+    // 预筛/覆盖计算用到的 GPU 会话用 shared_ptr 持有，避免后台线程读到已被释放的成员。
+    if (m_gpuScan && m_gpuAvailable) state->gpu = m_gpuScan;
+
+    m_ringCancel->store(false, std::memory_order_relaxed);
     m_ringSearching = true;
+    m_ringFinishDiscard = false;
     {
         const QString scanText = autoPrescan ? slime::ui::t("ui.7ae0cd5f9a0b")
-                                             : ((o.scanStride == 1) ? slime::ui::t("ui.277ba15949a6")
-                                                                    : slime::ui::t("ui.6c29e3499ee0"));
+                                             : ((state->options.scanStride == 1)
+                                                    ? slime::ui::t("ui.277ba15949a6")
+                                                    : slime::ui::t("ui.6c29e3499ee0"));
         setStatus(slime::ui::tr(slime::ui::t("ui.09d9fb4b92b6"))
                       .arg(spanX).arg(spanZ).arg(scanText));
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
     }
     // v3.6.0（用户反馈：点开始后按钮卡在"按下"、取消不可点）——
     //   一开始就切到运行态，并把按钮的按下/焦点状态清掉
@@ -207,14 +272,36 @@ void MainWindow::runRingSearch()
         m_w->progress->setRange(0, 0);   // v3.5.26：环形没有细粒度进度 → 忙碌滚动
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("…"));
     }
-    std::thread ringWorker([&]() {
+    // v3.14.5（flow-ring-async）：工作线程只做纯计算，结果/标志直接写入 shared state；
+    //   捕获的都是值拷贝（含 state），runRingSearch() 返回后不会悬空。
+    // v3.15.x（flow-ring-cancel2）：取消标志也按值捕获 shared_ptr —— worker 不再通过 this
+    //   访问 MainWindow 成员，窗口析构时即使线程被安全丢弃也不会 UAF。
+    const auto ringCancel = m_ringCancel;
+    const auto ringRunner = [state, ringCancel, autoPrescan, minX, maxX, minZ, maxZ, v, seed, pred,
+                             bedrock](const SearchOptions&,
+                                      const std::atomic<bool>& jobCancel,
+                                      const ProgressFn&) -> SearchOutcome {
         // v3.5.26：后台降到「低于普通」优先级，避免把 UI 线程饿死（精确模式尤其明显）
 #ifdef _WIN32
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
 #endif
+        // 引用 state 里的成员：写法与同步版一致，但生命周期由 shared_ptr 保证。
+        auto& o = state->options;
+        auto& cands = state->candidates;
+        const int biomeVersionForStats = state->biomeVersion;
+        auto& ringEmptyAfterFilter = state->emptyAfterFilter;
+        auto& ringOutOfMemory = state->outOfMemory;
+        auto& prescanUsed = state->prescanUsed;
+        auto& prescanFallback = state->prescanFallback;
+        auto& ringCancelled = state->cancelled;
+        const auto cancelRequested = [&jobCancel, ringCancel]() {
+            return jobCancel.load(std::memory_order_relaxed) ||
+                   ringCancel->load(std::memory_order_relaxed);
+        };
+        if (cancelRequested()) ringCancel->store(true, std::memory_order_relaxed);
         try {
             if (autoPrescan) {
-                if (m_gpuScan && m_gpuAvailable) {
+                if (state->gpu) {
                     slime::DensityPrescanParams pp;
                     pp.version = v;
                     pp.worldSeed = seed;
@@ -230,8 +317,8 @@ void MainWindow::runRingSearch()
                     pp.minSeparation = 16;
                     std::vector<slime::DensitySeed> seeds;
                     std::string perr;
-                    if (m_gpuScan->prescanDensitySeeds(pp, m_ringCancel, seeds, &perr) &&
-                        !seeds.empty() && !m_ringCancel.load(std::memory_order_relaxed)) {
+                    if (state->gpu->prescanDensitySeeds(pp, *ringCancel, seeds, &perr) &&
+                        !seeds.empty() && !cancelRequested()) {
                         o.seedCandidates.reserve(seeds.size());
                         for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
                         prescanUsed = true;
@@ -249,10 +336,15 @@ void MainWindow::runRingSearch()
                     std::fprintf(stderr, "[环形] GPU 不可用，正方形预筛回退快速抽样\n");
                 }
             }
-            if (m_ringCancel.load(std::memory_order_relaxed)) {
+            if (cancelRequested()) {
                 ringCancelled = true;
             } else {
-                cands = slime::AfkPlanner::plan(o, pred);
+                cands = slime::AfkPlanner::plan(o, pred, ringCancel.get());
+                // 规划器已在主循环内检查取消；返回后仍复核一次并丢弃不完整结果。
+                if (cancelRequested()) {
+                    ringCancelled = true;
+                    cands.clear();
+                }
             }
         } catch (const std::bad_alloc&) {
             ringOutOfMemory = true;
@@ -268,7 +360,12 @@ void MainWindow::runRingSearch()
         // v3.5.14：把「候选 × 行带」摊成任务并行走（8 个候选 × 6 条行带 = 48 个任务），
         //           每个线程自带一个 BiomeMap，不必每个候选都重建生成器。实现见 core（基准也复用它）。
         const slime::AfkPlanner::StrictStatsInfo info =
-            slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed, !bedrock);
+            slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed, !bedrock,
+                                                          ringCancel.get());
+        if (ringCancel->load(std::memory_order_relaxed)) {
+            ringCancelled = true;
+            cands.clear();
+        }
         if (info.cells > 0)
             std::fprintf(stderr, "[环形] 候选权重网格：按需采样 %zu / %zu 格（%.1f%%）\n", info.samples,
                          info.cells, info.samples * 100.0 / static_cast<double>(info.cells));
@@ -298,43 +395,101 @@ void MainWindow::runRingSearch()
                 if (cands.empty()) ringEmptyAfterFilter = true;
             }
         }
-        if (static_cast<int>(cands.size()) > o.topN)
-            cands.resize(static_cast<size_t>(o.topN));
+        if (!state->allowHomogeneousResults) {
+            std::unordered_set<int64_t> seenQuality;
+            std::vector<slime::AfkCandidate> kept;
+            kept.reserve(cands.size());
+            for (const auto& c : cands) {
+                if (!seenQuality.insert(c.coveredBlocks).second) continue;
+                kept.push_back(c);
+            }
+            cands.swap(kept);
+        }
+        if (static_cast<int>(cands.size()) > state->requestedTopN)
+            cands.resize(static_cast<size_t>(state->requestedTopN));
         // v3.6.1：结果少于目标数量时在日志里说明被什么限制（避免以为程序只能出这么几个）
-        if (static_cast<int>(cands.size()) < o.topN)
-            std::fprintf(stderr, "[环形] 结果 %zu < 目标 %d：受最小密度(%.3f)/间距(%d)或候选池限制\n",
-                         cands.size(), o.topN, o.minDensity, o.minSeparation);
-        std::fprintf(stderr, "[环形] 严格 1 格重算完成：%zu 个候选（最优 %lld 格 / 权重 %lld）\n", cands.size(),
-                     static_cast<long long>(cands.front().coveredBlocks),
-                     static_cast<long long>(cands.front().coveredWeight));
+        if (static_cast<int>(cands.size()) < state->requestedTopN)
+            std::fprintf(stderr, "[环形] 结果 %zu < 目标 %d：受最小密度(%.3f)/间距(%d)/质量种类限制\n",
+                         cands.size(), state->requestedTopN, o.minDensity, o.minSeparation);
+        if (!cands.empty()) {
+            std::fprintf(stderr, "[环形] 严格 1 格重算完成：%zu 个候选（最优 %lld 格 / 权重 %lld）\n",
+                         cands.size(), static_cast<long long>(cands.front().coveredBlocks),
+                         static_cast<long long>(cands.front().coveredWeight));
+        }
     }
 
-        ringComputeSecs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-        ringDone.store(true, std::memory_order_release);
-    });
+        // 取消发生在严格统计期间：最重的一步跑完后不再把结果交给界面。
+        if (cancelRequested() && !cands.empty()) {
+            ringCancelled = true;
+            cands.clear();
+        }
+        state->computeSecs =
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - state->started).count();
+        return SearchOutcome{};
+    };
+    state->runId = m_ringJob.runId() + 1;
     {
-        QEventLoop waitLoop;
-        QTimer poll;
-        poll.setInterval(2);   // v3.5.24：轮询要细，否则异步等待本身就给用户加延迟
-        QObject::connect(&poll, &QTimer::timeout, &waitLoop, [&]() {
-            if (ringDone.load(std::memory_order_acquire)) waitLoop.quit();
-        });
-        poll.start();
-        waitLoop.exec();
+        // 允许本窗口接收完成事件。析构会把 window 置空，之后 worker 不会再投递。
+        std::lock_guard<std::mutex> lk(m_ringUiGate->mu);
+        m_ringUiGate->window = this;
     }
-    ringWorker.join();
+    const auto ringUiGate = m_ringUiGate;
+    const auto ringDone = [ringUiGate, state](const slime::SearchReport&) {
+        // DoneFn 在工作线程执行：只在窗口仍存活时经 Qt 队列投递到 GUI 线程。
+        // v3.15.x：用 shared gate + 互斥锁与「窗口析构」握手 —— 持锁期间才允许调用
+        //   invokeMethod，析构方先把 window 置空，因此不会向已销毁的 this 投递。
+        std::lock_guard<std::mutex> lk(ringUiGate->mu);
+        MainWindow* w = ringUiGate->window;
+        if (!w) return;
+        QMetaObject::invokeMethod(w, [w, state]() { w->finishRingSearch(state); }, Qt::QueuedConnection);
+    };
+    if (!m_ringJob.start(SearchOptions{}, SearchProgressSink{}, ringDone, ringRunner)) {
+        // 启动失败（线程未创建/状态机拒绝）也必须恢复界面，不能在运行态卡死。
+        m_ringSearching = false;
+        updateStartEnabled();
+        if (m_w->start) m_w->start->setEnabled(true);
+        if (m_w->cancel) {
+            m_w->cancel->setEnabled(false);
+            m_w->cancel->setDown(false);
+        }
+        if (m_w->progress) {
+            m_w->progress->setRange(0, 1000);
+            m_w->progress->setValue(1000);
+            if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
+        }
+        setStatus(slime::ui::tr(slime::ui::t("ui.ring_async_start_failed")));
+        Logger::warning("环形搜索：后台 SearchJob 启动失败");
+        return;
+    }
+    std::fprintf(stderr, "[环形] 后台规划已启动（runId=%llu）\n",
+                 static_cast<unsigned long long>(state->runId));
+}
+
+// v3.14.5（flow-ring-async）：环形规划完成后的 GUI 线程收尾。
+//   只由 ringDone 投递的队列回调进入；所有控件/地图/遥测操作都在 GUI 线程执行。
+void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
+{
+    if (!result) return;
+    // 陈旧完成事件（已被新任务取代）不能改动当前界面。
+    if (result->runId != 0 && result->runId != m_ringJob.runId()) return;
+    // closeEvent 已判定可以关闭窗口：丢弃排队回调，避免窗口销毁过程中触碰控件。
+    if (m_ringFinishDiscard) return;
+
     m_ringSearching = false;
     updateStartEnabled();
-    if (ringCancelled) {
+
+    const std::vector<slime::AfkCandidate>& cands = result->candidates;
+    const slime::AfkPlanOptions& o = result->options;
+    if (result->cancelled) {
         setStatus(slime::ui::tr(slime::ui::t("ui.397b1272aec8")));
-    } else if (autoPrescan && prescanUsed) {
+    } else if (result->autoPrescan && result->prescanUsed) {
         addFeedback(2, slime::ui::tr(slime::ui::t("ui.29d84f827fc6")));
-    } else if (autoPrescan && prescanFallback) {
+    } else if (result->autoPrescan && result->prescanFallback) {
         addFeedback(2, slime::ui::tr(slime::ui::t("ui.c736d29daa5b")));
     }
     if (m_resultsNotice) {
         const int got = static_cast<int>(cands.size());
-        const int want = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
+        const int want = (std::max)(1, result->targetCount);
         if (got == 0)
             m_resultsNotice->setText(slime::ui::t("ui.e682244d5bfe"));
         else if (got < want)
@@ -343,6 +498,9 @@ void MainWindow::runRingSearch()
         else
             m_resultsNotice->setText(QString());
         m_resultsNotice->setVisible(!m_resultsNotice->text().isEmpty());
+        if (!result->allowHomogeneousResults && got < result->requestedTopN) {
+            addFeedback(2, slime::ui::t("ui.homogeneous_fewer").arg(got).arg(result->requestedTopN));
+        }
     }
     // v3.6.0：结束（含异常/空结果）一律恢复按钮态
     if (m_w->start) m_w->start->setEnabled(true);
@@ -353,15 +511,27 @@ void MainWindow::runRingSearch()
         m_w->progress->setValue(1000);
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
     }
-    if (ringOutOfMemory.load())
+    if (result->cancelled) {
+        m_lastAfk.clear();
+        m_lastOutcome = SearchOutcome{};
+        m_hasLastOutcome = false;
+        return;
+    }
+    if (result->version == Version::Bedrock && !m_bedrockRiverNoticeShown) {
+        m_bedrockRiverNoticeShown = true;
+        addFeedback(1, slime::ui::t("ui.bedrock_river_bug"));
+        Logger::warning("基岩版 MCPE-161245：河流群系中的环形覆盖可能高估；本工具未自动排除河流群系");
+    }
+    if (result->outOfMemory)
         setStatus(slime::ui::tr(slime::ui::t("ui.a7216f4a8a80")));
-    else if (ringEmptyAfterFilter)
+    else if (result->emptyAfterFilter)
         setStatus(slime::ui::tr(slime::ui::t("ui.b3df7b1e43a6"))
                       .arg(o.minDensity, 0, 'f', 3));
-    const int stride = slime::AfkPlanner::coarseChunkStride((std::max)(spanX, spanZ));
-    const double secs = ringComputeSecs > 0.0
-                             ? ringComputeSecs
-                             : std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    const int stride = slime::AfkPlanner::coarseChunkStride((std::max)(result->spanX, result->spanZ));
+    const double secs = result->computeSecs > 0.0
+                            ? result->computeSecs
+                            : std::chrono::duration<double>(std::chrono::steady_clock::now() - result->started)
+                                  .count();
     m_lastAfk = cands;
 
     SearchOutcome out;
@@ -378,56 +548,56 @@ void MainWindow::runRingSearch()
     // v3.10.12.11：环形「快速」在超大范围会等距抽样（约 40 万样本）。
     //   此前把整个范围面积当作已扫描区块，配合毫秒级耗时会出现「1595 万亿/秒」的假速度；
     //   这里按实际抽样点数报告。
-    int64_t scannedStat = static_cast<int64_t>(spanX) * spanZ;
+    int64_t scannedStat = static_cast<int64_t>(result->spanX) * result->spanZ;
     // 自动正方形预筛成功时，实际扫的是整张正方形密度图；不能再按快速抽样的 40 万点报速度。
-    if (!(autoPrescan && prescanUsed) && o.scanStride != 1 && scannedStat > 20LL * 1000 * 1000) {
+    if (!(result->autoPrescan && result->prescanUsed) && o.scanStride != 1 &&
+        scannedStat > 20LL * 1000 * 1000) {
         int ss = 1;
-        while ((static_cast<int64_t>(spanX) / ss) * (static_cast<int64_t>(spanZ) / ss) > 400000)
+        while ((static_cast<int64_t>(result->spanX) / ss) * (static_cast<int64_t>(result->spanZ) / ss) > 400000)
             ++ss;
-        scannedStat = (static_cast<int64_t>(spanX) / ss) * (static_cast<int64_t>(spanZ) / ss);
+        scannedStat = (static_cast<int64_t>(result->spanX) / ss) * (static_cast<int64_t>(result->spanZ) / ss);
     }
     out.stats.scannedChunks = scannedStat;
     out.stats.totalMs = secs * 1000.0;
     out.stats.scanMs = secs * 1000.0;
     RunInfo info;
-    info.version = v;
+    info.version = result->version;
     info.mode = Mode::Density;
     info.algorithm = Algorithm::Exact;
-    info.startX = m_w->startX->value();
-    info.startZ = m_w->startZ->value();
-    info.region = Rect{ minX, maxX, minZ, maxZ };
-    info.gridSizeUsed = m_w->gridSize ? m_w->gridSize->value() : 5;
-    info.minDensityUsed = m_w->minDensity ? m_w->minDensity->value() : 0.3;
-    info.targetCount = m_w->targetCount ? m_w->targetCount->value() : 1;
+    info.startX = result->startX;
+    info.startZ = result->startZ;
+    info.region = result->region;
+    info.gridSizeUsed = result->gridSize;
+    info.minDensityUsed = result->uiMinDensity;
+    info.targetCount = result->targetCount;
     m_lastOutcome = out;
     m_lastInfo = info;
     m_hasLastOutcome = true;
     if (m_telemetry) {
-        const QString ringMode = autoPrescan ? QStringLiteral("auto")
-                                             : ((o.scanStride == 1) ? QStringLiteral("exact")
-                                                                   : QStringLiteral("fast"));
+        const QString ringMode = result->autoPrescan ? QStringLiteral("auto")
+                                                     : ((o.scanStride == 1) ? QStringLiteral("exact")
+                                                                            : QStringLiteral("fast"));
         QJsonObject st;
         st.insert(QStringLiteral("radius"), o.radius);
         st.insert(QStringLiteral("inner_radius"), o.innerRadius);
-        st.insert(QStringLiteral("target"), static_cast<double>(o.topN));
+        st.insert(QStringLiteral("target"), static_cast<double>(result->requestedTopN));
         st.insert(QStringLiteral("min_density"), o.minDensity);
         st.insert(QStringLiteral("min_separation"), o.minSeparation);
-        st.insert(QStringLiteral("sim_distance"), m_w->simDistance ? m_w->simDistance->value() : 0);
-        const QString seedStr = bedrock ? QString()
-                                        : QString::number(seed);
+        st.insert(QStringLiteral("sim_distance"), result->simDistance);
+        const QString seedStr = result->bedrock ? QString()
+                                                : QString::number(result->seed);
         const QJsonObject search = buildTelemetrySearch(
-            seedStr, bedrock, QStringLiteral("ring"), QStringLiteral("exact"), ringMode, info.region,
-            m_w->startX ? m_w->startX->value() : 0, m_w->startZ ? m_w->startZ->value() : 0,
-            st, out, o.gpuScan != nullptr);
-        m_telemetry->reportSearchDetailed(QString::fromLatin1(kAppVersion), QStringLiteral("test"),
-                                          m_gpuScan ? QString::fromStdString(m_gpuScan->deviceName()) : QString(),
-                                          search);
+            seedStr, result->bedrock, QStringLiteral("ring"), QStringLiteral("exact"), ringMode,
+            info.region, result->startX, result->startZ, st, out, result->gpuScanEnabled);
+        m_telemetry->reportSearchDetailed(
+            QString::fromLatin1(kAppVersion), QStringLiteral("test"),
+            result->gpu ? QString::fromStdString(result->gpu->deviceName()) : QString(), search);
     }
     populateResultText(out, info);
     if (m_map) {
         auto layer = m_map->layer();
-        layer.afkRadius = kRingOuter;
-        layer.afkInnerRadius = kRingInner;   // v3.5.8：地图上画双圆环带
+        layer.afkRadius = result->ringOuter;
+        layer.afkInnerRadius = result->ringInner;   // v3.5.8：地图上画双圆环带
         m_map->setLayer(layer);
         m_map->setResults(out.results);
     // v3.5.22（用户要求）：有结果时自动跳到地图对应位置并标注
@@ -457,15 +627,16 @@ void MainWindow::runRingSearch()
         if (m_map && !m_map->isVisible()) toggleMapPanel();   // v3.6.2：按内容可见性判断
     }
     // v3.5.8：统计口径 —— 按「世界倒数第二层」的 y 统计可生成格数（洞穴更新前 y≥1，之后 y≥-63）
-    const int spawnY = (v == slime::Version::Java && m_mapJavaVersionId >= 5) ? -63 : 1;
+    const int spawnY = (result->version == slime::Version::Java && m_mapJavaVersionId >= 5) ? -63 : 1;
     // v3.5.15：把「界面刷新」也计时 —— 用户感知的等待 = 计算 + 结果列表 + 地图图层重建
-    const double uiMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() -
-                        secs * 1000.0;
+    const double uiMs =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - result->started).count() -
+        secs * 1000.0;
     std::fprintf(stderr, "[环形] 界面刷新（列表+地图）：%.1f ms（地图图层最近一次 %.0f ms）\n", uiMs,
                  m_map ? m_map->lastLayerBuildMs() : 0.0);
     setStatus(slime::ui::tr(slime::ui::t("ui.1d9c4069d770"))
-                  .arg(kRingInner)
-                  .arg(kRingOuter)
+                  .arg(result->ringInner)
+                  .arg(result->ringOuter)
                   .arg(spawnY)
                   .arg(cands.size())
                   .arg(cands.empty() ? 0 : static_cast<qlonglong>(cands.front().coveredBlocks))
@@ -476,6 +647,52 @@ void MainWindow::runRingSearch()
     std::fprintf(stderr, "[环形] 搜索完成：候选=%zu 最优=(%d,%d) 覆盖=%lld 格 用时=%.3fs\n", cands.size(),
                  cands.empty() ? 0 : cands.front().x, cands.empty() ? 0 : cands.front().z,
                  cands.empty() ? 0LL : static_cast<long long>(cands.front().coveredBlocks), secs);
+}
+
+// v3.14.5：关闭窗口 / GUI 自检共用的环形任务停止路径（两阶段取消 + 有界等待）。
+bool MainWindow::stopRingSearchForShutdown(int timeoutMs)
+{
+    if (!m_ringSearching && !m_ringJob.active()) return true;
+    m_ringCancel->store(true, std::memory_order_relaxed);
+    m_ringJob.requestCancel();
+    if (!m_ringJob.waitFor(timeoutMs)) {
+        // v3.15.x（flow-ring-cancel2）：规划器所有长循环都能及时取消，正常应在亚秒级退出；
+        //   超时说明仍有未覆盖的盲区。这里不阻塞关闭（由 closeEvent 决定 ignore），只记录证据。
+        Logger::warning("环形任务在 " + std::to_string(timeoutMs) + "ms 内未响应取消，放弃本次关闭");
+        return false;
+    }
+    // 已到 Finished：完成回调可能仍在队列里。窗口即将关闭，置标志丢弃，
+    // 保证它不会在窗口销毁后触碰 this 的控件。
+    m_ringFinishDiscard = true;
+    m_ringSearching = false;
+    // 关闭路径同样要留下“空闲态”（窗口可能被其它逻辑拦下而不真正关闭）。
+    updateStartEnabled();
+    if (m_w) {
+        if (m_w->start) m_w->start->setEnabled(true);
+        if (m_w->cancel) {
+            m_w->cancel->setEnabled(false);
+            m_w->cancel->setDown(false);
+        }
+        if (m_w->progress) {
+            m_w->progress->setRange(0, 1000);
+            m_w->progress->setValue(1000);
+            if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
+        }
+    }
+    return true;
+}
+
+// v3.14.5：GUI 自检专用 —— 泵事件直到环形任务完成（或超时），返回是否已空闲。
+bool MainWindow::waitForRingSearchIdle(int timeoutMs)
+{
+    QElapsedTimer timer;
+    timer.start();
+    while (m_ringSearching && timer.elapsed() < timeoutMs) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        if (m_ringSearching) QThread::msleep(2);
+    }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    return !m_ringSearching;
 }
 
 // v3.5.4：地图面板（搜索页右侧）—— 与信息栏联动

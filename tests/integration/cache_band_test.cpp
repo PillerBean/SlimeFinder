@@ -1,4 +1,4 @@
-﻿#include "core/SlimeEngine.h"
+#include "core/SlimeEngine.h"
 #include "core/CacheManager.h"
 #include "cache/CacheStore.h"
 
@@ -89,7 +89,9 @@ int main()
         cached.useCache = true;
         cached.minX = -testRange; cached.maxX = testRange - 1;
         cached.minZ = -testRange; cached.maxZ = testRange - 1;
-        cached.cacheBandSize = testRange > 512 ? (std::getenv("SLIME_TEST_BAND") ? std::atoi(std::getenv("SLIME_TEST_BAND")) : 4096) : 64;
+        cached.cacheBandSize = std::getenv("SLIME_TEST_BAND")
+                                   ? std::atoi(std::getenv("SLIME_TEST_BAND"))
+                                   : (testRange > 512 ? 4096 : 64);
         cached.cacheBandLoader = [](const slime::Rect& band) {
             auto cm = std::make_shared<slime::CacheManager>();
             std::vector<std::pair<int, int>> slime;
@@ -114,6 +116,46 @@ int main()
             return 1;
         }
         std::printf("cached-bedrock OK results=%zu\n", plain.results.size());
+
+        // v3.14.1: global early stop must return the same nearest-N as a full scan.
+        slime::SearchOptions stopOpt = cached;
+        stopOpt.minX = -512;
+        stopOpt.maxX = 511;
+        stopOpt.minZ = -512;
+        stopOpt.maxZ = 511;
+        stopOpt.cacheBandSize = 64;
+        stopOpt.targetCount = 3;
+        stopOpt.stopAtTarget = true;
+        slime::SearchOptions fullOpt = stopOpt;
+        fullOpt.stopAtTarget = false;
+        slime::SearchOutcome full;
+        const auto fullT0 = std::chrono::steady_clock::now();
+        engine.runBanded(fullOpt, std::atomic<bool>{}, {}, full);
+        const auto fullT1 = std::chrono::steady_clock::now();
+        slime::SearchOutcome early;
+        const auto earlyT0 = std::chrono::steady_clock::now();
+        engine.runBanded(stopOpt, std::atomic<bool>{}, {}, early);
+        const auto earlyT1 = std::chrono::steady_clock::now();
+        const double fullMs = std::chrono::duration<double, std::milli>(fullT1 - fullT0).count();
+        const double earlyMs = std::chrono::duration<double, std::milli>(earlyT1 - earlyT0).count();
+        if (!full.ok || !early.ok || !sameResults(full.results, early.results)) {
+            std::printf("banded-stop RESULT MISMATCH full=%zu early=%zu stopped=%d\n",
+                        full.results.size(), early.results.size(), early.stoppedEarly ? 1 : 0);
+            return 1;
+        }
+        if (early.totalFound < static_cast<int64_t>(early.results.size()) ||
+            full.totalFound < static_cast<int64_t>(full.results.size())) {
+            std::printf("banded totalFound invalid early=%lld earlyResults=%zu full=%lld fullResults=%zu\n",
+                        static_cast<long long>(early.totalFound), early.results.size(),
+                        static_cast<long long>(full.totalFound), full.results.size());
+            return 1;
+        }
+        std::printf("banded-stop OK results=%zu totalFound=%lld stoppedEarly=%d scanned=%lld fullScanned=%lld "
+                    "fullMs=%.1f earlyMs=%.1f\n",
+                    early.results.size(), static_cast<long long>(early.totalFound),
+                    early.stoppedEarly ? 1 : 0,
+                    static_cast<long long>(early.stats.scannedChunks),
+                    static_cast<long long>(full.stats.scannedChunks), fullMs, earlyMs);
     }
     // 真实 CacheStore：只加载与 band 相交的 pack，结果应与无缓存一致。
     if (const char* root = std::getenv("SLIME_TEST_CACHE")) {

@@ -57,7 +57,8 @@ public:
         if (!m_session->patternStream(p.worldSeed, p.version == slime::Version::Bedrock, p.rows, p.cols, w, h,
                                       static_cast<int>(p.axMin), static_cast<int>(p.axMax),
                                       static_cast<int>(p.azMin), static_cast<int>(p.azMax), p.enableMasks,
-                                      p.greenMasks, static_cast<uint32_t>(p.maxResults), cancel, hits, err)) {
+                                      p.greenMasks, static_cast<uint32_t>(p.maxResults), cancel, hits, err,
+                                      p.outTruncated)) {
             return false;
         }
         if (cancel.load(std::memory_order_relaxed)) return false;
@@ -94,7 +95,8 @@ public:
                                            std::max(1, thr), w, h, p.axMin, p.axMax,
                                            p.azMin, p.azMax, static_cast<uint32_t>(p.maxResults), p.startX,
                                            p.startZ, cancel, hits, err, &streamTotal, p.earlyStop, p.earlyStopTarget,
-                                           static_cast<uint32_t>(std::min<int64_t>(p.keepCandidates, 4000000)))) {
+                                           static_cast<uint32_t>(std::min<int64_t>(p.keepCandidates, 4000000)),
+                                           p.outTruncated)) {
             return false;
         }
         if (cancel.load(std::memory_order_relaxed)) return false;

@@ -1,4 +1,4 @@
-﻿// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
+// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
 //
 // 交互流程：游戏版本 → 种子 → 范围(快速预设/边界截断) → 模式（严格图案 / 密度）→
 // 搜索算法（精确 / 分层 / 快速估算 / 保守）→ 查询起点 → 开始搜索；
@@ -35,9 +35,11 @@ class QToolButton;     // v3.4.1：左导航（上图案下文字）
 #include <atomic>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include "core/CacheManager.h"
+#include "core/MemoryBudget.h"
 #include "cache/CacheStore.h"
 #include "core/SearchTask.h"
 #include "core/SlimeEngine.h"
@@ -201,6 +203,8 @@ private:
     void setStatus(const QString& text);
     void logSearchParams(const SearchOptions& opt);
     void onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId); // v3.3.7：带运行编号（陈旧事件丢弃）
+    void onSearchFinishedReport(const SearchReport& report, const RunInfo& info, int runId);
+    bool confirmHighHitEstimate(const slime::HitEstimate& estimate, bool forceModal = false);
     QString describeResultsText(const SearchOutcome& out, const RunInfo& info) const;
     // v3.9.10（过程可视化）：把搜索过程（阶段耗时 / GPU 使用与回退原因 / 停止语义）汇成多行文本
     QString processSummaryText(const SearchOutcome& out) const;
@@ -217,6 +221,21 @@ private:
     // v3.3.4：结果以文本形式显示在右侧 QTextEdit（可选中、可右键复制命令）
     void populateResultText(const SearchOutcome& out, const RunInfo& info);
     void runRingSearch();   // v3.5.5：环形覆盖搜索分支
+    // v3.14.5（flow-ring-async）：环形规划交给后台 SearchJob；worker 结果放在 shared_ptr 里，
+    //   完成回调经 QMetaObject::invokeMethod 排队回到 GUI 线程，再由 finishRingSearch 落地。
+    struct RingSearchResult;
+    using RingSearchResultPtr = std::shared_ptr<RingSearchResult>;
+    // v3.15.x（flow-ring-cancel2）：worker → GUI 完成事件的投递门。
+    //   worker 只在持有 mu 且 window 非空时投递；析构先持锁把 window 置空，
+    //   因此「安全丢弃（detach）后台线程」之后也不会再向正在销毁的 this 投递事件。
+    struct RingUiGate {
+        std::mutex mu;
+        MainWindow* window = nullptr;
+    };
+    void finishRingSearch(const RingSearchResultPtr& result);
+    // 关闭窗口 / GUI 自检共用：两阶段取消 + 有界等待；返回是否已到 Finished。
+    bool stopRingSearchForShutdown(int timeoutMs);
+    bool waitForRingSearchIdle(int timeoutMs);   // GUI 自检：泵事件直到环形任务结束
     void updateSearchShapeEnabled(); // v3.5.6：环形模式下置灰无关选项
     void toggleResultPane();
     void adjustMapSquare();
@@ -376,11 +395,14 @@ private:
     bool m_uiQuiet = false; // 自检时抑制模态对话框
     int64_t m_searchStartMs = 0; // 本次搜索开始时刻（epoch ms，性能日志用）
     SearchTask m_task;
+    SearchJob m_ringJob;
     QString m_lastResultText; // 最近一次完整结果文本（供“复制结果”）
     // v3.3.3：保留最近一次搜索结果，用于结果区排序（只改显示顺序）
     SearchOutcome m_lastOutcome;
+    SearchReport m_lastReport;
     RunInfo m_lastInfo;
     bool m_hasLastOutcome = false;
+    bool m_bedrockRiverNoticeShown = false;
     bool m_stageWasMatching = false; // v3.3.3：进度阶段文字（扫描→匹配 切换提示只显示一次）
 
     // ---- v3.3.4：中央分区 / 底部面板（v3.3.6：改为左竖排导航 + 右内容区）----
@@ -420,8 +442,12 @@ private:
     int m_lastRingOuter = 0;      // v3.6.18：本次环形搜索的有效外沿（模拟距离可能收窄）
     double m_minDensityBeforeRing = 0.3;  // v3.10.12.10：切回正方形时恢复环形前的阈值
     double m_minDensityCommitted = 0.3;   // v3.10.12.11：焦点离开后才判断“最小密度被改”
-    std::atomic<bool> m_ringCancel{ false };  // v3.10.12.11：环形自动预筛的取消标志
+    // v3.15.x（flow-ring-cancel2）：取消标志用 shared_ptr 持有 —— 工作线程按值捕获它，
+    //   即使窗口析构后线程被安全丢弃，也不会解引用 MainWindow 成员。
+    std::shared_ptr<std::atomic<bool>> m_ringCancel = std::make_shared<std::atomic<bool>>(false);
+    std::shared_ptr<RingUiGate> m_ringUiGate = std::make_shared<RingUiGate>();
     bool m_ringSearching = false;             // v3.10.12.11：环形搜索（含预筛）进行中
+    bool m_ringFinishDiscard = false;         // v3.14.5：关闭窗口时丢弃排队中的完成回调（不触碰销毁中的控件）
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器
     QPushButton* m_mapIconBtn = nullptr;   // v3.6.1：左栏图标条里的地图开关
     void updateMapFromForm();

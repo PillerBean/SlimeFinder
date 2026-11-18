@@ -69,6 +69,30 @@ QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
                .arg(basis);
 }
 
+bool MainWindow::confirmHighHitEstimate(const slime::HitEstimate& estimate, bool forceModal)
+{
+    if (!estimate.ok || estimate.estimatedHits < 1000000) return true;
+    const QString detail =
+        slime::ui::t("ui.high_hit_warning")
+            .arg(static_cast<qlonglong>(estimate.estimatedHits))
+            .arg(static_cast<qlonglong>(estimate.candidateWindows))
+            .arg(static_cast<qlonglong>(estimate.sampledWindows));
+    addFeedback(2, detail);
+    if (!forceModal && estimate.estimatedHits < 4000000) return true;
+    if (m_uiQuiet && !forceModal) return true;
+
+    QMessageBox box(this);
+    box.setWindowTitle(slime::ui::t("ui.high_hit_confirm_title"));
+    box.setText(detail);
+    box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    box.setDefaultButton(QMessageBox::No);
+    if (forceModal) {
+        // UI automation: close the real modal through the event loop, not by bypassing it.
+        QTimer::singleShot(50, &box, [&box]() { box.done(QMessageBox::Yes); });
+    }
+    return box.exec() == QMessageBox::Yes;
+}
+
 void MainWindow::startSearch()
 {
     if (m_running) {
@@ -89,6 +113,9 @@ void MainWindow::startSearch()
     if (!buildModeActive() && !patternModeNow && m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
         runRingSearch();
         return;
+    }
+    if (!buildModeActive() && patternModeNow && m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
+        addFeedback(1, slime::ui::t("ui.strict_ring_ignored"));
     }
 
     SearchOptions opt;
@@ -123,8 +150,21 @@ void MainWindow::startSearch()
             }
         }
     }
-    opt.memBudgetBytes =
-        (m_settings.memLimitMB > 0) ? static_cast<int64_t>(m_settings.memLimitMB) * 1024 * 1024 : 0;
+    const slime::MemoryBudget memoryBudget = slime::MemoryBudget::fromSettingMB(m_settings.memLimitMB);
+    opt.memBudgetBytes = memoryBudget.chunkBitmapBytes;
+    opt.gpuHostBudgetBytes = memoryBudget.gpuHostBytes;
+    opt.allowHomogeneousResults = m_settings.allowHomogeneousResults;
+    if (!buildModeActive() && opt.mode == Mode::Density && !opt.allowHomogeneousResults) {
+        addFeedback(2, slime::ui::t("ui.homogeneous_off_note"));
+    }
+    if (m_cacheStore) m_cacheStore->setPackCacheLimitBytes(memoryBudget.packCacheBytes);
+    Logger::info("RAM预算: " + std::string(memoryBudget.automatic ? "自动" : "手动") +
+                 " 总量=" + std::to_string(memoryBudget.totalBytes / (1024 * 1024)) +
+                 "MB 分块=" + std::to_string(memoryBudget.chunkBitmapBytes / (1024 * 1024)) +
+                 "MB packLRU=" + std::to_string(memoryBudget.packCacheBytes / (1024 * 1024)) +
+                 "MB 构建=" + std::to_string(memoryBudget.buildWorkingBytes / (1024 * 1024)) +
+                 "MB GPU主机=" + std::to_string(memoryBudget.gpuHostBytes / (1024 * 1024)) +
+                 "MB" + (memoryBudget.clamped ? "（已按可用内存收敛）" : ""));
     opt.cpuLimitPercent = std::clamp(m_settings.cpuLimitPercent, 10, 100);
     m_lastEffectiveThreads = opt.threads; // v3.3.9（二）：供自检核对「CPU 上限确实收敛了线程数」
     // v3.3.0：搜索算法（分层/估算/保守仅在密度搜索下生效；引擎侧对误配做兜底）
@@ -246,16 +286,25 @@ void MainWindow::startSearch()
     opt.cache = nullptr;
     opt.cacheBandLoader = nullptr;
     if (cacheEnabled && !buildModeActive() && m_cacheStore) {
-        opt.cacheBandMayCover = [this](const slime::Rect& band) {
-            // v3.13.8: metadata query (not "any overlap"); CacheStore now serializes access.
-            return m_cacheStore && m_cacheStore->coversRange(band);
+        // v3.14.3: one immutable pack-index snapshot for the whole run. A cache import/clear
+        // after start cannot change which packs this task sees.
+        const slime::cache::CacheSnapshot cacheSnapshot = m_cacheStore->snapshot();
+        auto* cacheStore = m_cacheStore.get();
+        opt.cacheBandMayCover = [cacheStore, cacheSnapshot](const slime::Rect& band) {
+            return cacheStore->coversRange(cacheSnapshot, band);
         };
-        opt.cacheBandLoader = [this](const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
+        opt.cacheBandLoader = [cacheStore, cacheSnapshot](
+                                  const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
             auto cm = std::make_shared<slime::CacheManager>();
-            if (!m_cacheStore) return cm;
             std::string err;
-            if (!m_cacheStore->fillCacheManagerRange(*cm, band, &err) && !err.empty()) {
-                // 失败时返回空缓存继续计算，结果不受影响。
+            if (!cacheStore->fillCacheManagerRange(cacheSnapshot, *cm, band, &err) && !err.empty()) {
+                // 失败时返回空缓存继续计算，结果不受影响；但不能静默吞掉。
+                static std::atomic<int> logged{ 0 };
+                if (logged.fetch_add(1, std::memory_order_relaxed) < 5) {
+                    Logger::warning("缓存band加载失败，band=(" + std::to_string(band.minX) + "," +
+                                    std::to_string(band.maxX) + "," + std::to_string(band.minZ) + "," +
+                                    std::to_string(band.maxZ) + ") " + err);
+                }
             }
             return cm;
         };
@@ -346,6 +395,18 @@ void MainWindow::startSearch()
         return;
     }
 
+    // v3.14.4: high-hit warning. The estimate is stratified sampling, not a hard promise.
+    if (!buildModeActive()) {
+        const slime::HitEstimate hitEstimate = SlimeEngine::estimateHits(opt);
+        if (hitEstimate.ok && hitEstimate.estimatedHits >= 1000000) {
+            Logger::info("高命中预估 | 预计=" + std::to_string(hitEstimate.estimatedHits) +
+                         " 候选=" + std::to_string(hitEstimate.candidateWindows) +
+                         " 采样=" + std::to_string(hitEstimate.sampledWindows) +
+                         " 命中率=" + std::to_string(hitEstimate.hitRate));
+            if (!confirmHighHitEstimate(hitEstimate)) return;
+        }
+    }
+
     RunInfo info;
     info.version = opt.version;
     info.mode = opt.mode;
@@ -423,9 +484,14 @@ void MainWindow::startSearch()
     m_runMode = runMode; // v3.3.7.2：供取消/完成/出错等后续路径复用同一口径
     m_runAlg = runAlg;
 
-    m_task.start(
+    m_task.startReport(
         opt,
-        [this, postToUi, runId, runMode, runAlg](double frac, bool scanning, double cps, double etaSec) {
+        [this, postToUi, runId, runMode, runAlg](const SearchProgress& progress) {
+            const double frac = progress.fraction;
+            const bool scanning = progress.phase == SearchPhase::Preparing ||
+                                  progress.phase == SearchPhase::Scanning;
+            const double cps = progress.chunksPerSec;
+            const double etaSec = progress.etaSec;
             postToUi([this, frac, scanning, cps, etaSec, runId, runMode, runAlg]() {
                 if (!m_running || runId != m_runId) return; // 陈旧运行的事件：直接丢弃
                 // v3.3.9（任务书 1.1/1.4）：构建模式用「四项进度」+ 缓存扫描/新区域扫描区分
@@ -476,8 +542,8 @@ void MainWindow::startSearch()
                 }
             });
         },
-        [this, postToUi, info, runId](const SearchOutcome& out) {
-            postToUi([this, out, info, runId]() { onSearchFinished(out, info, runId); });
+        [this, postToUi, info, runId](const SearchReport& report) {
+            postToUi([this, report, info, runId]() { onSearchFinishedReport(report, info, runId); });
         });
 
     if (m_w->threads->value() == 1) {
@@ -662,12 +728,31 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
         QMessageBox::warning(this, slime::ui::t("ui.073cf8d38324"), slime::ui::t("ui.9d61509a4e27"));
         return false;
     }
+    const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
+    const double legacyMB = static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0);
+    // v3.14.5: a build keeps the whole CacheManager in RAM until it is saved.
+    // Refuse an obviously impossible build before it can OOM the process.
+    {
+        const MemoryBudget buildMem = MemoryBudget::fromSettingMB(m_settings.memLimitMB);
+        const int64_t estimatedBits = total / 8;
+        if (buildMem.buildWorkingBytes > 0 && estimatedBits > buildMem.buildWorkingBytes) {
+            Logger::warning("构建内存预算不足：预计位图 " + std::to_string(estimatedBits / (1024 * 1024)) +
+                            "MB，构建预算 " + std::to_string(buildMem.buildWorkingBytes / (1024 * 1024)) + "MB");
+            if (!m_uiQuiet) {
+                QMessageBox::warning(this, slime::ui::t("ui.9d43e3b73ab4"),
+                                     slime::ui::t("ui.ram_build_guard")
+                                         .arg(estimatedBits / (1024 * 1024))
+                                         .arg(buildMem.buildWorkingBytes / (1024 * 1024)));
+            }
+            return false;
+        }
+    }
     // v3.13.8: build mode reads/writes the in-memory CacheManager. It must start from the
     // existing local packs, otherwise the first save deletes the previous session's cache
     // and every restart re-scans the whole region.
     if (m_cacheStore && m_cache && m_cache->ranges().empty()) {
         std::string hydrateErr;
-        if (!m_cacheStore->fillCacheManager(*m_cache, &hydrateErr) && !hydrateErr.empty()) {
+        if (!m_cacheStore->fillCacheManagerRange(*m_cache, opt.region(), &hydrateErr) && !hydrateErr.empty()) {
             Logger::warning("构建前加载本地缓存失败: " + hydrateErr);
             QMessageBox::warning(this, slime::ui::t("ui.3e64edf2ea33"),
                                  QString::fromStdString("构建前加载本地缓存失败：" + hydrateErr));
@@ -677,8 +762,6 @@ bool MainWindow::prepareBuildRun(SearchOptions& opt, RunInfo& info)
                      std::to_string(m_cache->entryCount()) + " 区块");
     }
     // ① 构建前预估（任务书 1.1）：范围面积 × 密度 10% × 每区块字节数（旧口径）+ 位图口径
-    const double bitmapMB = static_cast<double>(total) / 8.0 / (1024.0 * 1024.0);
-    const double legacyMB = static_cast<double>(total) * 0.1 * 8.0 / (1024.0 * 1024.0);
     const int64_t capMB = cacheMaxBytes() / (1024 * 1024);
     const bool overCap = cacheMaxBytes() > 0 && bitmapMB > static_cast<double>(capMB);
     if (!m_uiQuiet) {
@@ -793,17 +876,18 @@ void MainWindow::launchBuildBand()
     m_runMode = opt.mode;
     m_runAlg = opt.algorithm;
     m_task.resetBuildCounters();
-    m_task.start(
+    m_task.startReport(
         opt,
-        [this, postToUi, runId](double frac, bool scanning, double, double) {
-            postToUi([this, frac, scanning, runId]() {
+        [this, postToUi, runId](const SearchProgress& progress) {
+            const bool scanning = progress.phase == SearchPhase::Preparing ||
+                                  progress.phase == SearchPhase::Scanning;
+            postToUi([this, scanning, runId]() {
                 if (!m_running || runId != m_runId) return;
                 updateBuildProgressUi(scanning);
-                (void)frac;
             });
         },
-        [this, postToUi, info, runId](const SearchOutcome& out) {
-            postToUi([this, out, info, runId]() { onSearchFinished(out, info, runId); });
+        [this, postToUi, info, runId](const SearchReport& report) {
+            postToUi([this, report, info, runId]() { onSearchFinishedReport(report, info, runId); });
         });
     std::fprintf(stderr, "[构建] 段 %zu/%zu 启动：Z(%d~%d)\n", m_buildBandIndex + 1, m_buildBands.size(),
                  band.minZ, band.maxZ);
@@ -893,7 +977,8 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
         setRunningUi(false);
         setInputsEnabled(true);
         setStatus(slime::ui::tr(slime::ui::t("ui.1242b3d3624e")));
-        QMessageBox::critical(this, slime::ui::t("ui.1242b3d3624e"), QString::fromStdString(out.error));
+        if (!m_uiQuiet)
+            QMessageBox::critical(this, slime::ui::t("ui.1242b3d3624e"), QString::fromStdString(out.error));
         Logger::error("缓存构建出错：" + out.error);
         return;
     }
@@ -977,10 +1062,14 @@ void MainWindow::handleBuildBandFinished(const SearchOutcome& out, int runId)
 
 void MainWindow::cancelSearch()
 {
-    if (m_ringSearching) {
-        m_ringCancel.store(true, std::memory_order_relaxed);
+    // v3.14.5（flow-ring-async）：环形规划在后台 SearchJob 中运行 —— 取消按钮只做
+    //   两阶段取消（置标志 + requestCancel），立即返回；结果收尾统一由 finishRingSearch 完成。
+    if (m_ringSearching || m_ringJob.active()) {
+        m_ringCancel->store(true, std::memory_order_relaxed);
+        m_ringJob.requestCancel();
         if (m_w && m_w->cancel) m_w->cancel->setEnabled(false);
         setStatus(slime::ui::tr(slime::ui::t("ui.dd9a9f769e57")));
+        Logger::info("用户请求取消环形搜索");
         return;
     }
     if (!m_running) return;
@@ -1001,7 +1090,7 @@ QString MainWindow::searchOptionsFingerprint(const SearchOptions& opt) const
     return QStringLiteral(
                "ver=%1 mode=%2 alg=%3 g=%4 thr=%5 target=%6 stop=%7 smart=%8 ignore=%9 "
                "lock=%10 layer=%11/%12 sample=%13/%14 threads=%15 cpuLimit=%16 memMB=%17 "
-               "cache=%18 gpu=%19 patternStream=%20 start=(%21,%22) area=%23x%24 selfOpt=%25")
+               "cache=%18 gpu=%19 patternStream=%20 start=(%21,%22) area=%23x%24 selfOpt=%25 homogeneous=%26")
         .arg(opt.version == slime::Version::Bedrock ? QStringLiteral("bedrock") : QStringLiteral("java"))
         .arg(opt.mode == slime::Mode::Strict ? QStringLiteral("strict") : QStringLiteral("density"))
         .arg(static_cast<int>(opt.algorithm))
@@ -1026,7 +1115,8 @@ QString MainWindow::searchOptionsFingerprint(const SearchOptions& opt) const
         .arg(opt.startZ)
         .arg(static_cast<qint64>(opt.maxX) - opt.minX + 1)
         .arg(static_cast<qint64>(opt.maxZ) - opt.minZ + 1)
-        .arg(m_settings.gpuResultSelfOptimize ? 1 : 0);
+        .arg(m_settings.gpuResultSelfOptimize ? 1 : 0)
+        .arg(opt.allowHomogeneousResults ? 1 : 0);
 }
 
 void MainWindow::logSearchParams(const SearchOptions& opt)
@@ -1064,6 +1154,13 @@ void MainWindow::logSearchParams(const SearchOptions& opt)
 }
 
 // ---------------- 完成 ----------------
+void MainWindow::onSearchFinishedReport(const SearchReport& report, const RunInfo& info, int runId)
+{
+    onSearchFinished(report.outcome, info, runId);
+    // Only publish the report after the stale-run guard accepted this completion.
+    if (runId == m_runId) m_lastReport = report;
+}
+
 void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId)
 {
     // v3.3.9（任务书 1.1）：缓存构建模式的分段续跑（每段落盘 → 继续下一段 / 收尾）
@@ -1114,7 +1211,8 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
                                                 .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")),
                                                      QString::fromStdString(out.error)));
         }
-        QMessageBox::critical(this, slime::ui::t("ui.680a503add20"), QString::fromStdString(out.error));
+        if (!m_uiQuiet)
+            QMessageBox::critical(this, slime::ui::t("ui.680a503add20"), QString::fromStdString(out.error));
         addError(QString::fromStdString(out.error));
         Logger::error("搜索错误: " + out.error);
         updateNavBadges();
@@ -1269,6 +1367,21 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         Logger::info("过程摘要 | " + summary.toStdString());
         if (!out.gpuFallbackReason.empty()) {
             addFeedback(2, slime::ui::t("ui.b32dcdccbfa4").arg(QString::fromStdString(out.gpuFallbackReason)));
+        }
+        if (out.truncated) {
+            addFeedback(2, slime::ui::t("ui.truncated_results"));
+        }
+        if (!buildModeActive() && info.mode == Mode::Density && !info.options.allowHomogeneousResults &&
+            !info.options.ignoreThreshold && info.targetCount > 0 &&
+            static_cast<int64_t>(out.results.size()) < info.targetCount) {
+            addFeedback(2, slime::ui::t("ui.homogeneous_fewer")
+                             .arg(out.results.size())
+                             .arg(info.targetCount));
+        }
+        if (info.version == Version::Bedrock && !m_bedrockRiverNoticeShown) {
+            m_bedrockRiverNoticeShown = true;
+            addFeedback(1, slime::ui::t("ui.bedrock_river_bug"));
+            Logger::warning("基岩版 MCPE-161245：河流群系中的史莱姆区块可能不生成史莱姆；本工具未自动排除河流群系");
         }
     }
 

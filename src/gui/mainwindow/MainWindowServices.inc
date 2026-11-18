@@ -625,6 +625,7 @@ SearchOptions MainWindow::wholeMapOptions(int halfSpan) const
     // v3.3.9（任务书 2.1）：内存上限（分块位图预算，超出自动降并发）
     opt.memBudgetBytes =
         (m_settings.memLimitMB > 0) ? static_cast<int64_t>(m_settings.memLimitMB) * 1024 * 1024 : 0;
+    opt.allowHomogeneousResults = m_settings.allowHomogeneousResults;
     opt.cpuLimitPercent = std::clamp(m_settings.cpuLimitPercent, 10, 100);
     // v3.7.1：GPU 占用率上限 → 环境变量（引擎在瓦片之间按占空比休眠）
     {

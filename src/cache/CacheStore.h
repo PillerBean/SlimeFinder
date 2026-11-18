@@ -13,7 +13,10 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <list>
+#include <memory>
 #include <mutex>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -31,6 +34,11 @@ struct CachePackEntry {
     uint64_t rawBytes = 0;
     uint64_t compressedBytes = 0;
     int64_t createdAt = 0; // Unix seconds；0 = 未知
+};
+
+// v3.14.3: immutable metadata snapshot for one search session.
+struct CacheSnapshot {
+    std::vector<CachePackEntry> packs;
 };
 
 class CacheStore {
@@ -74,8 +82,14 @@ public:
     bool fillCacheManager(CacheManager& target, std::string* err = nullptr) const;
     // 只把与 range 相交的 pack 读入 target；用于基岩搜索的分带缓存。
     bool fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err = nullptr) const;
+    bool fillCacheManagerRange(const CacheSnapshot& snapshot, CacheManager& target, const slime::Rect& range,
+                               std::string* err = nullptr) const;
     // 元数据判断：所有 pack 是否完整覆盖指定矩形（不读位图）。
     bool coversRange(const slime::Rect& range) const;
+    bool coversRange(const CacheSnapshot& snapshot, const slime::Rect& range) const;
+    CacheSnapshot snapshot() const;
+    // Host-RAM budget for decoded-pack LRU (0 = disabled). Applied immediately; evicts as needed.
+    void setPackCacheLimitBytes(int64_t bytes);
 
     // 把现有 CacheManager 的完整 1024 对齐子区域写成 local packs。
     // 未对齐/不足一个 1024 块的边缘不会被写入（避免把未计算区域声明为已覆盖）。
@@ -93,6 +107,15 @@ private:
     std::filesystem::path m_root;
     mutable std::recursive_mutex m_mutex;
     std::vector<CachePackEntry> m_packs;
+
+    // v3.14.1: decoded-pack LRU. Adjacent bands frequently intersect the same 8192 pack;
+    // decompressing it again dominated banded cache preparation.
+    void packCacheClearLocked() noexcept;
+    void packCacheTouchLocked(const std::string& file) const;
+    mutable std::list<std::string> m_packLru;
+    mutable std::unordered_map<std::string, std::shared_ptr<std::vector<uint8_t>>> m_packCache;
+    mutable int64_t m_packCacheBytes = 0;
+    mutable int64_t m_packCacheLimit = -1;
 };
 
 } // namespace slime::cache

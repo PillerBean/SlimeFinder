@@ -27,6 +27,7 @@
 #include <thread>
 #include <tuple>
 #include <unordered_set>
+#include <unordered_map>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -545,10 +546,11 @@ inline bool betterThan(const Scored& a, const Scored& b) noexcept
 // 以 betterThan 作为堆比较子时，堆顶 = 比较序最大者 = 当前最差者。
 class TopNHeap {
 public:
-    explicit TopNHeap(int64_t cap, bool byCount = false)
-        : m_cap(std::max<int64_t>(1, cap)), m_byCount(byCount)
+    explicit TopNHeap(int64_t cap, bool byCount = false, bool dedupeQuality = false)
+        : m_cap(std::max<int64_t>(1, cap)), m_byCount(byCount), m_dedupe(dedupeQuality)
     {
         m_v.reserve(static_cast<size_t>(std::min<int64_t>(m_cap, 1 << 20)));
+        if (m_dedupe) m_unique.reserve(static_cast<size_t>(std::min<int64_t>(m_cap * 4, 1 << 20)));
     }
 
     bool byCount() const noexcept { return m_byCount; }
@@ -561,6 +563,16 @@ public:
     }
     void push(const Scored& s)
     {
+        if (m_dedupe) {
+            const int key = s.count;
+            auto it = m_unique.find(key);
+            if (it == m_unique.end()) {
+                m_unique.emplace(key, s);
+            } else if (betterEq(s, it->second)) {
+                it->second = s;
+            }
+            return;
+        }
         auto cmp = [this](const Scored& a, const Scored& b) { return betterEq(a, b); };
         if (static_cast<int64_t>(m_v.size()) < m_cap) {
             m_v.push_back(s);
@@ -571,16 +583,43 @@ public:
             std::push_heap(m_v.begin(), m_v.end(), cmp);
         }
     }
-    double worstDist() const noexcept { return m_v.empty() ? std::numeric_limits<double>::infinity() : m_v.front().dist; }
+    double worstDist() const noexcept
+    {
+        if (m_dedupe) {
+            if (m_unique.empty()) return std::numeric_limits<double>::infinity();
+            const Scored* w = &m_unique.begin()->second;
+            for (const auto& kv : m_unique)
+                if (betterEq(*w, kv.second)) w = &kv.second;
+            return w->dist;
+        }
+        return m_v.empty() ? std::numeric_limits<double>::infinity() : m_v.front().dist;
+    }
     // v3.8.0：当前最差者的整数平方距离（INT64_MAX = 还没满，无需剪枝）
     int64_t worstD2() const noexcept
     {
+        if (m_dedupe) {
+            if (m_unique.empty()) return std::numeric_limits<int64_t>::max();
+            const Scored* w = &m_unique.begin()->second;
+            for (const auto& kv : m_unique)
+                if (betterEq(*w, kv.second)) w = &kv.second;
+            return w->d2;
+        }
         return m_v.empty() ? std::numeric_limits<int64_t>::max() : m_v.front().d2;
     }
-    bool full() const noexcept { return static_cast<int64_t>(m_v.size()) >= m_cap; }
+    bool full() const noexcept
+    {
+        return m_dedupe ? static_cast<int64_t>(m_unique.size()) >= m_cap
+                        : static_cast<int64_t>(m_v.size()) >= m_cap;
+    }
     std::vector<Scored> sorted() const
     {
-        std::vector<Scored> r = m_v;
+        std::vector<Scored> r;
+        if (m_dedupe) {
+            r.reserve(m_unique.size());
+            for (const auto& kv : m_unique) r.push_back(kv.second);
+        } else {
+            r = m_v;
+        }
         auto cmp = [this](const Scored& a, const Scored& b) { return betterEq(a, b); };
         std::sort(r.begin(), r.end(), cmp);
         return r;
@@ -589,7 +628,9 @@ public:
 private:
     int64_t m_cap;
     bool m_byCount = false;
+    bool m_dedupe = false;
     std::vector<Scored> m_v;
+    std::unordered_map<int, Scored> m_unique;
 };
 
 // 图案旋转变体（含掩码预计算）
@@ -867,6 +908,7 @@ static int runGpuScanStage(const SearchOptions& opt,
                            Emitter& scanEm,
                            BitGrid& grid,
                            std::vector<std::pair<int, int>>& newChunks,
+                           std::vector<uint8_t>& completedRows,
                            std::string& errOut) noexcept
 {
     using clock = std::chrono::steady_clock;
@@ -879,6 +921,8 @@ static int runGpuScanStage(const SearchOptions& opt,
     const int64_t W = static_cast<int64_t>(opt.maxX) - opt.minX + 1;
     const int64_t H = static_cast<int64_t>(opt.maxZ) - opt.minZ + 1;
     const int64_t totalChunks = W * H;
+    std::vector<int64_t> rowPixels(static_cast<size_t>(H), 0);
+    completedRows.assign(static_cast<size_t>(H), 0);
     // v3.4.13：本函数读缓存的路径没有加锁语义（在 GPU 阶段里）⇒ 存在并发写者（构建模式）时
     //   改为不读缓存：collectNew 会退化成「整区未覆盖」⇒ 全量重算（结果正确，只是不用缓存捷径）。
     const bool useCache = (opt.version == Version::Bedrock) && opt.useCache &&
@@ -1085,6 +1129,11 @@ static int runGpuScanStage(const SearchOptions& opt,
                 for (int64_t rz = 0; rz < t.tz; ++rz) {
                     integrateRowPiece(z0 + t.zA + rz, x0 + t.xs, x0 + t.xs + t.tw, b.data() + rz * t.tw);
                 }
+            }
+            for (int64_t rz = 0; rz < t.tz; ++rz) {
+                const int64_t row = t.zA + rz;
+                rowPixels[static_cast<size_t>(row)] += t.tw;
+                if (rowPixels[static_cast<size_t>(row)] >= W) completedRows[static_cast<size_t>(row)] = 1;
             }
             chunksDone += t.tw * t.tz;
             const double el = elapsedMs();
@@ -1300,9 +1349,11 @@ void SlimeEngine::run(const SearchOptions& optIn,
     SearchOptions normalized = optIn;
     if (normalized.mode == Mode::Strict &&
         (normalized.algorithm == Algorithm::Layered || normalized.algorithm == Algorithm::Sample)) {
-        normalized.algorithm = Algorithm::Exact;
-        normalized.layerRatio = 1.0;
+        out.ok = false;
+        out.error = "严格图案模式仅支持精确算法。";
+        return;
     }
+    const int64_t requestedTarget = normalized.targetCount;
     const SearchOptions& opt = normalized;
 
     // v3.3.7.2（任务书步骤 2 / P1-D）：经典路径也给出 cpu.sample / search.summary，
@@ -1355,7 +1406,11 @@ void SlimeEngine::run(const SearchOptions& optIn,
                     // v3.10.12.2：图案 GPU 流式命中上限提高到 400 万（与密度流式一致）——
                     //   100k² 2x2 图案命中约 100 万，旧上限 20 万会直接回退 CPU（3000 ms）。
                     // v3.10.12.3：固定 400 万容量（100k² 图案约 103 万命中；旧公式对 target=50 只有 100 万，刚好溢出回退）
-                    const int64_t cap = 4000000;
+                    int64_t cap = 4000000;
+                    if (opt.gpuHostBudgetBytes > 0) {
+                        cap = (std::max)(int64_t{ 256 },
+                                         (std::min)(cap, opt.gpuHostBudgetBytes / 32));
+                    }
                     TopNHeap heap(opt.targetCount);
                     // v3.8.7：单变体（方向锁定）时不会有跨变体重复，直接入堆即可 ——
                     //   实测 std::map 去重占了钩子时间的约 40%（6924 条 ≈ 2.9 ms）。
@@ -1392,10 +1447,17 @@ void SlimeEngine::run(const SearchOptions& optIn,
                         pp.enableMasks = en.data();
                         pp.greenMasks = gr.data();
                         pp.maxResults = cap;
+                        bool gpuTruncated = false;
+                        pp.outTruncated = &gpuTruncated;
                         std::vector<MatchResult> gpuRes;
                         std::string gerr;
                         const double mBefore = patMs();
-                        const bool mOk = opt.gpuScan->matchPattern(pp, cancel, gpuRes, &gerr);
+                        bool mOk = opt.gpuScan->matchPattern(pp, cancel, gpuRes, &gerr);
+                        if (mOk && gpuTruncated && opt.allowHomogeneousResults) {
+                            mOk = false;   // exact nearest N cannot be guaranteed from a capped hit set
+                            gerr = "GPU hit cap exceeded; exact mode falls back to CPU";
+                        }
+                        if (mOk && gpuTruncated) out.truncated = true;
                         tMatchMs += patMs() - mBefore;
                         if (!mOk) {
                             allOk = false;
@@ -1468,6 +1530,22 @@ void SlimeEngine::run(const SearchOptions& optIn,
     }
 
     runImpl(opt, cancel, progress, out, true);
+    // v3.14.6: optional quality deduplication. With the switch off, "nearest N"
+    // means nearest N distinct density qualities (may return fewer than N).
+    if (out.ok && !opt.allowHomogeneousResults && !opt.ignoreThreshold && opt.mode == Mode::Density) {
+        std::unordered_set<int> seen;
+        std::vector<MatchResult> kept;
+        kept.reserve(out.results.size());
+        for (const MatchResult& r : out.results) {
+            const int q = static_cast<int>(std::lround(static_cast<double>(r.density) * 1000.0));
+            if (!seen.insert(q).second) continue;
+            kept.push_back(r);
+        }
+        if (requestedTarget > 0 && static_cast<int64_t>(kept.size()) > requestedTarget) {
+            kept.resize(static_cast<size_t>(requestedTarget));
+        }
+        out.results.swap(kept);
+    }
     // 分块路径已在自己的收尾处写 search.summary（块级事件在那里），这里只在经典路径补一份
     if (out.chunkedPath) return;
     double cpuEnd = 0.0, cpuAllEnd = 0.0, wsEnd = 0.0;
@@ -2084,14 +2162,25 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         gp.minDensity = opt.minDensity;
         // v3.8.1：流式匹配每命中只占 12 字节，上限放宽到 400 万（超过则回退 CPU 保证语义）
         // v3.10.12.8 实测：小区域把上限降到 200 万对耗时无可测收益（差异在噪声内），保持 400 万。
-        const int64_t gpuCap =
+        int64_t gpuCap =
             (std::min)(int64_t{ 8000000 }, (std::max)(int64_t{ 4000000 }, opt.targetCount * 1000));
+        if (opt.gpuHostBudgetBytes > 0) {
+            gpuCap = (std::max)(int64_t{ 256 }, (std::min)(gpuCap, opt.gpuHostBudgetBytes / 32));
+        }
         gp.maxResults = gpuCap;
         gp.startX = opt.startX;
         gp.startZ = opt.startZ;
         // v3.10.12.1：GPU 只回传「最近的 keep 个」(d2,rank) 候选，最终 TopN 一定在其中；
         //   之前 200×target（20k² 时 1 万条）会把大量命中回传给宿主做二次排序。
-        gp.keepCandidates = (std::min)(int64_t{ 200000 }, (std::max)(int64_t{ 256 }, opt.targetCount * 4));
+        int64_t keepCandidates =
+            (std::min)(int64_t{ 200000 }, (std::max)(int64_t{ 256 }, opt.targetCount * 4));
+        if (opt.gpuHostBudgetBytes > 0) {
+            keepCandidates = (std::min)(keepCandidates,
+                                        (std::max)(int64_t{ 256 }, opt.gpuHostBudgetBytes / 64));
+        }
+        gp.keepCandidates = keepCandidates;
+        bool gpuTruncated = false;
+        gp.outTruncated = &gpuTruncated;
         // v3.10.11.1：结果自优化（用户开关）——仅密度精确 GPU 流式匹配生效
         gp.earlyStop = opt.gpuResultSelfOptimize;
         gp.earlyStopTarget = opt.targetCount;
@@ -2118,8 +2207,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             //   ⇒ GPU 搜索期间进度条可能长时间停在 0（单次派发无法上报中间进度），完成后直接到 100%。
             // v3.10.5：提前停止时（含智能范围）都按行带由近到远派发，才能在凑够 N 后停下；
             //   无早停时保持单次全量派发（速度优先）。
-            const bool bandForProgress = opt.stopAtTarget && !opt.smartRange && bandRowsTotal >= 4096;
+            const bool bandForProgress = opt.mode == Mode::Density && bandRowsTotal >= 4096 &&
+                                         (opt.stopAtTarget || !opt.allowHomogeneousResults);
             bool gpuBandFailed = false;
+            bool bandTruncated = false;
             if (bandForProgress) {
                 const int64_t rowLo = gp.azMin, rowHi = gp.azMax;
                 const int64_t rowCount = rowHi - rowLo + 1;
@@ -2135,9 +2226,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 }
                 std::stable_sort(bands.begin(), bands.end(),
                                  [](const auto& a, const auto& b) { return a.first < b.first; });
-                TopNHeap bandHeap(opt.targetCount);
+                TopNHeap bandHeap(opt.targetCount, false, opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
                 int64_t bandTotal = 0;
                 bool bandOk = true;
+                bool bandStopped = false;
                 double lastL = 0.0;
                 for (size_t bi = 0; bi < bands.size(); ++bi) {
                     if (cancel.load(std::memory_order_relaxed)) break;
@@ -2146,9 +2238,15 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     bp.azMax = bands[bi].second.second;
                     int64_t partTotal = 0;
                     bp.outTotalFound = &partTotal;
+                    bp.outTruncated = &bandTruncated;
                     std::vector<MatchResult> part;
                     if (!opt.gpuScan->matchDensity(bp, cancel, part, &gerr)) {
                         bandOk = false;
+                        gpuBandFailed = true;
+                        break;
+                    }
+                    if (bandTruncated && opt.allowHomogeneousResults) {
+                        bandOk = false;   // exact mode: do not accept a partial band
                         gpuBandFailed = true;
                         break;
                     }
@@ -2180,6 +2278,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                         s.m = m;
                         s.d2 = d2;
                         s.dist = 0.5 * std::sqrt(static_cast<double>(d2));
+                        s.count = static_cast<int>(std::lround(m.density * static_cast<float>(gp.gridSize) * gp.gridSize));
                         bandHeap.push(s);
                     }
                     // v3.10.2：真实扫描量（本带覆盖 blocked 数）+ 速率 + 预计剩余，让 GPU 干活可见
@@ -2212,7 +2311,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                                                           static_cast<double>(bands[rj].second.second) + half));
                         }
                         const double margin = gp.gridSize * 0.5 + 1.0;
-                        if (bandHeap.worstDist() + margin <= lastL) break;   // 留余量，避开并列/边界歧义
+                        if (bandHeap.worstDist() + margin <= lastL) {
+                            bandStopped = true;
+                            break;   // 留余量，避开并列/边界歧义
+                        }
                     }
                 }
                 if (bandOk && !cancel.load(std::memory_order_relaxed)) {
@@ -2222,7 +2324,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     out.stats.scannedChunks = totalChunks;
                     for (const Scored& s : bandHeap.sorted()) out.results.push_back(s.m);
                     out.totalFound = bandTotal;
-                    out.stoppedEarly = opt.stopAtTarget && bandHeap.full();
+                    out.truncated = bandTruncated;
+                    out.stoppedEarly = bandStopped;
                     out.stats.matchMs = elapsedMs();
                     out.stats.totalMs = out.stats.matchMs;
                     if (progress) progress(kMatchFrac1, false, 0.0, 0.0);
@@ -2241,11 +2344,16 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
             }
             // v3.13.8: after a banded attempt failed, do NOT re-dispatch the whole region to GPU;
             // the previous bands were already billed, so go straight to the CPU fallback.
-            const bool gpuOk = !gpuBandFailed &&
+            bool gpuOk = !gpuBandFailed &&
                                opt.gpuScan->matchDensity(gp, cancel, gpuResults, &gerr);
+            if (gpuOk && gpuTruncated && opt.allowHomogeneousResults) {
+                gpuOk = false;   // exact mode: fall back to CPU rather than return a partial nearest-N
+                gerr = "GPU hit cap exceeded; exact mode falls back to CPU";
+            }
             const auto tMd1 = std::chrono::steady_clock::now();
             if (gpuOk) {
                 out.gpuMatchUsed = true;
+                out.truncated = gpuTruncated;
                 // v3.10.4：单次派发没有中间进度 ⇒ 完成时一次性补记「已扫描区块数」，
                 //   保证结果统计/过程摘要不出现「扫描 0 区块」的误导。
                 if (opt.liveScanned) opt.liveScanned->fetch_add(totalChunks, std::memory_order_relaxed);
@@ -2259,7 +2367,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 out.stats.threadsUsed = nthreads;
                 out.stats.scannedChunks = totalChunks;
                 const auto tConv0 = std::chrono::steady_clock::now();
-                TopNHeap heap(opt.targetCount);
+                TopNHeap heap(opt.targetCount, false,
+                              opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
                 const int64_t nAz = gp.azMax - gp.azMin + 1;
                 for (const MatchResult& m : gpuResults) {
                     // v3.8.1：先用整数平方距离判断能否进榜（命中可能上百万，逐次 hypot + 堆操作很贵）
@@ -2271,7 +2380,9 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     if (heap.full() && d2 > heap.worstD2()) continue;
                     const double dist = 0.5 * std::sqrt(static_cast<double>(d2));
                     const int64_t rank = (m.minX - gp.axMin) * nAz + (m.minZ - gp.azMin);
-                    heap.push(Scored{ m, dist, rank, d2 });
+                    Scored s{ m, dist, rank, d2, 0 };
+                    s.count = static_cast<int>(std::lround(m.density * static_cast<float>(gp.gridSize) * gp.gridSize));
+                    heap.push(s);
                 }
                 const auto tConv1 = std::chrono::steady_clock::now();
                 for (const Scored& s : heap.sorted()) out.results.push_back(s.m);
@@ -2419,15 +2530,20 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     //   （20k²：110 vs 89 ms；40k² 基本持平；100k² 起 GPU 明显占优 2125 vs 2711 ms）。
     //   因此图案模式仅在区域 ≥ 3e9 区块时启用 GPU 扫描；密度模式不受影响。
     const bool patternGpuScanOk = (opt.mode != Mode::Strict) || totalChunks >= 3000000000LL;
+    std::vector<uint8_t> gpuCompletedRows;
     if (!bitmapReused && !sampleScan && !opt.buildMode && opt.gpuScan && opt.gpuScan->available() && patternGpuScanOk &&
         totalChunks >= gpuMinChunksForDevice(opt)) {
-        gpuStage = runGpuScanStage(opt, cancel, scanEm, grid, threadNew[0], gpuStageErr);
+        gpuStage = runGpuScanStage(opt, cancel, scanEm, grid, threadNew[0], gpuCompletedRows, gpuStageErr);
         if (gpuStage == 0 && std::getenv("SLIME_DEBUG")) {
             std::fprintf(stderr, "[engine] GPU 扫描不可用，回退 CPU：%s\n", gpuStageErr.c_str());
             std::fflush(stderr);
         }
     }
     out.gpuScanUsed = (gpuStage == 1);
+    if (gpuStage == 0) {
+        out.gpuRowsResumed = static_cast<int64_t>(
+            std::count(gpuCompletedRows.begin(), gpuCompletedRows.end(), uint8_t{ 1 }));
+    }
     if (gpuStage == 0 && !gpuStageErr.empty() && out.gpuFallbackReason.empty()) {
         out.gpuFallbackReason = "扫描：" + gpuStageErr;
     }
@@ -2695,6 +2811,10 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
         for (int64_t ri = rBegin; ri < rEnd; ++ri) {
             if (cancel.load(std::memory_order_relaxed)) return;
             const int64_t r = rowOrder[static_cast<size_t>(ri)];
+            if (!gpuCompletedRows.empty() && gpuCompletedRows[static_cast<size_t>(r)]) {
+                done += W;
+                continue;
+            }
             const int64_t absZ = z0 + r;
             // v3.3.8（任务 3+5 第 3 步）：整行被缓存位图覆盖 ⇒ 直接 memcpy 该行，跳过填充判定
             // v3.3.9.1（任务书 1.2）：构建模式下**不做位图直取** —— 位图读取会与其它线程的归并
@@ -2893,9 +3013,9 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
     Emitter matchEm(progress, kMatchFrac0, kMatchFrac1, false);
     // v3.10.10.3：忽略阈值（最优 N 个）在精确密度模式下复用本内核（计数 TopN，AVX2/多线程/分块）
     const bool countMode = false;   // v3.10.10.3 试验已回退（保留占位避免误用）
-    TopNHeap heap(opt.targetCount);
+    TopNHeap heap(opt.targetCount, false,
+                  opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
     const double effectiveMinDensity = opt.minDensity;
-    int64_t totalFound = 0;
     bool earlyStop = false;
     // v3.10.5（用户反馈：数量够就停没生效）：提前停止只有在「先扫近处」时才有意义。
     //   用户没勾「由近及远」时，这里自动按距离排序行（仅影响扫描顺序，结果仍为最近 N）。
@@ -2928,6 +3048,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
 
     int64_t variantBase = 0;
     int64_t globalWinDone = 0;
+    int64_t totalFound = 0;
     int64_t totalSkipped = 0; // v3.3.0：被剪枝/未采样而未评估的窗口数（分层/估算模式）
     // v3.3.8.1（任务书 1.1）：缓存优先阶段凑够目标数后「立即停」是否触发
     int64_t slideUsTotal = 0; // v3.3.8（E3）：跨变体累加的滑窗耗时（微秒）
@@ -3139,9 +3260,7 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 mr.density = static_cast<float>(cnt) / static_cast<float>(static_cast<int64_t>(wSize) * wSize);
             }
             Scored sc{ mr, dist, rank, d2, 0 };
-            if (h.byCount()) {
-                sc.count = static_cast<int>(std::lround(mr.density * static_cast<float>(wSize) * wSize));
-            }
+            sc.count = static_cast<int>(std::lround(mr.density * static_cast<float>(wSize) * wSize));
             if (!strict || opt.directionLocked) {
                 h.push(sc);
                 ++foundCnt;
@@ -3803,7 +3922,8 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                 const int64_t uEnd = (std::min)(nUnits, uBegin + batchUnits);
                 std::vector<TopNHeap> heaps;
                 heaps.reserve(static_cast<size_t>(nw));
-                for (int w = 0; w < nw; ++w) heaps.emplace_back(opt.targetCount);
+                for (int w = 0; w < nw; ++w) heaps.emplace_back(opt.targetCount, false,
+                                                            opt.mode == Mode::Density && !opt.ignoreThreshold && !opt.allowHomogeneousResults);
                 std::vector<int64_t> found(static_cast<size_t>(nw), 0);
                 std::vector<int64_t> skippedPer(static_cast<size_t>(nw), 0);
                 std::atomic<int64_t> nextU{ uBegin };
@@ -4831,6 +4951,80 @@ void SlimeEngine::runChunked(const SearchOptions& opt,
     if (progress) progress(1.0, false, 0.0, 0.0);
 }
 
+// ============================ v3.14.4 命中量估算 ============================
+HitEstimate SlimeEngine::estimateHits(const SearchOptions& opt, int maxSamples) noexcept
+{
+    HitEstimate est;
+    const int64_t W = static_cast<int64_t>(opt.maxX) - opt.minX + 1;
+    const int64_t H = static_cast<int64_t>(opt.maxZ) - opt.minZ + 1;
+    if (W <= 0 || H <= 0) return est;
+
+    const bool strict = (opt.mode == Mode::Strict);
+    const int64_t winRows = strict ? opt.pattern.rows() : opt.gridSize;
+    const int64_t winCols = strict ? opt.pattern.cols() : opt.gridSize;
+    if (winRows <= 0 || winCols <= 0) return est;
+    const int64_t candX = W - winCols + 1;
+    const int64_t candZ = H - winRows + 1;
+    if (candX <= 0 || candZ <= 0) {
+        est.ok = true;
+        return est;
+    }
+    const int variants = strict && !opt.directionLocked ? 4 : 1;
+    est.candidateWindows = candX * candZ * variants;
+
+    // Keep the estimator cheap even for a 512x512 density window: at most ~1M cell tests.
+    const int64_t windowCells = winRows * winCols;
+    const int maxByCells = static_cast<int>((std::max)(int64_t{ 1 }, int64_t{ 1 } << 20) / windowCells);
+    maxSamples = (std::max)(1, (std::min)(maxSamples, maxByCells));
+    const int side = std::clamp(static_cast<int>(std::sqrt(static_cast<double>((std::max)(1, maxSamples)))), 1, 16);
+    const int nx = static_cast<int>(std::min<int64_t>(candX, side));
+    const int nz = static_cast<int>(std::min<int64_t>(candZ, side));
+    int64_t sampled = 0;
+    int64_t hits = 0;
+    for (int iz = 0; iz < nz; ++iz) {
+        const int64_t az = candZ <= 1 ? opt.minZ : opt.minZ + (static_cast<int64_t>(iz) * (candZ - 1)) / (nz - 1);
+        for (int ix = 0; ix < nx; ++ix) {
+            const int64_t ax = candX <= 1 ? opt.minX : opt.minX + (static_cast<int64_t>(ix) * (candX - 1)) / (nx - 1);
+            bool hit = false;
+            if (strict) {
+                hit = true;
+                for (int r = 0; r < opt.pattern.rows() && hit; ++r) {
+                    for (int c = 0; c < opt.pattern.cols(); ++c) {
+                        const CellState st = opt.pattern.at(r, c);
+                        if (st == CellState::Ignore) continue;
+                        const bool slime = isSlimeChunk(opt.version, opt.worldSeed, ax + c, az + r);
+                        if ((st == CellState::Green && !slime) || (st == CellState::White && slime)) {
+                            hit = false;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                int count = 0;
+                for (int r = 0; r < opt.gridSize; ++r) {
+                    for (int c = 0; c < opt.gridSize; ++c) {
+                        if (isSlimeChunk(opt.version, opt.worldSeed, ax + c, az + r)) ++count;
+                    }
+                }
+                hit = densityWindowMeets(count, opt.gridSize, opt.minDensity, nullptr);
+            }
+            ++sampled;
+            if (hit) ++hits;
+        }
+    }
+    est.ok = sampled > 0;
+    est.sampledWindows = sampled;
+    est.sampleHits = hits;
+    est.hitRate = sampled > 0 ? static_cast<double>(hits) / static_cast<double>(sampled) : 0.0;
+    if (est.ok) {
+        long double e = static_cast<long double>(est.hitRate) * static_cast<long double>(est.candidateWindows);
+        est.estimatedHits = static_cast<int64_t>(std::llround(e));
+        if (est.sampleHits > 0 && est.estimatedHits < 1) est.estimatedHits = 1;
+        if (est.estimatedHits > est.candidateWindows) est.estimatedHits = est.candidateWindows;
+    }
+    return est;
+}
+
 // ============================ v3.1.1 耗时估算 ============================
 bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEstimate& est) noexcept
 {
@@ -4972,7 +5166,6 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     };
 
     std::map<std::tuple<int, int, int, int>, MatchResult> merged;
-    int64_t totalFound = 0;
     int64_t scanned = 0;
     int64_t windows = 0;
     int64_t chunksPruned = 0;
@@ -4982,6 +5175,8 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     int64_t cacheFirstChunks = 0;
     bool cacheFillSkipped = false;
     bool cacheFirstOrder = false;
+    bool cacheFirstStopped = false;
+    int64_t gpuRowsResumed = 0;
     bool stoppedEarly = false;
     bool anyOk = false;
     int64_t bandIndex = 0;
@@ -4989,6 +5184,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     struct BandInfo {
         int64_t cx0 = 0, cx1 = 0, cz0 = 0, cz1 = 0;
         bool cached = false;
+        double distance = 0.0;
     };
     std::vector<BandInfo> bands;
     bands.reserve(static_cast<size_t>(totalBands));
@@ -5003,14 +5199,25 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
                 b.cached = optIn.cacheBandMayCover(Rect{ static_cast<int>(b.cx0), static_cast<int>(b.cx1),
                                                           static_cast<int>(b.cz0), static_cast<int>(b.cz1) });
             }
+            b.distance = distToRect(static_cast<double>(optIn.startX), static_cast<double>(optIn.startZ),
+                                    static_cast<double>(b.cx0), static_cast<double>(b.cx1),
+                                    static_cast<double>(b.cz0), static_cast<double>(b.cz1));
             bands.push_back(b);
         }
     }
     // 缓存优先：先处理有缓存的 band，尽早命中并减少无效计算；最终仍按原排序合并结果。
-    std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
-        return a.cached && !b.cached;
-    });
-    for (const BandInfo& band : bands) {
+    const bool spatialStop = optIn.stopAtTarget || optIn.smartRange;
+    if (spatialStop) {
+        std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
+            return a.distance < b.distance;
+        });
+    } else {
+        std::stable_sort(bands.begin(), bands.end(), [](const BandInfo& a, const BandInfo& b) {
+            return a.cached && !b.cached;
+        });
+    }
+    for (size_t bandPos = 0; bandPos < bands.size(); ++bandPos) {
+        const BandInfo& band = bands[bandPos];
         const int64_t cx0 = band.cx0;
         const int64_t cx1 = band.cx1;
         const int64_t cz0 = band.cz0;
@@ -5080,6 +5287,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             // v3.13.8: aggregate GPU/fallback/pruning visibility instead of dropping it.
             out.gpuScanUsed = out.gpuScanUsed || bo.gpuScanUsed;
             out.gpuMatchUsed = out.gpuMatchUsed || bo.gpuMatchUsed;
+            out.truncated = out.truncated || bo.truncated;
             if (out.gpuFallbackReason.empty() && !bo.gpuFallbackReason.empty()) {
                 out.gpuFallbackReason = bo.gpuFallbackReason;
             }
@@ -5092,11 +5300,12 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
             matchMs += bo.stats.matchMs;
             totalMs += bo.stats.totalMs;
             if (bo.stoppedEarly) stoppedEarly = true;
-            totalFound += bo.totalFound;
             cacheHitPoints += bo.cacheHitPoints;
             cacheFirstChunks += bo.cacheFirstChunks;
             cacheFillSkipped = cacheFillSkipped || bo.cacheFillSkipped;
             cacheFirstOrder = cacheFirstOrder || bo.cacheFirstOrder;
+            cacheFirstStopped = cacheFirstStopped || bo.cacheFirstStopped;
+            gpuRowsResumed += bo.gpuRowsResumed;
 
             for (const auto& r : bo.results) {
                 // 只接收锚点位于核心带内的结果；halo 只用于计算，不用于输出。
@@ -5107,6 +5316,24 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
                 const auto key = std::make_tuple(r.minX, r.maxX, r.minZ, r.maxZ);
                 auto it = merged.find(key);
                 if (it == merged.end() || better(r, it->second)) merged[key] = r;
+            }
+
+            if (optIn.stopAtTarget && spatialStop && !byDensity && optIn.targetCount > 0 &&
+                static_cast<int64_t>(merged.size()) >= optIn.targetCount && bandPos + 1 < bands.size()) {
+                std::vector<MatchResult> top;
+                top.reserve(merged.size());
+                for (const auto& kv : merged) top.push_back(kv.second);
+                std::sort(top.begin(), top.end(), better);
+                top.resize(static_cast<size_t>(optIn.targetCount));
+                const double worst = 0.5 * std::sqrt(static_cast<double>(dist2(top.back())));
+                const int winMax = (optIn.mode == Mode::Density)
+                                       ? (std::max)(1, optIn.gridSize)
+                                       : (std::max)(optIn.pattern.rows(), optIn.pattern.cols());
+                const double margin = winMax * 0.5 + 2.0;
+                if (worst + margin <= bands[bandPos + 1].distance) {
+                    stoppedEarly = true;
+                    break;
+                }
             }
         }
         ++bandIndex;
@@ -5135,14 +5362,17 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
 
     out.ok = true;
     out.ignoredThreshold = byDensity;
+    // v3.14.4: totalFound is the unique in-region hit count, before targetCount truncation.
+    const int64_t uniqueFound = static_cast<int64_t>(merged.size());
     out.results = std::move(results);
-    // halo 内重复命中只影响统计，不应改变最终显示结果。
-    out.totalFound = static_cast<int64_t>(out.results.size());
+    out.totalFound = uniqueFound;
     out.stoppedEarly = stoppedEarly;
     out.cacheHitPoints = cacheHitPoints;
     out.cacheFillSkipped = cacheFillSkipped;
     out.cacheFirstOrder = cacheFirstOrder;
     out.cacheFirstChunks = cacheFirstChunks;
+    out.cacheFirstStopped = cacheFirstStopped;
+    out.gpuRowsResumed = gpuRowsResumed;
     out.stats.threadsUsed = optIn.threads;
     out.stats.scannedChunks = scanned;
     out.stats.windowsEvaluated = windows;
@@ -5152,6 +5382,7 @@ void SlimeEngine::runBanded(const SearchOptions& optIn,
     out.stats.totalMs = totalMs + cacheLoadMs;
     out.chunksPruned = chunksPruned;
     out.chunkedPath = true;
+    if (progress) progress(1.0, false, 0.0, 0.0);
 }
 } // namespace slime
 

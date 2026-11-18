@@ -189,6 +189,7 @@ void MainWindow::writeConfigFile(bool gpuEnabled, const QStringList& terminalHis
         << "    \"gpuPatternStream\": " << (m_settings.gpuPatternStream ? "true" : "false") << ",\n"
         << "    \"gpuResultSelfOptimize\": " << (m_settings.gpuResultSelfOptimize ? "true" : "false") << ",\n"
         << "    \"memLimitMB\": " << m_settings.memLimitMB << ",\n"
+        << "    \"allowHomogeneousResults\": " << (m_settings.allowHomogeneousResults ? "true" : "false") << ",\n"
         // v3.3.9.1（任务书 2.1）：启动时自动检查 GPU 状态
         << "    \"autoCheckGpuAtStartup\": " << (m_settings.autoCheckGpuAtStartup ? "true" : "false") << ",\n"
         << "    \"updateReminderDays\": " << m_settings.updateReminderDays << ",\n"

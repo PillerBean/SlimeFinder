@@ -1,4 +1,4 @@
-﻿// SlimeEngine.h - 史莱姆区块查找核心计算引擎（Qt 无关，可在任意线程运行）
+// SlimeEngine.h - 史莱姆区块查找核心计算引擎（Qt 无关，可在任意线程运行）
 //
 // 职责：
 //   1. Java 版 / 基岩版区块判定（精确模拟游戏算法）
@@ -211,6 +211,7 @@ struct DensityMatchParams {
     int64_t startZ = 0;
     int64_t keepCandidates = 0;  // 0 = 不做裁剪；>0 = 只回传最多这么多条最可能进榜的
     int64_t* outTotalFound = nullptr;  // 回传「命中总数」（裁剪前），引擎用它算 totalFound
+    bool* outTruncated = nullptr;      // v3.14.2: GPU cap exceeded
     // v3.10.11.1：结果自优化（仅 GPU 密度流式路径；默认关，行为与旧版一致）
     bool earlyStop = false;        // true = 按距离由近到远派发、凑够 earlyStopTarget 即提前停止
     int64_t earlyStopTarget = 0;   // 需要保留的结果数（通常 = targetCount）
@@ -238,6 +239,7 @@ struct PatternMatchParams {
     const uint32_t* enableMasks = nullptr;   // rows 个：该行参与匹配的列
     const uint32_t* greenMasks = nullptr;    // rows 个：该行要求为史莱姆的列
     int64_t maxResults = 0;                  // 0 = 不限
+    bool* outTruncated = nullptr;            // v3.14.2: GPU cap exceeded
 };
 
 // GpuScan::matchDensity 默认实现：不支持的实现返回 false（引擎回退 CPU）
@@ -289,6 +291,9 @@ struct SearchOptions {
     // 密度搜索参数
     int gridSize = 5;        // 网格边长（区块）
     double minDensity = 0.3; // 最小密度阈值 0~1
+    // true：允许同密度不同距离的结果同时存在，严格按最近 N；
+    // false：每个密度质量只保留最近一个，结果数量可能不足 N。
+    bool allowHomogeneousResults = true;
 
     // 查询起点（区块坐标）
     int64_t startX = 0;
@@ -366,6 +371,8 @@ struct SearchOptions {
     std::atomic<int>* livePhase = nullptr;
     // v3.3.9（任务书 2.1）：内存上限（字节；0 = 自动。设置栏 → 分块位图预算/并发收敛）
     int64_t memBudgetBytes = 0;
+    // v3.14.3: host RAM reserved for GPU hit/readback staging (0 = engine default).
+    int64_t gpuHostBudgetBytes = 0;
     // v3.3.9（任务书 2.2）：CPU 占用率上限（10~100；100 = 不限。GUI 据此收敛生效线程数）
     int cpuLimitPercent = 100;
 
@@ -400,6 +407,16 @@ struct SearchEstimate {
     int chunkRows = 0;          // 每块数据行数（含重叠）
 };
 
+// v3.14.4: approximate hit count before a run, for the high-hit warning.
+struct HitEstimate {
+    bool ok = false;
+    int64_t candidateWindows = 0;
+    int64_t sampledWindows = 0;
+    int64_t sampleHits = 0;
+    int64_t estimatedHits = 0;
+    double hitRate = 0.0;
+};
+
 struct SearchOutcome {
     bool ok = false;                 // 是否成功（失败时 error 有内容）
     bool cancelled = false;          // 是否被取消
@@ -425,6 +442,8 @@ struct SearchOutcome {
     bool cacheFirstStopped = false;
     // v3.3.9（任务书 1.1）：缓存构建模式 —— 是否因达到缓存容量上限而停止、以及跳过了多少「已缓存」区块
     bool hitCacheBudget = false;
+    bool truncated = false;          // GPU 命中上限被触发（当前仍会回退 CPU 保证完整）
+    int64_t gpuRowsResumed = 0;      // GPU 扫描失败后，CPU 回退沿用的完整行数
     int64_t buildSkippedChunks = 0;
     std::string error;               // 校验/运行错误信息（中文，可直接展示）
 
@@ -481,6 +500,8 @@ public:
 
     // v3.1.1：估算一次搜索的耗时（含整图分块模式），不修改任何状态
     static bool estimateSearch(const SearchOptions& options, int threads, SearchEstimate& out) noexcept;
+    // v3.14.4: deterministic stratified sampling estimate of the total hit count.
+    static HitEstimate estimateHits(const SearchOptions& options, int maxSamples = 256) noexcept;
 
     // 密度窗口判定（独立接口；预留 biomeWeight 权重参数，默认 nullptr = 权重 1.0，
     // 当前仅占位不参与计算，供后续群系权重扩展）

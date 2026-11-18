@@ -47,10 +47,12 @@ void MainWindow::loadAppSettings()
     s.ringStatBands = cfgInt(path, "settings.ringStatBands", s.ringStatBands);
     s.rateUnit = std::clamp(cfgInt(path, "rateUnit", s.rateUnit), 0, 2);
     s.memLimitMB = cfgInt(path, "settings.memLimitMB", s.memLimitMB);
+    s.allowHomogeneousResults = cfgBool(path, "settings.allowHomogeneousResults", s.allowHomogeneousResults);
     s.autoCheckGpuAtStartup = cfgBool(path, "settings.autoCheckGpuAtStartup", s.autoCheckGpuAtStartup);
     // v3.3.9（任务书 二）：资源控制
     s.cpuLimitPercent = cfgInt(path, "settings.cpuLimitPercent", s.cpuLimitPercent);
     s.memLimitMB = cfgInt(path, "settings.memLimitMB", s.memLimitMB);
+    s.allowHomogeneousResults = cfgBool(path, "settings.allowHomogeneousResults", s.allowHomogeneousResults);
     s.autoCheckGpuAtStartup = cfgBool(path, "settings.autoCheckGpuAtStartup", s.autoCheckGpuAtStartup);
     s.updateReminderDays = cfgInt(path, "settings.updateReminderDays", s.updateReminderDays);
     m_settings = s;
@@ -666,6 +668,11 @@ void MainWindow::updateSearchShapeEnabled()
     // v3.5.18（用户要求）：一级二选一 → 下方只显示能调的选项，不再简单置灰。
     const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
     const bool ringShape = m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
+    // 环形只适用于密度模式；切到图案模式时强制回到方形，避免留下不可见的环形状态。
+    if (patternMode && ringShape && m_w->shapeSquareRadio) {
+        m_w->shapeSquareRadio->setChecked(true);
+        return;
+    }
 
     if (m_w->strictPanel) m_w->strictPanel->setVisible(patternMode);
     if (m_w->densityPanel) m_w->densityPanel->setVisible(!patternMode);

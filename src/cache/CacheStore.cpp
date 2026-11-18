@@ -1,4 +1,4 @@
-﻿#include "cache/CacheStore.h"
+#include "cache/CacheStore.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -111,6 +111,7 @@ void CacheStore::setRoot(std::filesystem::path root)
 
     m_root = std::move(root);
     m_packs.clear();
+    packCacheClearLocked();
 }
 
 std::filesystem::path CacheStore::indexPath() const
@@ -145,6 +146,7 @@ std::string CacheStore::relativePath(const std::filesystem::path& p) const
 bool CacheStore::load(std::string* err, bool scanOrphans)
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    packCacheClearLocked();
 
     m_packs.clear();
     if (!ensureDirs(err)) return false;
@@ -350,6 +352,7 @@ bool CacheStore::addPack(const std::filesystem::path& path, const std::string& s
 bool CacheStore::clearAll(std::string* err)
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    packCacheClearLocked();
 
     std::error_code ec;
     for (const auto& e : m_packs) {
@@ -365,6 +368,12 @@ bool CacheStore::removePack(const std::string& file, std::string* err)
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
 
+    auto cacheIt = m_packCache.find(file);
+    if (cacheIt != m_packCache.end()) {
+        m_packCacheBytes -= static_cast<int64_t>(cacheIt->second->size());
+        m_packCache.erase(cacheIt);
+        m_packLru.remove(file);
+    }
     const auto it = std::find_if(m_packs.begin(), m_packs.end(), [&](const CachePackEntry& e) {
         return e.file == file;
     });
@@ -389,6 +398,7 @@ bool CacheStore::removePack(const std::string& file, std::string* err)
 bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* err)
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    packCacheClearLocked();
 
     if (!ensureDirs(err)) return false;
     const auto& ranges = source.ranges();
@@ -469,6 +479,7 @@ bool CacheStore::writeFromCacheManager(const CacheManager& source, std::string* 
 bool CacheStore::replaceLocalFromCacheManager(const CacheManager& source, std::string* err)
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    packCacheClearLocked();
 
     // 只清 local；downloaded 是只读外部缓存，不能因构建保存被删除。
     for (auto it = m_packs.begin(); it != m_packs.end();) {
@@ -497,10 +508,40 @@ const CachePackEntry* CacheStore::findContaining(int32_t x, int32_t z) const noe
     return nullptr;
 }
 
+void CacheStore::packCacheClearLocked() noexcept
+{
+    m_packCache.clear();
+    m_packLru.clear();
+    m_packCacheBytes = 0;
+}
+
+void CacheStore::packCacheTouchLocked(const std::string& file) const
+{
+    m_packLru.remove(file);
+    m_packLru.push_front(file);
+}
+
 bool CacheStore::readPackBitmap(const CachePackEntry& entry, std::vector<uint8_t>& out,
                                 std::string* err) const
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    if (m_packCacheLimit < 0) {
+        int64_t mb = 128;
+        if (const char* e = std::getenv("SLIME_PACK_CACHE_MB")) {
+            const int v = std::atoi(e);
+            if (v >= 0 && v <= 4096) mb = v;
+        }
+        m_packCacheLimit = mb * 1024 * 1024;
+    }
+
+    if (m_packCacheLimit > 0) {
+        auto it = m_packCache.find(entry.file);
+        if (it != m_packCache.end() && it->second) {
+            packCacheTouchLocked(entry.file);
+            out = *it->second;
+            return true;
+        }
+    }
 
     PackInfo info;
     if (!readPack(m_root / entry.file, info, out, err)) return false;
@@ -508,6 +549,21 @@ bool CacheStore::readPackBitmap(const CachePackEntry& entry, std::vector<uint8_t
         info.rect.minZ != entry.rect.minZ || info.rect.maxZ != entry.rect.maxZ) {
         if (err) *err = "pack 索引范围与文件头不一致";
         return false;
+    }
+    if (m_packCacheLimit > 0 && static_cast<int64_t>(out.size()) <= m_packCacheLimit) {
+        auto bits = std::make_shared<std::vector<uint8_t>>(out);
+        m_packCache[entry.file] = bits;
+        m_packCacheBytes += static_cast<int64_t>(bits->size());
+        m_packLru.push_front(entry.file);
+        while (m_packCacheBytes > m_packCacheLimit && !m_packLru.empty()) {
+            const std::string victim = m_packLru.back();
+            m_packLru.pop_back();
+            auto vit = m_packCache.find(victim);
+            if (vit != m_packCache.end()) {
+                m_packCacheBytes -= static_cast<int64_t>(vit->second->size());
+                m_packCache.erase(vit);
+            }
+        }
     }
     return true;
 }
@@ -559,15 +615,45 @@ bool CacheStore::fillCacheManager(CacheManager& target, std::string* err) const
     return true;
 }
 
-bool CacheStore::coversRange(const slime::Rect& range) const
+void CacheStore::setPackCacheLimitBytes(int64_t bytes)
 {
     std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    m_packCacheLimit = (std::max)(int64_t{ 0 }, bytes);
+    if (m_packCacheLimit == 0) {
+        packCacheClearLocked();
+        return;
+    }
+    while (m_packCacheBytes > m_packCacheLimit && !m_packLru.empty()) {
+        const std::string victim = m_packLru.back();
+        m_packLru.pop_back();
+        auto it = m_packCache.find(victim);
+        if (it != m_packCache.end()) {
+            m_packCacheBytes -= static_cast<int64_t>(it->second->size());
+            m_packCache.erase(it);
+        }
+    }
+}
 
+CacheSnapshot CacheStore::snapshot() const
+{
+    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    CacheSnapshot s;
+    s.packs = m_packs;
+    return s;
+}
+
+bool CacheStore::coversRange(const slime::Rect& range) const
+{
+    return coversRange(snapshot(), range);
+}
+
+bool CacheStore::coversRange(const CacheSnapshot& snapshot, const slime::Rect& range) const
+{
     if (!range.valid()) return false;
     std::vector<std::pair<int, int>> intervals;
     for (int64_t z = range.minZ; z <= range.maxZ; ++z) {
         intervals.clear();
-        for (const auto& e : m_packs) {
+        for (const auto& e : snapshot.packs) {
             if (z < e.rect.minZ || z > e.rect.maxZ) continue;
             const int a = (std::max)(static_cast<int>(range.minX), e.rect.minX);
             const int b = (std::min)(static_cast<int>(range.maxX), e.rect.maxX);
@@ -587,8 +673,12 @@ bool CacheStore::coversRange(const slime::Rect& range) const
 
 bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& range, std::string* err) const
 {
-    std::lock_guard<std::recursive_mutex> lk(m_mutex);
+    return fillCacheManagerRange(snapshot(), target, range, err);
+}
 
+bool CacheStore::fillCacheManagerRange(const CacheSnapshot& snapshot, CacheManager& target,
+                                       const slime::Rect& range, std::string* err) const
+{
     target.clear();
     if (!range.valid()) return true;
 
@@ -601,7 +691,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
     std::vector<std::pair<int, int>> intervals;
     for (int64_t z = range.minZ; z <= range.maxZ && fullyCovered; ++z) {
         intervals.clear();
-        for (const auto& e : m_packs) {
+        for (const auto& e : snapshot.packs) {
             if (z < e.rect.minZ || z > e.rect.maxZ) continue;
             const int a = (std::max)(static_cast<int>(range.minX), e.rect.minX);
             const int b = (std::min)(static_cast<int>(range.maxX), e.rect.maxX);
@@ -619,7 +709,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
 
     if (!fullyCovered) {
         // 部分覆盖：逐个 pack 写入范围位图（引擎按区块读缓存，不做整行快路径）。
-        for (const auto& e : m_packs) {
+        for (const auto& e : snapshot.packs) {
             const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
             if (pr.maxX < range.minX || pr.minX > range.maxX ||
                 pr.maxZ < range.minZ || pr.minZ > range.maxZ) continue;
@@ -637,7 +727,7 @@ bool CacheStore::fillCacheManagerRange(CacheManager& target, const slime::Rect& 
     // 不再先构造 fullBits 再逐 bit 写入 CacheManager。
     std::vector<uint64_t> fullWords(static_cast<size_t>(wpr * H), 0ULL);
     std::vector<uint8_t> rowBuf;
-    for (const auto& e : m_packs) {
+    for (const auto& e : snapshot.packs) {
         const Rect pr{ e.rect.minX, e.rect.maxX, e.rect.minZ, e.rect.maxZ };
         if (pr.maxX < range.minX || pr.minX > range.maxX ||
             pr.maxZ < range.minZ || pr.minZ > range.maxZ) continue;

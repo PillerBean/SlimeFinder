@@ -1,4 +1,4 @@
-﻿// SettingsDialog.cpp —— 程序设置对话框的实现（v3.3.6 任务书 §4.2 ~ §4.6）
+// SettingsDialog.cpp —— 程序设置对话框的实现（v3.3.6 任务书 §4.2 ~ §4.6）
 //
 // 实现要点：
 //   1. 5 个标签页（通用 / 搜索 / 缓存 / 日志 / 高级），每页由 buildXxxPage() 独立构建，
@@ -563,6 +563,11 @@ QWidget* SettingsDialog::buildAdvancedPage()
     row = addOptionRow(form, row, slime::ui::t("ui.17f9c0ba9737"), withUnit(m_memLimit, QStringLiteral("MB")),
                        slime::ui::t("ui.558c9c678bd5"));
 
+    m_allowHomogeneous = new QCheckBox(slime::ui::t("ui.allow_homogeneous"), page);
+    m_allowHomogeneous->setChecked(false);
+    row = addOptionRow(form, row, slime::ui::t("ui.allow_homogeneous_label"), m_allowHomogeneous,
+                       slime::ui::t("ui.allow_homogeneous_tip"));
+
     // v3.3.9.1（任务书 2.1）：启动时自动检查 GPU 状态
     m_autoCheckGpu = new QCheckBox(slime::ui::t("ui.52da0772de3c"), page);
     row = addOptionRow(form, row, slime::ui::t("ui.be04dbe3dfd8"), m_autoCheckGpu,
@@ -815,6 +820,7 @@ AppSettings SettingsDialog::factoryDefaults()
     // v3.3.9（任务书 二）：资源控制默认值（CPU 不限 / 内存自动）
     s.cpuLimitPercent = 100;
     s.memLimitMB = 0;
+    s.allowHomogeneousResults = false;
     s.autoCheckGpuAtStartup = false; // v3.3.9.1（任务书 2.1）：默认关闭
     s.updateReminderDays = 30;
     s.crashDump = true;
@@ -875,6 +881,7 @@ AppSettings SettingsDialog::currentValues() const
     s.cpuLimitPercent = m_cpuLimit->value();
     s.gpuLimitPercent = m_gpuLimit->value();
     s.memLimitMB = m_memLimit->value();
+    s.allowHomogeneousResults = m_allowHomogeneous->isChecked();
     s.autoCheckGpuAtStartup = m_autoCheckGpu->isChecked();
     s.updateReminderDays = m_updateReminderDays->value();
     s.crashDump = m_crashDump->isChecked();
@@ -931,6 +938,7 @@ void SettingsDialog::setValues(const AppSettings& s)
     m_cpuLimit->setValue(s.cpuLimitPercent);
     m_gpuLimit->setValue(s.gpuLimitPercent);
     m_memLimit->setValue(s.memLimitMB);
+    m_allowHomogeneous->setChecked(s.allowHomogeneousResults);
     m_autoCheckGpu->setChecked(s.autoCheckGpuAtStartup);
     m_updateReminderDays->setValue(s.updateReminderDays);
     m_crashDump->setChecked(s.crashDump);

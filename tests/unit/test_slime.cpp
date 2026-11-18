@@ -89,12 +89,16 @@ static bool parseCommon(const std::vector<std::string>& a, size_t& idx,
                         Version& version, int64_t& seed, int& minX, int& maxX, int& minZ, int& maxZ)
 {
     if (a.size() - idx < 6) return false;
-    version = (std::stoi(a[idx]) == 1) ? Version::Bedrock : Version::Java;
-    ++idx;
-    seed = std::stoll(a[idx]);
-    ++idx;
-    minX = std::stoi(a[idx]); maxX = std::stoi(a[idx + 1]);
-    minZ = std::stoi(a[idx + 2]); maxZ = std::stoi(a[idx + 3]);
+    try {
+        version = (std::stoi(a[idx]) == 1) ? Version::Bedrock : Version::Java;
+        ++idx;
+        seed = std::stoll(a[idx]);
+        ++idx;
+        minX = std::stoi(a[idx]); maxX = std::stoi(a[idx + 1]);
+        minZ = std::stoi(a[idx + 2]); maxZ = std::stoi(a[idx + 3]);
+    } catch (...) {
+        return false; // invalid numeric argument: print usage instead of terminating
+    }
     idx += 4;
     return true;
 }

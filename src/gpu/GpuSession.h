@@ -82,14 +82,15 @@ public:
     bool patternStream(int64_t worldSeed, bool bedrock, int rows, int cols, int w, int h, int axMin,
                        int axMax, int azMin, int azMax, const uint32_t* enableMasks,
                        const uint32_t* greenMasks, uint32_t maxHits, const std::atomic<bool>& cancel,
-                       std::vector<StreamDensityHit>& out, std::string* err);
+                       std::vector<StreamDensityHit>& out, std::string* err,
+                       bool* outTruncated = nullptr);
 
     bool matchDensityStream(int64_t worldSeed, bool bedrock, int gridSize, int thr, int w, int h, int axMin,
                             int axMax, int azMin, int azMax, uint32_t maxHits, int64_t startX, int64_t startZ,
                             const std::atomic<bool>& cancel, std::vector<StreamDensityHit>& out,
                             std::string* err, uint32_t* outTotal = nullptr,
                             bool earlyStop = false, int64_t earlyStopTarget = 0,
-                            uint32_t keepTop = 0);   // v3.10.12.1：只回传最近的 keepTop 个（0=全部）
+                            uint32_t keepTop = 0, bool* outTruncated = nullptr);   // v3.10.12.1：只回传最近的 keepTop 个（0=全部）
 
     // v3.7.6：环形覆盖（占用图逐行前缀和 → 每个候选中心的环带格数）
     bool annulusCoverage(const int* pref2d, int w, int h, int originX, int originZ, int step, int nx,

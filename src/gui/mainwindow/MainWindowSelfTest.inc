@@ -56,6 +56,17 @@ int MainWindow::runSelfTest()
         }
     };
 
+    // High-hit modal automation: exercise the real QMessageBox and close it via the event loop.
+    {
+        slime::HitEstimate est;
+        est.ok = true;
+        est.estimatedHits = 5000000;
+        est.candidateWindows = 6000000;
+        est.sampledWindows = 256;
+        est.hitRate = 0.83;
+        check(confirmHighHitEstimate(est, true), "高命中模态警告可确认并继续");
+    }
+
     // v3.3.4（任务书 1.4）：不做折叠 —— 6 个设置分组始终展开，无需额外复位。
     // v3.3.4（任务书 4.1）：种子默认空 —— 自检先把种子填成合法值，
     // 保证后续各组的真实搜索都能正常执行（空种子的拦截行为在 13.9 单独验证）。
@@ -3087,6 +3098,7 @@ int MainWindow::runSelfTest()
                                   now.defaultThreads == def.defaultThreads &&
                                   now.defaultTargetCount == def.defaultTargetCount &&
                                   now.cpuLimitPercent == def.cpuLimitPercent && now.memLimitMB == def.memLimitMB &&
+                                  now.allowHomogeneousResults == def.allowHomogeneousResults &&
                                   now.crashDump == def.crashDump && now.debugMode == def.debugMode &&
                                   now.logMaxLines == def.logMaxLines && now.cacheMaxMB == def.cacheMaxMB;
                 std::fprintf(stderr, "[UI自检]   恢复所有设置后：主题=%s 轮滚=%d CPU上限=%d 内存上限=%d 与出厂一致=%d\n",
@@ -3578,19 +3590,84 @@ int MainWindow::runSelfTest()
             m_lastAfk.clear();
             m_w->shapeRingRadio->setChecked(true);
             runRingSearch();
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 150);
+            // v3.14.5（flow-ring-async）：runRingSearch 只启动后台 SearchJob 并立即返回。
+            const bool ringLaunchedAsync =
+                m_ringSearching && m_ringJob.state() != slime::SearchJob::State::Idle;
+            check(ringLaunchedAsync, "环形：runRingSearch 立即返回（后台任务已接管，未在函数内等待）");
+            check(m_w->start && !m_w->start->isEnabled(), "环形：运行中开始按钮禁用");
+            check(m_w->cancel && m_w->cancel->isEnabled(), "环形：运行中取消按钮可用");
+            check(m_w->progress && m_w->progress->maximum() == 0, "环形：运行中进度条为忙碌滚动");
+            const bool ringFinishedAsync = waitForRingSearchIdle(30000);
+            check(ringFinishedAsync, "环形：后台规划在 30s 内完成并回到空闲");
+            check(!m_ringSearching && !m_ringJob.active(), "环形：完成后清除 m_ringSearching");
+            check(m_w->start && m_w->start->isEnabled(), "环形：完成后开始按钮恢复");
+            check(m_w->cancel && !m_w->cancel->isEnabled(), "环形：完成后取消按钮禁用");
+            check(m_w->progress && m_w->progress->value() == 1000 && m_w->progressPercent &&
+                      m_w->progressPercent->text() == QLatin1String("100%"),
+                  "环形：完成后进度 100%");
             std::fprintf(stderr, "[UI自检]   环形覆盖：候选=%zu 最优=(%d,%d) 覆盖=%lld 格\n", m_lastAfk.size(),
                          m_lastAfk.empty() ? 0 : m_lastAfk.front().x,
                          m_lastAfk.empty() ? 0 : m_lastAfk.front().z,
                          m_lastAfk.empty() ? 0LL : static_cast<long long>(m_lastAfk.front().coveredBlocks));
             check(!m_lastAfk.empty(), "环形覆盖能算出挂机点候选");
+            // v3.14.5（flow-ring-async）：取消与关闭路径 —— 都在后台任务运行中触发。
+            {
+                const int keepRange[4] = { m_w->minX->value(), m_w->maxX->value(), m_w->minZ->value(),
+                                           m_w->maxZ->value() };
+                const int keepScan = m_w->ringScanCombo ? m_w->ringScanCombo->currentIndex() : 0;
+                const int keepTarget = m_w->targetCount ? m_w->targetCount->value() : 1;
+                // 取消：精确模式 + 240×240 区块，保证按下取消时规划仍在后台执行。
+                m_w->minX->setValue(-120);
+                m_w->maxX->setValue(119);
+                m_w->minZ->setValue(-120);
+                m_w->maxZ->setValue(119);
+                if (m_w->ringScanCombo) m_w->ringScanCombo->setCurrentIndex(2); // 精确（逐区块）
+                if (m_w->targetCount) m_w->targetCount->setValue(5);
+                runRingSearch();
+                const bool cancelWasRunning = m_ringSearching;
+                cancelSearch();
+                const bool cancelFlagSet = m_ringCancel->load(std::memory_order_relaxed);
+                const bool cancelIdle = waitForRingSearchIdle(60000);
+                check(cancelWasRunning && cancelFlagSet, "环形取消：运行中 cancelSearch 置位取消标志");
+                check(cancelIdle && !m_ringSearching && !m_ringJob.active(), "环形取消：后台任务两阶段取消后结束");
+                check(m_w->start && m_w->start->isEnabled(), "环形取消：开始按钮恢复");
+                check(m_w->cancel && !m_w->cancel->isEnabled(), "环形取消：取消按钮禁用");
+                check(m_w->progress && m_w->progress->value() == 1000 && m_w->progressPercent &&
+                          m_w->progressPercent->text() == QLatin1String("100%"),
+                      "环形取消：进度归 100%（不会卡在忙碌态）");
+                check(m_lastAfk.empty(), "环形取消：不把已取消的结果写回界面");
+                std::fprintf(stderr, "[UI自检]   环形取消：运行中=%d 标志=%d 状态=%s\n", cancelWasRunning ? 1 : 0,
+                             cancelFlagSet ? 1 : 0, statusBar()->currentMessage().toUtf8().constData());
+                // 关闭：启动后台任务后走 closeEvent 共用的停止路径（5s 有界等待 + 丢弃完成回调）。
+                m_w->minX->setValue(-20);
+                m_w->maxX->setValue(20);
+                m_w->minZ->setValue(-20);
+                m_w->maxZ->setValue(20);
+                if (m_w->ringScanCombo) m_w->ringScanCombo->setCurrentIndex(0); // 快速
+                runRingSearch();
+                const bool closeWasRunning = m_ringSearching;
+                const bool closeOk = stopRingSearchForShutdown(5000);
+                check(closeWasRunning && closeOk, "关闭窗口：环形任务 5s 内有界结束（允许关闭）");
+                check(!m_ringSearching && !m_ringJob.active(), "关闭窗口：结束环形任务后清除运行标志");
+                check(m_w->progress && m_w->progress->value() == 1000, "关闭窗口：进度复位 100%");
+                // 完成回调已被丢弃：再泵一次事件队列也不能改写界面/重复落地结果。
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                check(m_ringFinishDiscard, "关闭窗口：完成回调标记为丢弃（不会在销毁路径触碰 this）");
+                m_ringFinishDiscard = false; // 主窗口继续用于后续自检
+                m_w->minX->setValue(keepRange[0]);
+                m_w->maxX->setValue(keepRange[1]);
+                m_w->minZ->setValue(keepRange[2]);
+                m_w->maxZ->setValue(keepRange[3]);
+                if (m_w->ringScanCombo) m_w->ringScanCombo->setCurrentIndex(keepScan);
+                if (m_w->targetCount) m_w->targetCount->setValue(keepTarget);
+            }
             // v3.10.12.12 回归：环形形状仍 checked 时切到图案模式，直接调用环形入口也不能产出环形结果
             {
                 m_w->strictRadio->setChecked(true);
                 m_w->shapeRingRadio->setChecked(true);
                 m_lastAfk.clear();
                 runRingSearch();
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                waitForRingSearchIdle(1000); // 图案模式入口直接返回，不应产生后台任务
                 check(m_lastAfk.empty(), "图案模式下不会执行环形搜索");
                 m_w->densityRadio->setChecked(true); // 恢复后续环形测试的环境
                 m_w->shapeRingRadio->setChecked(true);
@@ -3600,7 +3677,7 @@ int MainWindow::runSelfTest()
                 const double keepDens = m_w->minDensity ? m_w->minDensity->value() : 0.0;
                 if (m_w->minDensity) m_w->minDensity->setValue(1.0);
                 runRingSearch();
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
+                waitForRingSearchIdle(30000);
                 const int rowsEmpty = m_w->resultTable ? m_w->resultTable->rowCount() : -1;
                 std::fprintf(stderr, "[UI自检]   环形无果清场：列表行=%d 候选=%zu\n", rowsEmpty, m_lastAfk.size());
                 check(rowsEmpty == 0, "环形搜索无果时结果列表被清空（不残留上一次）");
@@ -3612,12 +3689,12 @@ int MainWindow::runSelfTest()
                 m_w->simDistance->setValue(4);
                 updateSimDistanceNote();
                 runRingSearch();
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
+                waitForRingSearchIdle(30000);
                 const double r4 = static_cast<double>(m_lastRingOuter);
                 m_w->simDistance->setValue(12);
                 updateSimDistanceNote();
                 runRingSearch();
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
+                waitForRingSearchIdle(30000);
                 const double r12 = static_cast<double>(m_lastRingOuter);
                 std::fprintf(stderr, "[UI自检]   模拟距离：4 区块⇒外沿 %.0f 格，12 区块⇒外沿 %.0f 格\n", r4, r12);
                 check(std::abs(r4 - 64.0) < 0.5, "模拟距离 4 区块 ⇒ 环带外沿收窄到 64 格");
@@ -3650,7 +3727,8 @@ int MainWindow::runSelfTest()
                 m_lastAfk.clear();
                 const auto t0 = std::chrono::steady_clock::now();
                 runRingSearch();
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
+                const bool bigRingIdle = waitForRingSearchIdle(30000);
+                check(bigRingIdle, "大范围环形：后台任务在 30s 内完成");
                 const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
                 std::fprintf(stderr, "[UI自检]   大范围环形（400x400 区块）：候选=%zu 用时 %.2f 秒 最优=(%d,%d)\n",
                              m_lastAfk.size(), secs, m_lastAfk.empty() ? 0 : m_lastAfk.front().x,
@@ -3672,7 +3750,7 @@ int MainWindow::runSelfTest()
                 m_w->targetCount->setValue(8);
                 m_lastAfk.clear();
                 runRingSearch();
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 150);
+                waitForRingSearchIdle(30000);
                 std::fprintf(stderr, "[UI自检]   低密度+小范围：候选=%zu（目标数量=8，上限 12）\n", m_lastAfk.size());
                 check(!m_lastAfk.empty() && m_lastAfk.size() <= 12,
                       "最小密度只筛选、结果数量仍按目标数量截取（不再一次返回几十个）");
@@ -3692,7 +3770,7 @@ int MainWindow::runSelfTest()
             m_w->maxZ->setValue(20);
             m_lastAfk.clear();
             runRingSearch();
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 150);
+            waitForRingSearchIdle(30000);
             const int rows = m_w->resultTable ? m_w->resultTable->rowCount() : -1;
             std::fprintf(stderr, "[UI自检]   结果列表：行数=%d 候选=%zu\n", rows, m_lastAfk.size());
             check(rows > 0, "搜索后结果列表有数据");
@@ -3813,6 +3891,7 @@ int MainWindow::runSelfTest()
                            .arg(s.logSubDir).arg(s.logKeepDays).arg(s.logAutoScroll).arg(s.logMaxLines);
                 out += QStringLiteral("cpu%1mem%2ag%3ur%4cd%5dm%6").arg(s.cpuLimitPercent).arg(s.memLimitMB)
                            .arg(s.autoCheckGpuAtStartup).arg(s.updateReminderDays).arg(s.crashDump).arg(s.debugMode);
+                out += QStringLiteral("hg%1").arg(s.allowHomogeneousResults ? 1 : 0);
                 // v3.5.18：高级调试参数
                 out += QStringLiteral("ri%1ro%2rc%3rb%4").arg(s.afkRingInner).arg(s.afkRingOuter)
                            .arg(s.ringCoarseStep).arg(s.ringStatBands);

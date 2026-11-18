@@ -57,6 +57,10 @@ add_library(slime_core STATIC
     src/core/FastJava.cpp   # v3.6.16：Java 版判定 AVX2（16 lane）
     src/core/CacheManager.cpp
     src/core/SearchTask.cpp
+    src/core/SearchProgress.cpp
+    src/core/SearchReport.cpp
+    src/core/SearchJob.cpp
+    src/core/MemoryBudget.cpp
     src/core/AfkPlanner.cpp   # v3.5.2（任务 1）：环形覆盖挂机点规划（1/16 区块精度）
     src/core/BiomeMap.cpp     # v3.5.2（任务 2/3）：cubiomes 群系地图（彩色预览 / 权重数据底座）
     src/core/SpawnWeights.cpp # v3.5.2（任务 3）：群系 → 史莱姆刷怪效率权重（Wiki 数据）
@@ -108,6 +112,7 @@ add_custom_target(slime_kernel_embed DEPENDS ${SLIME_GPU_GEN}/slime_kernel_embed
 # 本项目头文件不足 20 个、整包重编译仅数十秒，用「头文件变更即重编译」换取构建正确性。
 file(GLOB_RECURSE SLIME_HEADERS CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.inc
 )
 list(APPEND SLIME_HEADERS ${SLIME_GPU_GEN}/slime_kernel_embed.h)
 
@@ -259,6 +264,24 @@ if(WIN32)
     target_link_libraries(slime_mode_bench PRIVATE dbghelp)
 endif()
 
+add_executable(slime_cache_lru_bench
+    tools/bench/cache_lru_bench.cpp
+)
+target_include_directories(slime_cache_lru_bench PRIVATE \/src)
+target_link_libraries(slime_cache_lru_bench PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_cache_lru_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
+add_executable(slime_flow_bench
+    tools/bench/flow_bench.cpp
+)
+target_include_directories(slime_flow_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_flow_bench PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_flow_bench PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+
 # 基岩 CPU 链数探针：8 lane/链，改变每批链数（实验工具，不接入产品）
 add_executable(slime_bedrock_chain_probe
     tools/bench/bedrock_chain_probe.cpp
@@ -349,6 +372,78 @@ target_include_directories(slime_cache_build PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 target_link_libraries(slime_cache_build PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_cache_build PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_search_job_tests
+    tests/integration/search_job_test.cpp
+)
+target_include_directories(slime_search_job_tests PRIVATE \/src)
+target_link_libraries(slime_search_job_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_search_job_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_memory_budget_tests
+    tests/integration/memory_budget_test.cpp
+)
+target_include_directories(slime_memory_budget_tests PRIVATE \/src)
+target_link_libraries(slime_memory_budget_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_memory_budget_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_gpu_resume_tests
+    tests/integration/gpu_resume_test.cpp
+)
+target_include_directories(slime_gpu_resume_tests PRIVATE \/src)
+target_link_libraries(slime_gpu_resume_tests PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_gpu_resume_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_homogeneous_tests
+    tests/integration/homogeneous_test.cpp
+)
+target_include_directories(slime_homogeneous_tests PRIVATE \/src)
+target_link_libraries(slime_homogeneous_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_homogeneous_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_afk_cancel_tests
+    tests/integration/afk_cancel_test.cpp
+)
+target_include_directories(slime_afk_cancel_tests PRIVATE \/src)
+target_link_libraries(slime_afk_cancel_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_afk_cancel_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_gpu_cap_real_tests
+    tests/integration/gpu_cap_real_test.cpp
+)
+target_include_directories(slime_gpu_cap_real_tests PRIVATE \/src)
+target_link_libraries(slime_gpu_cap_real_tests PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_gpu_cap_real_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_gpu_truncation_tests
+    tests/integration/gpu_truncation_test.cpp
+)
+target_include_directories(slime_gpu_truncation_tests PRIVATE \/src)
+target_link_libraries(slime_gpu_truncation_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_gpu_truncation_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
+add_executable(slime_hit_estimate_tests
+    tests/integration/hit_estimate_test.cpp
+)
+target_include_directories(slime_hit_estimate_tests PRIVATE \/src)
+target_link_libraries(slime_hit_estimate_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_hit_estimate_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
 add_executable(slime_cache_store_tests
