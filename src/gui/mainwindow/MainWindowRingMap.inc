@@ -106,10 +106,7 @@ void MainWindow::runRingSearch()
     o.innerRadius = kRingInner;
     o.topN = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 5));
     const int requestedTopN = o.topN;
-    if (!m_settings.allowHomogeneousResults) {
-        // Need extra candidates to find requestedTopN distinct quality values.
-        o.topN = (std::min)(4000, (std::max)(o.topN * 8, o.topN + 8));
-    }
+    // 同质化关闭时不扩大候选池：质量种类不足时返回少于 N，并明确提示。
     o.minDensity = m_w->minDensity ? (std::max)(0.0, (std::min)(1.0, m_w->minDensity->value())) : 0.0;
     // v3.6.0：目标数量较大时放宽最小间距（24 → 8 区块），否则密集区域挑不出足够多结果
     o.minSeparation = (requestedTopN > 8) ? 8 : 24;
@@ -501,6 +498,9 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         else
             m_resultsNotice->setText(QString());
         m_resultsNotice->setVisible(!m_resultsNotice->text().isEmpty());
+        if (!result->allowHomogeneousResults && got < result->requestedTopN) {
+            addFeedback(2, slime::ui::t("ui.homogeneous_fewer").arg(got).arg(result->requestedTopN));
+        }
     }
     // v3.6.0：结束（含异常/空结果）一律恢复按钮态
     if (m_w->start) m_w->start->setEnabled(true);

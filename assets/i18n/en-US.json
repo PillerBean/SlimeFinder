@@ -1363,5 +1363,6 @@
   "ui.allow_homogeneous_tip": "On: same-density hits at different distances are kept, strictly nearest N. Off: one nearest hit per density quality; “nearest N” means nearest N distinct qualities.",
   "ui.homogeneous_off_note": "Homogeneous results are disabled: one nearest hit per density quality; “nearest N” means nearest N distinct qualities and may be fewer than the target.",
   "ui.bedrock_river_bug": "Bedrock notice: confirmed bug MCPE-161245 means slime chunks inside river biomes do not spawn slimes at any underground Y level. This tool still lists mathematical slime chunks and does not exclude river biomes automatically.",
-  "ui.strict_ring_ignored": "Ring coverage is not available in strict pattern mode; a square search was used. Ring is density-only."
+  "ui.strict_ring_ignored": "Ring coverage is not available in strict pattern mode; a square search was used. Ring is density-only.",
+  "ui.homogeneous_fewer": "Homogeneous results are off: only %1 distinct valid-cell qualities were found, fewer than the target %2; the candidate pool is not expanded."
 }

@@ -1371,6 +1371,13 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         if (out.truncated) {
             addFeedback(2, slime::ui::t("ui.truncated_results"));
         }
+        if (!buildModeActive() && info.mode == Mode::Density && !info.options.allowHomogeneousResults &&
+            !info.options.ignoreThreshold && info.targetCount > 0 &&
+            static_cast<int64_t>(out.results.size()) < info.targetCount) {
+            addFeedback(2, slime::ui::t("ui.homogeneous_fewer")
+                             .arg(out.results.size())
+                             .arg(info.targetCount));
+        }
         if (info.version == Version::Bedrock && !m_bedrockRiverNoticeShown) {
             m_bedrockRiverNoticeShown = true;
             addFeedback(1, slime::ui::t("ui.bedrock_river_bug"));
