@@ -1609,9 +1609,11 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
         return;
     }
 
-    if (out.stoppedEarly) {
+    if (out.truncated) {
+        text += slime::ui::t("ui.truncated_header").arg(out.totalFound).arg(out.results.size());
+    } else if (out.stoppedEarly) {
         text += slime::ui::t("ui.f2d64e212362")
-                    .arg(out.results.size()).arg(out.results.size());
+                    .arg(out.totalFound).arg(out.results.size());
     } else {
         text += slime::ui::t("ui.1bcc6f2367f2")
                     .arg(out.totalFound).arg(out.results.size());
@@ -1652,6 +1654,7 @@ void MainWindow::populateResultText(const SearchOutcome& out, const RunInfo& inf
         const double avgCps = totalS > 1e-9 ? static_cast<double>(out.stats.scannedChunks) / totalS : 0.0;
         QString txt = slime::ui::t("ui.c9f1416974ec")
                           .arg(out.results.size())
+                          .arg(out.totalFound)
                           .arg(shown)
                           .arg(out.stats.scannedChunks)
                           .arg(totalS, 0, 'f', 3)
