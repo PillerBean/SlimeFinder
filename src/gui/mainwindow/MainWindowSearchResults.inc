@@ -114,6 +114,9 @@ void MainWindow::startSearch()
         runRingSearch();
         return;
     }
+    if (!buildModeActive() && patternModeNow && m_w && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked()) {
+        addFeedback(1, slime::ui::t("ui.strict_ring_ignored"));
+    }
 
     SearchOptions opt;
     opt.version = m_w->bedrockRadio->isChecked() ? Version::Bedrock : Version::Java;
@@ -295,7 +298,13 @@ void MainWindow::startSearch()
             auto cm = std::make_shared<slime::CacheManager>();
             std::string err;
             if (!cacheStore->fillCacheManagerRange(cacheSnapshot, *cm, band, &err) && !err.empty()) {
-                // 失败时返回空缓存继续计算，结果不受影响。
+                // 失败时返回空缓存继续计算，结果不受影响；但不能静默吞掉。
+                static std::atomic<int> logged{ 0 };
+                if (logged.fetch_add(1, std::memory_order_relaxed) < 5) {
+                    Logger::warning("缓存band加载失败，band=(" + std::to_string(band.minX) + "," +
+                                    std::to_string(band.maxX) + "," + std::to_string(band.minZ) + "," +
+                                    std::to_string(band.maxZ) + ") " + err);
+                }
             }
             return cm;
         };
