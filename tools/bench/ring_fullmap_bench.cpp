@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cerrno>
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -48,10 +50,51 @@ int main(int argc, char** argv)
     const int aroundStep = std::max(1, std::atoi(std::getenv("RING_AROUND_STEP") ? std::getenv("RING_AROUND_STEP") : "32"));
     const int baseX = std::atoi(std::getenv("RING_CX") ? std::getenv("RING_CX") : "3472965");
     const int baseZ = std::atoi(std::getenv("RING_CZ") ? std::getenv("RING_CZ") : "-13446988");
-    const int64_t seed = 0;
+    const int64_t seed = std::strtoll(std::getenv("RING_SEED") ? std::getenv("RING_SEED") : "0", nullptr, 10);
     const int minX = -1875000, maxX = 1875000;
     const int minZ = -1875000, maxZ = 1875000;
-    const int outer = 128, inner = 24;
+    const int outer = std::max(1, std::atoi(std::getenv("RING_RADIUS") ? std::getenv("RING_RADIUS") : "128"));
+    const int inner = std::max(0, std::atoi(std::getenv("RING_INNER") ? std::getenv("RING_INNER") : "24"));
+
+    const bool pointMode = std::getenv("RING_POINT") && std::string(std::getenv("RING_POINT")) == "1";
+    if (pointMode) {
+        errno = 0;
+        const char* seedText = std::getenv("RING_SEED") ? std::getenv("RING_SEED") : "0";
+        const int64_t pointSeed = std::strtoll(seedText, nullptr, 10);
+        if (errno == ERANGE) {
+            std::printf("POINT seed=%s ERROR=int64 overflow\n", seedText);
+            return 2;
+        }
+        const int cx = std::atoi(std::getenv("RING_CX") ? std::getenv("RING_CX") : "0");
+        const int cz = std::atoi(std::getenv("RING_CZ") ? std::getenv("RING_CZ") : "0");
+        const bool weighted = !std::getenv("RING_WEIGHTED") || std::string(std::getenv("RING_WEIGHTED")) != "0";
+        AfkPlanOptions po;
+        po.area = Rect{ minX, maxX, minZ, maxZ };
+        po.radius = outer;
+        po.innerRadius = inner;
+        po.topN = 1;
+        const auto pointPred = [pointSeed](int x, int z) {
+            return SlimeEngine::isSlimeChunk(Version::Java, pointSeed, x, z);
+        };
+        const auto t0 = Clock::now();
+        if (weighted) {
+            std::vector<AfkCandidate> cands(1);
+            cands[0].x = cx;
+            cands[0].z = cz;
+            AfkPlanner::measureStrictForCandidates(cands, po, pointPred, defaultJavaVersionId(), pointSeed,
+                                                   true, nullptr);
+            std::printf("POINT weighted seed=%lld cx=%d cz=%d blocks=%lld weight=%.6f pct=%.6f chunks=%d ms=%.1f\n",
+                        static_cast<long long>(pointSeed), cx, cz,
+                        static_cast<long long>(cands[0].coveredBlocks), cands[0].coveredWeight,
+                        cands[0].coveragePercent, cands[0].coveredChunks, msSince(t0));
+        } else {
+            const auto m = AfkPlanner::measureExact(cx, cz, po, pointPred);
+            std::printf("POINT unweighted seed=%lld cx=%d cz=%d blocks=%lld pct=%.6f chunks=%d ms=%.1f\n",
+                        static_cast<long long>(pointSeed), cx, cz,
+                        static_cast<long long>(m.coveredBlocks), m.coveragePercent, m.coveredChunks, msSince(t0));
+        }
+        return 0;
+    }
 
     const auto tTotal = Clock::now();
     const auto tPrep = Clock::now();
