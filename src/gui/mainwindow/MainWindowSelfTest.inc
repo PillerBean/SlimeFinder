@@ -269,7 +269,7 @@ int MainWindow::runSelfTest()
         m_w->strictRadio->setChecked(false);
         m_w->densityRadio->setChecked(true);
         updateSearchShapeEnabled();
-        check(m_w->presetCombo && m_w->presetCombo->count() == 5, "密度模式方案数 = 4 + 自定义");
+        check(m_w->presetCombo && m_w->presetCombo->count() == 9, "密度模式方案数 = 8 + 自定义");
         check(m_w->presetCombo->itemText(m_w->presetCombo->count() - 1) == slime::ui::t("ui.c493338e8c33"),
               "方案列表最后一项是自定义");
 
@@ -278,12 +278,13 @@ int MainWindow::runSelfTest()
         check(!m_w->stopAtTarget->isChecked() && !m_w->smartRange->isChecked(), "方案「找全部候选」关闭找够就停/智能范围");
         check((m_w->gpuCheck && m_w->gpuCheck->isChecked()) == gpuBefore, "切换方案不改变 GPU 开关（加速独立）");
 
-        // 方案「最优 N 个（忽略阈值）」（索引 2）：开启忽略 + 冲突裁决
-        m_w->presetCombo->setCurrentIndex(2);
+        // 方案「最优 N 个（忽略阈值）」（索引 4）：开启忽略 + 冲突裁决
+        m_w->presetCombo->setCurrentIndex(4);
         check(m_w->ignoreThreshold && m_w->ignoreThreshold->isChecked(), "方案「最优 N 个」开启忽略阈值");
         check(!m_w->minDensity->isEnabled(), "最优候选模式禁用最小密度输入");
         check(!m_w->stopAtTarget->isEnabled() && !m_w->smartRange->isEnabled(), "最优候选模式禁用提前停止/智能范围");
-        check(m_w->presetHint && m_w->presetHint->text().contains(slime::ui::t("ui.4446620620fc")), "最优候选模式提示文案");
+        check(m_w->presetHint && m_w->presetHint->text() == slime::ui::t("ui.preset.hint_best_ignore"),
+              "最优候选模式提示文案");
 
         // 切回默认方案：阈值恢复可用、忽略关闭
         m_w->presetCombo->setCurrentIndex(0);
@@ -292,7 +293,7 @@ int MainWindow::runSelfTest()
         // 图案模式：方案数 = 2 + 自定义，且忽略阈值不可用
         m_w->strictRadio->setChecked(true);
         updateSearchShapeEnabled();
-        check(m_w->presetCombo->count() == 3, "图案模式方案数 = 2 + 自定义");
+        check(m_w->presetCombo->count() == 4, "图案模式方案数 = 3 + 自定义");
         check(!m_w->ignoreThreshold->isEnabled(), "图案模式下忽略阈值不可用");
 
         // 恢复：密度模式 + 默认方案
@@ -418,11 +419,20 @@ int MainWindow::runSelfTest()
         m_w->presetCombo->setCurrentIndex(0);   // 预设
         check(!m_w->resultGroup->isVisible() && !m_w->matchGroup->isVisible(),
               "预设方案下「结果要求/匹配方式」收起（防乱调）");
+        check(m_w->densityAdvanced && !m_w->densityAdvanced->isVisible(),
+              "预设方案下网格/阈值/忽略开关收起");
+        check(m_presetHomogeneous == 1, "快速最近 N 预设允许同质量");
+        m_w->presetCombo->setCurrentIndex(2);
+        check(m_presetHomogeneous == 0, "不同质量预设关闭同质化");
+        m_w->presetCombo->setCurrentIndex(0);
         check(!m_w->presetDisclaimer->isVisible(), "预设方案不显示自定义速度声明");
-        const int customIdx = 4;
+        const int customIdx = 8;
         m_w->presetCombo->setCurrentIndex(customIdx);   // 自定义
         check(m_w->resultGroup->isVisible() && m_w->matchGroup->isVisible(),
               "自定义方案展开「结果要求/匹配方式」");
+        check(m_w->densityAdvanced && m_w->densityAdvanced->isVisible(),
+              "自定义方案展开网格/阈值/忽略开关");
+        check(m_presetHomogeneous == -1, "自定义方案恢复跟随设置");
         check(m_w->presetDisclaimer->isVisible() &&
                   m_w->presetDisclaimer->text().contains(slime::ui::t("ui.f2fdffbb9ed5")),
               "自定义方案显示「可能明显降低速度」声明");
@@ -3545,9 +3555,10 @@ int MainWindow::runSelfTest()
             check(m_w->squareOpts && !m_w->squareOpts->isVisible(),
                   "环形：正方形专属选项（网格大小）整块隐藏");
             check(m_w->ringOpts && m_w->ringOpts->isVisible(), "环形：环形专属选项（扫描模式/最小密度）可见");
+            check(m_w->presetCombo && m_w->presetCombo->count() == 3, "环形模式方案数 = 2 + 自定义");
             check(!m_w->smartRange->isVisible(), "环形：智能范围不显示（不适用）");
-            check(m_w->minDensity->isVisible() && m_w->targetCount->isVisible() && m_w->matchGroup->isEnabled(),
-                  "环形：最小密度/目标数量/判定算法仍可用（与正方形一致）");
+            check(!m_w->minDensity->isVisible() && m_w->targetCount->isVisible() && !m_w->matchGroup->isVisible(),
+                  "环形：默认方案隐藏详细开关，仅保留目标数量");
             check(m_w->densityRadio->isChecked(), "环形选项出现在密度模式下");
             m_w->densityRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
@@ -3582,9 +3593,12 @@ int MainWindow::runSelfTest()
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
             check(m_w->ringOpts && m_w->ringOpts->isVisible() && m_w->squareOpts && !m_w->squareOpts->isVisible(),
                   "环形：只显示环形专属选项");
+            if (m_w->presetCombo) m_w->presetCombo->setCurrentIndex(8); // 高级选项只在自定义显示
             m_w->shapeSquareRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
-            check(m_w->squareOpts && m_w->squareOpts->isVisible(), "正方形：只显示正方形专属选项");
+            if (m_w->presetCombo) m_w->presetCombo->setCurrentIndex(8); // 切回方形后重新选自定义
+            check(m_w->squareOpts && m_w->squareOpts->isVisible(), "自定义正方形：显示正方形专属选项");
+            if (m_w->presetCombo) m_w->presetCombo->setCurrentIndex(0);
             m_w->shapeRingRadio->setChecked(true);
             m_w->densityRadio->setChecked(true);
             m_w->javaRadio->setChecked(true);

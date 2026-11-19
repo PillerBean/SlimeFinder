@@ -2,60 +2,39 @@
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {
-    const double pSlime = 0.1;
-    double pMatch = 0.0;
-    int64_t positions = 0;
-    QString basis;
-
     const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
-    if (patternMode) {
-        if (!m_patternSet || m_pattern.empty()) {
-            return slime::ui::t("ui.f82967ddf109");
-        }
-        int green = 0, white = 0;
-        for (int r = 0; r < m_pattern.rows(); ++r) {
-            for (int c = 0; c < m_pattern.cols(); ++c) {
-                const auto st = m_pattern.at(r, c);
-                if (st == slime::CellState::Green) ++green;
-                else if (st == slime::CellState::White) ++white;
-            }
-        }
-        pMatch = std::pow(pSlime, green) * std::pow(1.0 - pSlime, white);
-        const bool lock = m_w->lockDir && m_w->lockDir->isChecked();
-        if (lock) pMatch *= 0.25;   // 只允许 1 个方向 ⇒ 命中率降到约 1/4
-        positions = (std::max)(int64_t{0}, areaX - m_pattern.cols() + 1) *
-                    (std::max)(int64_t{0}, areaZ - m_pattern.rows() + 1);
-        basis = slime::ui::t("ui.659103792aff")
-                    .arg(green + white)
-                    .arg(green)
-                    .arg(white)
-                    .arg(lock ? slime::ui::t("ui.aec43f954535") : QString());
-    } else {
-        const int g = (std::max)(1, m_w->gridSize ? m_w->gridSize->value() : 5);
-        const int64_t cells = static_cast<int64_t>(g) * g;
-        const double d = (std::max)(0.0, (std::min)(1.0, m_w->minDensity ? m_w->minDensity->value() : 0.0));
-        const int64_t need = static_cast<int64_t>(std::ceil(d * static_cast<double>(cells)));
-        if (need <= 0) {
-            pMatch = 1.0;
-        } else if (need > cells) {
-            pMatch = 0.0;
-        } else {
-            const double mean = static_cast<double>(cells) * pSlime;
-            const double sd = std::sqrt(static_cast<double>(cells) * pSlime * (1.0 - pSlime));
-            // 连续性修正的正态近似：密度窗口一般远大于 30 格，近似足够准
-            const double z = (static_cast<double>(need) - 0.5 - mean) / (sd > 1e-9 ? sd : 1.0);
-            pMatch = 0.5 * std::erfc(z / std::sqrt(2.0));
-        }
-        positions = (std::max)(int64_t{0}, areaX - g + 1) * (std::max)(int64_t{0}, areaZ - g + 1);
-        basis = slime::ui::t("ui.1acf7f8f1396").arg(g).arg(d, 0, 'f', 2);
+    if (patternMode && (!m_patternSet || m_pattern.empty())) {
+        return slime::ui::t("ui.f82967ddf109");
     }
 
-    if (positions <= 0) return slime::ui::t("ui.e448e31ab0ac");
-    const double pAny = (pMatch <= 0.0)
-                            ? 0.0
-                            : (pMatch >= 1.0 ? 1.0
-                                             : -std::expm1(static_cast<double>(positions) * std::log1p(-pMatch)));
-    const double pct = 100.0 * pAny;
+    slime::SearchOptions opt;
+    opt.mode = patternMode ? slime::Mode::Strict : slime::Mode::Density;
+    opt.minX = 0;
+    opt.minZ = 0;
+    opt.maxX = static_cast<int>((std::max)(int64_t{0}, areaX - 1));
+    opt.maxZ = static_cast<int>((std::max)(int64_t{0}, areaZ - 1));
+    opt.gridSize = (std::max)(1, m_w->gridSize ? m_w->gridSize->value() : 5);
+    opt.minDensity = (std::max)(0.0, (std::min)(1.0, m_w->minDensity ? m_w->minDensity->value() : 0.0));
+    opt.pattern = m_pattern;
+    opt.directionLocked = m_w->lockDir && m_w->lockDir->isChecked();
+
+    const slime::HitProbability p = slime::predictHits(opt);
+    if (!p.ok) {
+        return slime::ui::t("ui.e448e31ab0ac");
+    }
+
+    QString basis;
+    if (patternMode) {
+        basis = slime::ui::t("ui.659103792aff")
+                    .arg(p.green + p.white)
+                    .arg(p.green)
+                    .arg(p.white)
+                    .arg(p.directionUnion ? slime::ui::t("ui.aec43f954535") : QString());
+    } else {
+        basis = slime::ui::t("ui.1acf7f8f1396").arg(p.gridSize).arg(p.minDensity, 0, 'f', 2);
+    }
+
+    const double pct = 100.0 * p.probabilityAtLeastOne;
     QString hint;
     if (pct < 1.0) hint = slime::ui::t("ui.822cb673d8d6");
     else if (pct < 20.0) hint = slime::ui::t("ui.402c20628dcf");
@@ -64,8 +43,8 @@ QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
                                          : QStringLiteral("%1").arg(pct, 0, 'f', pct < 10.0 ? 1 : 0);
     return slime::ui::t("ui.6ae8a00a69ce") + pctText + QStringLiteral("%") + hint +
            slime::ui::t("ui.2507a5abfb92")
-               .arg(static_cast<qlonglong>(positions))
-               .arg(pMatch * 100.0, 0, 'f', pMatch < 0.001 ? 4 : 2)
+               .arg(static_cast<qlonglong>(p.candidatePositions))
+               .arg(p.singleWindow * 100.0, 0, 'f', p.singleWindow < 0.001 ? 4 : 2)
                .arg(basis);
 }
 
@@ -76,7 +55,7 @@ bool MainWindow::confirmHighHitEstimate(const slime::HitEstimate& estimate, bool
         slime::ui::t("ui.high_hit_warning")
             .arg(static_cast<qlonglong>(estimate.estimatedHits))
             .arg(static_cast<qlonglong>(estimate.candidateWindows))
-            .arg(static_cast<qlonglong>(estimate.sampledWindows));
+            .arg(estimate.hitRate * 100.0, 0, 'f', 2);
     addFeedback(2, detail);
     if (!forceModal && estimate.estimatedHits < 4000000) return true;
     if (m_uiQuiet && !forceModal) return true;
@@ -153,7 +132,8 @@ void MainWindow::startSearch()
     const slime::MemoryBudget memoryBudget = slime::MemoryBudget::fromSettingMB(m_settings.memLimitMB);
     opt.memBudgetBytes = memoryBudget.chunkBitmapBytes;
     opt.gpuHostBudgetBytes = memoryBudget.gpuHostBytes;
-    opt.allowHomogeneousResults = m_settings.allowHomogeneousResults;
+    opt.allowHomogeneousResults = (m_presetHomogeneous >= 0) ? (m_presetHomogeneous != 0)
+                                                              : m_settings.allowHomogeneousResults;
     if (!buildModeActive() && opt.mode == Mode::Density && !opt.allowHomogeneousResults) {
         addFeedback(2, slime::ui::t("ui.homogeneous_off_note"));
     }
@@ -395,14 +375,21 @@ void MainWindow::startSearch()
         return;
     }
 
-    // v3.14.4: high-hit warning. The estimate is stratified sampling, not a hard promise.
+    // v3.14.4: high-hit warning. 纯数学期望，不做抽样。
     if (!buildModeActive()) {
-        const slime::HitEstimate hitEstimate = SlimeEngine::estimateHits(opt);
-        if (hitEstimate.ok && hitEstimate.estimatedHits >= 1000000) {
-            Logger::info("高命中预估 | 预计=" + std::to_string(hitEstimate.estimatedHits) +
+        const slime::HitProbability prediction = slime::predictHits(opt);
+        if (prediction.ok && prediction.expectedHits >= 1000000.0) {
+            slime::HitEstimate hitEstimate;
+            hitEstimate.ok = true;
+            hitEstimate.candidateWindows = prediction.candidatePositions;
+            hitEstimate.sampledWindows = 0;
+            hitEstimate.sampleHits = 0;
+            hitEstimate.estimatedHits = static_cast<int64_t>(std::llround(
+                (std::min)(prediction.expectedHits, static_cast<double>(prediction.candidatePositions))));
+            hitEstimate.hitRate = prediction.singleWindow;
+            Logger::info("高命中理论预估 | 期望=" + std::to_string(hitEstimate.estimatedHits) +
                          " 候选=" + std::to_string(hitEstimate.candidateWindows) +
-                         " 采样=" + std::to_string(hitEstimate.sampledWindows) +
-                         " 命中率=" + std::to_string(hitEstimate.hitRate));
+                         " 单点概率=" + std::to_string(hitEstimate.hitRate));
             if (!confirmHighHitEstimate(hitEstimate)) return;
         }
     }

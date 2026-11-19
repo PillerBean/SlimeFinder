@@ -240,7 +240,8 @@ void MainWindow::runRingSearch()
     state->uiMinDensity = m_w->minDensity ? m_w->minDensity->value() : 0.3;
     state->targetCount = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
     state->requestedTopN = requestedTopN;
-    state->allowHomogeneousResults = m_settings.allowHomogeneousResults;
+    state->allowHomogeneousResults = (m_presetHomogeneous >= 0) ? (m_presetHomogeneous != 0)
+                                                                 : m_settings.allowHomogeneousResults;
     state->simDistance = m_w->simDistance ? m_w->simDistance->value() : 0;
     state->autoPrescan = autoPrescan;
     state->bedrock = bedrock;

@@ -120,6 +120,7 @@
 #include "gui/dialogs/MapDialog.h"       // v3.5.2（任务 2）：地图预览对话框
 #include "gui/dialogs/HelpDialog.h" // v3.3.3：帮助 / 使用教程对话框
 #include "gui/dialogs/UpdateDialog.h" // v3.10.12.10：GitHub Releases + 镜像 + 网盘备用的更新检查
+#include "core/SearchMath.h"         // 纯数学命中预测（不抽样）
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -727,6 +728,7 @@ struct MainWindow::Widgets {
     QWidget* ringOpts = nullptr;          // v3.5.18：环形专属选项容器
     QLabel* patternInfo = nullptr;
     QWidget* densityPanel = nullptr;
+    QWidget* densityAdvanced = nullptr;   // 自定义方案才显示：网格/阈值/忽略
     QSpinBox* gridSize = nullptr;
     QDoubleSpinBox* minDensity = nullptr;
     QCheckBox* ignoreThreshold = nullptr;   // v3.9.12：最优候选模式（忽略阈值）

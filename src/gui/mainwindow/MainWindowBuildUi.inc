@@ -422,15 +422,18 @@ void MainWindow::buildUi()
     m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityPanel);
     m_w->ignoreThreshold->setToolTip(slime::ui::t("ui.e302a43e602a"));
 
-    // v3.10.12.11：最小密度 / 忽略阈值改为密度面板常显（此前放在「结果要求」分组里，
-    //   选择任意预设方案后就整组隐藏，用户找不到密度设置）。改动会切换为「自定义方案」。
+    // 自定义方案才显示：网格 / 最小密度 / 忽略阈值
+    m_w->densityAdvanced = new QWidget(m_w->densityPanel);
+    auto* advancedLay = new QVBoxLayout(m_w->densityAdvanced);
+    advancedLay->setContentsMargins(0, 0, 0, 0);
+    advancedLay->setSpacing(4);
     {
         auto* densCfgRow = new QHBoxLayout();
-        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityPanel));
+        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityAdvanced));
         densCfgRow->addWidget(m_w->minDensity);
         densCfgRow->addWidget(m_w->ignoreThreshold);
         densCfgRow->addStretch();
-        densityLay->addLayout(densCfgRow);
+        advancedLay->addLayout(densCfgRow);
         m_minDensityCommitted = m_w->minDensity->value();
         QObject::connect(m_w->minDensity, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                          this, [this](double) { applyResultConflicts(); });
@@ -450,10 +453,10 @@ void MainWindow::buildUi()
     });
 
 
-    // 正方形专属：网格大小 + 最小密度
-    m_w->squareOpts = new QWidget(m_w->densityPanel);
+    // 正方形专属：网格大小
+    m_w->squareOpts = new QWidget(m_w->densityAdvanced);
     auto* squareLay = new QVBoxLayout(m_w->squareOpts);
-    squareLay->setContentsMargins(12, 0, 0, 0);
+    squareLay->setContentsMargins(0, 0, 0, 0);
     squareLay->setSpacing(4);
     auto* densRow = new QHBoxLayout();
     densRow->addWidget(new QLabel(slime::ui::t("ui.28e8f6817207"), m_w->squareOpts));
@@ -465,7 +468,8 @@ void MainWindow::buildUi()
     densRow->addStretch();
     squareLay->addLayout(densRow);
     m_w->squareOpts->setVisible(true);
-    densityLay->addWidget(m_w->squareOpts);
+    advancedLay->addWidget(m_w->squareOpts);
+    densityLay->addWidget(m_w->densityAdvanced);
 
     // 环形专属：扫描模式 + 最小密度
     m_w->ringOpts = new QWidget(m_w->densityPanel);
