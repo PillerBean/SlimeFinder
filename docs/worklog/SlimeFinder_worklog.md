@@ -475,3 +475,29 @@ GNU selftest GPU off/on OK
 unit/kernel/reference 117 通过
 UI text check 1388 keys × 3 语言
 ```
+
+## 2026-11-19 18:25 SlimeFinder 3.13.10 测试版
+
+发布：
+
+```text
+Tag: v3.13.10-test
+URL: https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.10-test
+类型：Pre-release
+```
+
+资产：
+
+```text
+SlimeFinder-3.13.10-Setup.exe
+  17,913,072 B
+  SHA256 C84BCAA699D596F47C08CF4A8958209E833DD548F975F1D2440E18421E0A14A9
+
+SlimeFinder-3.13.10-win64.zip
+  25,019,621 B
+  SHA256 5EB4AB9736FD9DD090A381DA76FD03F0D31AF31071F34F1C7482D64963DB3D36
+```
+
+内容：纯数学成功率预测、高命中数学期望、8/3/2 组预设、非自定义隐藏详细开关。
+
+验证：包内 GUI/unit/kernel 自检通过；标准回归 unit/kernel/reference 通过；Wiki 版本索引已加入 3.13.10。
