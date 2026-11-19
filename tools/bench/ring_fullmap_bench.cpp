@@ -67,14 +67,17 @@ int main(int argc, char** argv)
         }
         const int cx = std::atoi(std::getenv("RING_CX") ? std::getenv("RING_CX") : "0");
         const int cz = std::atoi(std::getenv("RING_CZ") ? std::getenv("RING_CZ") : "0");
-        const bool weighted = !std::getenv("RING_WEIGHTED") || std::string(std::getenv("RING_WEIGHTED")) != "0";
+        const bool weighted = (!std::getenv("RING_WEIGHTED") || std::string(std::getenv("RING_WEIGHTED")) != "0") &&
+                              (!std::getenv("RING_VERSION") || std::string(std::getenv("RING_VERSION")) != "bedrock");
+        const bool bedrock = std::getenv("RING_VERSION") && std::string(std::getenv("RING_VERSION")) == "bedrock";
+        const Version pointVersion = bedrock ? Version::Bedrock : Version::Java;
         AfkPlanOptions po;
         po.area = Rect{ minX, maxX, minZ, maxZ };
         po.radius = outer;
         po.innerRadius = inner;
         po.topN = 1;
-        const auto pointPred = [pointSeed](int x, int z) {
-            return SlimeEngine::isSlimeChunk(Version::Java, pointSeed, x, z);
+        const auto pointPred = [pointSeed, pointVersion](int x, int z) {
+            return SlimeEngine::isSlimeChunk(pointVersion, pointSeed, x, z);
         };
         const auto t0 = Clock::now();
         if (weighted) {
