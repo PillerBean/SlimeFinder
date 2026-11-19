@@ -365,3 +365,43 @@ blocks +352
 docs/research/point_verification_2026-11-19.md
 runs.csv -> Z01
 ```
+
+## 2026-11-19 12:40 新种子基准复测
+
+新基准：
+
+```text
+Java seed=-8180004378910677489
+outer=128 inner=24
+社区目标 coveredWeight=14595.893 / blocks=14739
+```
+
+方形预筛+精修复现：
+
+```text
+218.94s
+weight 14595.893165
+blocks 14739
+center (17415252, 28556491)
+```
+
+变体：
+
+```text
+grid14                 同分 224.53s
+threshold 0.20         同分 204.34s
+threshold 0.25         同分 203.17s
+全种子 ±128 step32     14466.175（更低）313.81s
+全种子 ±128 step16     14466.175（更低）557.12s
+目标点 ±128 1 方块     14595.893（局部最优）21.22s
+低阈值 20k              GPU 0xC0000005 崩溃，冷却后恢复
+```
+
+结论：社区点真实；方形基准能复现；目标点在 1 方块邻域内是强局部最优；所有方形变体未超过目标。低阈值高种子数路径有 GPU 驱动崩溃风险。
+
+记录：
+
+```text
+docs/research/summary_newseed.md
+runs.csv AA01–AA11
+```
