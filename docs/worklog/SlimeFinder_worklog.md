@@ -413,3 +413,34 @@ runs.csv AA01–AA11
 - 目标 ±128/±512 细邻域无更高加权点。
 - 方形框架仍未超过社区目标。
 - 提交：`33046b1`，本地领先远端 1（GitHub 网络失败，稍后重试）。
+
+## 2026-11-19 17:27 网络恢复与周末计划
+
+- GitHub 网络恢复，已推送 `4302a6e`；`main` 与 origin 同步。
+- 无待执行关机任务（14:00 计划未触发/已被取消）。
+- 本轮新种子基准与复测结果已全部留痕。
+
+周末继续时的起点：
+
+```text
+主工作区：D:\DeepSeek harness\史莱姆区块查找器\SlimeFinder
+分支：main
+HEAD：4302a6e
+
+基准：
+Java seed=-8180004378910677489
+target 14595.893 weight / 14739 blocks
+center 17415252,28556491
+R=128, inner=24
+
+已知：
+方形预筛 grid13–15 / threshold 0.17–0.25 可复现目标；
+grid12 / threshold0.15 漏检；
+目标 ±512 内无更高加权点；
+lower threshold + 20k seeds 触发 GPU 驱动崩溃。
+
+下一步：
+GPU 环形/环带预筛（外方窗-内方窗），
+用该社区点作为 ground truth；
+每次单 GPU 串行，记录 runs.csv/logs。
+```
