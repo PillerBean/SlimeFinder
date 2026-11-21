@@ -26,7 +26,12 @@ MUTED = RGBColor(0x55, 0x5F, 0x6D)
 
 # Only known math bases; this avoids treating file paths such as
 # tools/bench/ring_counterexample.cpp as subscripts.
-MATH_TOKEN = re.compile(r"(\b[CFSMTVEPQXwG]|Ω)(_(\{[^{}]+\}|[A-Za-z0-9]+))|(\^(\{[^{}]+\}|[A-Za-z0-9]+))")
+MATH_TOKEN = re.compile(
+    r"(\b[CFSMTVEPQXwGtβ]|Ω)(_(\{[^{}]+\}|[A-Za-z0-9]+))"
+    r"|(\^(\{[^{}]+\}|[A-Za-z0-9]+))"
+    r"|(_\{[^{}]+\})"
+    r"|(\^\{[^{}]+\})"
+)
 
 
 def add_rich_runs(paragraph, text: str, size=10.5):
@@ -41,9 +46,17 @@ def add_rich_runs(paragraph, text: str, size=10.5):
             sub = paragraph.add_run(match.group(3).strip("{}"))
             set_font(sub, "Cambria Math", size, italic=True)
             sub.font.subscript = True
-        else:  # superscript
+        elif match.group(4):  # base_superscript
             sup = paragraph.add_run(match.group(5).strip("{}"))
             set_font(sup, "Cambria Math", size, italic=True)
+            sup.font.superscript = True
+        elif match.group(6):  # bare subscript, e.g. sum_{...}
+            sub = paragraph.add_run(match.group(6)[1:].strip("{}"))
+            set_font(sub, "Cambria Math", size - 0.5, italic=True)
+            sub.font.subscript = True
+        else:  # bare superscript
+            sup = paragraph.add_run(match.group(7)[1:].strip("{}"))
+            set_font(sup, "Cambria Math", size - 0.5, italic=True)
             sup.font.superscript = True
         pos = match.end()
     if pos < len(text):
