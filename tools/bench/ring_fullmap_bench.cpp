@@ -54,6 +54,7 @@ int main(int argc, char** argv)
     const int poolKeep = std::max(1, std::atoi(std::getenv("RING_POOL_K") ? std::getenv("RING_POOL_K") : "10000"));
     const char* poolCsv = std::getenv("RING_POOL_CSV");
     const bool kernelRank = std::getenv("RING_KERNEL_RANK") && std::string(std::getenv("RING_KERNEL_RANK")) == "1";
+    const bool kernelPlan = std::getenv("RING_KERNEL_PLAN") && std::string(std::getenv("RING_KERNEL_PLAN")) == "1";
     const int kernelTop = std::max(1, std::atoi(std::getenv("RING_KERNEL_TOP") ? std::getenv("RING_KERNEL_TOP") : "32"));
     const char* kernelCsv = std::getenv("RING_KERNEL_CSV");
     const bool unweightedPlan = std::getenv("RING_UNWEIGHTED_PLAN") && std::string(std::getenv("RING_UNWEIGHTED_PLAN")) == "1";
@@ -353,6 +354,28 @@ int main(int argc, char** argv)
             return a.score > b.score;
         });
         const size_t take = (std::min)(ranked.size(), static_cast<size_t>(kernelTop));
+        if (kernelPlan) {
+            AfkPlanOptions ko = o;
+            ko.seedCandidates.clear();
+            ko.seedCandidates.reserve(take);
+            for (size_t i = 0; i < take; ++i) ko.seedCandidates.emplace_back(ranked[i].cx, ranked[i].cz);
+            const auto tp = Clock::now();
+            std::vector<AfkCandidate> planned;
+            try {
+                planned = AfkPlanner::plan(ko, pred, nullptr);
+            } catch (const std::exception& e) {
+                std::printf("KERNEL_PLAN error=%s\n", e.what());
+                return 1;
+            }
+            std::printf("KERNEL_PLAN seeds=%zu top=%zu plan_ms=%.1f total_ms=%.1f\n",
+                        ranked.size(), take, msSince(tp), msSince(tTotal));
+            for (const auto& c : planned) {
+                std::printf("KERNEL_PLAN cx=%d cz=%d blocks=%lld weight=%.3f pct=%.6f\n",
+                            c.x, c.z, static_cast<long long>(c.coveredBlocks), c.coveredWeight,
+                            c.coveragePercent);
+            }
+            return 0;
+        }
         std::vector<AfkCandidate> cands;
         cands.reserve(take * 256);
         for (size_t i = 0; i < take; ++i) {
