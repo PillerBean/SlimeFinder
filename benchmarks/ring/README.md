@@ -107,3 +107,15 @@ not copied as code without checking each repository's license.
   a faster/leaner candidate set that drops a seed is a quality regression, not
   a speed win.
 - seed12345 reference updated to 14311 / 13822.542 (kernel top1).
+
+## 2026-11-21 20:38 广义最优结论
+
+- 11 个合成陷阱上 square/kernel/hybrid（K=8/32）全部 mean=1.003、worst=1.000。
+- 16×16 小图全 1 方块 oracle 与 planner 一致（9486）。
+- 真实 seed：
+  - newseed 14739 / 14595.893165
+  - seed0 14387 / 14324.515968
+  - seed12345 14742 / 14186.950942（方形基线也达到）
+- hybrid 没有带来质量增益。
+- 当前广义最稳方案：方形 prescan + 全种子精修 + 3×3 抛光。
+- 极端图仍可能非最优；但现有 outer_shell 图不是有效反例（真最优在诱饵边缘）。

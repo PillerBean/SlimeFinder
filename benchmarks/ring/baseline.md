@@ -54,3 +54,5 @@ compare: reference rank + top-K quality vs this P0
 ```
 
 Only a P1 winner gets a full-map confirmation run.
+
+- seed12345 updated: 14742 blocks / 14186.950942 weight, verified by square baseline and hybrid.
