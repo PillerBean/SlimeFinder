@@ -475,6 +475,15 @@ if(MSVC)
     target_compile_options(slime_ring_synthetic_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_ring_counterexample
+    tools/bench/ring_counterexample.cpp
+)
+target_include_directories(slime_ring_counterexample PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_ring_counterexample PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_ring_counterexample PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )
