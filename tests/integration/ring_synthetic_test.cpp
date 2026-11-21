@@ -483,6 +483,25 @@ int main()
     }, 32, 32));
     maps.back().knownGap = true;
 
+    // 8d. 有效极端图：目标是外壳环；诱饵只在其方形窗内、圆外放史莱姆，
+    //     方形得分高但诱饵中心的真实环覆盖为 0。
+    maps.push_back(makeMap("valid_shell_trap", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dxT = bx - (32 * 16 + 8), dzT = bz - (32 * 16 + 8);
+        const int dT2 = dxT * dxT + dzT * dzT;
+        if (dT2 >= 120 * 120 && dT2 <= 128 * 128) return true;
+        for (int gy : { 4, 8, 12, 52, 56, 60 })
+            for (int gx : { 4, 8, 12, 52, 56, 60 }) {
+                const int dx = cx - gx, dz = cz - gy;
+                if (std::abs(dx) <= 7 && std::abs(dz) <= 7) {
+                    const int d2 = (dx * 16) * (dx * 16) + (dz * 16) * (dz * 16);
+                    if (d2 > 128 * 128) return true;
+                }
+            }
+        return false;
+    }, 32, 32));
+    maps.back().knownGap = true;
+
     // 9. 均匀噪声：没有明显结构，检查结果是否仍精确可解释。
     maps.push_back(makeMap("checker", [](int cx, int cz) {
         return ((cx * 31 + cz * 17) & 7) == 0;
