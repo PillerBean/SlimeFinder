@@ -137,8 +137,7 @@ AfkCandidate oracleFor(const Map& m)
 }
 
 void runTrap(const Map& m, bool verbose)
-{
-    const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
+{    const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
     const AfkCandidate oracle = oracleFor(m);
     const auto seeds = squareSeeds(m, 32);
 
@@ -153,6 +152,7 @@ void runTrap(const Map& m, bool verbose)
     }
 
     int oracleSeedRank = -1;
+    const int oracleSquare = countSquare(m, m.oracleCx, m.oracleCz, 15);
     for (size_t i = 0; i < seeds.size(); ++i) {
         if (std::abs(seeds[i].first - m.oracleCx) <= 1 &&
             std::abs(seeds[i].second - m.oracleCz) <= 1) {
@@ -169,9 +169,9 @@ void runTrap(const Map& m, bool verbose)
     const double ratio = oracle.coveredBlocks > 0
                              ? static_cast<double>(g.coveredBlocks) / static_cast<double>(oracle.coveredBlocks)
                              : 1.0;
-    std::printf("TRAP %-16s oracle=(%d,%d,%lld) got=(%d,%d,%lld) ratio=%.3f seedRank=%d\n",
+    std::printf("TRAP %-16s oracle=(%d,%d,%lld) got=(%d,%d,%lld) ratio=%.3f seedRank=%d sq=%d\n",
                 m.name.c_str(), oracle.x, oracle.z, static_cast<long long>(oracle.coveredBlocks),
-                g.x, g.z, static_cast<long long>(g.coveredBlocks), ratio, oracleSeedRank);
+                g.x, g.z, static_cast<long long>(g.coveredBlocks), ratio, oracleSeedRank, oracleSquare);
     if (verbose && got.size() > 1) {
         for (size_t i = 1; i < got.size() && i < 4; ++i)
             std::printf("  extra %zu: (%d,%d,%lld)\n", i, got[i].x, got[i].z,
@@ -180,6 +180,114 @@ void runTrap(const Map& m, bool verbose)
 }
 
 } // namespace
+
+void exactSmallMapTest(int& failures)
+{
+    // 高价值小图：16×16 区块，全 256×256 方块中心逐一精确枚举。
+    constexpr int G = 16;
+    constexpr int R = 64;
+    constexpr int IN = 16;
+    constexpr int cx0 = 8 * 16 + 8;
+    constexpr int cz0 = 8 * 16 + 8;
+    const AutoPred pred = [=](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - cx0, dz = bz - cz0;
+        const int d2 = dx * dx + dz * dz;
+        return d2 >= 32 * 32 && d2 <= R * R;
+    };
+
+    AfkPlanOptions o;
+    o.area = slime::Rect{ 0, G - 1, 0, G - 1 };
+    o.radius = R;
+    o.innerRadius = IN;
+    o.topN = 1;
+    o.minSeparation = 24;
+    o.coarseStep = 1;
+    o.maxWindowBlocks = 4096;
+    for (int cz = 0; cz < G; ++cz)
+        for (int cx = 0; cx < G; ++cx) o.seedCandidates.emplace_back(cx, cz);
+
+    AfkCandidate oracle;
+    oracle.coveredBlocks = -1;
+    for (int z = 0; z < G * 16; ++z) {
+        for (int x = 0; x < G * 16; ++x) {
+            const auto em = slime::AfkPlanner::measureExact(x, z, o, pred);
+            if (em.coveredBlocks > oracle.coveredBlocks) {
+                oracle.x = x;
+                oracle.z = z;
+                oracle.coveredBlocks = em.coveredBlocks;
+                oracle.coveredWeight = em.coveredWeight;
+            }
+        }
+    }
+
+    const auto got = slime::AfkPlanner::plan(o, pred, nullptr);
+    if (got.empty()) {
+        std::printf("EXACT-ORACLE FAIL no result\n");
+        ++failures;
+        return;
+    }
+    const auto& g = got.front();
+    std::printf("EXACT-ORACLE grid=%d radius=%d centers=%d oracle=(%d,%d,%lld) got=(%d,%d,%lld)\n",
+                G, R, G * 16 * G * 16, oracle.x, oracle.z,
+                static_cast<long long>(oracle.coveredBlocks), g.x, g.z,
+                static_cast<long long>(g.coveredBlocks));
+    if (g.coveredBlocks < oracle.coveredBlocks) {
+        std::printf("EXACT-ORACLE FAIL planner < oracle\n");
+        ++failures;
+    }
+}
+
+int ringKernelScore(const Map& m, int ccx, int ccz)
+{
+    const int k = (kRadius + 15) / 16;
+    const int side = 2 * k + 1;
+    const int bx0 = ccx * 16 + 8;
+    const int bz0 = ccz * 16 + 8;
+    int score = 0;
+    for (int dz = -k; dz <= k; ++dz) {
+        for (int dx = -k; dx <= k; ++dx) {
+            int w = 0;
+            for (int sz = 0; sz < 16; ++sz) {
+                for (int sx = 0; sx < 16; ++sx) {
+                    const int x = dx * 16 - 8 + sx;
+                    const int z = dz * 16 - 8 + sz;
+                    const int d2 = x * x + z * z;
+                    if (d2 >= kInner * kInner && d2 <= kRadius * kRadius) ++w;
+                }
+            }
+            if (w > 0 && m.slime(ccx + dx, ccz + dz)) score += w;
+        }
+    }
+    (void)side;
+    (void)bx0;
+    (void)bz0;
+    return score;
+}
+
+void kernelRecoveryTest(const Map& m, int& failures)
+{
+    struct K { int score, cx, cz; };
+    std::vector<K> all;
+    for (int cz = 0; cz < kGrid; ++cz)
+        for (int cx = 0; cx < kGrid; ++cx)
+            all.push_back({ ringKernelScore(m, cx, cz), cx, cz });
+    std::sort(all.begin(), all.end(), [](const K& a, const K& b) {
+        return a.score > b.score;
+    });
+    int rank = -1;
+    for (size_t i = 0; i < all.size(); ++i) {
+        if (std::abs(all[i].cx - m.oracleCx) <= 1 && std::abs(all[i].cz - m.oracleCz) <= 1) {
+            rank = static_cast<int>(i) + 1;
+            break;
+        }
+    }
+    std::printf("KERNEL-RECOVERY %-16s rank=%d top_score=%d target_score=%d\n", m.name.c_str(), rank,
+                all.empty() ? 0 : all.front().score, ringKernelScore(m, m.oracleCx, m.oracleCz));
+    // 这里只做诊断：shell_vs_singles 的外壳中心不是真实全局最优，
+    // 诱饵边缘的环覆盖更高；不能把“未排到 top”当成核失败。
+    (void)failures;
+}
 
 int main()
 {
@@ -280,7 +388,7 @@ int main()
         if (d2 >= 120 * 120 && d2 <= 128 * 128) return true;
         for (int gy : { 4, 8, 12, 52, 56, 60 })
             for (int gx : { 4, 8, 12, 52, 56, 60 })
-                if (cx == gx && cz == gy) return true;
+                if (std::abs(cx - gx) <= 2 && std::abs(cz - gy) <= 2) return true;
         return false;
     }, 32, 32));
     maps.back().knownGap = true;
@@ -299,6 +407,24 @@ int main()
         const AfkCandidate oracle = oracleFor(m);
         AfkPlanOptions o = makeOptions();
         o.seedCandidates = squareSeeds(m, 32);
+        int oracleSeedRank = -1;
+        for (size_t i = 0; i < o.seedCandidates.size(); ++i) {
+            if (std::abs(o.seedCandidates[i].first - m.oracleCx) <= 1 &&
+                std::abs(o.seedCandidates[i].second - m.oracleCz) <= 1) {
+                oracleSeedRank = static_cast<int>(i) + 1;
+                break;
+            }
+        }
+        if (m.knownGap && oracleSeedRank > 32) {
+            std::printf("KNOWN-GAP %-16s seeded-out rank=%d\n", m.name.c_str(), oracleSeedRank);
+            ++gaps;
+            continue;
+        }
+        if (m.knownGap && oracleSeedRank < 0) {
+            std::printf("KNOWN-GAP %-16s seeded-out (absent)\n", m.name.c_str());
+            ++gaps;
+            continue;
+        }
         const auto got = slime::AfkPlanner::plan(o, pred, nullptr);
         if (got.empty()) {
             if (m.knownGap) {
@@ -323,6 +449,9 @@ int main()
             }
         }
     }
+    for (const auto& m : maps)
+        if (m.name == "shell_vs_singles") kernelRecoveryTest(m, failures);
+    exactSmallMapTest(failures);
     std::printf("SYNTHETIC-RING %s failures=%d known_gaps=%d traps=%zu\n",
                 failures == 0 ? "OK" : "FAIL", failures, gaps, maps.size());
     return failures == 0 ? 0 : 1;

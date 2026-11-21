@@ -74,3 +74,59 @@ Source:
 ```text
 tests/integration/ring_synthetic_test.cpp
 ```
+
+## 1) shell_vs_singles 断言修正
+
+诱饵从“单块”加强为 5×5 后：
+
+```text
+TRAP shell_vs_singles oracle=(136,136,39922)
+  got=(135,135,39922)
+  seedRank=-1
+  sq=16
+
+KNOWN-GAP shell_vs_singles seeded-out (absent)
+```
+
+外壳中心确实被挤出方形 Top-32。  
+但注意：该图真正的最优是诱饵边缘（39922），不是外壳中心（3788），
+所以这只能证明“外壳中心不被方形召回”，不能证明质量漏检。
+
+## 2) 全 1 方块 oracle
+
+高价值小图：
+
+```text
+grid = 16×16 chunks
+radius = 64
+inner = 16
+centers = 65,536
+```
+
+结果：
+
+```text
+EXACT-ORACLE oracle=(135,135,9486)
+  planner=(135,135,9486)
+```
+
+全 1 方块枚举与 planner 完全一致，通过。
+
+## 3) outer_shell 接入环形加权核
+
+```text
+KERNEL-RECOVERY shell_vs_singles rank=1538
+  top_score=39922
+  target_score=3788
+```
+
+环形核也没有把外壳中心补回 Top-32。
+
+原因不是核算错，而是该图的外壳中心不是真实最优：
+
+- 方形角落看到 16 个外壳块；
+- 5×5 诱饵给出更高的真实环覆盖；
+- 核正确地排名诱饵，而不是外壳中心。
+
+因此需要重新设计一个“外壳中心是真实最优”的图，才能验证核补盲区。
+当前这轮证明了：**方形角落可见性使外壳陷阱不再构成真实质量盲区。**
