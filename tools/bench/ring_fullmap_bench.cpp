@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,7 @@ int main(int argc, char** argv)
 {
     const bool usePrescan = argc < 2 || std::string(argv[1]) != "coarse";
     const bool localMode = argc > 1 && std::string(argv[1]) == "local";
+    const bool randomMode = argc > 1 && std::string(argv[1]) == "random";
     const int topN = std::max(1, std::atoi(std::getenv("RING_TOP_N") ? std::getenv("RING_TOP_N") : "1"));
     const int maxSeeds = std::max(1, std::atoi(std::getenv("RING_MAX_SEEDS") ? std::getenv("RING_MAX_SEEDS") : "4000"));
     const int gridSize = std::max(1, std::atoi(std::getenv("RING_GRID") ? std::getenv("RING_GRID") : "15"));
@@ -154,8 +156,31 @@ int main(int argc, char** argv)
         o.weightAt = [wgrid](int bx, int bz) { return wgrid->weightAt(bx, bz); };
     }
 
-    if (localMode) {
+    if (randomMode) {
+        const int n = std::max(1, std::atoi(std::getenv("RING_RANDOM_N") ? std::getenv("RING_RANDOM_N") : "200000"));
+        std::mt19937_64 rng(0xC0FFEEu);
+        std::uniform_int_distribution<int> distX(-30000000, 29999999);
+        std::uniform_int_distribution<int> distZ(-30000000, 29999999);
         std::vector<AfkCandidate> cands;
+        cands.reserve(static_cast<size_t>(n));
+        for (int i = 0; i < n; ++i) {
+            AfkCandidate c;
+            c.x = distX(rng);
+            c.z = distZ(rng);
+            cands.push_back(c);
+        }
+        const auto tl = Clock::now();
+        if (biomeOk) AfkPlanner::measureStrictForCandidates(cands, o, pred, javaVersionId, seed, true, nullptr);
+        const auto best = std::max_element(cands.begin(), cands.end(), [](const AfkCandidate& a, const AfkCandidate& b) {
+            return a.coveredWeight < b.coveredWeight;
+        });
+        std::printf("RANDOM candidates=%d ms=%.1f total_ms=%.1f cx=%d cz=%d blocks=%lld weight=%.3f pct=%.6f\n",
+                    n, msSince(tl), msSince(tTotal), best->x, best->z,
+                    static_cast<long long>(best->coveredBlocks), best->coveredWeight, best->coveragePercent);
+        return 0;
+    }
+
+    if (localMode) {        std::vector<AfkCandidate> cands;
         const int r = localRadius;
         for (int dz = -r; dz <= r; dz += localStep) {
             for (int dx = -r; dx <= r; dx += localStep) {
