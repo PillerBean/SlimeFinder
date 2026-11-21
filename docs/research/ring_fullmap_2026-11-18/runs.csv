@@ -44,3 +44,4 @@ BB02,newseed_prescan_sep1024,"seed new,prescanSep=1024,grid15,minD=0.18",2026-11
 CC01,uniform_random_200k,"seed new, uniform blocks, R=128",2026-11-21T11:22:00+08:00,2026-11-21T11:22:36+08:00,35.97,10139.058,10217,20.572951,26965420,16803377,cpu,0,bad,uniform sample far below
 CC02,uniform_random_1m,"seed new, uniform blocks, R=128",2026-11-21T11:22:40+08:00,2026-11-21T11:25:34+08:00,174.48,10420.891,10760,21.663366,22843278,-15213292,cpu,0,bad,1M uniform far below
 DD01,newseed_lowthr_ringrank,"seed new,minD=0.10,maxSeeds=20000,ringRank=1,planSeeds=4000",2026-11-21T11:38:21+08:00,2026-11-21T11:43:08+08:00,287.58,10910.510,12904,25.983494,29067736,-15085845,gfx1031,0,bad,worse; low-weight region
+EE01,newseed_all_suboffsets,"seed new,4000 seeds x 256 suboffsets, exact weighted",2026-11-21T11:54:48+08:00,2026-11-21T12:05:05+08:00,616.29,14595.893165,14739,29.678450,17415252,28556491,gfx1031,0,same,"1,024,000 candidates; same target"

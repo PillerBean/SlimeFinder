@@ -47,6 +47,7 @@ int main(int argc, char** argv)
     const bool weightedSeeds = std::getenv("RING_WEIGHTED_SEEDS") && std::string(std::getenv("RING_WEIGHTED_SEEDS")) == "1";
     const bool ringRankSeeds = std::getenv("RING_RING_RANK") && std::string(std::getenv("RING_RING_RANK")) == "1";
     const bool aroundSeeds = std::getenv("RING_AROUND") && std::string(std::getenv("RING_AROUND")) == "1";
+    const bool subgridMode = std::getenv("RING_SUBGRID") && std::string(std::getenv("RING_SUBGRID")) == "1";
     const bool unweightedPlan = std::getenv("RING_UNWEIGHTED_PLAN") && std::string(std::getenv("RING_UNWEIGHTED_PLAN")) == "1";
     const int aroundRadius = std::max(1, std::atoi(std::getenv("RING_AROUND_RADIUS") ? std::getenv("RING_AROUND_RADIUS") : "128"));
     const int aroundStep = std::max(1, std::atoi(std::getenv("RING_AROUND_STEP") ? std::getenv("RING_AROUND_STEP") : "32"));
@@ -298,6 +299,32 @@ int main(int argc, char** argv)
         std::printf("AROUND ok=%d seeds=%zu candidates=%zu around_ms=%.1f total_ms=%.1f cx=%d cz=%d blocks=%lld "
                     "weight=%.3f pct=%.6f\n",
                     biomeOk ? 1 : 0, o.seedCandidates.size(), localCands.size(), localMs, msSince(tTotal),
+                    best->x, best->z, static_cast<long long>(best->coveredBlocks), best->coveredWeight,
+                    best->coveragePercent);
+        return 0;
+    }
+    if (subgridMode && !o.seedCandidates.empty()) {
+        std::vector<AfkCandidate> all;
+        all.reserve(o.seedCandidates.size() * 256);
+        for (const auto& s : o.seedCandidates) {
+            const int bx = s.first * 16;
+            const int bz = s.second * 16;
+            for (int dz = 0; dz < 16; ++dz)
+                for (int dx = 0; dx < 16; ++dx) {
+                    AfkCandidate c;
+                    c.x = bx + dx;
+                    c.z = bz + dz;
+                    all.push_back(c);
+                }
+        }
+        const auto tl = Clock::now();
+        if (biomeOk) AfkPlanner::measureStrictForCandidates(all, o, pred, javaVersionId, seed, true, nullptr);
+        const auto best = std::max_element(all.begin(), all.end(), [](const AfkCandidate& a, const AfkCandidate& b) {
+            return a.coveredWeight < b.coveredWeight;
+        });
+        std::printf("SUBGRID ok=%d seeds=%zu candidates=%zu ms=%.1f total_ms=%.1f cx=%d cz=%d blocks=%lld "
+                    "weight=%.3f pct=%.6f\n",
+                    biomeOk ? 1 : 0, o.seedCandidates.size(), all.size(), msSince(tl), msSince(tTotal),
                     best->x, best->z, static_cast<long long>(best->coveredBlocks), best->coveredWeight,
                     best->coveragePercent);
         return 0;
