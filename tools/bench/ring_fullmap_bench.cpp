@@ -53,6 +53,9 @@ int main(int argc, char** argv)
     const int poolTopSeeds = std::max(1, std::atoi(std::getenv("RING_POOL_TOP_SEEDS") ? std::getenv("RING_POOL_TOP_SEEDS") : "32"));
     const int poolKeep = std::max(1, std::atoi(std::getenv("RING_POOL_K") ? std::getenv("RING_POOL_K") : "10000"));
     const char* poolCsv = std::getenv("RING_POOL_CSV");
+    const bool kernelRank = std::getenv("RING_KERNEL_RANK") && std::string(std::getenv("RING_KERNEL_RANK")) == "1";
+    const int kernelTop = std::max(1, std::atoi(std::getenv("RING_KERNEL_TOP") ? std::getenv("RING_KERNEL_TOP") : "32"));
+    const char* kernelCsv = std::getenv("RING_KERNEL_CSV");
     const bool unweightedPlan = std::getenv("RING_UNWEIGHTED_PLAN") && std::string(std::getenv("RING_UNWEIGHTED_PLAN")) == "1";
     const int aroundRadius = std::max(1, std::atoi(std::getenv("RING_AROUND_RADIUS") ? std::getenv("RING_AROUND_RADIUS") : "128"));
     const int aroundStep = std::max(1, std::atoi(std::getenv("RING_AROUND_STEP") ? std::getenv("RING_AROUND_STEP") : "32"));
@@ -308,6 +311,82 @@ int main(int argc, char** argv)
                     best->coveragePercent);
         return 0;
     }
+    if (kernelRank && !o.seedCandidates.empty()) {
+        // 圆盘环 ∩ 16×16 区块矩形的面积权重。
+        // 中心固定落在区块中心 (+8,+8)，所以权重表一次构建、所有 seed 复用。
+        const int k = (outer + 15) / 16;
+        const int side = 2 * k + 1;
+        std::vector<int> w(static_cast<size_t>(side) * side, 0);
+        double inner2 = static_cast<double>(inner) * inner;
+        double outer2 = static_cast<double>(outer) * outer;
+        for (int dz = -k; dz <= k; ++dz) {
+            for (int dx = -k; dx <= k; ++dx) {
+                int n = 0;
+                for (int sz = 0; sz < 16; ++sz) {
+                    for (int sx = 0; sx < 16; ++sx) {
+                        const double x = dx * 16.0 - 8.0 + sx;
+                        const double z = dz * 16.0 - 8.0 + sz;
+                        const double d2 = x * x + z * z;
+                        if (d2 <= outer2 && d2 >= inner2) ++n;
+                    }
+                }
+                w[static_cast<size_t>(dz + k) * side + (dx + k)] = n;
+            }
+        }
+        struct KernelSeed { int cx, cz; int score; };
+        std::vector<KernelSeed> ranked;
+        ranked.reserve(o.seedCandidates.size());
+        const auto tk = Clock::now();
+        for (const auto& s : o.seedCandidates) {
+            int score = 0;
+            for (int dz = -k; dz <= k; ++dz) {
+                for (int dx = -k; dx <= k; ++dx) {
+                    const int ww = w[static_cast<size_t>(dz + k) * side + (dx + k)];
+                    if (ww <= 0) continue;
+                    if (SlimeEngine::isSlimeChunk(Version::Java, seed, s.first + dx, s.second + dz))
+                        score += ww;
+                }
+            }
+            ranked.push_back({ s.first, s.second, score });
+        }
+        std::sort(ranked.begin(), ranked.end(), [](const KernelSeed& a, const KernelSeed& b) {
+            return a.score > b.score;
+        });
+        const size_t take = (std::min)(ranked.size(), static_cast<size_t>(kernelTop));
+        std::vector<AfkCandidate> cands;
+        cands.reserve(take * 256);
+        for (size_t i = 0; i < take; ++i) {
+            const int bx = ranked[i].cx * 16;
+            const int bz = ranked[i].cz * 16;
+            for (int dz = 0; dz < 16; ++dz)
+                for (int dx = 0; dx < 16; ++dx) {
+                    AfkCandidate c;
+                    c.x = bx + dx;
+                    c.z = bz + dz;
+                    cands.push_back(c);
+                }
+        }
+        const auto te = Clock::now();
+        if (biomeOk) AfkPlanner::measureStrictForCandidates(cands, o, pred, javaVersionId, seed, true, nullptr);
+        const auto best = std::max_element(cands.begin(), cands.end(), [](const AfkCandidate& a, const AfkCandidate& b) {
+            return a.coveredWeight < b.coveredWeight;
+        });
+        std::printf("KERNEL seeds=%zu top=%zu candidates=%zu rank_ms=%.1f exact_ms=%.1f total_ms=%.1f "
+                    "cx=%d cz=%d blocks=%lld weight=%.3f pct=%.6f\n",
+                    ranked.size(), take, cands.size(), msSince(tk), msSince(te), msSince(tTotal),
+                    best->x, best->z, static_cast<long long>(best->coveredBlocks), best->coveredWeight,
+                    best->coveragePercent);
+        std::printf("KERNEL best_seed_kernel_score=%d seed_center=(%d,%d)\n",
+                    ranked[0].score, ranked[0].cx * 16 + 8, ranked[0].cz * 16 + 8);
+        if (kernelCsv) {
+            std::ofstream f(kernelCsv, std::ios::binary);
+            f << "cx,cz,kernel_score\n";
+            for (const auto& r : ranked)
+                f << r.cx * 16 + 8 << ',' << r.cz * 16 + 8 << ',' << r.score << '\n';
+        }
+        return 0;
+    }
+
     if (poolCsv && !o.seedCandidates.empty()) {
         std::vector<AfkCandidate> pool;
         const size_t seedCount = (std::min)(o.seedCandidates.size(), static_cast<size_t>(poolTopSeeds));
