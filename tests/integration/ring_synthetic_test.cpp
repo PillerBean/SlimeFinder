@@ -1,0 +1,269 @@
+// 合成网格陷阱测试：人为构造史莱姆区块地图，已知环形最优点，
+// 检查“方形密度预筛 + planner 精修/抛光”是否能召回真实最优。
+//
+// 这些图不是游戏种子，只用于暴露候选核的结构性缺陷：
+//   - 内圈诱饵（中心密、环带空）
+//   - 方形诱饵（方形密、环形质量低）
+//   - 边界环
+//   - 细环
+//   - 均匀噪声
+#include "core/AfkPlanner.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <functional>
+#include <string>
+#include <vector>
+
+namespace {
+
+using slime::AfkCandidate;
+using slime::AfkPlanOptions;
+using slime::SlimeChunkPredicate;
+
+using AutoPred = std::function<bool(int, int)>;
+
+constexpr int kGrid = 64;
+constexpr int kRadius = 128;
+constexpr int kInner = 24;
+
+struct Map {
+    std::string name;
+    std::vector<uint8_t> cell;   // [z*kGrid + x]
+    int oracleCx = 0;
+    int oracleCz = 0;
+
+    bool slime(int cx, int cz) const
+    {
+        if (cx < 0 || cz < 0 || cx >= kGrid || cz >= kGrid) return false;
+        return cell[static_cast<size_t>(cz) * kGrid + cx] != 0;
+    }
+};
+
+Map makeMap(const std::string& name, const std::function<bool(int, int)>& pred, int ocx, int ocz)
+{
+    Map m;
+    m.name = name;
+    m.cell.assign(static_cast<size_t>(kGrid) * kGrid, 0);
+    m.oracleCx = ocx;
+    m.oracleCz = ocz;
+    for (int cz = 0; cz < kGrid; ++cz)
+        for (int cx = 0; cx < kGrid; ++cx)
+            m.cell[static_cast<size_t>(cz) * kGrid + cx] = pred(cx, cz) ? 1 : 0;
+    return m;
+}
+
+bool ringBlock(int bx, int bz, int cx, int cz)
+{
+    const double dx = static_cast<double>(bx - cx);
+    const double dz = static_cast<double>(bz - cz);
+    const double d2 = dx * dx + dz * dz;
+    return d2 >= static_cast<double>(kInner) * kInner &&
+           d2 <= static_cast<double>(kRadius) * kRadius;
+}
+
+int countSquare(const Map& m, int cx, int cz, int g)
+{
+    int n = 0;
+    const int half = g / 2;
+    for (int dz = -half; dz <= half; ++dz)
+        for (int dx = -half; dx <= half; ++dx)
+            if (m.slime(cx + dx, cz + dz)) ++n;
+    return n;
+}
+
+// 模拟当前方形 density prescan：15×15 chunk 窗口、每个 chunk 中心打分。
+std::vector<std::pair<int, int>> squareSeeds(const Map& m, int topK)
+{
+    struct S { int score, cx, cz; };
+    std::vector<S> all;
+    for (int cz = 0; cz < kGrid; ++cz)
+        for (int cx = 0; cx < kGrid; ++cx)
+            all.push_back({ countSquare(m, cx, cz, 15), cx, cz });
+    std::sort(all.begin(), all.end(), [](const S& a, const S& b) {
+        return a.score != b.score ? a.score > b.score : (a.cz != b.cz ? a.cz < b.cz : a.cx < b.cx);
+    });
+    std::vector<std::pair<int, int>> out;
+    for (const auto& s : all) {
+        if (static_cast<int>(out.size()) >= topK) break;
+        bool tooClose = false;
+        for (const auto& p : out) {
+            const long long dx = static_cast<long long>(s.cx - p.first) * 16;
+            const long long dz = static_cast<long long>(s.cz - p.second) * 16;
+            if (dx * dx + dz * dz < 24LL * 24LL) { tooClose = true; break; }
+        }
+        if (!tooClose) out.emplace_back(s.cx, s.cz);
+    }
+    return out;
+}
+
+AfkPlanOptions makeOptions()
+{
+    AfkPlanOptions o;
+    o.area = slime::Rect{ 0, kGrid - 1, 0, kGrid - 1 };
+    o.radius = kRadius;
+    o.innerRadius = kInner;
+    o.topN = 1;
+    o.minSeparation = 24;
+    o.coarseStep = 1;
+    o.maxWindowBlocks = 4096;
+    return o;
+}
+
+AfkCandidate oracleFor(const Map& m)
+{
+    AfkPlanOptions o = makeOptions();
+    const SlimeChunkPredicate pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
+    AfkCandidate best;
+    best.coveredBlocks = -1;
+    for (int cz = 0; cz < kGrid; ++cz) {
+        for (int cx = 0; cx < kGrid; ++cx) {
+            const int bx = cx * 16 + 8;
+            const int bz = cz * 16 + 8;
+            const auto em = slime::AfkPlanner::measureExact(bx, bz, o, pred);
+            if (em.coveredBlocks > best.coveredBlocks) {
+                best.x = bx;
+                best.z = bz;
+                best.coveredBlocks = em.coveredBlocks;
+                best.coveredWeight = em.coveredWeight;
+                best.coveragePercent = em.coveragePercent;
+            }
+        }
+    }
+    return best;
+}
+
+void runTrap(const Map& m, bool verbose)
+{
+    const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
+    const AfkCandidate oracle = oracleFor(m);
+    const auto seeds = squareSeeds(m, 32);
+
+    AfkPlanOptions o = makeOptions();
+    o.seedCandidates = seeds;
+    std::vector<AfkCandidate> got;
+    try {
+        got = slime::AfkPlanner::plan(o, pred, nullptr);
+    } catch (...) {
+        std::printf("TRAP %-16s EXCEPTION\n", m.name.c_str());
+        return;
+    }
+
+    int oracleSeedRank = -1;
+    for (size_t i = 0; i < seeds.size(); ++i) {
+        if (std::abs(seeds[i].first - m.oracleCx) <= 1 &&
+            std::abs(seeds[i].second - m.oracleCz) <= 1) {
+            oracleSeedRank = static_cast<int>(i) + 1;
+            break;
+        }
+    }
+    if (got.empty()) {
+        std::printf("TRAP %-16s NO_RESULT oracle=%lld seedRank=%d\n", m.name.c_str(),
+                    static_cast<long long>(oracle.coveredBlocks), oracleSeedRank);
+        return;
+    }
+    const AfkCandidate& g = got.front();
+    const double ratio = oracle.coveredBlocks > 0
+                             ? static_cast<double>(g.coveredBlocks) / static_cast<double>(oracle.coveredBlocks)
+                             : 1.0;
+    std::printf("TRAP %-16s oracle=(%d,%d,%lld) got=(%d,%d,%lld) ratio=%.3f seedRank=%d\n",
+                m.name.c_str(), oracle.x, oracle.z, static_cast<long long>(oracle.coveredBlocks),
+                g.x, g.z, static_cast<long long>(g.coveredBlocks), ratio, oracleSeedRank);
+    if (verbose && got.size() > 1) {
+        for (size_t i = 1; i < got.size() && i < 4; ++i)
+            std::printf("  extra %zu: (%d,%d,%lld)\n", i, got[i].x, got[i].z,
+                        static_cast<long long>(got[i].coveredBlocks));
+    }
+}
+
+} // namespace
+
+int main()
+{
+    std::vector<Map> maps;
+
+    // 1. 单环：最优就在环心。
+    maps.push_back(makeMap("single_ring", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        return ringBlock(bx, bz, 48 * 16 + 8, 48 * 16 + 8);
+    }, 48, 48));
+
+    // 2. 内圈诱饵：中心 7×7 很密，但环带内为空；真最优在右侧环。
+    maps.push_back(makeMap("inner_decoy", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        if (std::abs(cx - 16) <= 3 && std::abs(cz - 16) <= 3) return true;
+        return ringBlock(bx, bz, 48 * 16 + 8, 48 * 16 + 8);
+    }, 48, 48));
+
+    // 3. 方形诱饵：左上 9×9 方形密度高，但环形质量不如右侧环。
+    maps.push_back(makeMap("square_decoy", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        if (std::abs(cx - 16) <= 4 && std::abs(cz - 16) <= 4) return true;
+        return ringBlock(bx, bz, 48 * 16 + 8, 48 * 16 + 8);
+    }, 48, 48));
+
+    // 4. 边界环：环心靠近地图边界，检查裁剪。
+    maps.push_back(makeMap("border_ring", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        return ringBlock(bx, bz, 4 * 16 + 8, 4 * 16 + 8);
+    }, 4, 4));
+
+    // 5. 细环：只有 r≈64 的窄带是史莱姆；方形密度低，环形局部高。
+    maps.push_back(makeMap("thin_ring", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - (48 * 16 + 8), dz = bz - (48 * 16 + 8);
+        const int d2 = dx * dx + dz * dz;
+        return d2 >= 56 * 56 && d2 <= 72 * 72 && ((cx + cz) & 1) == 0;
+    }, 48, 48));
+
+    // 6. 多诱饵场：36 个 5×5 高密度方块，中心薄环是真最优；
+    //    方形 Top-32 可能被诱饵占满。
+    maps.push_back(makeMap("decoy_field", [](int cx, int cz) {
+        const int ps[] = { 6, 16, 26, 46, 56, 62 };
+        for (int p : ps)
+            for (int q : ps)
+                if (std::abs(cx - p) <= 2 && std::abs(cz - q) <= 2) return true;
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - (32 * 16 + 8), dz = bz - (32 * 16 + 8);
+        const int d2 = dx * dx + dz * dz;
+        return d2 >= 72 * 72 && d2 <= 80 * 80 && ((cx + cz) & 1) == 0;
+    }, 32, 32));
+
+    // 7. 均匀噪声：没有明显结构，检查结果是否仍精确可解释。
+    maps.push_back(makeMap("checker", [](int cx, int cz) {
+        return ((cx * 31 + cz * 17) & 7) == 0;
+    }, 32, 32));
+
+    int failures = 0;
+    for (const auto& m : maps) {
+        const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
+        (void)pred;
+        runTrap(m, true);
+    }
+
+    // 结构性断言用单独重算，避免依赖上面的输出解析。
+    for (const auto& m : maps) {
+        const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
+        const AfkCandidate oracle = oracleFor(m);
+        AfkPlanOptions o = makeOptions();
+        o.seedCandidates = squareSeeds(m, 32);
+        const auto got = slime::AfkPlanner::plan(o, pred, nullptr);
+        if (got.empty()) {
+            ++failures;
+            continue;
+        }
+        const double ratio = oracle.coveredBlocks > 0
+                                 ? static_cast<double>(got.front().coveredBlocks) /
+                                       static_cast<double>(oracle.coveredBlocks)
+                                 : 1.0;
+        if (ratio < 0.95) {
+            std::printf("FAIL %-16s ratio=%.3f\n", m.name.c_str(), ratio);
+            ++failures;
+        }
+    }
+    std::printf("SYNTHETIC-RING %s failures=%d traps=%zu\n", failures == 0 ? "OK" : "FAIL", failures,
+                maps.size());
+    return failures == 0 ? 0 : 1;
+}
