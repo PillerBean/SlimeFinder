@@ -379,6 +379,69 @@ void strategyBench(const std::vector<Map>& maps)
                     r.worst, r.below95);
 }
 
+void overfullDecoyTest(int& gaps)
+{
+    // 算法专用反例：
+    //   目标中心环带全部 188 个 chunk 都是史莱姆 => 真正的最大覆盖；
+    //   36 个 15×15 密集方形诱饵的方形得分 225 > 目标 184，
+    //   会把目标挤出 Top-32；诱饵自身中心环覆盖只有 184 个 chunk。
+    constexpr int G = 128;
+    constexpr int R = 128;
+    constexpr int IN = 24;
+    const int tcx = 64, tcz = 64;
+    const int tb = tcx * 16 + 8, tbz = tcz * 16 + 8;
+    const AutoPred pred = [=](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - tb, dz = bz - tbz;
+        const int d2 = dx * dx + dz * dz;
+        if (d2 >= IN * IN && d2 <= R * R) return true;
+        for (int gy : { 6, 26, 46, 86, 106, 126 })
+            for (int gx : { 6, 26, 46, 86, 106, 126 })
+                if (std::abs(cx - gx) <= 7 && std::abs(cz - gy) <= 7) return true;
+        return false;
+    };
+
+    AfkPlanOptions o;
+    o.area = slime::Rect{ 0, G - 1, 0, G - 1 };
+    o.radius = R;
+    o.innerRadius = IN;
+    o.topN = 1;
+    o.minSeparation = 0;
+    o.coarseStep = 1;
+    o.maxWindowBlocks = 4096;
+    const auto target = slime::AfkPlanner::measureExact(tb, tbz, o, pred);
+
+    struct Seed { int score, cx, cz; };
+    std::vector<Seed> seeds;
+    for (int cz = 0; cz < G; ++cz)
+        for (int cx = 0; cx < G; ++cx) {
+            int score = 0;
+            for (int dz = -7; dz <= 7; ++dz)
+                for (int dx = -7; dx <= 7; ++dx) {
+                    const int x = cx + dx, z = cz + dz;
+                    if (x >= 0 && z >= 0 && x < G && z < G && pred(x, z)) ++score;
+                }
+            seeds.push_back({ score, cx, cz });
+        }
+    std::sort(seeds.begin(), seeds.end(), [](const Seed& a, const Seed& b) {
+        return a.score > b.score;
+    });
+    for (int i = 0; i < 32; ++i) o.seedCandidates.emplace_back(seeds[i].cx, seeds[i].cz);
+    const auto got = slime::AfkPlanner::plan(o, pred, nullptr);
+    const int gotBlocks = got.empty() ? 0 : static_cast<int>(got.front().coveredBlocks);
+    std::printf("OVERFULL target=(%d,%d,%lld) targetSquare=%d topSeedSquare=%d got=(%d,%d,%d)\n",
+                tb, tbz, static_cast<long long>(target.coveredBlocks),
+                [&] { for (const auto& s : seeds) if (s.cx == tcx && s.cz == tcz) return s.score; return -1; }(),
+                seeds.empty() ? -1 : seeds[0].score, got.empty() ? 0 : got[0].x,
+                got.empty() ? 0 : got[0].z, gotBlocks);
+    if (gotBlocks < target.coveredBlocks) {
+        std::printf("OVERFULL COUNTEREXAMPLE target=%lld got=%d gap=%lld\n",
+                    static_cast<long long>(target.coveredBlocks), gotBlocks,
+                    static_cast<long long>(target.coveredBlocks) - gotBlocks);
+        ++gaps;
+    }
+}
+
 int main()
 {
     std::vector<Map> maps;
@@ -561,6 +624,7 @@ int main()
     }
     for (const auto& m : maps)
         if (m.name == "shell_vs_singles") kernelRecoveryTest(m, failures);
+    overfullDecoyTest(gaps);
     exactSmallMapTest(failures);
     std::printf("SYNTHETIC-RING %s failures=%d known_gaps=%d traps=%zu\n",
                 failures == 0 ? "OK" : "FAIL", failures, gaps, maps.size());
