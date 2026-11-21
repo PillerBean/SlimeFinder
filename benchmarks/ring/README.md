@@ -100,3 +100,10 @@ not copied as code without checking each repository's license.
   verified planner optimum.
 - Pools contain only top-32 seed neighborhoods plus a reference point.
 - A pool win is necessary but not sufficient for a full-map win.
+
+- P0 seed0 reference was manually injected; the current 4000-seed prescan does
+  not naturally contain its chunk. The pool can therefore overstate recall.
+- Seed selection near the maxSeeds cutoff is not guaranteed deterministic;
+  a faster/leaner candidate set that drops a seed is a quality regression, not
+  a speed win.
+- seed12345 reference updated to 14311 / 13822.542 (kernel top1).
