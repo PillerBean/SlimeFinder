@@ -93,6 +93,9 @@ not copied as code without checking each repository's license.
 
 ## Known limitations
 
+- The objective annulus is **circular** (`inner² <= dx²+dz² <= outer²`), not a
+  square annulus. P1 chunk weights must use circle/16×16-rectangle overlap, not
+  a simple outer-square minus inner-square subtraction.
 - The third seed's reference is the best pool candidate, not a separately
   verified planner optimum.
 - Pools contain only top-32 seed neighborhoods plus a reference point.
