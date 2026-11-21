@@ -34,6 +34,7 @@ struct Map {
     std::vector<uint8_t> cell;   // [z*kGrid + x]
     int oracleCx = 0;
     int oracleCz = 0;
+    bool knownGap = false;   // 明确用来暴露候选核盲区的对抗图
 
     bool slime(int cx, int cz) const
     {
@@ -231,19 +232,68 @@ int main()
         return d2 >= 72 * 72 && d2 <= 80 * 80 && ((cx + cz) & 1) == 0;
     }, 32, 32));
 
-    // 7. 均匀噪声：没有明显结构，检查结果是否仍精确可解释。
+    // 7. 外壳陷阱：真最优的史莱姆全在 r=120..128 的外壳，
+    //    方形 15×15 窗口看不到；再用 3×3 诱饵占满 Top-32。
+    maps.push_back(makeMap("outer_shell", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - (32 * 16 + 8), dz = bz - (32 * 16 + 8);
+        const int d2 = dx * dx + dz * dz;
+        if (d2 >= 120 * 120 && d2 <= 128 * 128) return true;
+        // 8×8 个 3×3 高密度诱饵，避开中心 15×15 窗口
+        for (int gy = 4; gy <= 60; gy += 8)
+            for (int gx = 4; gx <= 60; gx += 8) {
+                if (std::abs(cx - 32) <= 8 && std::abs(cz - 32) <= 8) continue;
+                if (std::abs(cx - gx) <= 1 && std::abs(cz - gy) <= 1) return true;
+            }
+        return false;
+    }, 32, 32));
+
+    // 8. 纯外壳：所有史莱姆只在 r=120..128 外壳，方形 15×15 预筛完全看不到。
+    //    这是候选核的结构性盲区，记录为 known-gap，不作为常规回归失败。
+    maps.push_back(makeMap("outer_shell_only", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - (32 * 16 + 8), dz = bz - (32 * 16 + 8);
+        const int d2 = dx * dx + dz * dz;
+        return d2 >= 120 * 120 && d2 <= 128 * 128;
+    }, 32, 32));
+    maps.back().knownGap = true;
+
+    // 8b. 外壳 + 四角诱饵：真最优仍是中心外壳，但 Top-32 被角落密度占满。
+    maps.push_back(makeMap("outer_shell_trap", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - (32 * 16 + 8), dz = bz - (32 * 16 + 8);
+        const int d2 = dx * dx + dz * dz;
+        if (d2 >= 120 * 120 && d2 <= 128 * 128) return true;
+        for (int gy : { 4, 8, 12, 52, 56, 60 })
+            for (int gx : { 4, 8, 12, 52, 56, 60 })
+                if (std::abs(cx - gx) <= 1 && std::abs(cz - gy) <= 1) return true;
+        return false;
+    }, 32, 32));
+    maps.back().knownGap = true;
+
+    // 8c. 外壳 vs 32 个孤岛诱饵：孤岛方形得分 1，外壳中心为 0；
+    //     方形 Top-32 被孤岛占满，但孤岛真实环覆盖远低于外壳。
+    maps.push_back(makeMap("shell_vs_singles", [](int cx, int cz) {
+        const int bx = cx * 16 + 8, bz = cz * 16 + 8;
+        const int dx = bx - (32 * 16 + 8), dz = bz - (32 * 16 + 8);
+        const int d2 = dx * dx + dz * dz;
+        if (d2 >= 120 * 120 && d2 <= 128 * 128) return true;
+        for (int gy : { 4, 8, 12, 52, 56, 60 })
+            for (int gx : { 4, 8, 12, 52, 56, 60 })
+                if (cx == gx && cz == gy) return true;
+        return false;
+    }, 32, 32));
+    maps.back().knownGap = true;
+
+    // 9. 均匀噪声：没有明显结构，检查结果是否仍精确可解释。
     maps.push_back(makeMap("checker", [](int cx, int cz) {
         return ((cx * 31 + cz * 17) & 7) == 0;
     }, 32, 32));
 
     int failures = 0;
-    for (const auto& m : maps) {
-        const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
-        (void)pred;
-        runTrap(m, true);
-    }
+    int gaps = 0;
+    for (const auto& m : maps) runTrap(m, true);
 
-    // 结构性断言用单独重算，避免依赖上面的输出解析。
     for (const auto& m : maps) {
         const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
         const AfkCandidate oracle = oracleFor(m);
@@ -251,7 +301,12 @@ int main()
         o.seedCandidates = squareSeeds(m, 32);
         const auto got = slime::AfkPlanner::plan(o, pred, nullptr);
         if (got.empty()) {
-            ++failures;
+            if (m.knownGap) {
+                std::printf("KNOWN-GAP %-16s no result\n", m.name.c_str());
+                ++gaps;
+            } else {
+                ++failures;
+            }
             continue;
         }
         const double ratio = oracle.coveredBlocks > 0
@@ -259,11 +314,16 @@ int main()
                                        static_cast<double>(oracle.coveredBlocks)
                                  : 1.0;
         if (ratio < 0.95) {
-            std::printf("FAIL %-16s ratio=%.3f\n", m.name.c_str(), ratio);
-            ++failures;
+            if (m.knownGap) {
+                std::printf("KNOWN-GAP %-16s ratio=%.3f\n", m.name.c_str(), ratio);
+                ++gaps;
+            } else {
+                std::printf("FAIL %-16s ratio=%.3f\n", m.name.c_str(), ratio);
+                ++failures;
+            }
         }
     }
-    std::printf("SYNTHETIC-RING %s failures=%d traps=%zu\n", failures == 0 ? "OK" : "FAIL", failures,
-                maps.size());
+    std::printf("SYNTHETIC-RING %s failures=%d known_gaps=%d traps=%zu\n",
+                failures == 0 ? "OK" : "FAIL", failures, gaps, maps.size());
     return failures == 0 ? 0 : 1;
 }
