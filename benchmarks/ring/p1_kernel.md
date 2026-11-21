@@ -90,3 +90,24 @@ same quality with clear speedup: not met
 
 The annulus is circular. The old "outer square minus inner square" idea is
 wrong for this objective and must not be used as the P1 score.
+
+## 2026-11-21 15:56 快速方形路径复测
+
+```text
+grid=15, minDensity=0.25, topN=1
+prescanSeeds=600
+prescan_ms=222228.8
+total_ms=223880.2
+result=14739 / 14595.893
+```
+
+结果复现，但总时间 223.88s，仍未 ≤210s。
+
+说明：
+
+- threshold 0.25 之前曾测到 203s，当前 GPU 状态下不稳定；
+- 预筛仍是主要成本，约 222s；
+- 不能靠阈值/种子数把预筛压到 210s 以下。
+- 下一阶段必须改 GPU 预筛的扫描分辨率/核，而不是继续调 threshold。
+
+验收 A 仍未达。
