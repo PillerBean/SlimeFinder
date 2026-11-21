@@ -55,13 +55,12 @@ def abstract(doc):
         "A common pipeline ranks chunks by a 15×15 square-density score, refines "
         "only the top K seeds, and adds a 3×3 chunk polish around the first eight. "
         "The objective, however, is block-cell coverage by a circular annulus. We show "
-        "that this candidate set is incomplete. A single chunk already gives a failure "
-        "at N=3,K=1; a tie-free construction at N=36,K=1 uses 337 chunks and has "
-        "V=33426 against C*=43008 (a 22.3% gap). The mechanism is waste asymmetry: "
-        "13 zero-contribution and 44 partial-contribution chunks inside the 15×15 "
-        "window are counted fully by the square score. We prove an efficiency bound "
-        "and a safety criterion, correct the block-grid geometry counts, and show that "
-        "the real-parameter question is an ill-conditioned rank crossing rather than "
+        "that this candidate set is incomplete. A tie-free construction at N=36,K=1 uses "
+        "337 chunks and has V=33426 against C*=43008 (a 22.3% gap). The mechanism is "
+        "waste asymmetry: 13 zero-contribution and 44 partial-contribution chunks inside "
+        "the 15×15 window are counted fully by the square score. We prove an efficiency "
+        "bound and a safety criterion, correct the block-grid geometry counts, and show "
+        "that the real-parameter question is an ill-conditioned rank crossing rather than "
         "a 10⁻ˢ rare event."
     )
     r = p.add_run(text)
@@ -224,33 +223,46 @@ def build():
     B.add_heading(doc, "5. Counterexamples")
     B.add_labeled_block(
         doc,
-        "5.1 Minimal example (N=3,K=1).",
-        "Take N=3 and X(0,0)=1, all other chunks 0. Then T_1={(0,0)}, "
-        "V=253 and M=256; F=1. The true maximizer is at block center (39,7), "
-        "outside the four chunks evaluated by the corner seed. N=1 and N=2 have no "
-        "failure (2 and 16 configurations, exhaustive)."
+        "5.1 Remark: capped-rule artifacts.",
+        "If an implementation caps T at K and breaks ties lexicographically, failures "
+        "appear earlier: N=3,K=1 with X(0,0)=1 gives V=253<M=256, and N=8,K=1 with "
+        "X(7,7)=1 gives V=180<M=256. These are not counterexamples to the threshold "
+        "model of Section 3: there t_1=1 and the entire tied 15×15 window enters T_1, "
+        "so V=M. The capped rule is strictly more fragile than the uncapped threshold rule."
+    )
+    B.add_text_paragraph(
+        doc,
+        "Under the threshold definition, small failures are found by search rather than "
+        "by the single-chunk mechanism. The following are computational certificates, not "
+        "a minimality proof."
+    )
+    B.add_table(
+        doc,
+        [
+            ["N", "|X|", "chunks (z,x)", "t_K", "|T_K|", "V", "M", "gap"],
+            ["14", "4", "(0,0),(0,12),(7,0),(13,10)", "4", "6", "744", "768", "24"],
+            ["20", "4", "(1,5),(1,19),(13,8),(17,8)", "3", "3", "501", "512", "11"],
+            ["36", "337", "certificate file", "169", "1", "33426", "43008", "9582"],
+        ],
+        widths=[1.6, 1.8, 6.8, 1.6, 1.8, 1.8, 1.8, 1.8],
     )
     B.add_labeled_block(
         doc,
-        "5.2 Natural-scale singleton (N=8,K=1).",
-        "Take one chunk at (7,7). The corner tie-break evaluates only the four chunks "
-        "around (0,0); V=180 while M=256. This example is useful for visualization but "
-        "is not minimal and relies on the corner tie-break."
-    )
-    B.add_labeled_block(
-        doc,
-        "5.3 Tie-free example (N=36,K=1).",
+        "5.2 Main tie-free example (N=36,K=1).",
         "Place 337 slime chunks: 168 fully covered chunks around the hidden center "
-        "v*=(10,10), plus 169 chunks around q=(28,28) chosen to minimize the best "
-        "coverage in B(q)∪B(N(q)). Then S(q)=169, S(v*)=168, so q is the unique "
-        "top-1 seed. The evaluated value is V=33426; at c*=(10,10,7,7) the coverage is "
+        "v*=(10,10), plus 169 chunks around q=(28,28). The latter were obtained by a "
+        "greedy construction followed by single-point swaps, which gives the upper bound "
+        "ρ(169)≤33426; optimality of the competitor is not claimed. Then S(q)=169 and "
+        "S(v*)=168, so the top square score is unique and |T_1|=1; capped and uncapped "
+        "rules coincide. The evaluated value is V=33426; at c*=(10,10,7,7), "
         "C(c*)=43008. Thus M≥43008 and V<C(c*)≤M, a 22.3% gap. No tie-break is involved."
     )
     B.add_text_paragraph(
         doc,
-        "The three examples separate three issues: map-boundary clipping, corner "
-        "tie-breaking, and a genuine waste-asymmetry gap. The last one is the relevant "
-        "counterexample for the full map, since it has a strict top score."
+        "The capped-rule examples are boundary/tie artifacts and are excluded from the "
+        "main result. The N=36 construction is the relevant counterexample: it has a "
+        "strictly larger square score at the competitor, so no tie-breaking convention can "
+        "repair it."
     )
 
     B.add_heading(doc, "6. Structural results")
@@ -275,10 +287,10 @@ def build():
     )
     B.add_text_paragraph(
         doc,
-        "This corrects the earlier chunk-center table. The earlier table counted 188 "
-        "ring chunks and 4 chunks outside the square, but the objective is a block-cell "
-        "convolution: 240 chunks carry positive mass, 28 of them are outside the 15×15 "
-        "window, and 13 window chunks have zero contribution."
+        "These counts are evaluated at a central center offset o∈{7,8}². They depend on "
+        "the offset: at o=(0,0) the same kernel gives 222 positive chunks, 18 outside the "
+        "window, 153 full chunks, 51 partial chunks, and 21 zero-contribution chunks. The "
+        "efficiency constant β_max is the maximum over all 16×16 offsets."
     )
 
     B.add_labeled_block(
@@ -318,10 +330,11 @@ def build():
     B.add_text_paragraph(
         doc,
         "The extreme-value scale of M is about 14,718–15,700 depending on the effective "
-        "number of independent centers, i.e. 57.5–61.3 chunk units. The safety criterion "
-        "requires 64.95 chunk units and is not met at the real parameters. The rank of "
-        "the optimal chunk is therefore not controlled by a fixed argument; it is a "
-        "boundary-crossing problem around S(v*)≈55."
+        "number of independent centers, i.e. 57.5–61.3 chunk units. This is a Chernoff "
+        "scale/union-bound estimate, not a strict bound. The safety criterion requires "
+        "64.95 chunk units and is not met at the real parameters. The rank of the optimal "
+        "chunk is therefore not controlled by a fixed argument; it is a boundary-crossing "
+        "problem around S(v*)≈55."
     )
     B.add_table(
         doc,
@@ -339,26 +352,35 @@ def build():
     )
     B.add_text_paragraph(
         doc,
-        "Consequently P(F) is not usefully described as a 10⁻ˢ rare event. It is closer "
-        "to P(S(v*)≤55), and is sensitive to a shift of 2–3 square-score points. The "
-        "correct probability study is the distribution of the rank of the optimal chunk "
-        "and the resulting boundary-crossing probability."
+        "The table mixes two conventions. In the capped implementation, the K=4000 "
+        "cutoff sits at S≈55; in the threshold model, failure requires S(v*)<t_K, i.e. "
+        "S(v*)≤54. The S(v*)=55 row is therefore a capped-boundary row, not a threshold "
+        "failure row. With this distinction,"
+    )
+    B.add_text_paragraph(
+        doc,
+        "P(F) is not usefully described as a 10⁻ˢ rare event. In the threshold model it is "
+        "closer to P(S(v*)<t_K)=P(S(v*)≤54); in the capped implementation it is closer to "
+        "P(S(v*)≤55). Both are sensitive to a shift of 2–3 square-score points. The correct "
+        "probability study is the distribution of the rank of the optimal chunk and the "
+        "resulting boundary-crossing probability."
     )
 
     B.add_heading(doc, "8. What remains open")
     B.add_labeled_block(
         doc,
-        "Problem 2 (exact small-grid count).",
-        "Q1 is resolved; the remaining exact question is the count of failures for "
-        "tie-free configurations in a reduced geometry that preserves R/s=8 and g=15. "
-        "The earlier N=4,g=3,R=32 experiments are not isomorphic to the real geometry "
-        "and should not be extrapolated."
+        "Problem 2 (tractable exact count).",
+        "Q1 is resolved. A tractable exact question is: for N=14 and |X|≤4, enumerate the "
+        "6×10⁷ candidate sets and count threshold-model failures; or, for each N≤32, find "
+        "the minimum |X| of a failure. A literal 2^{N²} count for N≥14 is not a useful "
+        "request. The earlier N=4,g=3,R=32 experiments are not isomorphic to the real "
+        "geometry and should not be extrapolated."
     )
     B.add_labeled_block(
         doc,
         "Problem 3 (rank distribution).",
-        "For actual parameters, determine or bound P(S(v*)≤t_K) and the conditional "
-        "gap distribution, rather than asking for a single 10⁻ˢ bound on P(F)."
+        "For actual parameters, determine or bound P(S(v*)<t_K) and the conditional gap "
+        "distribution, rather than asking for a single 10⁻ˢ bound on P(F)."
     )
     B.add_labeled_block(
         doc,
@@ -383,11 +405,13 @@ def build():
     B.add_heading(doc, "10. Reproducibility")
     B.add_text_paragraph(
         doc,
-        "The counterexample construction, independent direct-sum verification, minimal-N "
-        "search and the real-scale calculations are in the supplied ring_problem "
-        "directory: ring_model.py, verify_final.py, minimal_n.py, build_counterexample.py, "
-        "extreme_values.py and FINDINGS.md. The synthetic trap harness in this repository "
-        "is separate and is not evidence for the full geometry."
+        "The solution artifacts are in docs/research/ring_problem_solution: ring_model.py, "
+        "threshold_mode.py, minimal_n.py, minimal_n_thr.py, build_counterexample.py, "
+        "extreme_values.py, verify_final.py, FINDINGS.md and the two certificate files. "
+        "The threshold definition used in Section 3 is implemented by threshold_mode.py; "
+        "the older scripts use the capped lexicographic rule and are retained for the "
+        "Remark in Section 5.1. The synthetic trap harness in this repository is separate "
+        "and is not evidence for the full geometry."
     )
 
     p = doc.add_paragraph()
