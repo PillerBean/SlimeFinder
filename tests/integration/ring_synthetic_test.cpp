@@ -289,6 +289,96 @@ void kernelRecoveryTest(const Map& m, int& failures)
     (void)failures;
 }
 
+std::vector<std::pair<int, int>> kernelSeeds(const Map& m, int topK,
+                                             const std::vector<std::pair<int, std::pair<int, int>>>& scored)
+{
+    std::vector<std::pair<int, int>> out;
+    for (const auto& r : scored) {
+        if (static_cast<int>(out.size()) >= topK) break;
+        bool tooClose = false;
+        for (const auto& p : out) {
+            const long long dx = static_cast<long long>(r.second.first - p.first) * 16;
+            const long long dz = static_cast<long long>(r.second.second - p.second) * 16;
+            if (dx * dx + dz * dz < 24LL * 24LL) { tooClose = true; break; }
+        }
+        if (!tooClose) out.emplace_back(r.second.first, r.second.second);
+    }
+    return out;
+}
+
+std::vector<std::pair<int, int>> hybridSeeds(const Map& m, int topK)
+{
+    auto out = squareSeeds(m, topK);
+    struct KS { int score, cx, cz; };
+    std::vector<KS> all;
+    for (int cz = 0; cz < kGrid; ++cz)
+        for (int cx = 0; cx < kGrid; ++cx)
+            all.push_back({ ringKernelScore(m, cx, cz), cx, cz });
+    std::sort(all.begin(), all.end(), [](const KS& a, const KS& b) { return a.score > b.score; });
+    for (const auto& s : all) {
+        if (static_cast<int>(out.size()) >= topK * 2) break;
+        bool exists = false;
+        for (const auto& p : out)
+            if (p.first == s.cx && p.second == s.cz) { exists = true; break; }
+        if (!exists) out.emplace_back(s.cx, s.cz);
+    }
+    return out;
+}
+
+double planRatio(const Map& m, const std::vector<std::pair<int, int>>& seeds, const AfkCandidate& oracle)
+{
+    const AutoPred pred = [&m](int cx, int cz) { return m.slime(cx, cz); };
+    AfkPlanOptions o = makeOptions();
+    o.seedCandidates = seeds;
+    const auto got = slime::AfkPlanner::plan(o, pred, nullptr);
+    if (got.empty() || oracle.coveredBlocks <= 0) return 0.0;
+    return static_cast<double>(got.front().coveredBlocks) / static_cast<double>(oracle.coveredBlocks);
+}
+
+void strategyBench(const std::vector<Map>& maps)
+{
+    struct Row { std::string name; double mean; double worst; int below95; };
+    std::vector<Row> rows;
+    for (int K : { 8, 32 }) {
+        for (int strategy = 0; strategy < 3; ++strategy) {
+            std::string name = (strategy == 0 ? "square" : strategy == 1 ? "kernel" : "hybrid") +
+                               std::to_string(K);
+            double sum = 0.0, worst = 10.0;
+            int n = 0, below = 0;
+            for (const auto& m : maps) {
+                const AfkCandidate oracle = oracleFor(m);
+                std::vector<std::pair<int, int>> seeds;
+                if (strategy == 0) {
+                    seeds = squareSeeds(m, K);
+                } else if (strategy == 1) {
+                    struct KS { int score, cx, cz; };
+                    std::vector<KS> all;
+                    for (int cz = 0; cz < kGrid; ++cz)
+                        for (int cx = 0; cx < kGrid; ++cx)
+                            all.push_back({ ringKernelScore(m, cx, cz), cx, cz });
+                    std::sort(all.begin(), all.end(), [](const KS& a, const KS& b) {
+                        return a.score > b.score;
+                    });
+                    std::vector<std::pair<int, std::pair<int, int>>> scored;
+                    for (const auto& s : all) scored.push_back({ s.score, { s.cx, s.cz } });
+                    seeds = kernelSeeds(m, K, scored);
+                } else {
+                    seeds = hybridSeeds(m, K);
+                }
+                const double r = planRatio(m, seeds, oracle);
+                sum += r;
+                worst = (std::min)(worst, r);
+                if (r < 0.95) ++below;
+                ++n;
+            }
+            rows.push_back({ name, n ? sum / n : 0.0, worst, below });
+        }
+    }
+    for (const auto& r : rows)
+        std::printf("STRATEGY %-10s mean=%.3f worst=%.3f below95=%d\n", r.name.c_str(), r.mean,
+                    r.worst, r.below95);
+}
+
 int main()
 {
     std::vector<Map> maps;
@@ -400,6 +490,7 @@ int main()
 
     int failures = 0;
     int gaps = 0;
+    strategyBench(maps);
     for (const auto& m : maps) runTrap(m, true);
 
     for (const auto& m : maps) {

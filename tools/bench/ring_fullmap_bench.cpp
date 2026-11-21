@@ -57,6 +57,8 @@ int main(int argc, char** argv)
     const bool kernelPlan = std::getenv("RING_KERNEL_PLAN") && std::string(std::getenv("RING_KERNEL_PLAN")) == "1";
     const int kernelTop = std::max(1, std::atoi(std::getenv("RING_KERNEL_TOP") ? std::getenv("RING_KERNEL_TOP") : "32"));
     const char* kernelCsv = std::getenv("RING_KERNEL_CSV");
+    const int kernelSquare = std::max(0, std::atoi(std::getenv("RING_KERNEL_SQUARE") ?
+                                                    std::getenv("RING_KERNEL_SQUARE") : "0"));
     const bool unweightedPlan = std::getenv("RING_UNWEIGHTED_PLAN") && std::string(std::getenv("RING_UNWEIGHTED_PLAN")) == "1";
     const int aroundRadius = std::max(1, std::atoi(std::getenv("RING_AROUND_RADIUS") ? std::getenv("RING_AROUND_RADIUS") : "128"));
     const int aroundStep = std::max(1, std::atoi(std::getenv("RING_AROUND_STEP") ? std::getenv("RING_AROUND_STEP") : "32"));
@@ -357,8 +359,17 @@ int main(int argc, char** argv)
         if (kernelPlan) {
             AfkPlanOptions ko = o;
             ko.seedCandidates.clear();
-            ko.seedCandidates.reserve(take);
+            ko.seedCandidates.reserve(take + static_cast<size_t>(kernelSquare));
             for (size_t i = 0; i < take; ++i) ko.seedCandidates.emplace_back(ranked[i].cx, ranked[i].cz);
+            if (kernelSquare > 0) {
+                const size_t sq = (std::min)(o.seedCandidates.size(), static_cast<size_t>(kernelSquare));
+                for (size_t i = 0; i < sq; ++i) {
+                    const auto p = o.seedCandidates[i];
+                    if (std::find(ko.seedCandidates.begin(), ko.seedCandidates.end(), p) ==
+                        ko.seedCandidates.end())
+                        ko.seedCandidates.push_back(p);
+                }
+            }
             const auto tp = Clock::now();
             std::vector<AfkCandidate> planned;
             try {
