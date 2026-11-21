@@ -11,6 +11,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
+#include <iomanip>
 #include <memory>
 #include <random>
 #include <string>
@@ -48,6 +50,9 @@ int main(int argc, char** argv)
     const bool ringRankSeeds = std::getenv("RING_RING_RANK") && std::string(std::getenv("RING_RING_RANK")) == "1";
     const bool aroundSeeds = std::getenv("RING_AROUND") && std::string(std::getenv("RING_AROUND")) == "1";
     const bool subgridMode = std::getenv("RING_SUBGRID") && std::string(std::getenv("RING_SUBGRID")) == "1";
+    const int poolTopSeeds = std::max(1, std::atoi(std::getenv("RING_POOL_TOP_SEEDS") ? std::getenv("RING_POOL_TOP_SEEDS") : "32"));
+    const int poolKeep = std::max(1, std::atoi(std::getenv("RING_POOL_K") ? std::getenv("RING_POOL_K") : "10000"));
+    const char* poolCsv = std::getenv("RING_POOL_CSV");
     const bool unweightedPlan = std::getenv("RING_UNWEIGHTED_PLAN") && std::string(std::getenv("RING_UNWEIGHTED_PLAN")) == "1";
     const int aroundRadius = std::max(1, std::atoi(std::getenv("RING_AROUND_RADIUS") ? std::getenv("RING_AROUND_RADIUS") : "128"));
     const int aroundStep = std::max(1, std::atoi(std::getenv("RING_AROUND_STEP") ? std::getenv("RING_AROUND_STEP") : "32"));
@@ -303,6 +308,54 @@ int main(int argc, char** argv)
                     best->coveragePercent);
         return 0;
     }
+    if (poolCsv && !o.seedCandidates.empty()) {
+        std::vector<AfkCandidate> pool;
+        const size_t seedCount = (std::min)(o.seedCandidates.size(), static_cast<size_t>(poolTopSeeds));
+        pool.reserve(seedCount * 256);
+        for (size_t i = 0; i < seedCount; ++i) {
+            const int bx = o.seedCandidates[i].first * 16;
+            const int bz = o.seedCandidates[i].second * 16;
+            for (int dz = 0; dz < 16; ++dz)
+                for (int dx = 0; dx < 16; ++dx) {
+                    AfkCandidate c;
+                    c.x = bx + dx;
+                    c.z = bz + dz;
+                    pool.push_back(c);
+                }
+        }
+        const char* refText = std::getenv("RING_POOL_REF");
+        if (refText) {
+            int rx = 0, rz = 0;
+            if (std::sscanf(refText, "%d,%d", &rx, &rz) == 2) {
+                AfkCandidate c;
+                c.x = rx;
+                c.z = rz;
+                pool.push_back(c);
+            }
+        }
+        const auto tl = Clock::now();
+        if (biomeOk) AfkPlanner::measureStrictForCandidates(pool, o, pred, javaVersionId, seed, true, nullptr);
+        std::sort(pool.begin(), pool.end(), [](const AfkCandidate& a, const AfkCandidate& b) {
+            return a.coveredWeight > b.coveredWeight;
+        });
+        const size_t keep = (std::min)(pool.size(), static_cast<size_t>(poolKeep));
+        std::ofstream f(poolCsv, std::ios::binary);
+        f << std::fixed << std::setprecision(6);
+        f << "seed,cx,cz,blocks,weight,pct\n";
+        for (size_t i = 0; i < keep; ++i) {
+            f << seed << ',' << pool[i].x << ',' << pool[i].z << ',' << pool[i].coveredBlocks << ','
+              << pool[i].coveredWeight << ',' << pool[i].coveragePercent << '\n';
+        }
+        std::printf("POOL csv=%s seeds=%zu candidates=%zu kept=%zu ms=%.1f total_ms=%.1f\n",
+                    poolCsv, seedCount, pool.size(), keep, msSince(tl), msSince(tTotal));
+        if (keep > 0) {
+            std::printf("POOL best cx=%d cz=%d blocks=%lld weight=%.3f pct=%.6f\n",
+                        pool[0].x, pool[0].z, static_cast<long long>(pool[0].coveredBlocks),
+                        pool[0].coveredWeight, pool[0].coveragePercent);
+        }
+        return 0;
+    }
+
     if (subgridMode && !o.seedCandidates.empty()) {
         std::vector<AfkCandidate> all;
         all.reserve(o.seedCandidates.size() * 256);

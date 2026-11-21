@@ -1,0 +1,4 @@
+seed,role,ref_cx,ref_cz,ref_blocks,ref_weight,source,pool_file,status
+-8180004378910677489,reference,17415252,28556492,14739,14595.893165,community result,candidates/newseed.csv,verified
+0,old-internal,3472965,-13446988,14387,14324.516000,internal full-map baseline,candidates/seed0.csv,verified
+12345,random-smoke,-22499665,4429151,14016,13878.871000,provisional pool best,candidates/seed12345.csv,provisional
