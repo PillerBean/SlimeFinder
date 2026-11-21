@@ -422,15 +422,18 @@ void MainWindow::buildUi()
     m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityPanel);
     m_w->ignoreThreshold->setToolTip(slime::ui::t("ui.e302a43e602a"));
 
-    // v3.10.12.11：最小密度 / 忽略阈值改为密度面板常显（此前放在「结果要求」分组里，
-    //   选择任意预设方案后就整组隐藏，用户找不到密度设置）。改动会切换为「自定义方案」。
+    // 自定义方案才显示：网格 / 最小密度 / 忽略阈值
+    m_w->densityAdvanced = new QWidget(m_w->densityPanel);
+    auto* advancedLay = new QVBoxLayout(m_w->densityAdvanced);
+    advancedLay->setContentsMargins(0, 0, 0, 0);
+    advancedLay->setSpacing(4);
     {
         auto* densCfgRow = new QHBoxLayout();
-        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityPanel));
+        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityAdvanced));
         densCfgRow->addWidget(m_w->minDensity);
         densCfgRow->addWidget(m_w->ignoreThreshold);
         densCfgRow->addStretch();
-        densityLay->addLayout(densCfgRow);
+        advancedLay->addLayout(densCfgRow);
         m_minDensityCommitted = m_w->minDensity->value();
         QObject::connect(m_w->minDensity, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                          this, [this](double) { applyResultConflicts(); });
@@ -450,10 +453,10 @@ void MainWindow::buildUi()
     });
 
 
-    // 正方形专属：网格大小 + 最小密度
-    m_w->squareOpts = new QWidget(m_w->densityPanel);
+    // 正方形专属：网格大小
+    m_w->squareOpts = new QWidget(m_w->densityAdvanced);
     auto* squareLay = new QVBoxLayout(m_w->squareOpts);
-    squareLay->setContentsMargins(12, 0, 0, 0);
+    squareLay->setContentsMargins(0, 0, 0, 0);
     squareLay->setSpacing(4);
     auto* densRow = new QHBoxLayout();
     densRow->addWidget(new QLabel(slime::ui::t("ui.28e8f6817207"), m_w->squareOpts));
@@ -465,7 +468,8 @@ void MainWindow::buildUi()
     densRow->addStretch();
     squareLay->addLayout(densRow);
     m_w->squareOpts->setVisible(true);
-    densityLay->addWidget(m_w->squareOpts);
+    advancedLay->addWidget(m_w->squareOpts);
+    densityLay->addWidget(m_w->densityAdvanced);
 
     // 环形专属：扫描模式 + 最小密度
     m_w->ringOpts = new QWidget(m_w->densityPanel);
@@ -983,6 +987,7 @@ void MainWindow::buildUi()
         tb->setEditTriggers(QAbstractItemView::NoEditTriggers);
         tb->horizontalHeader()->setSectionsClickable(true);
         tb->horizontalHeader()->setSortIndicatorShown(true);
+        tb->setSortingEnabled(true);
         tb->horizontalHeader()->setStretchLastSection(true);
         static OneDecimalDelegate oneDecimal;
         tb->setItemDelegateForColumn(3, &oneDecimal);
@@ -1003,14 +1008,26 @@ void MainWindow::buildUi()
             const auto* xi = m_w->resultTable->item(row, 1);
             const auto* zi = m_w->resultTable->item(row, 2);
             if (!xi || !zi) return;
+            const auto* idxItem = m_w->resultTable->item(row, 0);
+            const int original = idxItem ? idxItem->data(Qt::UserRole).toInt() : -1;
+            if (!m_lastAfk.empty() && original >= 0 && original < static_cast<int>(m_lastAfk.size())) {
+                focusAfkCandidate(original);
+                return;
+            }
+            if (m_map && idxItem) m_map->setFocusedResult(original);
             const int bx = xi->data(Qt::UserRole).toInt();
             const int bz = zi->data(Qt::UserRole).toInt();
             focusMapOnChunk(bx >= 0 ? bx >> 4 : -((-bx + 15) >> 4), bz >= 0 ? bz >> 4 : -((-bz + 15) >> 4));
         });
         // v3.5.10：点结果行 = 选中该环形候选（地图只画这一条环，并联动脉动选中行）
         connect(tb, &QTableWidget::cellClicked, this, [this](int row, int) {
-            if (!m_lastAfk.empty() && row >= 0 && row < static_cast<int>(m_lastAfk.size()))
-                focusAfkCandidate(row);
+            if (!m_w || !m_w->resultTable || row < 0) return;
+            const auto* idxItem = m_w->resultTable->item(row, 0);
+            const int original = idxItem ? idxItem->data(Qt::UserRole).toInt() : -1;
+            if (!m_lastAfk.empty() && original >= 0 && original < static_cast<int>(m_lastAfk.size()))
+                focusAfkCandidate(original);
+            else if (m_map)
+                m_map->setFocusedResult(original);
         });
     }
     m_rightSplit->addWidget(m_resultPane);

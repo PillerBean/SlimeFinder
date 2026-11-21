@@ -538,16 +538,23 @@ bool MainWindow::crossCheckExact(const SearchOptions& opt, int64_t sampleFound, 
 
 void MainWindow::applyPreset(int halfSpan)
 {
-    setSearchRadius(halfSpan);
-    setStatus(slime::ui::tr(slime::ui::t("ui.241d40e4e9d5")).arg(halfSpan));
-    Logger::info("应用预设范围 ±" + std::to_string(halfSpan) + " 区块");
+    int adapted = halfSpan;
+    if (m_w && m_w->bedrockRadio && m_w->bedrockRadio->isChecked()) {
+        if (halfSpan >= 1000000) adapted = kBedrockBoundChunk;
+        else if (halfSpan >= 200000) adapted = kBedrockBoundChunk / 2;
+        else adapted = (std::min)(halfSpan, kBedrockBoundChunk);
+    }
+    setSearchRadius(adapted);
+    setStatus(slime::ui::tr(slime::ui::t("ui.241d40e4e9d5")).arg(adapted));
+    Logger::info("应用预设范围 ±" + std::to_string(adapted) + " 区块");
 }
 
 // v3.5.16：范围只由「半径」决定 —— 半径 r ⇒ 正方形 [-r, r-1]（边长 2r），中心恒为原点。
 void MainWindow::setSearchRadius(int r)
 {
     if (!m_w || !m_w->minX) return;
-    const int radius = (std::max)(1, r);
+    const int bound = versionBound();
+    const int radius = std::clamp(r, 1, bound);
     const int lo = -radius, hi = radius;   // 半径 r ⇒ X/Z 各 ±r（边长 2r+1）
     m_rangeSyncGuard = true;
     m_w->minX->setValue(lo);

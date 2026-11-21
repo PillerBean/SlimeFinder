@@ -100,6 +100,11 @@ int MainWindow::runSelfTest()
     m_w->maxZ->setValue(123456789);
     clampRangeToBound();
     check(m_w->maxZ->value() == 131072, "基岩边界截断");
+    applyPreset(1000000);
+    check(m_w->maxX->value() == kBedrockBoundChunk && m_w->minX->value() == -kBedrockBoundChunk,
+          "基岩版全局预设不超世界边界");
+    applyPreset(200000);
+    check(m_w->maxX->value() == kBedrockBoundChunk / 2, "基岩版局部预设按边界缩放");
     check(m_w->seedEdit->isEnabled(), "基岩版种子框可用（仅用于地图上色，判定与种子无关）");
     check(m_w->presetWorld->isEnabled() == false && m_w->presetBedrock->isEnabled() == true,
           "基岩版预设可用性");
@@ -264,7 +269,7 @@ int MainWindow::runSelfTest()
         m_w->strictRadio->setChecked(false);
         m_w->densityRadio->setChecked(true);
         updateSearchShapeEnabled();
-        check(m_w->presetCombo && m_w->presetCombo->count() == 5, "密度模式方案数 = 4 + 自定义");
+        check(m_w->presetCombo && m_w->presetCombo->count() == 9, "密度模式方案数 = 8 + 自定义");
         check(m_w->presetCombo->itemText(m_w->presetCombo->count() - 1) == slime::ui::t("ui.c493338e8c33"),
               "方案列表最后一项是自定义");
 
@@ -273,12 +278,13 @@ int MainWindow::runSelfTest()
         check(!m_w->stopAtTarget->isChecked() && !m_w->smartRange->isChecked(), "方案「找全部候选」关闭找够就停/智能范围");
         check((m_w->gpuCheck && m_w->gpuCheck->isChecked()) == gpuBefore, "切换方案不改变 GPU 开关（加速独立）");
 
-        // 方案「最优 N 个（忽略阈值）」（索引 2）：开启忽略 + 冲突裁决
-        m_w->presetCombo->setCurrentIndex(2);
+        // 方案「最优 N 个（忽略阈值）」（索引 4）：开启忽略 + 冲突裁决
+        m_w->presetCombo->setCurrentIndex(4);
         check(m_w->ignoreThreshold && m_w->ignoreThreshold->isChecked(), "方案「最优 N 个」开启忽略阈值");
         check(!m_w->minDensity->isEnabled(), "最优候选模式禁用最小密度输入");
         check(!m_w->stopAtTarget->isEnabled() && !m_w->smartRange->isEnabled(), "最优候选模式禁用提前停止/智能范围");
-        check(m_w->presetHint && m_w->presetHint->text().contains(slime::ui::t("ui.4446620620fc")), "最优候选模式提示文案");
+        check(m_w->presetHint && m_w->presetHint->text() == slime::ui::t("ui.preset.hint_best_ignore"),
+              "最优候选模式提示文案");
 
         // 切回默认方案：阈值恢复可用、忽略关闭
         m_w->presetCombo->setCurrentIndex(0);
@@ -287,7 +293,7 @@ int MainWindow::runSelfTest()
         // 图案模式：方案数 = 2 + 自定义，且忽略阈值不可用
         m_w->strictRadio->setChecked(true);
         updateSearchShapeEnabled();
-        check(m_w->presetCombo->count() == 3, "图案模式方案数 = 2 + 自定义");
+        check(m_w->presetCombo->count() == 4, "图案模式方案数 = 3 + 自定义");
         check(!m_w->ignoreThreshold->isEnabled(), "图案模式下忽略阈值不可用");
 
         // 恢复：密度模式 + 默认方案
@@ -413,11 +419,20 @@ int MainWindow::runSelfTest()
         m_w->presetCombo->setCurrentIndex(0);   // 预设
         check(!m_w->resultGroup->isVisible() && !m_w->matchGroup->isVisible(),
               "预设方案下「结果要求/匹配方式」收起（防乱调）");
+        check(m_w->densityAdvanced && !m_w->densityAdvanced->isVisible(),
+              "预设方案下网格/阈值/忽略开关收起");
+        check(m_presetHomogeneous == 1, "快速最近 N 预设允许同质量");
+        m_w->presetCombo->setCurrentIndex(2);
+        check(m_presetHomogeneous == 0, "不同质量预设关闭同质化");
+        m_w->presetCombo->setCurrentIndex(0);
         check(!m_w->presetDisclaimer->isVisible(), "预设方案不显示自定义速度声明");
-        const int customIdx = 4;
+        const int customIdx = 8;
         m_w->presetCombo->setCurrentIndex(customIdx);   // 自定义
         check(m_w->resultGroup->isVisible() && m_w->matchGroup->isVisible(),
               "自定义方案展开「结果要求/匹配方式」");
+        check(m_w->densityAdvanced && m_w->densityAdvanced->isVisible(),
+              "自定义方案展开网格/阈值/忽略开关");
+        check(m_presetHomogeneous == -1, "自定义方案恢复跟随设置");
         check(m_w->presetDisclaimer->isVisible() &&
                   m_w->presetDisclaimer->text().contains(slime::ui::t("ui.f2fdffbb9ed5")),
               "自定义方案显示「可能明显降低速度」声明");
@@ -3299,6 +3314,7 @@ int MainWindow::runSelfTest()
             MatchResult mr;
             mr.minX = 0; mr.maxX = 3; mr.minZ = 0; mr.maxZ = 3;
             md.setResults(std::vector<MatchResult>{ mr });
+            check(md.map()->focusedResult() == 0, "地图结果默认只聚焦第一个结果框");
             md.computeAfk();
             const double s0 = md.map()->pxPerBlock();
             md.map()->zoomAt(1.25, md.map()->rect().center());
@@ -3539,9 +3555,10 @@ int MainWindow::runSelfTest()
             check(m_w->squareOpts && !m_w->squareOpts->isVisible(),
                   "环形：正方形专属选项（网格大小）整块隐藏");
             check(m_w->ringOpts && m_w->ringOpts->isVisible(), "环形：环形专属选项（扫描模式/最小密度）可见");
+            check(m_w->presetCombo && m_w->presetCombo->count() == 3, "环形模式方案数 = 2 + 自定义");
             check(!m_w->smartRange->isVisible(), "环形：智能范围不显示（不适用）");
-            check(m_w->minDensity->isVisible() && m_w->targetCount->isVisible() && m_w->matchGroup->isEnabled(),
-                  "环形：最小密度/目标数量/判定算法仍可用（与正方形一致）");
+            check(!m_w->minDensity->isVisible() && m_w->targetCount->isVisible() && !m_w->matchGroup->isVisible(),
+                  "环形：默认方案隐藏详细开关，仅保留目标数量");
             check(m_w->densityRadio->isChecked(), "环形选项出现在密度模式下");
             m_w->densityRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
@@ -3576,9 +3593,12 @@ int MainWindow::runSelfTest()
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
             check(m_w->ringOpts && m_w->ringOpts->isVisible() && m_w->squareOpts && !m_w->squareOpts->isVisible(),
                   "环形：只显示环形专属选项");
+            if (m_w->presetCombo) m_w->presetCombo->setCurrentIndex(8); // 高级选项只在自定义显示
             m_w->shapeSquareRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
-            check(m_w->squareOpts && m_w->squareOpts->isVisible(), "正方形：只显示正方形专属选项");
+            if (m_w->presetCombo) m_w->presetCombo->setCurrentIndex(8); // 切回方形后重新选自定义
+            check(m_w->squareOpts && m_w->squareOpts->isVisible(), "自定义正方形：显示正方形专属选项");
+            if (m_w->presetCombo) m_w->presetCombo->setCurrentIndex(0);
             m_w->shapeRingRadio->setChecked(true);
             m_w->densityRadio->setChecked(true);
             m_w->javaRadio->setChecked(true);
@@ -3790,12 +3810,24 @@ int MainWindow::runSelfTest()
                     check(m_map && m_map->focusedAfk() == 0, "点「跳转」同时选中该行的环（只显示一条）");
                 }
                 // 按距离列排序
+                check(m_w->resultTable->isSortingEnabled(), "结果列表有结果时仍可按列排序");
                 m_w->resultTable->sortItems(3, Qt::AscendingOrder);
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
                 const double d0 = m_w->resultTable->item(0, 3)->data(Qt::DisplayRole).toDouble();
                 const double dN = m_w->resultTable->item(rows - 1, 3)->data(Qt::DisplayRole).toDouble();
                 std::fprintf(stderr, "[UI自检]   列表排序：首行距离=%.1f 末行距离=%.1f\n", d0, dN);
                 check(d0 <= dN + 1e-6, "结果列表可按列排序");
+                if (auto* jump0 = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 6))) {
+                    const int bx0 = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
+                    const int bz0 = m_w->resultTable->item(0, 2)->data(Qt::UserRole).toInt();
+                    jump0->click();
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
+                    const QPointF ctr = m_map->centerBlock();
+                    const double cx = bx0 + 0.5;
+                    const double cz = bz0 + 0.5;
+                    check(std::abs(ctr.x() - cx) < 2.0 && std::abs(ctr.y() - cz) < 2.0,
+                          "排序后结果行跳转仍对应本行坐标");
+                }
             }
             // 折叠/展开
             const bool before = m_w->resultTable->isVisible();

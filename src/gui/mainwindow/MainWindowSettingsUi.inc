@@ -461,6 +461,7 @@ void MainWindow::fillResultTable()
                                        static_cast<double>(blockZ >> 4) - m_lastInfo.startZ);
         auto* it0 = new QTableWidgetItem();
         it0->setData(Qt::DisplayRole, i + 1);
+        it0->setData(Qt::UserRole, i);
         auto* it1 = new QTableWidgetItem();
         it1->setData(Qt::DisplayRole, blockX);
         it1->setData(Qt::UserRole, blockX);
@@ -487,12 +488,25 @@ void MainWindow::fillResultTable()
         auto* jump = new QPushButton(slime::ui::t("ui.28cd2efd8fa8"), t);
         jump->setAutoDefault(false);
         jump->setToolTip(slime::ui::t("ui.b208126e95ab"));
-        const int bx = blockX;
-        const int bz = blockZ;
-        connect(jump, &QPushButton::clicked, this, [this, i, ring, bx, bz]() {
-            if (ring && i < static_cast<int>(m_lastAfk.size())) {
-                focusAfkCandidate(i);   // v3.5.10：只显示这一条候选的环
+        connect(jump, &QPushButton::clicked, this, [this, ring, jump]() {
+            auto* table = m_w ? m_w->resultTable : nullptr;
+            if (!table) return;
+            int row = -1;
+            for (int rr = 0; rr < table->rowCount(); ++rr) {
+                if (table->cellWidget(rr, 6) == jump) { row = rr; break; }
+            }
+            if (row < 0) return;
+            const auto* idxItem = table->item(row, 0);
+            const auto* xi = table->item(row, 1);
+            const auto* zi = table->item(row, 2);
+            if (!idxItem || !xi || !zi) return;
+            const int original = idxItem->data(Qt::UserRole).toInt();
+            const int bx = xi->data(Qt::UserRole).toInt();
+            const int bz = zi->data(Qt::UserRole).toInt();
+            if (ring && original >= 0 && original < static_cast<int>(m_lastAfk.size())) {
+                focusAfkCandidate(original);
             } else {
+                if (m_map) m_map->setFocusedResult(original);
                 focusMapOnChunk(bx >= 0 ? bx >> 4 : -((-bx + 15) >> 4), bz >= 0 ? bz >> 4 : -((-bz + 15) >> 4));
             }
         });
@@ -506,6 +520,7 @@ void MainWindow::fillResultTable()
                                                             : QString())
                                             : slime::ui::t("ui.a535edb5149b"));
     }
+    t->setSortingEnabled(wasSorting);
 }
 
 // v3.9.12：结果要求冲突裁决 —— 忽略阈值（最优候选）时阈值/早停/智能范围无效；
@@ -535,22 +550,33 @@ void MainWindow::applyResultConflicts()
 namespace {
 struct PresetDef {
     const char* label;
+    const char* hint;
     bool stop;
     bool smart;
     bool ignore;   // 最优候选（忽略阈值）
     int algorithm; // 0=精确 1=分层 2=估算 3=保守
+    int homogeneous; // -1=跟随设置，0=关闭，1=允许
+    int lockDir;     // -1=不改，0=四方向，1=锁定
+    int target;      // <=0=不改
 };
 const PresetDef kPresetDensity[] = {
-    // v3.10.12.8：实测「找够即停」不勾由近及远更快（CPU 114.5 vs 123.1 ms；GPU 也更快），预设改为仅停止
-    { "ui.preset.quick_nearest", true,  false, false, 0 },
-    { "ui.preset.all",           false, false, false, 0 },
-    { "ui.preset.best_ignore",   false, false, true,  0 },
-    { "ui.preset.coarse",        false, false, false, 2 },
+    { "ui.preset.quick_nearest", "ui.preset.hint_quick", true, false, false, 0, 1, -1, -1 },
+    { "ui.preset.all", "ui.preset.hint_all", false, false, false, 0, 1, -1, -1 },
+    { "ui.preset.distinct_stop", "ui.preset.hint_distinct_stop", true, false, false, 0, 0, -1, -1 },
+    { "ui.preset.distinct_all", "ui.preset.hint_distinct_all", false, false, false, 0, 0, -1, -1 },
+    { "ui.preset.best_ignore", "ui.preset.hint_best_ignore", false, false, true, 0, 1, -1, 1 },
+    { "ui.preset.exact_nearest", "ui.preset.hint_exact", false, false, false, 0, 1, -1, -1 },
+    { "ui.preset.speed_truncate", "ui.preset.hint_speed", true, false, false, 0, 0, -1, -1 },
+    { "ui.preset.coarse", "ui.preset.hint_coarse", true, false, false, 2, 1, -1, -1 },
 };
 const PresetDef kPresetPattern[] = {
-    // v3.10.10.2：图案模式下「由近及远」会禁掉 AVX2 快路径（20k² 858→93 ms），预设改为仅停止
-    { "ui.preset.pattern_nearest", true,  false, false, 0 },
-    { "ui.preset.pattern_all",     false, false, false, 0 },
+    { "ui.preset.pattern_single", "ui.preset.hint_pattern_single", true, false, false, 0, -1, 1, -1 },
+    { "ui.preset.pattern_four", "ui.preset.hint_pattern_four", true, false, false, 0, -1, 0, -1 },
+    { "ui.preset.pattern_all", "ui.preset.hint_pattern_all", false, false, false, 0, -1, -1, -1 },
+};
+const PresetDef kPresetRing[] = {
+    { "ui.preset.ring_max", "ui.preset.hint_ring_max", false, false, false, 0, 1, -1, -1 },
+    { "ui.preset.ring_distinct", "ui.preset.hint_ring_distinct", false, false, false, 0, 0, -1, -1 },
 };
 } // namespace
 
@@ -558,11 +584,14 @@ void MainWindow::rebuildPresets()
 {
     if (!m_w || !m_w->presetCombo) return;
     const bool pattern = m_w->strictRadio && m_w->strictRadio->isChecked();
+    const bool ringShape = !pattern && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
     m_presetPatternMode = pattern ? 1 : 0;
     m_presetApplying = true;
     m_w->presetCombo->clear();
     if (pattern) {
         for (const auto& pd : kPresetPattern) m_w->presetCombo->addItem(slime::ui::t(pd.label));
+    } else if (ringShape) {
+        for (const auto& pd : kPresetRing) m_w->presetCombo->addItem(slime::ui::t(pd.label));
     } else {
         for (const auto& pd : kPresetDensity) m_w->presetCombo->addItem(slime::ui::t(pd.label));
     }
@@ -576,23 +605,28 @@ void MainWindow::applySelectedPreset()
 {
     if (!m_w || !m_w->presetCombo) return;
     const bool pattern = (m_presetPatternMode == 1);
-    const int customIdx = pattern ? 2 : 4;
+    const bool ringShape = !pattern && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
+    const int customIdx = pattern ? 3 : (ringShape ? 2 : 8);
     const int idx = m_w->presetCombo->currentIndex();
     if (idx < 0 || idx > customIdx) return;
     m_presetLastIndex = idx;
 
     if (idx == customIdx) {
+        m_presetHomogeneous = -1;
         if (m_w->presetHint) {
             m_w->presetHint->setText(slime::ui::t("ui.7e7cf39ddc4d"));
         }
         updateAdvancedVisibility();   // v3.10.9：自定义方案展开高级开关并显示速度声明
         return;
     }
-    const PresetDef& pd = pattern ? kPresetPattern[idx] : kPresetDensity[idx];
+    const PresetDef& pd = pattern ? kPresetPattern[idx] : (ringShape ? kPresetRing[idx] : kPresetDensity[idx]);
     m_presetApplying = true;
+    m_presetHomogeneous = pd.homogeneous;
     if (m_w->ignoreThreshold) m_w->ignoreThreshold->setChecked(pd.ignore && !pattern);
     if (m_w->stopAtTarget) m_w->stopAtTarget->setChecked(pd.stop);
     if (m_w->smartRange) m_w->smartRange->setChecked(pd.smart);
+    if (pd.lockDir >= 0 && m_w->lockDir) m_w->lockDir->setChecked(pd.lockDir != 0);
+    if (pd.target > 0 && m_w->targetCount) m_w->targetCount->setValue(pd.target);
     switch (pd.algorithm) {
     case 1: if (m_w->algLayeredRadio) m_w->algLayeredRadio->setChecked(true); break;
     case 2: if (m_w->algSampleRadio) m_w->algSampleRadio->setChecked(true); break;
@@ -604,18 +638,7 @@ void MainWindow::applySelectedPreset()
 
     updateAdvancedVisibility();
     if (m_w->presetHint) {
-        QString desc;
-        if (pattern) {
-            desc = slime::ui::t("ui.5c2f010bbc8f");
-        } else if (pd.ignore) {
-            desc = slime::ui::t("ui.0f05e9ce3b76");
-        } else if (pd.algorithm == 2) {
-            desc = slime::ui::t("ui.1f8e3c9e917b");
-        } else if (pd.stop) {
-            desc = slime::ui::t("ui.b69e415cb8e3");
-        } else {
-            desc = slime::ui::t("ui.07c03132f5fe");
-        }
+        const QString desc = slime::ui::t(pd.hint);
         m_w->presetHint->setText(desc);
     }
 }
@@ -624,7 +647,9 @@ void MainWindow::applySelectedPreset()
 void MainWindow::updatePresetDisclaimer()
 {
     if (!m_w || !m_w->presetCombo) return;
-    const int customIdx = (m_presetPatternMode == 1) ? 2 : 4;
+    const bool pattern = m_w->strictRadio && m_w->strictRadio->isChecked();
+    const bool ringShape = !pattern && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
+    const int customIdx = pattern ? 3 : (ringShape ? 2 : 8);
     const bool custom = m_w->presetCombo->currentIndex() == customIdx;
     if (m_w->presetDisclaimer) m_w->presetDisclaimer->setVisible(custom);
     if (custom && !m_customDisclaimerLogged) {
@@ -636,12 +661,17 @@ void MainWindow::updatePresetDisclaimer()
 void MainWindow::updateAdvancedVisibility()
 {
     if (!m_w) return;
-    const int customIdx = (m_presetPatternMode == 1) ? 2 : 4;
+    const bool pattern = m_w->strictRadio && m_w->strictRadio->isChecked();
+    const bool ringShape = !pattern && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
+    const int customIdx = pattern ? 3 : (ringShape ? 2 : 8);
     const bool custom = m_w->presetCombo && m_w->presetCombo->currentIndex() == customIdx;
     const bool ring = m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
-    const bool showAdvanced = custom || ring;
+    const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
+    const bool showAdvanced = custom;
     if (m_w->resultGroup) m_w->resultGroup->setVisible(showAdvanced);
     if (m_w->matchGroup) m_w->matchGroup->setVisible(showAdvanced && !ring);
+    if (m_w->densityAdvanced) m_w->densityAdvanced->setVisible(showAdvanced && !patternMode);
+    if (m_w->lockDir) m_w->lockDir->setVisible(showAdvanced);
     updatePresetDisclaimer();
 }
 
@@ -649,10 +679,12 @@ void MainWindow::markPresetCustom(const QString& reason)
 {
     if (m_presetApplying || !m_w || !m_w->presetCombo) return;
     const bool pattern = (m_presetPatternMode == 1);
-    const int customIdx = pattern ? 2 : 4;
+    const bool ringShape = !pattern && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
+    const int customIdx = pattern ? 3 : (ringShape ? 2 : 8);
     if (m_w->presetCombo->currentIndex() == customIdx) return;
     m_presetApplying = true;
     m_w->presetCombo->setCurrentIndex(customIdx);
+    m_presetHomogeneous = -1;
     m_presetApplying = false;
     m_presetLastIndex = customIdx;
     if (m_w->presetHint) {
@@ -677,7 +709,10 @@ void MainWindow::updateSearchShapeEnabled()
     if (m_w->strictPanel) m_w->strictPanel->setVisible(patternMode);
     if (m_w->densityPanel) m_w->densityPanel->setVisible(!patternMode);
     // v3.9.11：模式决定方案数量与内容（仅在模式真正变化时重建，避免重置用户选择）
-    if (m_w->presetCombo && m_presetPatternMode != (patternMode ? 1 : 0)) rebuildPresets();
+    const int expectedPresetCount = patternMode ? 4 : (ringShape ? 3 : 9);
+    if (m_w->presetCombo && (m_presetPatternMode != (patternMode ? 1 : 0) ||
+                              m_w->presetCombo->count() != expectedPresetCount))
+        rebuildPresets();
     applyResultConflicts();
     if (m_w->squareOpts) m_w->squareOpts->setVisible(!patternMode && !ringShape);
     if (m_w->ringOpts) m_w->ringOpts->setVisible(!patternMode && ringShape);

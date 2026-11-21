@@ -120,6 +120,7 @@
 #include "gui/dialogs/MapDialog.h"       // v3.5.2（任务 2）：地图预览对话框
 #include "gui/dialogs/HelpDialog.h" // v3.3.3：帮助 / 使用教程对话框
 #include "gui/dialogs/UpdateDialog.h" // v3.10.12.10：GitHub Releases + 镜像 + 网盘备用的更新检查
+#include "core/SearchMath.h"         // 纯数学命中预测（不抽样）
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -181,7 +182,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.13.8";
+constexpr const char* kAppVersion = "v3.13.10";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置）
 constexpr int kNavCount = 3; // v3.10.12.13：移除更新历史，导航 3 项
@@ -727,6 +728,7 @@ struct MainWindow::Widgets {
     QWidget* ringOpts = nullptr;          // v3.5.18：环形专属选项容器
     QLabel* patternInfo = nullptr;
     QWidget* densityPanel = nullptr;
+    QWidget* densityAdvanced = nullptr;   // 自定义方案才显示：网格/阈值/忽略
     QSpinBox* gridSize = nullptr;
     QDoubleSpinBox* minDensity = nullptr;
     QCheckBox* ignoreThreshold = nullptr;   // v3.9.12：最优候选模式（忽略阈值）
