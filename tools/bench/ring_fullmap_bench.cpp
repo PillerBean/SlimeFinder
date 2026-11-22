@@ -55,6 +55,8 @@ int main(int argc, char** argv)
     const char* poolCsv = std::getenv("RING_POOL_CSV");
     const bool kernelRank = std::getenv("RING_KERNEL_RANK") && std::string(std::getenv("RING_KERNEL_RANK")) == "1";
     const bool kernelPlan = std::getenv("RING_KERNEL_PLAN") && std::string(std::getenv("RING_KERNEL_PLAN")) == "1";
+    const bool k3Mode = std::getenv("RING_K3") && std::string(std::getenv("RING_K3")) == "1";
+    const int k3Err = std::max(0, std::atoi(std::getenv("RING_K3_ERR") ? std::getenv("RING_K3_ERR") : "860"));
     const int kernelTop = std::max(1, std::atoi(std::getenv("RING_KERNEL_TOP") ? std::getenv("RING_KERNEL_TOP") : "32"));
     const char* kernelCsv = std::getenv("RING_KERNEL_CSV");
     const int kernelSquare = std::max(0, std::atoi(std::getenv("RING_KERNEL_SQUARE") ?
@@ -314,6 +316,72 @@ int main(int argc, char** argv)
                     best->coveragePercent);
         return 0;
     }
+    if (k3Mode && !o.seedCandidates.empty()) {
+        // Candidate-level k=3 upper bound. This is not yet a full-map 36-convolution
+        // GPU implementation: the seed universe is the square prescan set.
+        constexpr int d = 8;
+        constexpr int side = 17;
+        const int offsets[6] = { 0, 3, 6, 9, 12, 15 };
+        std::vector<int> w(static_cast<size_t>(side) * side * 256, 0);
+        for (int oy = 0; oy < 16; ++oy) {
+            for (int ox = 0; ox < 16; ++ox) {
+                for (int dy = -d; dy <= d; ++dy) {
+                    for (int dx = -d; dx <= d; ++dx) {
+                        int n = 0;
+                        for (int by = 0; by < 16; ++by) {
+                            for (int bx = 0; bx < 16; ++bx) {
+                                const int ry = dy * 16 + by - oy;
+                                const int rx = dx * 16 + bx - ox;
+                                const int d2 = rx * rx + ry * ry;
+                                if (d2 >= 24 * 24 && d2 <= 128 * 128) ++n;
+                            }
+                        }
+                        w[(static_cast<size_t>(dy + d) * side + (dx + d)) * 256 +
+                          static_cast<size_t>(oy * 16 + ox)] = n;
+                    }
+                }
+            }
+        }
+        std::vector<int> upper(o.seedCandidates.size(), 0);
+        const auto tu = Clock::now();
+        for (size_t i = 0; i < o.seedCandidates.size(); ++i) {
+            const auto s = o.seedCandidates[i];
+            int best = 0;
+            for (int oy : offsets) {
+                for (int ox : offsets) {
+                    int c = 0;
+                    for (int dy = -d; dy <= d; ++dy) {
+                        for (int dx = -d; dx <= d; ++dx) {
+                            if (!SlimeEngine::isSlimeChunk(Version::Java, seed, s.first + dx, s.second + dy))
+                                continue;
+                            c += w[(static_cast<size_t>(dy + d) * side + (dx + d)) * 256 +
+                                   static_cast<size_t>(oy * 16 + ox)];
+                        }
+                    }
+                    best = (std::max)(best, c);
+                }
+            }
+            upper[i] = best + k3Err;
+        }
+        AfkPlanOptions base = o;
+        const auto tb = Clock::now();
+        const auto baseline = AfkPlanner::plan(base, pred, nullptr);
+        const int lower = baseline.empty() ? 0 : static_cast<int>(baseline.front().coveredBlocks);
+        std::vector<std::pair<int, int>> selected;
+        for (size_t i = 0; i < o.seedCandidates.size(); ++i)
+            if (upper[i] >= lower) selected.push_back(o.seedCandidates[i]);
+        AfkPlanOptions ko = o;
+        ko.seedCandidates = selected;
+        const auto tk = Clock::now();
+        const auto got = AfkPlanner::plan(ko, pred, nullptr);
+        const int v = got.empty() ? 0 : static_cast<int>(got.front().coveredBlocks);
+        std::printf("K3 seeds=%zu upper_ms=%.1f baseline_ms=%.1f select_ms=%.1f "
+                    "candidates=%zu lower=%d V=%d total_ms=%.1f\n",
+                    o.seedCandidates.size(), msSince(tu), msSince(tb), msSince(tk),
+                    selected.size(), lower, v, msSince(tTotal));
+        return 0;
+    }
+
     if (kernelRank && !o.seedCandidates.empty()) {
         // 圆盘环 ∩ 16×16 区块矩形的面积权重。
         // 中心固定落在区块中心 (+8,+8)，所以权重表一次构建、所有 seed 复用。
