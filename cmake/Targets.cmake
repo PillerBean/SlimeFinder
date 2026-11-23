@@ -493,6 +493,15 @@ if(MSVC)
     target_compile_options(slime_timing_estimate_tests PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_search_speed_matrix
+    tools/bench/search_speed_matrix.cpp
+)
+target_include_directories(slime_search_speed_matrix PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_search_speed_matrix PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(slime_search_speed_matrix PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )

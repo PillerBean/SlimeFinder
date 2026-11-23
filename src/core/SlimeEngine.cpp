@@ -5298,6 +5298,21 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
             est.totalSec = est.scanWallSec + est.matchWallSec + calib.overheadSec;
         }
         est.calibrated = true;
+    } else {
+        // 首次/新组合的基线修正。三点样本测到的是“热缓存 + 小区域”速率；
+        // 全图结果排序、分配、GPU staging 等固定成本没有随样本线性缩放。
+        // 系数来自 3.13.12 速度矩阵（4096²/16384²），仅作首轮兜底；
+        // 第二次同配置会直接走实测校准。
+        double corr = 4.5;
+        if (threads == 1) corr = 1.0;
+        else if (opt.mode == Mode::Strict) corr = 2.6;
+        else if (opt.stopAtTarget) corr = 1.5;
+        else if (opt.algorithm == Algorithm::Layered) corr = 6.5;
+        else if (opt.algorithm == Algorithm::Sample) corr = 8.0;
+        else if (opt.algorithm == Algorithm::Brute) corr = 2.7;
+        est.scanWallSec *= corr;
+        est.matchWallSec *= corr;
+        est.totalSec = est.scanWallSec + est.matchWallSec;
     }
     est.ok = est.scanRate > 0.0 && est.totalSec > 0.0;
     return est.ok;
