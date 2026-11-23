@@ -5221,6 +5221,35 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
     const double scanRate = median(scanRates);
     const double matchRate = matchRates.empty() ? 0.0 : median(matchRates);
 
+    // 提前停止的样本：普通三点样本刻意关掉了 stopAtTarget，会把“只扫一部分”
+    // 当成“扫完整图”。再跑一组开启提前停止的样本，用实际扫描面积比例修正。
+    double earlyFactor = 1.0;
+    if (opt.stopAtTarget) {
+        std::vector<double> fractions;
+        for (int si = 0; si < 3; ++si) {
+            bool duplicate = false;
+            for (int sj = 0; sj < si; ++sj)
+                if (origins[si] == origins[sj]) { duplicate = true; break; }
+            if (duplicate) continue;
+            SearchOptions stopSample = opt;
+            stopSample.minX = static_cast<int>(origins[si].first);
+            stopSample.minZ = static_cast<int>(origins[si].second);
+            stopSample.maxX = stopSample.minX + static_cast<int>(sw - 1);
+            stopSample.maxZ = stopSample.minZ + static_cast<int>(sh - 1);
+            stopSample.threads = 1;
+            SearchOutcome so;
+            std::atomic<bool> localCancel{ false };
+            engine.runImpl(stopSample, localCancel, nullptr, so, false);
+            if (so.ok && so.stoppedEarly && so.stats.scannedChunks > 0) {
+                fractions.push_back(
+                    std::clamp(static_cast<double>(so.stats.scannedChunks) /
+                                   static_cast<double>(sw * sh),
+                               0.02, 1.0));
+            }
+        }
+        if (!fractions.empty()) earlyFactor = median(fractions);
+    }
+
     est.areaChunks = W * H;
     est.windows = windowsTotalFor(opt, W, H);
     est.scanRate = scanRate;
@@ -5246,6 +5275,11 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
         est.matchWallSec = 0.0; // 无窗口可测（例如图案无有效格）：匹配阶段可忽略
     }
     est.totalSec = est.scanWallSec + est.matchWallSec;
+    if (earlyFactor < 1.0) {
+        est.scanWallSec *= earlyFactor;
+        est.matchWallSec *= earlyFactor;
+        est.totalSec = est.scanWallSec + est.matchWallSec;
+    }
     TimingCalibration calib;
     const int keyThreads = opt.threads > 0 ? opt.threads : 0;
     const bool gpuExpected = opt.gpuScan != nullptr;
