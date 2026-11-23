@@ -503,10 +503,13 @@ public:
     // v3.1.1：估算一次搜索的耗时（含整图分块模式），不修改任何状态
     static bool estimateSearch(const SearchOptions& options, int threads, SearchEstimate& out) noexcept;
     // v3.15.x：记录一次已完成搜索的实测速率，供同配置后续估算校准。
-    static void recordActualTiming(const SearchOptions& options, const SearchStats& stats) noexcept;
+    static void recordActualTiming(const SearchOptions& options, const SearchStats& stats,
+                                   bool gpuScanUsed = false) noexcept;
     // v3.15.x：跨进程保存/恢复同配置校准表（TSV；由 GUI 写入 app 数据目录）。
     static std::string exportTimingCalibration();
     static void importTimingCalibration(const std::string& text);
+    // v3.15.x：耗时模型键（也用于预测/实际误差遥测）。
+    static std::string timingFeatureKey(const SearchOptions& options, int threads, bool gpuScanUsed);
     // v3.14.4: deterministic stratified sampling estimate of the total hit count.
     static HitEstimate estimateHits(const SearchOptions& options, int maxSamples = 256) noexcept;
 

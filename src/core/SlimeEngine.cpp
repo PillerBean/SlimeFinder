@@ -5041,7 +5041,7 @@ struct TimingCalibration {
 std::mutex g_timingMutex;
 std::unordered_map<std::string, TimingCalibration> g_timingCalibration;
 
-std::string timingKey(const SearchOptions& o, int threads)
+std::string makeTimingKey(const SearchOptions& o, int threads, bool gpuScanUsed)
 {
     int green = 0, white = 0;
     if (o.mode == Mode::Strict) {
@@ -5059,7 +5059,7 @@ std::string timingKey(const SearchOptions& o, int threads)
       << o.pattern.rows() << 'x' << o.pattern.cols() << ':' << green << ',' << white << '|'
       << (o.directionLocked ? 1 : 0) << (o.stopAtTarget ? 1 : 0) << (o.smartRange ? 1 : 0)
       << (o.ignoreThreshold ? 1 : 0) << (o.useCache ? 1 : 0)
-      << (o.gpuScan ? 1 : 0) << (o.buildMode ? 1 : 0) << '|'
+      << (o.gpuScan ? 1 : 0) << (gpuScanUsed ? 1 : 0) << (o.buildMode ? 1 : 0) << '|'
       << o.layerBlock << ':' << static_cast<int>(std::lround(o.layerRatio * 100.0)) << '|'
       << o.sampleStep << ':' << (o.sampleExact ? 1 : 0) << '|' << threads
       << '|' << o.targetCount;
@@ -5093,10 +5093,11 @@ bool lookupTiming(const std::string& key, TimingCalibration& out)
 
 } // namespace
 
-void SlimeEngine::recordActualTiming(const SearchOptions& options, const SearchStats& stats) noexcept
+void SlimeEngine::recordActualTiming(const SearchOptions& options, const SearchStats& stats,
+                                     bool gpuScanUsed) noexcept
 {
-    // 构建模式不是普通搜索；GPU 路径可能回退 CPU，实际用的是哪条路径无法从 stats 判断。
-    if (options.buildMode || options.gpuScan != nullptr) return;
+    // 构建模式不是普通搜索；记录实际是否走了 GPU（不是只看开关是否打开）。
+    if (options.buildMode) return;
     if (stats.scanMs <= 0.0 || stats.scannedChunks <= 0) return;
 
     TimingCalibration v;
@@ -5111,7 +5112,12 @@ void SlimeEngine::recordActualTiming(const SearchOptions& options, const SearchS
         v.areaSecPerChunk = (stats.totalMs / 1000.0) / static_cast<double>(W * H);
     v.samples = 1;
     const int threads = options.threads > 0 ? options.threads : 0;
-    rememberTiming(timingKey(options, threads), v);
+    rememberTiming(makeTimingKey(options, threads, gpuScanUsed), v);
+}
+
+std::string SlimeEngine::timingFeatureKey(const SearchOptions& options, int threads, bool gpuScanUsed)
+{
+    return makeTimingKey(options, threads, gpuScanUsed);
 }
 
 std::string SlimeEngine::exportTimingCalibration()
@@ -5241,7 +5247,12 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
     }
     est.totalSec = est.scanWallSec + est.matchWallSec;
     TimingCalibration calib;
-    if (lookupTiming(timingKey(opt, opt.threads > 0 ? opt.threads : 0), calib)) {
+    const int keyThreads = opt.threads > 0 ? opt.threads : 0;
+    const bool gpuExpected = opt.gpuScan != nullptr;
+    bool haveCalib = lookupTiming(makeTimingKey(opt, keyThreads, gpuExpected), calib);
+    if (!haveCalib && gpuExpected)
+        haveCalib = lookupTiming(makeTimingKey(opt, keyThreads, false), calib);
+    if (haveCalib) {
         if (calib.areaSecPerChunk > 0.0) {
             // 实测总耗时 / 请求面积；同配置重复搜索时比用 evalChunks（含分块重叠）更稳。
             est.totalSec = static_cast<double>(est.areaChunks) * calib.areaSecPerChunk;

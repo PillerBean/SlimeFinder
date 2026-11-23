@@ -451,6 +451,9 @@ void MainWindow::startSearch()
                            .arg(bedrockRun ? slime::ui::t("ui.618fd37c0c01") : slime::ui::t("ui.8accf0fe2eed")));
     }
     m_etaSec = 0.0; // v3.3.8（任务 1）：新搜索重置 ETA（完成后保持清空，避免误以为还在跑）
+    m_etaSmoothed = 0.0;
+    m_etaLastDone = 0;
+    m_etaLastWall = 0.0;
     if (m_elapsedTimer) m_elapsedTimer->start(200); // v3.3.4：进度标签页刷新已用时/预计剩余
 
     if (info.cacheWasUsed && !info.mergeCacheAfter) {
@@ -479,7 +482,35 @@ void MainWindow::startSearch()
                                   progress.phase == SearchPhase::Scanning;
             const double cps = progress.chunksPerSec;
             const double etaSec = progress.etaSec;
-            postToUi([this, frac, scanning, cps, etaSec, runId, runMode, runAlg]() {
+            const int64_t done = progress.done;
+            const int64_t total = progress.total;
+            double displayEta = etaSec;
+            if (done > 0 && total > done) {
+                const double nowWall = std::chrono::duration<double>(
+                                           std::chrono::steady_clock::now().time_since_epoch())
+                                           .count();
+                if (m_etaLastDone > 0 && done > m_etaLastDone && nowWall > m_etaLastWall + 0.05) {
+                    const double instantaneous =
+                        static_cast<double>(done - m_etaLastDone) / (nowWall - m_etaLastWall);
+                    if (instantaneous > 1.0) {
+                        const double remaining =
+                            static_cast<double>(total - done) / instantaneous;
+                        m_etaSmoothed = m_etaSmoothed > 0.0
+                                            ? m_etaSmoothed * 0.65 + remaining * 0.35
+                                            : remaining;
+                        displayEta = m_etaSmoothed;
+                    }
+                } else if (m_etaSmoothed > 0.0) {
+                    displayEta = m_etaSmoothed;
+                }
+                m_etaLastDone = done;
+                m_etaLastWall = nowWall;
+            } else if (done == 0 || total == 0) {
+                m_etaLastDone = 0;
+                m_etaLastWall = 0.0;
+            }
+            displayEta = std::clamp(displayEta, 0.0, 36000.0);
+            postToUi([this, frac, scanning, cps, displayEta, runId, runMode, runAlg]() {
                 if (!m_running || runId != m_runId) return; // 陈旧运行的事件：直接丢弃
                 // v3.3.9（任务书 1.1/1.4）：构建模式用「四项进度」+ 缓存扫描/新区域扫描区分
                 if (m_buildActive) {
@@ -488,7 +519,7 @@ void MainWindow::startSearch()
                 }
                 // v3.3.8（任务 1）：ETA 接线 —— 此前回调收到了 etaSec 却从未写入 m_etaSec，
                 // 于是 updateElapsedUi() 永远走 else 分支、状态栏恒显示「预计剩余：--:--」。
-                m_etaSec = etaSec;
+                m_etaSec = displayEta;
                 // v3.10.4（用户反馈：GPU 单次派发期间进度条长时间停在 0 像卡死）：
                 //   GPU 阶段改为忙碌动画（range 0,0），不伪造百分比；结束后恢复真实进度条。
                 if (m_w->progress) {
@@ -1208,12 +1239,40 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         return;
     }
 
-    // 成功完成：记录同配置实测速率，供下一次耗时估算校准。
-    slime::SlimeEngine::recordActualTiming(info.options, out.stats);
+    // 成功完成：记录同配置实测速率（含实际 GPU/CPU 路径），供下一次耗时估算校准。
+    slime::SlimeEngine::recordActualTiming(info.options, out.stats, out.gpuScanUsed);
     {
         std::ofstream timing(appDirPath() / "timing_calibration.tsv", std::ios::trunc);
         if (timing) timing << slime::SlimeEngine::exportTimingCalibration();
     }
+    // 预测/实际误差遥测：只记录确实经过整图估算确认的同一组选项。
+    if (m_pendingEstimateValid && m_pendingEstimateSec > 0.0 &&
+        m_pendingEstimateFingerprint == searchOptionsFingerprint(info.options) &&
+        out.stats.totalMs > 0.0) {
+        const auto telPath = appDirPath() / "timing_predictions.tsv";
+        std::error_code ec;
+        const bool needHeader = !std::filesystem::exists(telPath, ec) ||
+                                std::filesystem::file_size(telPath, ec) == 0;
+        std::ofstream tel(telPath, std::ios::app);
+        if (tel) {
+            if (needHeader)
+                tel << "timestamp_ms\tpredicted_s\tactual_s\tratio\tgpu_enabled\tgpu_used\t"
+                       "cache\tstop\tsmart\tmode\talgorithm\tkey\n";
+            const double actualSec = out.stats.totalMs / 1000.0;
+            tel << m_searchStartMs << '\t' << m_pendingEstimateSec << '\t' << actualSec << '\t'
+                << (actualSec / m_pendingEstimateSec) << '\t'
+                << (info.options.gpuScan ? 1 : 0) << '\t' << (out.gpuScanUsed ? 1 : 0) << '\t'
+                << (info.options.useCache ? 1 : 0) << '\t'
+                << (info.options.stopAtTarget ? 1 : 0) << '\t'
+                << (info.options.smartRange ? 1 : 0) << '\t'
+                << static_cast<int>(info.options.mode) << '\t'
+                << static_cast<int>(info.options.algorithm) << '\t'
+                << slime::SlimeEngine::timingFeatureKey(info.options, info.options.threads,
+                                                       out.gpuScanUsed)
+                << '\n';
+        }
+    }
+    m_pendingEstimateValid = false;
 
     // 成功后缓存处理：
     //  - 经典路径：整区合并（含容量上限）；分块路径：引擎已按块增量合并（cacheHandledIncrementally）

@@ -1,4 +1,4 @@
-﻿#include "core/SlimeEngine.h"
+#include "core/SlimeEngine.h"
 
 #include <atomic>
 #include <chrono>
@@ -31,7 +31,7 @@ int main()
     engine.run(opt, cancel, nullptr, out);
     const double actual = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     if (!out.ok) { std::printf("run failed: %s\n", out.error.c_str()); return 1; }
-    slime::SlimeEngine::recordActualTiming(opt, out.stats);
+    slime::SlimeEngine::recordActualTiming(opt, out.stats, out.gpuScanUsed);
 
     slime::SearchEstimate after;
     const bool okAfter = slime::SlimeEngine::estimateSearch(opt, 4, after);

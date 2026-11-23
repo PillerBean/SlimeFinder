@@ -118,3 +118,64 @@ src/gui/mainwindow/MainWindowSettingsUi.inc
 src/gui/mainwindow/MainWindowSearchResults.inc
 tests/integration/timing_estimate_test.cpp
 ```
+
+## P0 追加（2026-11-23）
+
+### 实际 GPU 路径校准
+
+`recordActualTiming` 现在接收 `gpuScanUsed`，校准键区分：
+
+```text
+GPU 开关打开
+实际用了 GPU，还是回退 CPU
+```
+
+估算优先查实际 GPU 键；找不到时再查 CPU 回退键。
+
+### 预测/实际误差遥测
+
+每次经过整图确认并成功完成的搜索写入：
+
+```text
+appDir/timing_predictions.tsv
+```
+
+字段：
+
+```text
+timestamp_ms / predicted_s / actual_s / ratio
+gpu_enabled / gpu_used / cache / stop / smart
+mode / algorithm / key
+```
+
+汇总脚本：
+
+```powershell
+python scripts/qa/timing_predictions_report.py
+```
+
+按模式/算法/GPU/cache/stop 分组输出：
+
+```text
+count / median ratio / p90 |log error| / max ratio
+```
+
+### 搜索中 ETA
+
+进度回调现在用最近一段的 `done` 增量估算瞬时速度：
+
+```text
+instant = Δdone / Δtime
+remaining = (total - done) / instant
+smoothed = 0.65 × previous + 0.35 × remaining
+```
+
+阶段切换或 done 回落时重置，避免用“开跑至今平均速度”导致长时间偏大/偏小。
+
+### 当前限制
+
+```text
+遥测只记录经过整图估算确认的搜索
+首次/新组合仍使用三点样本
+GPU 校准依赖驱动真实执行路径
+```

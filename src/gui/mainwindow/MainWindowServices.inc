@@ -678,6 +678,9 @@ bool MainWindow::confirmWholeMapSearch(bool applyRange, int halfSpan)
     SearchEstimate est;
     const int threads = m_w->threads->value();
     bool estOk = SlimeEngine::estimateSearch(opt, threads, est);
+    m_pendingEstimateValid = estOk;
+    m_pendingEstimateSec = estOk ? est.totalSec : 0.0;
+    m_pendingEstimateFingerprint = searchOptionsFingerprint(opt);
 
     // 区块数（万亿）与耗时范围（实测速率 ±）
     const double wanYi = 1e12;

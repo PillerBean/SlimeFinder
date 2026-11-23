@@ -395,6 +395,9 @@ private:
     bool m_running = false;
     bool m_uiQuiet = false; // 自检时抑制模态对话框
     int64_t m_searchStartMs = 0; // 本次搜索开始时刻（epoch ms，性能日志用）
+    bool m_pendingEstimateValid = false;
+    double m_pendingEstimateSec = 0.0;
+    QString m_pendingEstimateFingerprint;
     SearchTask m_task;
     SearchJob m_ringJob;
     QString m_lastResultText; // 最近一次完整结果文本（供“复制结果”）
@@ -467,6 +470,9 @@ private:
     QTimer* m_streamTimer = nullptr;  // v3.3.6：进度流水追加定时器（500ms，仅搜索中）
     QLabel* m_statusSep = nullptr;    // v3.3.7.2（1.3）：状态栏临时消息与永久控件之间的分隔符
     double m_etaSec = 0.0;            // 最近一次进度回调给出的预计剩余秒数
+    double m_etaSmoothed = 0.0;       // 近期速度推算的平滑 ETA
+    int64_t m_etaLastDone = 0;
+    double m_etaLastWall = 0.0;
     int64_t m_streamScanned = 0;      // v3.3.6：流水行显示的「扫描 N 区块」（v3.3.7：改用引擎真实计数）
     int m_streamTick = 0;             // v3.3.7：流水节拍计数（每 ~5 秒写一次关键信息日志）
     int m_runId = 0;                  // v3.3.7（P0-2）：本次运行编号（丢弃陈旧的结果/进度事件）
