@@ -594,3 +594,43 @@ kernel 排名 top1 seed 中心 = 17415256,28556488
 P1 原型完成，但验收未达：未 ≤210s，未超过 14739。
 
 下一步：把加权核放进 GPU 全图候选生成，或降低预筛分辨率后用核重排。
+
+## 2026-11-23 21:45 新环形扫描方式实装
+
+新增环形扫描档位：
+
+```text
+快速
+自动方形预筛
+环带上界复核（k=3）
+精确
+```
+
+k=3 档流程：
+
+```text
+GPU 方形预筛
+→ 基线精修得到下界
+→ 36-offset 环带上界 + B&B 选种子
+→ 再精修
+```
+
+实现位置：
+
+```text
+AfkPlanner::k3UpperBoundSeeds
+MainWindowRingMap.inc
+MainWindowBuildUi.inc
+```
+
+实测三个 seed：质量与方形基线一致；B&B 新增约 0.2s；
+全图总耗时 217.7–219.8s，没有达到 210s。
+质量保证：不宣称全局最优，UI tooltip/反馈已注明。
+
+验证：
+
+```text
+unit 全部通过
+GUI 自检 GPU off 通过
+UI text 1390 keys × 3 语言
+```

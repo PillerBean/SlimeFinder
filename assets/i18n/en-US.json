@@ -374,7 +374,7 @@
   "ui.511104f69bef": "≥ %1 grid: ring is still %2 ~ %3",
   "ui.5153c1d9f401": "Importing cache… (file %1 MB)",
   "ui.51c2745060cd": "first",
-  "ui.5201f6ebf6aa": "Rapid: large-scale isometric sampling, and then a small number of candidate finishing (random);\nAutomatic square pre-screening: first use the GPU to scan the square density, take the dispersed seeds, and then do the ring finishing (slow, but basically no card drawing);\nAccuracy: every block counts (oversize will be slow, and 2000x2000 + is limited).",
+  "ui.5201f6ebf6aa": "Fast: coarse uniform sampling plus limited refinement (stochastic); Auto square prescan: GPU full-map square-density scan, then annular refinement (slower, not a completeness guarantee); Annulus upper-bound check (k=3): 36-offset annular upper bound + B&B on square seeds (no global-optimality guarantee); Exact: every chunk (slow on large ranges; limited above 2000×2000).",
   "ui.525a0adce0d1": "Applied immediately: %1",
   "ui.52777be41a72": "Slime Density: %1 %",
   "ui.527d252d2fe4": "Restoring does not delete the cache; task-level parameters such as the search range are not part of settings.",
@@ -1386,5 +1386,7 @@
   "ui.preset.ring_max": "Max coverage (duplicates allowed)",
   "ui.preset.ring_distinct": "Distinct coverage types",
   "ui.preset.hint_ring_max": "Duplicate coverage types are allowed; prefer the largest coverage.",
-  "ui.preset.hint_ring_distinct": "Keep the best candidate per coverage type; return fewer if types are insufficient."
+  "ui.preset.hint_ring_distinct": "Keep the best candidate per coverage type; return fewer if types are insufficient.",
+  "ui.ring_scan_k3": "Annulus upper-bound check (k=3)",
+  "ui.ring_k3_used": "Annulus upper-bound check kept %1 candidates after square prescan (k=3; not a global-optimality guarantee)."
 }

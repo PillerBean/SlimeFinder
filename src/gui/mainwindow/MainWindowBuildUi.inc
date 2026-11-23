@@ -481,6 +481,7 @@ void MainWindow::buildUi()
     m_w->ringScanCombo = new QComboBox(m_w->ringOpts);
     m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanFast), 0);
     m_w->ringScanCombo->addItem(slime::ui::t("ui.6ff11b12c236"), 2);
+    m_w->ringScanCombo->addItem(slime::ui::t("ui.ring_scan_k3"), 3);
     m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanExact), 1);
     m_w->ringScanCombo->setToolTip(slime::ui::t("ui.5201f6ebf6aa"));
     ringModeRow->addWidget(m_w->ringScanCombo);

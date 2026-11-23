@@ -3544,6 +3544,9 @@ int MainWindow::runSelfTest()
         {
             check(isMaximized() || isFullScreen() || width() >= 1200, "主窗口默认最大化显示");
             check(m_w->shapeRingRadio != nullptr && m_w->shapeSquareRadio != nullptr, "搜索模式里有「区域形状」选项");
+            check(m_w->ringScanCombo && m_w->ringScanCombo->findData(3) >= 0 &&
+                      m_w->ringScanCombo->findData(2) >= 0 && m_w->ringScanCombo->findData(1) >= 0,
+                  "环形扫描含快速/方形预筛/k=3 上界/精确四档");
             check(m_w->algRingRadio == nullptr, "搜索算法里不再混入「环形覆盖」（层级修正）");
             m_w->densityRadio->setChecked(true);
             m_w->shapeRingRadio->setChecked(true);
@@ -3641,7 +3644,8 @@ int MainWindow::runSelfTest()
                 m_w->maxX->setValue(119);
                 m_w->minZ->setValue(-120);
                 m_w->maxZ->setValue(119);
-                if (m_w->ringScanCombo) m_w->ringScanCombo->setCurrentIndex(2); // 精确（逐区块）
+                if (m_w->ringScanCombo) m_w->ringScanCombo->setCurrentIndex(
+                    m_w->ringScanCombo->findData(1)); // 精确（逐区块），按 data 查找避免新增模式改变索引
                 if (m_w->targetCount) m_w->targetCount->setValue(5);
                 runRingSearch();
                 const bool cancelWasRunning = m_ringSearching;

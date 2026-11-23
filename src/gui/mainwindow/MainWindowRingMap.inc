@@ -33,6 +33,8 @@ struct MainWindow::RingSearchResult {
     bool gpuScanEnabled = false;
     bool prescanUsed = false;
     bool prescanFallback = false;
+    bool k3Used = false;
+    int k3Candidates = 0;
     bool cancelled = false;
     bool outOfMemory = false;
     bool emptyAfterFilter = false;
@@ -127,8 +129,10 @@ void MainWindow::runRingSearch()
     o.gpuScan = (m_gpuScan && m_gpuAvailable) ? m_gpuScan.get() : nullptr;
     // v3.5.17：0 = 快速（粗扫+精修），1 = 精确（逐区块）
     // v3.10.12.11：2 = 自动正方形预筛 + 环形精修
+    // v3.15.x：3 = 方形预筛 + k=3 环带上界复核 + 精修
     const int ringScanMode = m_w->ringScanCombo ? m_w->ringScanCombo->currentData().toInt() : 0;
-    const bool autoPrescan = (ringScanMode == 2);
+    const bool k3Mode = (ringScanMode == 3);
+    const bool autoPrescan = (ringScanMode == 2 || k3Mode);
     o.scanStride = (ringScanMode == 1) ? 1 : 0;
     // v3.5.29：精确模式（逐区块）有内存/耗时上限，超了直接提示而不是跑崩
     if (o.scanStride == 1 && static_cast<long long>(spanX) * spanZ > 4000000LL) {
@@ -244,6 +248,7 @@ void MainWindow::runRingSearch()
                                                                  : m_settings.allowHomogeneousResults;
     state->simDistance = m_w->simDistance ? m_w->simDistance->value() : 0;
     state->autoPrescan = autoPrescan;
+    state->k3Used = k3Mode;
     state->bedrock = bedrock;
     state->gpuScanEnabled = (state->options.gpuScan != nullptr);
     // 预筛/覆盖计算用到的 GPU 会话用 shared_ptr 持有，避免后台线程读到已被释放的成员。
@@ -253,10 +258,11 @@ void MainWindow::runRingSearch()
     m_ringSearching = true;
     m_ringFinishDiscard = false;
     {
-        const QString scanText = autoPrescan ? slime::ui::t("ui.7ae0cd5f9a0b")
-                                             : ((state->options.scanStride == 1)
-                                                    ? slime::ui::t("ui.277ba15949a6")
-                                                    : slime::ui::t("ui.6c29e3499ee0"));
+        const QString scanText = k3Mode ? slime::ui::t("ui.ring_scan_k3")
+                                        : (autoPrescan ? slime::ui::t("ui.7ae0cd5f9a0b")
+                                                       : ((state->options.scanStride == 1)
+                                                              ? slime::ui::t("ui.277ba15949a6")
+                                                              : slime::ui::t("ui.6c29e3499ee0")));
         setStatus(slime::ui::tr(slime::ui::t("ui.09d9fb4b92b6"))
                       .arg(spanX).arg(spanZ).arg(scanText));
     }
@@ -278,7 +284,7 @@ void MainWindow::runRingSearch()
     // v3.15.x（flow-ring-cancel2）：取消标志也按值捕获 shared_ptr —— worker 不再通过 this
     //   访问 MainWindow 成员，窗口析构时即使线程被安全丢弃也不会 UAF。
     const auto ringCancel = m_ringCancel;
-    const auto ringRunner = [state, ringCancel, autoPrescan, minX, maxX, minZ, maxZ, v, seed, pred,
+    const auto ringRunner = [state, ringCancel, autoPrescan, k3Mode, minX, maxX, minZ, maxZ, v, seed, pred,
                              bedrock](const SearchOptions&,
                                       const std::atomic<bool>& jobCancel,
                                       const ProgressFn&) -> SearchOutcome {
@@ -323,6 +329,17 @@ void MainWindow::runRingSearch()
                         o.seedCandidates.reserve(seeds.size());
                         for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
                         prescanUsed = true;
+                        if (k3Mode) {
+                            AfkPlanOptions base = o;
+                            const auto baseCands = slime::AfkPlanner::plan(base, pred, ringCancel.get());
+                            const int lower = baseCands.empty()
+                                                  ? 0
+                                                  : static_cast<int>(baseCands.front().coveredBlocks);
+                            const auto filtered = slime::AfkPlanner::k3UpperBoundSeeds(
+                                o, o.seedCandidates, pred, lower);
+                            state->k3Candidates = static_cast<int>(filtered.size());
+                            if (!filtered.empty()) o.seedCandidates = filtered;
+                        }
                         std::fprintf(stderr, "[环形] 正方形预筛：%zu 个分散种子（阈值 %.2f）\n",
                                      seeds.size(), pp.minDensity);
                     } else {
@@ -483,6 +500,9 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
     const slime::AfkPlanOptions& o = result->options;
     if (result->cancelled) {
         setStatus(slime::ui::tr(slime::ui::t("ui.397b1272aec8")));
+    } else if (result->k3Used && result->prescanUsed) {
+        addFeedback(2, slime::ui::tr(slime::ui::t("ui.ring_k3_used"))
+                           .arg(result->k3Candidates));
     } else if (result->autoPrescan && result->prescanUsed) {
         addFeedback(2, slime::ui::tr(slime::ui::t("ui.29d84f827fc6")));
     } else if (result->autoPrescan && result->prescanFallback) {

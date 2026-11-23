@@ -116,6 +116,14 @@ public:
                                                       int64_t seed, bool useBiome,
                                                       const std::atomic<bool>* cancel = nullptr);
 
+    // v3.15.x（k=3 环带上界）：对种子做 36 个 offset 的环带覆盖上界筛选。
+    //   U(v)=max_{o∈{0,3,6,9,12,15}²} C(v,o)+err；
+    //   返回 U(v)≥lowerBound 的种子。err 由环带几何的 Lipschitz 界给出，
+    //   默认调用按 opt.radius/innerRadius 计算。
+    static std::vector<std::pair<int, int>> k3UpperBoundSeeds(
+        const AfkPlanOptions& opt, const std::vector<std::pair<int, int>>& seeds,
+        const SlimeChunkPredicate& isSlime, int lowerBound, int errOverride = -1);
+
     // 某点的圆内覆盖（格 / 区块数），供地图预览与自检复用
     static AfkCandidate evaluate(int blockX, int blockZ, int radius, const SlimeChunkPredicate& isSlime);
 

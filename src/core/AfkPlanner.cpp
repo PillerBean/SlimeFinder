@@ -1557,6 +1557,64 @@ AfkPlanner::StrictStatsInfo AfkPlanner::measureStrictForCandidates(std::vector<A
     return info;
 }
 
+std::vector<std::pair<int, int>> AfkPlanner::k3UpperBoundSeeds(
+    const AfkPlanOptions& opt, const std::vector<std::pair<int, int>>& seeds,
+    const SlimeChunkPredicate& isSlime, int lowerBound, int errOverride)
+{
+    std::vector<std::pair<int, int>> out;
+    if (seeds.empty() || !isSlime || opt.radius <= 0) return out;
+
+    const int R = opt.radius;
+    const int inner = (std::max)(0, opt.innerRadius);
+    const int err = errOverride >= 0
+                        ? errOverride
+                        : static_cast<int>(std::ceil(4.0 * (R + inner) * std::sqrt(2.0)));
+    const int d = (R + 15) / 16;
+    const int side = 2 * d + 1;
+    const int offsets[6] = { 0, 3, 6, 9, 12, 15 };
+
+    std::vector<int> w(static_cast<size_t>(side) * side * 256, 0);
+    for (int oy = 0; oy < 16; ++oy) {
+        for (int ox = 0; ox < 16; ++ox) {
+            for (int dy = -d; dy <= d; ++dy) {
+                for (int dx = -d; dx <= d; ++dx) {
+                    int n = 0;
+                    for (int by = 0; by < 16; ++by) {
+                        for (int bx = 0; bx < 16; ++bx) {
+                            const int ry = dy * 16 + by - oy;
+                            const int rx = dx * 16 + bx - ox;
+                            const int d2 = rx * rx + ry * ry;
+                            if (d2 >= inner * inner && d2 <= R * R) ++n;
+                        }
+                    }
+                    w[(static_cast<size_t>(dy + d) * side + (dx + d)) * 256 +
+                      static_cast<size_t>(oy * 16 + ox)] = n;
+                }
+            }
+        }
+    }
+
+    out.reserve(seeds.size());
+    for (const auto& s : seeds) {
+        int best = 0;
+        for (int oy : offsets) {
+            for (int ox : offsets) {
+                int c = 0;
+                for (int dy = -d; dy <= d; ++dy) {
+                    for (int dx = -d; dx <= d; ++dx) {
+                        if (!isSlime(s.first + dx, s.second + dy)) continue;
+                        c += w[(static_cast<size_t>(dy + d) * side + (dx + d)) * 256 +
+                               static_cast<size_t>(oy * 16 + ox)];
+                    }
+                }
+                best = (std::max)(best, c);
+            }
+        }
+        if (best + err >= lowerBound) out.push_back(s);
+    }
+    return out;
+}
+
 std::vector<AfkCandidate> AfkPlanner::planBruteForce(const AfkPlanOptions& opt, const SlimeChunkPredicate& isSlime)
 {
     std::vector<AfkCandidate> all;
