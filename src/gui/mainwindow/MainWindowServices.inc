@@ -683,8 +683,9 @@ bool MainWindow::confirmWholeMapSearch(bool applyRange, int halfSpan)
     const double wanYi = 1e12;
     double lo = 0.0, hi = 0.0;
     if (estOk) {
-        lo = est.totalSec * 0.8;
-        hi = est.totalSec * 1.35;
+        // 样本外推 + 开关组合差异很大；未校准时给更宽的范围，校准后收紧。
+        lo = est.totalSec * (est.calibrated ? 0.85 : 0.50);
+        hi = est.totalSec * (est.calibrated ? 1.20 : 2.00);
     }
     const QString blocks = estOk
                                ? slime::ui::t("ui.53365ea16089")
@@ -712,6 +713,8 @@ bool MainWindow::confirmWholeMapSearch(bool applyRange, int halfSpan)
                                   ? formatDurationRange(est.matchWallSec * 0.8, est.matchWallSec * 1.35)
                                   : slime::ui::t("ui.c5eee9b92171"));
         }
+        extra += est.calibrated ? slime::ui::t("ui.time_est_calibrated")
+                                : slime::ui::t("ui.time_est_uncalibrated");
     } else {
         extra = slime::ui::t("ui.caa562b17b3e");
     }

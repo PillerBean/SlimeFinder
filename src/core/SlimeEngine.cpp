@@ -28,6 +28,8 @@
 #include <tuple>
 #include <unordered_set>
 #include <unordered_map>
+#include <sstream>
+#include <iomanip>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -5026,6 +5028,124 @@ HitEstimate SlimeEngine::estimateHits(const SearchOptions& opt, int maxSamples) 
 }
 
 // ============================ v3.1.1 耗时估算 ============================
+namespace {
+
+struct TimingCalibration {
+    double scanRate = 0.0;    // chunks/s
+    double matchRate = 0.0;   // windows/s
+    double overheadSec = 0.0;
+    double areaSecPerChunk = 0.0; // total wall time / requested area, for stop/smart modes
+    int samples = 0;
+};
+
+std::mutex g_timingMutex;
+std::unordered_map<std::string, TimingCalibration> g_timingCalibration;
+
+std::string timingKey(const SearchOptions& o, int threads)
+{
+    int green = 0, white = 0;
+    if (o.mode == Mode::Strict) {
+        for (int r = 0; r < o.pattern.rows(); ++r)
+            for (int c = 0; c < o.pattern.cols(); ++c) {
+                const CellState st = o.pattern.at(r, c);
+                if (st == CellState::Green) ++green;
+                else if (st == CellState::White) ++white;
+            }
+    }
+    std::ostringstream s;
+    s << static_cast<int>(o.version) << '|' << static_cast<int>(o.mode) << '|'
+      << static_cast<int>(o.algorithm) << '|' << o.gridSize << '|'
+      << static_cast<int>(std::lround(o.minDensity * 1000.0)) << '|'
+      << o.pattern.rows() << 'x' << o.pattern.cols() << ':' << green << ',' << white << '|'
+      << (o.directionLocked ? 1 : 0) << (o.stopAtTarget ? 1 : 0) << (o.smartRange ? 1 : 0)
+      << (o.ignoreThreshold ? 1 : 0) << (o.useCache ? 1 : 0)
+      << (o.gpuScan ? 1 : 0) << (o.buildMode ? 1 : 0) << '|'
+      << o.layerBlock << ':' << static_cast<int>(std::lround(o.layerRatio * 100.0)) << '|'
+      << o.sampleStep << ':' << (o.sampleExact ? 1 : 0) << '|' << threads
+      << '|' << o.targetCount;
+    return s.str();
+}
+
+void rememberTiming(const std::string& key, const TimingCalibration& value)
+{
+    std::lock_guard<std::mutex> lk(g_timingMutex);
+    auto& slot = g_timingCalibration[key];
+    if (slot.samples == 0) {
+        slot = value;
+    } else {
+        const double a = 0.35;
+        slot.scanRate = slot.scanRate * (1.0 - a) + value.scanRate * a;
+        slot.matchRate = slot.matchRate * (1.0 - a) + value.matchRate * a;
+        slot.overheadSec = slot.overheadSec * (1.0 - a) + value.overheadSec * a;
+        slot.areaSecPerChunk = slot.areaSecPerChunk * (1.0 - a) + value.areaSecPerChunk * a;
+        slot.samples += value.samples;
+    }
+}
+
+bool lookupTiming(const std::string& key, TimingCalibration& out)
+{
+    std::lock_guard<std::mutex> lk(g_timingMutex);
+    const auto it = g_timingCalibration.find(key);
+    if (it == g_timingCalibration.end() || it->second.samples <= 0) return false;
+    out = it->second;
+    return true;
+}
+
+} // namespace
+
+void SlimeEngine::recordActualTiming(const SearchOptions& options, const SearchStats& stats) noexcept
+{
+    // 构建模式不是普通搜索；GPU 路径可能回退 CPU，实际用的是哪条路径无法从 stats 判断。
+    if (options.buildMode || options.gpuScan != nullptr) return;
+    if (stats.scanMs <= 0.0 || stats.scannedChunks <= 0) return;
+
+    TimingCalibration v;
+    v.scanRate = static_cast<double>(stats.scannedChunks) / (stats.scanMs / 1000.0);
+    v.matchRate = stats.matchMs > 0.0 && stats.windowsEvaluated > 0
+                      ? static_cast<double>(stats.windowsEvaluated) / (stats.matchMs / 1000.0)
+                      : 0.0;
+    v.overheadSec = (std::max)(0.0, (stats.totalMs - stats.scanMs - stats.matchMs) / 1000.0);
+    const int64_t W = static_cast<int64_t>(options.maxX) - options.minX + 1;
+    const int64_t H = static_cast<int64_t>(options.maxZ) - options.minZ + 1;
+    if (W > 0 && H > 0 && stats.totalMs > 0.0)
+        v.areaSecPerChunk = (stats.totalMs / 1000.0) / static_cast<double>(W * H);
+    v.samples = 1;
+    const int threads = options.threads > 0 ? options.threads : 0;
+    rememberTiming(timingKey(options, threads), v);
+}
+
+std::string SlimeEngine::exportTimingCalibration()
+{
+    std::lock_guard<std::mutex> lk(g_timingMutex);
+    std::ostringstream out;
+    out << std::setprecision(12);
+    for (const auto& [key, v] : g_timingCalibration) {
+        out << key << '\t' << v.scanRate << '\t' << v.matchRate << '\t'
+            << v.overheadSec << '\t' << v.areaSecPerChunk << '\t' << v.samples << '\n';
+    }
+    return out.str();
+}
+
+void SlimeEngine::importTimingCalibration(const std::string& text)
+{
+    std::lock_guard<std::mutex> lk(g_timingMutex);
+    std::istringstream in(text);
+    std::string line;
+    int loaded = 0;
+    while (std::getline(in, line) && loaded < 256) {
+        std::istringstream row(line);
+        std::string key;
+        TimingCalibration v;
+        if (!std::getline(row, key, '\t')) continue;
+        if (!(row >> v.scanRate)) continue;
+        row >> v.matchRate >> v.overheadSec >> v.areaSecPerChunk >> v.samples;
+        if (!key.empty() && v.samples > 0) {
+            g_timingCalibration[key] = v;
+            ++loaded;
+        }
+    }
+}
+
 bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEstimate& est) noexcept
 {
     est = SearchEstimate();
@@ -5043,34 +5163,63 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
     if (sw < needW || sh < needH) return false; // 样本不足以评估匹配速率
 
     SearchOptions sample = opt;
-    sample.minX = opt.minX;
-    sample.minZ = opt.minZ;
-    sample.maxX = opt.minX + static_cast<int>(sw - 1);
-    sample.maxZ = opt.minZ + static_cast<int>(sh - 1);
     sample.smartRange = false;
     sample.stopAtTarget = false;
     sample.threads = 1; // 匹配本身单线程；分块内扫描亦单线程 → 用单线程速率推算
 
-    SearchOutcome so;
-    std::atomic<bool> localCancel{ false };
+    // v3.15.x：三个空间样本（左上/中心/右下），避免只测 minX/minZ 角落。
+    //   不同群系/cache/密度下速度可能差数倍，单点外推是旧估算严重偏差的来源之一。
+    const int64_t midX = opt.minX + (W - sw) / 2;
+    const int64_t midZ = opt.minZ + (H - sh) / 2;
+    const int64_t endX = opt.maxX - sw + 1;
+    const int64_t endZ = opt.maxZ - sh + 1;
+    const std::pair<int64_t, int64_t> origins[3] = {
+        { opt.minX, opt.minZ }, { midX, midZ }, { endX, endZ }
+    };
+    std::vector<double> scanRates;
+    std::vector<double> matchRates;
+    int usedSamples = 0;
     SlimeEngine engine;
-    engine.runImpl(sample, localCancel, nullptr, so, false);
-    if (!so.ok) return false;
-    // v3.10.10.1：最小密度=0 走「最近 N 快速路径」时样本耗时可能接近 0（未扫描整图）——
-    //   这不代表估算失败；用 0.01 ms 下限避免除零，并让「预计耗时」如实体现在极快。
-    const double sampleScanMs = (std::max)(0.01, so.stats.scanMs);
+    for (int si = 0; si < 3; ++si) {
+        bool duplicate = false;
+        for (int sj = 0; sj < si; ++sj)
+            if (origins[si] == origins[sj]) { duplicate = true; break; }
+        if (duplicate) continue;
+        sample.minX = static_cast<int>(origins[si].first);
+        sample.minZ = static_cast<int>(origins[si].second);
+        sample.maxX = sample.minX + static_cast<int>(sw - 1);
+        sample.maxZ = sample.minZ + static_cast<int>(sh - 1);
+        SearchOutcome so;
+        std::atomic<bool> localCancel{ false };
+        engine.runImpl(sample, localCancel, nullptr, so, false);
+        if (!so.ok) continue;
+        // v3.10.10.1：最小密度=0 走「最近 N 快速路径」时样本耗时可能接近 0（未扫描整图）——
+        //   这不代表估算失败；用 0.01 ms 下限避免除零。
+        const double sampleScanMs = (std::max)(0.01, so.stats.scanMs);
+        const double sampleMatchMs = std::max(0.0, so.stats.totalMs - so.stats.scanMs);
+        scanRates.push_back(static_cast<double>(sw * sh) / (sampleScanMs / 1000.0));
+        if (sampleMatchMs > 0.0 && so.stats.windowsEvaluated > 0) {
+            matchRates.push_back(static_cast<double>(so.stats.windowsEvaluated) /
+                                 (sampleMatchMs / 1000.0));
+        }
+        ++usedSamples;
+    }
+    if (scanRates.empty()) return false;
 
-    const double scanMs = sampleScanMs;
-    const double matchMs = std::max(0.0, so.stats.totalMs - so.stats.scanMs);
-    const int64_t sampleChunks = sw * sh;
-    const int64_t sampleWindows = so.stats.windowsEvaluated;
+    auto median = [](std::vector<double>& values) {
+        if (values.empty()) return 0.0;
+        const size_t mid = values.size() / 2;
+        std::nth_element(values.begin(), values.begin() + static_cast<std::ptrdiff_t>(mid), values.end());
+        return values[mid];
+    };
+    const double scanRate = median(scanRates);
+    const double matchRate = matchRates.empty() ? 0.0 : median(matchRates);
 
     est.areaChunks = W * H;
     est.windows = windowsTotalFor(opt, W, H);
-    est.scanRate = static_cast<double>(sampleChunks) / (scanMs / 1000.0);
-    est.matchRate = matchMs > 0 && sampleWindows > 0
-                        ? static_cast<double>(sampleWindows) / (matchMs / 1000.0)
-                        : 0.0;
+    est.scanRate = scanRate;
+    est.matchRate = matchRate;
+    est.sampleCount = usedSamples;
 
     const int64_t collectEst = (opt.version == Version::Bedrock) && opt.useCache;
     const int64_t planCap = collectEst ? std::min<int64_t>(chunkWordsCap(), 2'500'000LL)
@@ -5091,6 +5240,20 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
         est.matchWallSec = 0.0; // 无窗口可测（例如图案无有效格）：匹配阶段可忽略
     }
     est.totalSec = est.scanWallSec + est.matchWallSec;
+    TimingCalibration calib;
+    if (lookupTiming(timingKey(opt, opt.threads > 0 ? opt.threads : 0), calib)) {
+        if (calib.areaSecPerChunk > 0.0) {
+            // 实测总耗时 / 请求面积；同配置重复搜索时比用 evalChunks（含分块重叠）更稳。
+            est.totalSec = static_cast<double>(est.areaChunks) * calib.areaSecPerChunk;
+            est.matchWallSec = calib.matchRate > 0.0 ? static_cast<double>(est.windows) / calib.matchRate : 0.0;
+            est.scanWallSec = (std::max)(0.0, est.totalSec - est.matchWallSec);
+        } else {
+            est.scanWallSec = calib.scanRate > 0.0 ? static_cast<double>(est.evalChunks) / calib.scanRate : est.scanWallSec;
+            est.matchWallSec = calib.matchRate > 0.0 ? static_cast<double>(est.windows) / calib.matchRate : est.matchWallSec;
+            est.totalSec = est.scanWallSec + est.matchWallSec + calib.overheadSec;
+        }
+        est.calibrated = true;
+    }
     est.ok = est.scanRate > 0.0 && est.totalSec > 0.0;
     return est.ok;
 }

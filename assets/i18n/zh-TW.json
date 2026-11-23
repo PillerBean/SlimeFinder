@@ -1388,5 +1388,7 @@
   "ui.preset.hint_ring_max": "允許同一覆蓋類型重複；優先找覆蓋最大的候選。",
   "ui.preset.hint_ring_distinct": "每種覆蓋類型只保留最優一個；類型不足時傳回不足。",
   "ui.ring_scan_k3": "環帶上界複核（k=3）",
-  "ui.ring_k3_used": "方形預篩後，環帶上界複核保留 %1 個候選（k=3，不保證全域最優）"
+  "ui.ring_k3_used": "方形預篩後，環帶上界複核保留 %1 個候選（k=3，不保證全域最優）",
+  "ui.time_est_calibrated": "\n  （已使用本機同設定上次實測校準）",
+  "ui.time_est_uncalibrated": "\n  （樣本外推：開關組合差異可能較大）"
 }

@@ -169,6 +169,7 @@ int MainWindow::runSelfTest()
         if (estOk) {
             check(est.areaChunks > 1e12 && est.evalChunks >= est.areaChunks, "整图估算规模正确");
             check(est.totalSec > 0 && est.scanRate > 1e6, "整图估算速率正确");
+            check(est.sampleCount >= 1, "整图估算使用至少一个空间样本");
         }
         m_w->strictRadio->setChecked(true);
         onModeChanged();

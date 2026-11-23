@@ -3,6 +3,15 @@
 void MainWindow::loadAppSettings()
 {
     const auto path = appDirPath() / kConfigFileName;
+    // 恢复跨进程耗时校准表（同配置实测速率）。
+    {
+        std::ifstream timing(path.parent_path() / "timing_calibration.tsv");
+        if (timing) {
+            const std::string text((std::istreambuf_iterator<char>(timing)),
+                                   std::istreambuf_iterator<char>());
+            slime::SlimeEngine::importTimingCalibration(text);
+        }
+    }
     AppSettings s = SettingsDialog::factoryDefaults();
     s.wheelAdjust = cfgBool(path, "settings.wheelAdjust", s.wheelAdjust);
     s.rememberWindow = cfgBool(path, "settings.rememberWindow", s.rememberWindow);

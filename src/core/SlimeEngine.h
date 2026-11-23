@@ -405,6 +405,8 @@ struct SearchEstimate {
     double totalSec = 0.0;      // 预计总耗时
     int chunkConcurrency = 1;   // 分块并行数
     int chunkRows = 0;          // 每块数据行数（含重叠）
+    bool calibrated = false;    // 是否使用了本机同配置实测校准
+    int sampleCount = 0;        // 估算使用的样本区域数
 };
 
 // v3.14.4: approximate hit count before a run, for the high-hit warning.
@@ -500,6 +502,11 @@ public:
 
     // v3.1.1：估算一次搜索的耗时（含整图分块模式），不修改任何状态
     static bool estimateSearch(const SearchOptions& options, int threads, SearchEstimate& out) noexcept;
+    // v3.15.x：记录一次已完成搜索的实测速率，供同配置后续估算校准。
+    static void recordActualTiming(const SearchOptions& options, const SearchStats& stats) noexcept;
+    // v3.15.x：跨进程保存/恢复同配置校准表（TSV；由 GUI 写入 app 数据目录）。
+    static std::string exportTimingCalibration();
+    static void importTimingCalibration(const std::string& text);
     // v3.14.4: deterministic stratified sampling estimate of the total hit count.
     static HitEstimate estimateHits(const SearchOptions& options, int maxSamples = 256) noexcept;
 

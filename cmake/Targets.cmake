@@ -484,6 +484,15 @@ if(MSVC)
     target_compile_options(slime_ring_counterexample PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_timing_estimate_tests
+    tests/integration/timing_estimate_test.cpp
+)
+target_include_directories(slime_timing_estimate_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_timing_estimate_tests PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_timing_estimate_tests PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )

@@ -1388,5 +1388,7 @@
   "ui.preset.hint_ring_max": "Duplicate coverage types are allowed; prefer the largest coverage.",
   "ui.preset.hint_ring_distinct": "Keep the best candidate per coverage type; return fewer if types are insufficient.",
   "ui.ring_scan_k3": "Annulus upper-bound check (k=3)",
-  "ui.ring_k3_used": "Annulus upper-bound check kept %1 candidates after square prescan (k=3; not a global-optimality guarantee)."
+  "ui.ring_k3_used": "Annulus upper-bound check kept %1 candidates after square prescan (k=3; not a global-optimality guarantee).",
+  "ui.time_est_calibrated": "\n  (calibrated by the last local run with the same switches)",
+  "ui.time_est_uncalibrated": "\n  (sample extrapolation; switch combinations can differ significantly)"
 }

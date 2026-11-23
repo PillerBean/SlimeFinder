@@ -1208,6 +1208,13 @@ void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info,
         return;
     }
 
+    // 成功完成：记录同配置实测速率，供下一次耗时估算校准。
+    slime::SlimeEngine::recordActualTiming(info.options, out.stats);
+    {
+        std::ofstream timing(appDirPath() / "timing_calibration.tsv", std::ios::trunc);
+        if (timing) timing << slime::SlimeEngine::exportTimingCalibration();
+    }
+
     // 成功后缓存处理：
     //  - 经典路径：整区合并（含容量上限）；分块路径：引擎已按块增量合并（cacheHandledIncrementally）
     //  v3.3.3（任务书 2.2）：无论走哪条分支，只要缓存发生了变化就**立即刷新状态标签**，
