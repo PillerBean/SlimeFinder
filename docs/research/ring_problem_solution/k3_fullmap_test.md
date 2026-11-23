@@ -84,3 +84,60 @@ benchmarks/ring/k3_seed12345.log
 Implement the 36-offset annulus kernel as the **first-stage full-map scan**
 (ideally GPU), then use this B&B layer on its output. Until that exists, the
 speed claim for k=3 is unverified.
+
+## Full-map speed: measured and extrapolated
+
+### Measured (candidate-level k=3 B&B, 4000 square seeds)
+
+```text
+seed new:  217.67 s total   upper bound 0.211 s
+seed 0:    219.75 s total   upper bound 0.211 s
+seed 12345:219.66 s total   upper bound 0.210 s
+```
+
+The square prescan is ~216–218 s; the k=3 upper bound and B&B are <0.3 s.
+So this layer does **not** reduce wall-clock time. It only reduces exact
+refinement from 4000 candidates to 4–28.
+
+### Extrapolation: larger candidate sets
+
+Measured upper-bound cost:
+
+```text
+4000 seeds -> ~0.21 s
+=> ~53 microseconds per seed
+```
+
+If the sound version really needs:
+
+```text
+4,800 candidates  -> ~0.25 s       total ~217–220 s
+5.4 million candidates -> ~285 s   total ~500 s
+```
+
+The 4,800 figure keeps the total near the current square baseline.
+The 5.4 million figure (sound square-first-layer band from SOLVE_NOTES)
+does not fit a 210 s target.
+
+### Literal 36 full-map convolutions
+
+If “36 convolutions” means 36 complete full-map passes, the measured square
+pass (~217 s) gives:
+
+```text
+36 × 217 s ≈ 7,800 s ≈ 2.2 hours
+```
+
+That is outside the 20-minute experiment budget and far outside 210 s.
+
+### Current verdict
+
+```text
+Measured candidate-level total: 217.7–219.8 s
+Target 210 s: not met
+Full sound 36-convolution implementation: not built
+```
+
+A full-map k=3 implementation must avoid 36 independent full-map passes.
+It needs one multi-offset GPU kernel or a cheaper decomposition; otherwise the
+speed claim is not supportable.
