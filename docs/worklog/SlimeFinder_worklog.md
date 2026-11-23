@@ -658,3 +658,31 @@ SHA256 B1552C34D62080E59CB609E3A837E970C77833FDB74C9F2D386BB2B18C2C809C
 SlimeFinder-3.13.11-win64.zip  25,022,762 B
 SHA256 B81E66E147EB7AAC86DD308B48B29B9169E4344055A48C68EF3443773BBC5474
 ```
+
+## 2026-11-23 23:35 SlimeFinder 3.13.12 测试版（P0）
+
+耗时预测 P0 收口：
+
+```text
+三点空间采样
+同配置实测校准（GPU/CPU、cache、stop/smart）
+跨进程 timing_calibration.tsv
+预测/实际误差遥测 timing_predictions.tsv
+搜索中 ETA 近期速度平滑
+提前停止首轮比例修正
+```
+
+实测：
+
+```text
+16k×16k 精确密度：
+首次 0.103s vs 实际 0.112s
+校准后 0.111s vs 0.112s
+
+target=10 提前停止：
+首次 0.102s vs 实际 0.081s
+校准后 0.080s vs 0.081s
+```
+
+打包：SlimeFinder-3.13.12-Setup.exe / win64.zip。  
+GitHub 推送时 API 返回 502，发布等待网络恢复。
