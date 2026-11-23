@@ -634,3 +634,27 @@ unit 全部通过
 GUI 自检 GPU off 通过
 UI text 1390 keys × 3 语言
 ```
+
+## 2026-11-23 22:10 SlimeFinder 3.13.11 测试版
+
+发布：
+
+```text
+Tag: v3.13.11-test
+URL: https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.11-test
+类型：Pre-release
+```
+
+新增：环形扫描第 3 档“环带上界复核（k=3）”，位于方形预筛与精确之间。
+
+实测：三个种子 217.67–219.75s；候选 4–28 / 4000；质量与方形基线一致。
+
+资产：
+
+```text
+SlimeFinder-3.13.11-Setup.exe  17,917,921 B
+SHA256 B1552C34D62080E59CB609E3A837E970C77833FDB74C9F2D386BB2B18C2C809C
+
+SlimeFinder-3.13.11-win64.zip  25,022,762 B
+SHA256 B81E66E147EB7AAC86DD308B48B29B9169E4344055A48C68EF3443773BBC5474
+```
