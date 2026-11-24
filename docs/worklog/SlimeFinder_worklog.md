@@ -686,3 +686,25 @@ target=10 提前停止：
 
 打包：SlimeFinder-3.13.12-Setup.exe / win64.zip。  
 GitHub 推送时 API 返回 502，发布等待网络恢复。
+
+## 2026-11-24 12:40 SlimeFinder 3.13.13 测试版
+
+全面速度矩阵发现并修复：
+
+```text
+GPU 提前停止路径 totalFound 口径
+target=10 时曾显示 204808，现为 10
+线程 4 的 ETA 首轮修正
+```
+
+包含 3.13.12 的耗时预测 P0。
+
+资产：
+
+```text
+Setup 17,929,698 B
+SHA256 A3652CD613D8417BBCBFDC81B3339DBCFED8671194B191496CE0B21F906A3966
+
+ZIP 25,031,386 B
+SHA256 27EFF77F9DE8B3B4AD31AC6BB68D4C566C2B8695A521D74D75188B0C4D5B2F07
+```
