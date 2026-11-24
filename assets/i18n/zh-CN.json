@@ -1414,5 +1414,6 @@
   "ui.cmd_hint_setting_current": "当前 %1 = %2\n用法：setting %1 <值>；可用：%3",
   "ui.cmd_hint_command_prefix": "提示：%1 不是完整命令；候选：%2",
   "ui.cmd_hint_unknown": "提示：未知命令「%1」。输入 help 查看命令表。",
-  "ui.cmd_hint_set_typo": "提示：没有 set 命令。\n你可能想输入：setting <key> [value]\n例：setting theme dark / setting search_mode density"
+  "ui.cmd_hint_set_typo": "提示：没有 set 命令。\n你可能想输入：setting <key> [value]\n例：setting theme dark / setting search_mode density",
+  "ui.cmd_deprecated": "\n（%1 已迁移到 %2；旧命令将在后续版本移除）"
 }

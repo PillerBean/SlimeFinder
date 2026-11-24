@@ -4572,6 +4572,12 @@ int MainWindow::runSelfTest()
                              QStringList{ QStringLiteral("theme"), QStringLiteral("wat") })
                       .contains(QStringLiteral("light|dark|system")),
                   "setting 非法值返回可用范围");
+            const auto keyComp = completeCommand(QStringLiteral("setting se"), 10);
+            check(keyComp.items.contains(QStringLiteral("search_mode")),
+                  "setting <prefix> Tab 补全到下划线设置键");
+            const auto valueComp = completeCommand(QStringLiteral("setting theme d"), 15);
+            check(valueComp.items.contains(QStringLiteral("dark")) && !valueComp.appendSpace,
+                  "setting <key> <prefix> Tab 补全枚举值且不追加空格");
         }
 
         // ② 状态类命令确实改状态（可观测的第二种：改状态）

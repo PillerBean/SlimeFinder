@@ -1,4 +1,4 @@
-﻿// v3.12.0：输入过滤、日志/反馈/命令等交互逻辑。
+// v3.12.0：输入过滤、日志/反馈/命令等交互逻辑。
 
 void MainWindow::installWheelFilter()
 {
@@ -603,6 +603,50 @@ QString MainWindow::runSettingCommand(const QStringList& args)
     return slime::ui::t("ui.cmd_setting_changed").arg(key, now);
 }
 
+CommandHost::Completion MainWindow::completeCommand(const QString& line, int cursor) const
+{
+    Completion c;
+    if (!m_w) return c;
+    const int n = line.size();
+    cursor = std::clamp(cursor, 0, n);
+    int start = cursor;
+    while (start > 0 && !line.at(start - 1).isSpace()) --start;
+    int end = cursor;
+    while (end < n && !line.at(end).isSpace()) ++end;
+    c.replaceStart = start;
+    c.replaceLength = end - start;
+    c.appendSpace = true;
+
+    const QString prefix = line.mid(start, cursor - start);
+    const QString before = line.left(start).trimmed();
+    const QStringList beforeTokens = before.isEmpty()
+                                         ? QStringList()
+                                         : before.simplified().split(QLatin1Char(' '));
+    if (beforeTokens.isEmpty()) {
+        for (const QString& name : commandNames())
+            if (name.startsWith(prefix, Qt::CaseInsensitive)) c.items << name;
+        return c;
+    }
+    if (beforeTokens.value(0).toLower() != QLatin1String("setting")) return c;
+
+    if (beforeTokens.size() == 1) {
+        for (const QString& key : settingKeys())
+            if (key.startsWith(prefix, Qt::CaseInsensitive)) c.items << key;
+        return c;
+    }
+    if (beforeTokens.size() == 2) {
+        const QString key = beforeTokens[1].toLower();
+        if (!settingKeys().contains(key)) return c;
+        const QString allowed = settingAllowed(key);
+        if (allowed.contains(QLatin1Char('|'))) {
+            for (const QString& v : allowed.split(QLatin1Char('|')))
+                if (v.startsWith(prefix, Qt::CaseInsensitive)) c.items << v;
+            c.appendSpace = false;
+        }
+    }
+    return c;
+}
+
 QString MainWindow::commandFormatHint(const QString& line) const
 {
     const QString trimmed = line.trimmed();
@@ -663,8 +707,40 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         }
     }
 
-    if (c == QLatin1String("help")) {
-        QString out = slime::ui::t("ui.b43c9cc77dd4").arg(commandNames().size());
+    // v3.15.x：旧顶层设置命令迁移到 setting；先保留兼容一个版本。
+    {
+        static const QHash<QString, QString> kLegacySettings = {
+            { QStringLiteral("theme"), QStringLiteral("theme") },
+            { QStringLiteral("log"), QStringLiteral("log_mode") },
+            { QStringLiteral("stop"), QStringLiteral("result_stop") },
+            { QStringLiteral("smart"), QStringLiteral("result_smart") },
+            { QStringLiteral("lock"), QStringLiteral("search_lock_direction") },
+            { QStringLiteral("grid"), QStringLiteral("search_grid") },
+            { QStringLiteral("density"), QStringLiteral("search_density") },
+            { QStringLiteral("threads"), QStringLiteral("threads") },
+            { QStringLiteral("target"), QStringLiteral("result_target") }
+        };
+        const auto it = kLegacySettings.constFind(c);
+        if (it != kLegacySettings.constEnd()) {
+            QStringList mapped;
+            mapped << it.value() << args;
+            const QString out = runSettingCommand(mapped);
+            return out + slime::ui::t("ui.cmd_deprecated").arg(c, QStringLiteral("setting ") + it.value());
+        }
+        if (c == QLatin1String("gpu") && !args.isEmpty()) {
+            const QString out = runSettingCommand(QStringList{ QStringLiteral("gpu_enabled"), args[0] });
+            return out + slime::ui::t("ui.cmd_deprecated").arg(c, QStringLiteral("setting gpu_enabled"));
+        }
+        if (c == QLatin1String("mode") && !args.isEmpty()) {
+            const QString v = args[0].toLower();
+            const QString key = (v == QLatin1String("strict") || v == QLatin1String("density"))
+                                    ? QStringLiteral("search_mode")
+                                    : QStringLiteral("search_algorithm");
+            const QString out = runSettingCommand(QStringList{ key, v });
+            return out + slime::ui::t("ui.cmd_deprecated").arg(c, QStringLiteral("setting ") + key);
+        }
+    }
+    if (c == QLatin1String("help")) {        QString out = slime::ui::t("ui.b43c9cc77dd4").arg(commandNames().size());
         for (const QString& n : commandNames()) {
             out += QStringLiteral("  %1  -  %2\n").arg(n, -8).arg(commandHelp(n));
         }

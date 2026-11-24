@@ -105,6 +105,7 @@ public:
     QStringList commandNames() const override;
     QString commandHelp(const QString& cmd) const override;
     QString commandFormatHint(const QString& line) const override;
+    CommandHost::Completion completeCommand(const QString& line, int cursor) const override;
 
 protected:
     void closeEvent(QCloseEvent* ev) override;

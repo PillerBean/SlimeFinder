@@ -23,6 +23,12 @@ class QPlainTextEdit;
 // 命令宿主：由主窗口实现（命令解析/执行与搜索线程独立，立即生效）
 class CommandHost {
 public:
+    struct Completion {
+        QStringList items;       // 替换当前词的候选项
+        int replaceStart = 0;    // 当前词在整行中的起点
+        int replaceLength = 0;   // 当前词长度
+        bool appendSpace = true; // 选中后是否补一个空格（值补全为 false）
+    };
     virtual ~CommandHost() = default;
     // 执行一条命令（cmd 已转小写、args 为按空白切分后的参数）。
     // 返回要显示在终端里的文本（可以多行、以 '\n' 分隔）；不做任何界面操作。
@@ -33,6 +39,13 @@ public:
     virtual QString commandHelp(const QString& cmd) const = 0;
     // v3.15.x：输入行的只读格式提示（不修改文本、不抢焦点；返回空串则不显示）
     virtual QString commandFormatHint(const QString& line) const { return QString(); }
+    // v3.15.x：多级 Tab 补全；返回替换当前词的候选
+    virtual Completion completeCommand(const QString& line, int cursor) const
+    {
+        Q_UNUSED(line);
+        Q_UNUSED(cursor);
+        return Completion{};
+    }
 };
 
 class CommandTerminal : public QWidget {

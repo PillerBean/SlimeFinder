@@ -453,3 +453,11 @@ P3：删除旧别名、清理文档
 - `set`/`sett` 显示 setting 用法示例
 - 旧顶层命令暂保留，后续阶段再隐藏/删除
 - 仍待：CommandRegistry 独立文件、多级 Tab 语义候选、旧命令弃用提示、result/cache/page/map 新分支
+
+## P0 进度补充（2026-11-24 18:15）
+
+- 多级 Tab 补全：`setting <Tab>` 补键，`setting <key> <Tab>` 补枚举值
+- 值补全不追加空格，命令/键补全追加空格
+- 旧顶层设置命令迁移到 setting，并输出弃用提示；旧名保留
+- 新增 `ui.cmd_deprecated`
+- GUI 自检覆盖设置键/值补全与提示不干扰 Tab

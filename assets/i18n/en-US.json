@@ -1414,5 +1414,6 @@
   "ui.cmd_hint_setting_current": "Current %1 = %2\nUsage: setting %1 <value>; allowed: %3",
   "ui.cmd_hint_command_prefix": "Hint: %1 is not a complete command; candidates: %2",
   "ui.cmd_hint_unknown": "Hint: unknown command '%1'. Type help for the command list.",
-  "ui.cmd_hint_set_typo": "Hint: there is no set command.\nDid you mean: setting <key> [value]\nExamples: setting theme dark / setting search_mode density"
+  "ui.cmd_hint_set_typo": "Hint: there is no set command.\nDid you mean: setting <key> [value]\nExamples: setting theme dark / setting search_mode density",
+  "ui.cmd_deprecated": "\n(%1 has moved to %2; the legacy command will be removed in a later version)"
 }
