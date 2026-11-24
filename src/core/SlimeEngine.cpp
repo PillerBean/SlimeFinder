@@ -2325,7 +2325,9 @@ void SlimeEngine::runImpl(const SearchOptions& opt,
                     out.stats.threadsUsed = nthreads;
                     out.stats.scannedChunks = totalChunks;
                     for (const Scored& s : bandHeap.sorted()) out.results.push_back(s.m);
-                    out.totalFound = bandTotal;
+                    // 与 CPU 提前停止口径一致：达成目标后 totalFound = 实际返回的 N，
+                    // 而不是“本带累计命中数”（否则会出现 target=10、显示 20 万）。
+                    out.totalFound = bandStopped ? static_cast<int64_t>(out.results.size()) : bandTotal;
                     out.truncated = bandTruncated;
                     out.stoppedEarly = bandStopped;
                     out.stats.matchMs = elapsedMs();
@@ -5305,6 +5307,7 @@ bool SlimeEngine::estimateSearch(const SearchOptions& opt, int threads, SearchEs
         // 第二次同配置会直接走实测校准。
         double corr = 4.5;
         if (threads == 1) corr = 1.0;
+        else if (threads > 1 && threads <= 8) corr = 2.3;
         else if (opt.mode == Mode::Strict) corr = 2.6;
         else if (opt.stopAtTarget) corr = 1.5;
         else if (opt.algorithm == Algorithm::Layered) corr = 6.5;
