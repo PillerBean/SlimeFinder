@@ -502,6 +502,15 @@ if(MSVC)
     target_compile_options(slime_search_speed_matrix PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_thread_scaling_bench
+    tools/bench/thread_scaling_bench.cpp
+)
+target_include_directories(slime_thread_scaling_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_thread_scaling_bench PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_thread_scaling_bench PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )
