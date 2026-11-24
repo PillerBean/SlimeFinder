@@ -1,6 +1,7 @@
-// v3.5.3（地图优化）：地图预览控件 —— 实现
+﻿// v3.5.3（地图优化）：地图预览控件 —— 实现
 #include "i18n/UiText.h"
 #include "gui/widgets/MapPreviewWidget.h"
+#include "utils/ThemeManager.h"
 
 #include <QElapsedTimer>
 #include <QMouseEvent>
@@ -28,6 +29,12 @@ constexpr double kMaxScale = 8.0;
 constexpr int kChunk = 16;
 constexpr int kMaxBiomeCells = 400000;   // 单次采样上限
 constexpr double kCacheMargin = 0.25;    // 缓存余量（相对视口）
+
+QColor mapCanvasBg()
+{
+    return slime::ThemeManager::instance().isDark() ? QColor(0x1e, 0x1e, 0x1e)
+                                             : QColor(0xff, 0xff, 0xff);
+}
 } // namespace
 
 MapPreviewWidget::MapPreviewWidget(QWidget* parent) : QWidget(parent)
@@ -43,6 +50,10 @@ MapPreviewWidget::MapPreviewWidget(QWidget* parent) : QWidget(parent)
         m_resamplePending = false;
         ensureBiomeImage();
         if (!layerCoversView()) buildLayerPixmap();   // v3.5.7：静止后重建一次合成底图
+        update();
+    });
+    connect(&slime::ThemeManager::instance(), &slime::ThemeManager::effectiveThemeChanged, this, [this](bool) {
+        invalidateLayer();
         update();
     });
 }
@@ -515,7 +526,7 @@ void MapPreviewWidget::drawLayerPixmap(QPainter& p, const QPixmap& pm, int x0, i
 // v3.5.7：底图三层（群系 / 史莱姆区块 / 网格）—— 既可画到控件，也可画进缓存 pixmap
 void MapPreviewWidget::drawBaseLayers(QPainter& p, const QRectF& area)
 {
-    const bool dark = palette().base().color().lightness() < 128;
+    const bool dark = slime::ThemeManager::instance().isDark();
     drawBiomeLayer(p);
 
     // v3.5.22：按「要画的方块矩形」决定区块范围。此前固定用视口 ——
@@ -607,7 +618,7 @@ void MapPreviewWidget::buildLayerPixmap()
     const qreal dpr = devicePixelRatioF();
     QPixmap pm(static_cast<int>(wpx * dpr), static_cast<int>(hpx * dpr));
     pm.setDevicePixelRatio(dpr);
-    pm.fill(palette().base().color());
+    pm.fill(mapCanvasBg());
     {
         QPainter pp(&pm);
         pp.setRenderHint(QPainter::SmoothPixmapTransform, false);
@@ -634,8 +645,8 @@ void MapPreviewWidget::buildLayerPixmap()
 void MapPreviewWidget::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
-    const QColor bg = palette().base().color();
-    const bool dark = bg.lightness() < 128;
+    const QColor bg = mapCanvasBg();
+    const bool dark = slime::ThemeManager::instance().isDark();
     p.fillRect(rect(), bg);
     const QRectF vis = visibleBlockRect();
 
@@ -861,3 +872,5 @@ void MapPreviewWidget::mouseDoubleClickEvent(QMouseEvent* ev)
     resetView();
     ev->accept();
 }
+
+

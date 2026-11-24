@@ -1390,5 +1390,15 @@
   "ui.ring_scan_k3": "Annulus upper-bound check (k=3)",
   "ui.ring_k3_used": "Annulus upper-bound check kept %1 candidates after square prescan (k=3; not a global-optimality guarantee).",
   "ui.time_est_calibrated": "\n  (calibrated by the last local run with the same switches)",
-  "ui.time_est_uncalibrated": "\n  (sample extrapolation; switch combinations can differ significantly)"
+  "ui.time_est_uncalibrated": "\n  (sample extrapolation; switch combinations can differ significantly)",
+  "ui.seed_range_bedrock": "Bedrock seed must be an integer from -2147483648 to 2147483647: %1",
+  "ui.tp_command_header": "TP",
+  "ui.copy_tp_command": "Copy",
+  "ui.tp_copied": "Teleport command copied: %1",
+  "ui.ring_time_confirm_title": "Ring search time estimate",
+  "ui.ring_time_confirm_body": "Range: %1 × %2 chunks\nScan: %3\n\nStart the search?",
+  "ui.ring_time_fast": "Fast coarse scan (sampled, about 1–3 s)",
+  "ui.ring_time_square": "Square prescan + refinement (about 3.5–4 min for the full map)",
+  "ui.ring_time_k3": "k=3 annulus upper bound + B&B (about 3.5–4 min; not global-optimal)",
+  "ui.ring_time_exact": "Exact per-chunk scan (grows significantly with range)"
 }

@@ -1,4 +1,4 @@
-// MainWindow.cpp - 主窗口实现（v3.2.1）
+﻿// MainWindow.cpp - 主窗口实现（v3.2.1）
 #include "i18n/UiText.h"
 #include "gui/mainwindow/MainWindow.h"
 #include "gui/widgets/CacheCoverageMap.h"
@@ -41,6 +41,9 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
+#include <limits>
 #include <QListWidget>
 #include <QMenu>
 #include <memory>
@@ -182,7 +185,7 @@ constexpr int kMaxCards = 2000; // 结果卡片上限（复制结果仍包含全
 // v3.6.6（用户反馈「匹配数/列表数/展示数不一致」）：三者统一使用同一个展示上限，
 //   避免「统计行说显示前 2000 条、表格只画 500 行」这类互相矛盾的数字。
 constexpr int kResultDisplayCap = 500;
-constexpr const char* kAppVersion = "v3.13.13";
+constexpr const char* kAppVersion = "v3.13.14";
 // v3.4.8（用户要求：缓存构建独立成导航条一项）：左导航/页面栈的一一对应表
 //   索引 = 页面索引 = 导航项索引；值 = 图标种类（0 搜索 / 1 缓存构建 / 2 设置）
 constexpr int kNavCount = 3; // v3.10.12.13：移除更新历史，导航 3 项
@@ -627,6 +630,9 @@ QString rateText(double cps, int unit)
 
 QString progressStatsText(int64_t scanned, int64_t total, double cps, int64_t found, int rateUnit = 0)
 {
+    // 进度条分母是引擎口径总量；分块重叠/缓存统计可能让 scanned 略大于 total，
+    // 展示时夹到 total，避免出现「扫描 101/100（101.0%）」。
+    if (total > 0 && scanned > total) scanned = total;
     QString text = slime::ui::t("ui.6bef0c87c214").arg(scanned);
     if (total > 0) {
         const double pct = 100.0 * static_cast<double>(scanned) / static_cast<double>(total);
@@ -637,6 +643,20 @@ QString progressStatsText(int64_t scanned, int64_t total, double cps, int64_t fo
     if (cps > 0.0) text += slime::ui::t("ui.4e63cc922909") + rateText(cps, rateUnit);
     if (found >= 0) text += slime::ui::t("ui.e1e99118cb5e").arg(found);
     return text;
+}
+
+bool parseSeedForVersion(const QString& text, slime::Version version, int64_t* out)
+{
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty()) return false;
+    bool ok = false;
+    const qlonglong value = trimmed.toLongLong(&ok);
+    if (!ok) return false;
+    if (version == slime::Version::Bedrock &&
+        (value < (std::numeric_limits<int32_t>::min)() || value > (std::numeric_limits<int32_t>::max)()))
+        return false;
+    if (out) *out = static_cast<int64_t>(value);
+    return true;
 }
 
 // v3.3.7.2（F-1）：截图「豆腐块」检测 —— 缺字形时所有字符都被画成同样的方框，
@@ -1315,6 +1335,7 @@ static bool selftestArea(const char* area)
 #include "MainWindowSelfTest.inc"
 
 } // namespace slime
+
 
 
 

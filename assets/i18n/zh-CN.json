@@ -1390,5 +1390,15 @@
   "ui.ring_scan_k3": "环带上界复核（k=3）",
   "ui.ring_k3_used": "方形预筛后，环带上界复核保留 %1 个候选（k=3，不保证全局最优）",
   "ui.time_est_calibrated": "\n  （已使用本机同配置上次实测校准）",
-  "ui.time_est_uncalibrated": "\n  （样本外推：开关组合差异可能较大）"
+  "ui.time_est_uncalibrated": "\n  （样本外推：开关组合差异可能较大）",
+  "ui.seed_range_bedrock": "基岩版种子必须是 -2147483648 到 2147483647 的整数：%1",
+  "ui.tp_command_header": "传送",
+  "ui.copy_tp_command": "复制",
+  "ui.tp_copied": "已复制传送指令：%1",
+  "ui.ring_time_confirm_title": "环形搜索预计耗时",
+  "ui.ring_time_confirm_body": "范围：%1 × %2 区块\n扫描方式：%3\n\n是否开始搜索？",
+  "ui.ring_time_fast": "快速粗扫（抽样，约 1–3 秒）",
+  "ui.ring_time_square": "方形预筛 + 精修（全图约 3.5–4 分钟）",
+  "ui.ring_time_k3": "k=3 环带上界 + B&B（全图约 3.5–4 分钟，不保证最优）",
+  "ui.ring_time_exact": "精确逐区块（耗时随范围显著增加）"
 }

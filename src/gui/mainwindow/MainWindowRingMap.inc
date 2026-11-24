@@ -59,15 +59,18 @@ void MainWindow::runRingSearch()
         return;
     }
     const bool bedrock = m_w->bedrockRadio->isChecked();
-    bool ok = false;
-    const int64_t seed = m_w->seedEdit ? m_w->seedEdit->text().trimmed().toLongLong(&ok) : 0;
+    int64_t seed = 0;
+    const bool seedOk = m_w->seedEdit &&
+                        parseSeedForVersion(m_w->seedEdit->text(), bedrock ? slime::Version::Bedrock
+                                                                           : slime::Version::Java,
+                                            &seed);
     const int minX = m_w->minX->value(), maxX = m_w->maxX->value();
     const int minZ = m_w->minZ->value(), maxZ = m_w->maxZ->value();
     if (maxX < minX || maxZ < minZ) {
         setStatus(slime::ui::tr(slime::ui::t("ui.93ec3b99247b")));
         return;
     }
-    if (!bedrock && !ok) {
+    if (!seedOk) {
         setStatus(slime::ui::tr(slime::ui::t("ui.d2d6c0b7fdb4")));
         return;
     }
@@ -91,6 +94,20 @@ void MainWindow::runRingSearch()
             std::fprintf(stderr, "[环形] 大范围：%dx%d 区块 = %.1f 万，预计 0.3~3 秒\n", spanX, spanZ,
                          static_cast<double>(cells) / 10000.0);
         }
+    }
+    // 环形模式此前没有“开始前预计耗时”弹窗；按扫描档位给出明确预估。
+    if (!m_uiQuiet) {
+        const int confirmMode = m_w->ringScanCombo ? m_w->ringScanCombo->currentData().toInt() : 0;
+        QString model;
+        if (confirmMode == 2) model = slime::ui::t("ui.ring_time_square");
+        else if (confirmMode == 3) model = slime::ui::t("ui.ring_time_k3");
+        else if (confirmMode == 1) model = slime::ui::t("ui.ring_time_exact");
+        else model = slime::ui::t("ui.ring_time_fast");
+        const auto answer = QMessageBox::question(
+            this, slime::ui::t("ui.ring_time_confirm_title"),
+            slime::ui::t("ui.ring_time_confirm_body")
+                .arg(spanX).arg(spanZ).arg(model));
+        if (answer != QMessageBox::Yes) return;
     }
     // v3.5.8：环形 = 怪物生成环带 [24, 128]（过近不刷、过远消失）
     // v3.5.18：环形内外半径可在「设置 → 高级」里精调（默认 24 / 128）
@@ -723,8 +740,11 @@ void MainWindow::updateMapFromForm()
     MapPreviewWidget::Layer l = m_map->layer();
     const bool bedrock = m_w->bedrockRadio && m_w->bedrockRadio->isChecked();
     l.version = bedrock ? 1 : 0;
-    bool ok = false;
-    if (m_w->seedEdit) l.seed = m_w->seedEdit->text().trimmed().toLongLong(&ok);
+    int64_t parsedSeed = 0;
+    const bool ok = m_w->seedEdit &&
+                    parseSeedForVersion(m_w->seedEdit->text(), bedrock ? slime::Version::Bedrock : slime::Version::Java,
+                                        &parsedSeed);
+    if (ok) l.seed = parsedSeed;
     // v3.5.28（用户反馈）：没填种子时不要画「种子 0」的地图 —— 先提示填种子
     {
         const QString seedText = m_w->seedEdit ? m_w->seedEdit->text().trimmed() : QString();
@@ -823,14 +843,16 @@ void MainWindow::updateStartEnabled()
     if (m_running) { m_w->start->setEnabled(false); return; }
     const bool bedrock = m_w->bedrockRadio && m_w->bedrockRadio->isChecked();
     const QString seedText = m_w->seedEdit ? m_w->seedEdit->text().trimmed() : QString();
-    bool ok = false;
-    if (!bedrock) seedText.toLongLong(&ok);
+    int64_t parsedSeed = 0;
+    const bool seedOk = parseSeedForVersion(seedText, bedrock ? slime::Version::Bedrock : slime::Version::Java,
+                                            &parsedSeed);
     const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
     const bool hasPattern = m_patternSet && m_pattern.activeCount() > 0;
     const bool buildMode = m_buildActive;
 
     QString why;
-    if (!bedrock && (seedText.isEmpty() || !ok)) why = slime::ui::t("ui.5344ca1e9e8b");
+    if (!bedrock && (seedText.isEmpty() || !seedOk)) why = slime::ui::t("ui.5344ca1e9e8b");
+    else if (bedrock && !seedText.isEmpty() && !seedOk) why = slime::ui::t("ui.seed_range_bedrock").arg(seedText);
     // v3.12.3：缓存构建页不需要种子；此前这里仍要求 seed，导致选好范围/预算后
     // 「开始构建」一直灰掉。构建模式只依赖范围和预算。
     else if (patternMode && !hasPattern && !buildMode) why = slime::ui::t("ui.779966e118d2");
@@ -922,9 +944,12 @@ void MainWindow::computeAfkForMap()
     o.minSeparation = 24;
     o.coarseStep = 4;
     const bool bedrock = m_w->bedrockRadio && m_w->bedrockRadio->isChecked();
-    bool ok = false;
-    const int64_t seed = m_w->seedEdit ? m_w->seedEdit->text().trimmed().toLongLong(&ok) : 0;
     const slime::Version v = bedrock ? slime::Version::Bedrock : slime::Version::Java;
+    int64_t seed = 0;
+    if (!m_w->seedEdit || !parseSeedForVersion(m_w->seedEdit->text(), v, &seed)) {
+        setStatus(slime::ui::tr(slime::ui::t("ui.5344ca1e9e8b")));
+        return;
+    }
     const auto pred = [v, seed](int cx, int cz) { return slime::SlimeEngine::isSlimeChunk(v, seed, cx, cz); };
     const auto res = slime::AfkPlanner::plan(o, pred);
     m_map->setAfkCandidates(res);
@@ -937,11 +962,17 @@ void MainWindow::showMapDialog()
 {
     MapDialog::Context ctx;
     ctx.version = (m_w->bedrockRadio && m_w->bedrockRadio->isChecked()) ? 1 : 0;
-    bool seedOk = false;
-    if (m_w->seedEdit) ctx.seed = m_w->seedEdit->text().trimmed().toLongLong(&seedOk);
-    if (ctx.version == 0 && !seedOk) {
+    const slime::Version mapVersion =
+        ctx.version == 1 ? slime::Version::Bedrock : slime::Version::Java;
+    int64_t parsedSeed = 0;
+    const bool seedOk = m_w->seedEdit &&
+                        parseSeedForVersion(m_w->seedEdit->text(), mapVersion, &parsedSeed);
+    if (seedOk) ctx.seed = parsedSeed;
+    if (!seedOk) {
         QMessageBox::information(this, slime::ui::t("ui.faea94c8b095"),
-                                 slime::ui::t("ui.64cd88da6b9d"));
+                                 ctx.version == 1
+                                     ? slime::ui::t("ui.seed_range_bedrock").arg(m_w->seedEdit->text())
+                                     : slime::ui::t("ui.64cd88da6b9d"));
         setStatus(slime::ui::tr(slime::ui::t("ui.6616d54947cf")));
         return;
     }
@@ -974,11 +1005,17 @@ void MainWindow::showAfkDialog()
 {
     AfkDialog::Context ctx;
     ctx.version = (m_w->bedrockRadio && m_w->bedrockRadio->isChecked()) ? 1 : 0;
-    bool seedOk = false;
-    if (m_w->seedEdit) ctx.seed = m_w->seedEdit->text().trimmed().toLongLong(&seedOk);
-    if (ctx.version == 0 && !seedOk) {
+    const slime::Version afkVersion =
+        ctx.version == 1 ? slime::Version::Bedrock : slime::Version::Java;
+    int64_t parsedSeed = 0;
+    const bool seedOk = m_w->seedEdit &&
+                        parseSeedForVersion(m_w->seedEdit->text(), afkVersion, &parsedSeed);
+    if (seedOk) ctx.seed = parsedSeed;
+    if (!seedOk) {
         QMessageBox::information(this, slime::ui::t("ui.faea94c8b095"),
-                                 slime::ui::t("ui.64cd88da6b9d"));
+                                 ctx.version == 1
+                                     ? slime::ui::t("ui.seed_range_bedrock").arg(m_w->seedEdit->text())
+                                     : slime::ui::t("ui.64cd88da6b9d"));
         setStatus(slime::ui::tr(slime::ui::t("ui.447c26e890a5")));
         return;
     }

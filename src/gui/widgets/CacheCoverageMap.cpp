@@ -1,6 +1,7 @@
-#include "gui/widgets/CacheCoverageMap.h"
+﻿#include "gui/widgets/CacheCoverageMap.h"
 
 #include "i18n/UiText.h"
+#include "utils/ThemeManager.h"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -17,6 +18,8 @@ CacheCoverageMap::CacheCoverageMap(QWidget* parent)
     setMinimumHeight(230);
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
+    connect(&slime::ThemeManager::instance(), &slime::ThemeManager::effectiveThemeChanged, this,
+            [this](bool) { update(); });
 }
 
 void CacheCoverageMap::setPacks(const std::vector<slime::cache::CachePackEntry>& packs)
@@ -64,10 +67,10 @@ QPointF CacheCoverageMap::toScreen(double x, double z) const
 void CacheCoverageMap::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
-    const QPalette& pal = palette();
-    const QColor bg = pal.color(QPalette::Base);
-    const QColor grid = pal.color(QPalette::Midlight);
-    const QColor text = pal.color(QPalette::Text);
+    const bool dark = slime::ThemeManager::instance().isDark();
+    const QColor bg = dark ? QColor(0x1e, 0x1e, 0x1e) : QColor(0xff, 0xff, 0xff);
+    const QColor grid = dark ? QColor(0x44, 0x44, 0x48) : palette().color(QPalette::Midlight);
+    const QColor text = dark ? QColor(0xe6, 0xe6, 0xe6) : palette().color(QPalette::Text);
 
     p.fillRect(rect(), bg);
     p.setRenderHint(QPainter::Antialiasing, true);
@@ -145,3 +148,4 @@ void CacheCoverageMap::mousePressEvent(QMouseEvent* ev)
     setSelected(std::string());
     if (onSelected) onSelected(std::string());
 }
+

@@ -2334,6 +2334,15 @@ int MainWindow::runSelfTest()
                                m_topBar->isAncestorOf(m_w->seedEdit);
                 }
                 check(topBarOk, "顶部全局设置栏包含 平台/游戏版本/世界种子");
+                check(m_w->seedEdit && m_w->seedEdit->validator() != nullptr &&
+                          m_w->seedEdit->maxLength() == 20,
+                      "种子框限制为可选负号 + 最多 19 位十进制");
+                check(!parseSeedForVersion(QStringLiteral("2147483648"), slime::Version::Bedrock, nullptr) &&
+                          parseSeedForVersion(QStringLiteral("-2147483648"), slime::Version::Bedrock, nullptr),
+                      "基岩版种子严格限制在 int32 范围");
+                check(!parseSeedForVersion(QStringLiteral("999999999999999999999"), slime::Version::Java, nullptr),
+                      "超出 int64 的种子被拒绝");
+                check(m_w->copyBtn == nullptr, "搜索页右上角不再有「复制结果」按钮");
                 for (QGroupBox* g : groups) {
                     check(!g->isCheckable(), "设置分组不可折叠（任务书：不做折叠）");
                     break; // 只断言一次即可（全部同构）
@@ -3801,6 +3810,16 @@ int MainWindow::runSelfTest()
             check(rows > 0, "搜索后结果列表有数据");
             if (rows > 0) {
                 check(m_w->resultTable->cellWidget(0, 6) != nullptr, "每行都有「跳转」按钮");
+                check(m_w->resultTable->cellWidget(0, 7) != nullptr, "每行都有「复制传送指令」按钮");
+                if (auto* copyTp = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 7))) {
+                    const int bx = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
+                    const int bz = m_w->resultTable->item(0, 2)->data(Qt::UserRole).toInt();
+                    const QString expected = QStringLiteral("/tp @s %1 64 %2").arg(bx).arg(bz);
+                    copyTp->click();
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
+                    check(QApplication::clipboard()->text() == expected,
+                          "复制传送按钮对应当前结果行坐标");
+                }
                 auto* jump = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 6));
                 if (jump && m_map) {
                     const int bx = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
@@ -3909,7 +3928,7 @@ int MainWindow::runSelfTest()
                 check(helpEntries >= 1, "帮助/教程入口存在（菜单 + F1）");
             }
             check(m_w->progress && m_w->progressPercent && m_w->progressStage, "进度条/百分比/阶段文字齐备");
-            check(m_w->resultView && m_w->copyBtn, "结果视图与复制按钮齐备");
+            check(m_w->resultView && m_w->copyBtn == nullptr, "结果视图存在，右上角不再有「复制结果」按钮");
             check(m_w->importCache && m_w->clearCache && m_w->cacheStatus, "缓存导入/清除/状态齐备");
         }
 

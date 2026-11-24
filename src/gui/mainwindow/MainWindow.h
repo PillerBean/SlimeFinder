@@ -470,6 +470,7 @@ private:
     QTimer* m_streamTimer = nullptr;  // v3.3.6：进度流水追加定时器（500ms，仅搜索中）
     QLabel* m_statusSep = nullptr;    // v3.3.7.2（1.3）：状态栏临时消息与永久控件之间的分隔符
     double m_etaSec = 0.0;            // 最近一次进度回调给出的预计剩余秒数
+    bool m_progressCallbackSeen = false; // 本次搜索是否收到过引擎进度回调
     double m_etaSmoothed = 0.0;       // 近期速度推算的平滑 ETA
     int64_t m_etaLastDone = 0;
     double m_etaLastWall = 0.0;

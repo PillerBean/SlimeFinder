@@ -208,6 +208,10 @@ void MainWindow::buildUi()
         topLeftLay->addWidget(m_w->seedLabel);
         m_w->seedEdit = new QLineEdit(m_topBar);
         m_w->seedEdit->setClearButtonEnabled(true);
+        // 只允许可选负号 + 最多 19 位十进制；真正范围由 parseSeedForVersion 校验。
+        m_w->seedEdit->setValidator(new QRegularExpressionValidator(
+            QRegularExpression(QStringLiteral("-?\\d{0,19}")), m_w->seedEdit));
+        m_w->seedEdit->setMaxLength(20);
         m_w->seedEdit->setText(QString());
         m_w->seedEdit->setPlaceholderText(slime::ui::t("ui.c9cebe51b762"));
         m_w->seedEdit->setToolTip(slime::ui::t("ui.e8cae526ef7d"));
@@ -849,8 +853,6 @@ void MainWindow::buildUi()
     m_w->modeHeader->setStyleSheet(QStringLiteral("font-weight:bold;"));
     infoBar->addWidget(m_w->modeHeader);
     infoBar->addStretch();
-    m_w->copyBtn = new QPushButton(slime::ui::t("ui.0d6cb0c3fd91"), rightPanel);
-    infoBar->addWidget(m_w->copyBtn);
     rightLay->addLayout(infoBar);
     // v3.5.5（修复）：infoStats / modeWarn 的创建在右栏重写时丢失 ⇒ 布局里塞 nullptr 崩溃
     m_w->infoStats = new QLabel(rightPanel);
@@ -970,17 +972,20 @@ void MainWindow::buildUi()
         m_w->resultTable = new QTableWidget(m_resultPane);
         auto* tb = m_w->resultTable;
         tb->setObjectName(QStringLiteral("resultTable"));
-        tb->setColumnCount(7);
+        tb->setColumnCount(8);
         // v3.10.0：结果独立成第三列（约 340px）⇒ 表头缩短、列宽固定，避免窄列裁字
         tb->setHorizontalHeaderLabels({ slime::ui::t("ui.db669ff2ab99"), QStringLiteral("X"), QStringLiteral("Z"),
                                         slime::ui::t("ui.b3480678b68e"), slime::ui::t("ui.f90554a29e42"),
-                                        slime::ui::t("ui.3592ccaf66db"), QStringLiteral("") });
+                                        slime::ui::t("ui.3592ccaf66db"), QStringLiteral(""),
+                                        slime::ui::t("ui.tp_command_header") });
         tb->setColumnWidth(0, 40);
         tb->setColumnWidth(1, 56);
         tb->setColumnWidth(2, 56);
         tb->setColumnWidth(3, 50);
         tb->setColumnWidth(4, 62);
         tb->setColumnWidth(5, 62);
+        tb->setColumnWidth(6, 52);
+        tb->setColumnWidth(7, 58);
         tb->setColumnHidden(5, true);   // v3.5.9：仅环形模式显示「有效格 · 总权重」
         tb->verticalHeader()->setVisible(false);
         tb->setAlternatingRowColors(true);
@@ -1293,7 +1298,6 @@ void MainWindow::buildUi()
     connect(m_w->start, &QPushButton::clicked, this, &MainWindow::startSearch);
     connect(m_w->cancel, &QPushButton::clicked, this, &MainWindow::cancelSearch);
     connect(m_w->gpuCheck, &QCheckBox::checkStateChanged, this, &MainWindow::onGpuCheckChanged);
-    connect(m_w->copyBtn, &QPushButton::clicked, this, &MainWindow::copyResults);
 
     // 算法模式切换（仅密度搜索可用；参数即时保存到 config.json）
     for (QRadioButton* r : { m_w->algExactRadio, m_w->algLayeredRadio, m_w->algSampleRadio, m_w->algBruteRadio }) {

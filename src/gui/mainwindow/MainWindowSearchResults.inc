@@ -67,7 +67,7 @@ bool MainWindow::confirmHighHitEstimate(const slime::HitEstimate& estimate, bool
     box.setDefaultButton(QMessageBox::No);
     if (forceModal) {
         // UI automation: close the real modal through the event loop, not by bypassing it.
-        QTimer::singleShot(50, &box, [&box]() { box.done(QMessageBox::Yes); });
+        QTimer::singleShot(0, &box, [&box]() { box.done(QMessageBox::Yes); });
     }
     return box.exec() == QMessageBox::Yes;
 }
@@ -206,6 +206,19 @@ void MainWindow::startSearch()
             return;
         }
         slime::LogBus::info("搜索种子: " + std::to_string(opt.worldSeed));
+    } else if (!buildModeActive() && opt.version == Version::Bedrock) {
+        // 基岩版判定不使用种子，但地图上色需要；空 = 只给纯色占位。
+        // 非空时必须是 32 位有符号整数，避免任意大数被截断后显示成另一个种子。
+        const QString seedText = m_w->seedEdit->text().trimmed();
+        int64_t parsed = 0;
+        if (!seedText.isEmpty()) {
+            if (!parseSeedForVersion(seedText, Version::Bedrock, &parsed)) {
+                addError(slime::ui::t("ui.seed_range_bedrock").arg(seedText));
+                highlightSeedField();
+                return;
+            }
+            opt.worldSeed = parsed;
+        }
     }
 
     // v3.4.12（用户实测：缓存构建时仍被要求设置搜索模式）：
@@ -224,12 +237,9 @@ void MainWindow::startSearch()
         const int64_t total = area * areaZ;
         // v3.4.12：构建模式的范围确认走 prepareBuildRun（预算/容量），不再叠一层搜索式整图确认
         if (total >= kWholeMapMinArea && !buildModeActive()) {
-            // v3.1.1：整图级搜索 → 动态估算确认（预设确认过的会话不再重复询问）
-            // v3.3.3：无界面自检（m_uiQuiet）时自动放行，避免模态框阻塞自动化流程
-            if (!m_wholeMapConfirmed) {
-                if (!m_uiQuiet && !confirmWholeMapSearch(false, versionBound())) return;
-                m_wholeMapConfirmed = true;
-            }
+            // v3.15.x：每次启动大范围搜索都重新给预计时间；预设只应用范围，不再提前吞掉提醒。
+            if (!m_uiQuiet && !confirmWholeMapSearch(false, versionBound())) return;
+            m_wholeMapConfirmed = true;
         } else if (total > 1'000'000) {
             if (!m_uiQuiet) {
                 // v3.6.6（用户要求）：二次确认窗口重写，并给出「成功率预测」
@@ -451,6 +461,7 @@ void MainWindow::startSearch()
                            .arg(bedrockRun ? slime::ui::t("ui.618fd37c0c01") : slime::ui::t("ui.8accf0fe2eed")));
     }
     m_etaSec = 0.0; // v3.3.8（任务 1）：新搜索重置 ETA（完成后保持清空，避免误以为还在跑）
+    m_progressCallbackSeen = false;
     m_etaSmoothed = 0.0;
     m_etaLastDone = 0;
     m_etaLastWall = 0.0;
@@ -520,6 +531,7 @@ void MainWindow::startSearch()
                 // v3.3.8（任务 1）：ETA 接线 —— 此前回调收到了 etaSec 却从未写入 m_etaSec，
                 // 于是 updateElapsedUi() 永远走 else 分支、状态栏恒显示「预计剩余：--:--」。
                 m_etaSec = displayEta;
+                m_progressCallbackSeen = true;
                 // v3.10.4（用户反馈：GPU 单次派发期间进度条长时间停在 0 像卡死）：
                 //   GPU 阶段改为忙碌动画（range 0,0），不伪造百分比；结束后恢复真实进度条。
                 if (m_w->progress) {

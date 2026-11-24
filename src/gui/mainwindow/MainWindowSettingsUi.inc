@@ -520,6 +520,30 @@ void MainWindow::fillResultTable()
             }
         });
         t->setCellWidget(i, 6, jump);
+
+        // v3.15.x：每个结果独立的「复制传送指令」按钮（与定位按钮同表但各自对应本行）。
+        auto* copyTp = new QPushButton(slime::ui::t("ui.copy_tp_command"), t);
+        copyTp->setAutoDefault(false);
+        copyTp->setObjectName(QStringLiteral("copyTpButton"));
+        copyTp->setToolTip(slime::ui::t("ui.tp_copied").arg(QStringLiteral("/tp @s <x> 64 <z>")));
+        connect(copyTp, &QPushButton::clicked, this, [this, copyTp]() {
+            auto* table = m_w ? m_w->resultTable : nullptr;
+            if (!table) return;
+            int row = -1;
+            for (int rr = 0; rr < table->rowCount(); ++rr) {
+                if (table->cellWidget(rr, 7) == copyTp) { row = rr; break; }
+            }
+            if (row < 0) return;
+            const auto* xi = table->item(row, 1);
+            const auto* zi = table->item(row, 2);
+            if (!xi || !zi) return;
+            const int bx = xi->data(Qt::UserRole).toInt();
+            const int bz = zi->data(Qt::UserRole).toInt();
+            const QString cmd = QStringLiteral("/tp @s %1 64 %2").arg(bx).arg(bz);
+            QApplication::clipboard()->setText(cmd);
+            setStatus(slime::ui::tr(slime::ui::t("ui.tp_copied")).arg(cmd));
+        });
+        t->setCellWidget(i, 7, copyTp);
     }
     if (m_resultCountLabel) {
         m_resultCountLabel->setText(shown > 0 ? slime::ui::t("ui.1389cca29639")

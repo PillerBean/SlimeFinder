@@ -1,6 +1,7 @@
 // PatternEditor.cpp - 图案编辑器实现
 #include "i18n/UiText.h"
 #include "gui/widgets/PatternEditor.h"
+#include "utils/ThemeManager.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -18,6 +19,8 @@ namespace slime {
 PatternGridWidget::PatternGridWidget(QWidget* parent) : QWidget(parent)
 {
     setMouseTracking(false);
+    connect(&ThemeManager::instance(), &ThemeManager::effectiveThemeChanged, this,
+            [this](bool) { update(); });
 }
 
 void PatternGridWidget::setPattern(const Pattern& p)
@@ -50,7 +53,8 @@ void PatternGridWidget::paintEvent(QPaintEvent*)
     const int cols = m_pat.cols();
     if (rows <= 0 || cols <= 0) return;
 
-    p.fillRect(rect(), QColor(0xF0, 0xF0, 0xF0));
+    const bool dark = ThemeManager::instance().isDark();
+    p.fillRect(rect(), dark ? QColor(0x25, 0x25, 0x26) : QColor(0xF0, 0xF0, 0xF0));
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < cols; ++c) {
             const QRect rc = cellRect(r, c);

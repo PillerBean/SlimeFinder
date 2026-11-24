@@ -1390,5 +1390,15 @@
   "ui.ring_scan_k3": "環帶上界複核（k=3）",
   "ui.ring_k3_used": "方形預篩後，環帶上界複核保留 %1 個候選（k=3，不保證全域最優）",
   "ui.time_est_calibrated": "\n  （已使用本機同設定上次實測校準）",
-  "ui.time_est_uncalibrated": "\n  （樣本外推：開關組合差異可能較大）"
+  "ui.time_est_uncalibrated": "\n  （樣本外推：開關組合差異可能較大）",
+  "ui.seed_range_bedrock": "基岩版種子必須是 -2147483648 到 2147483647 的整數：%1",
+  "ui.tp_command_header": "傳送",
+  "ui.copy_tp_command": "複製",
+  "ui.tp_copied": "已複製傳送指令：%1",
+  "ui.ring_time_confirm_title": "環形搜尋預計耗時",
+  "ui.ring_time_confirm_body": "範圍：%1 × %2 區塊\n掃描方式：%3\n\n是否開始搜尋？",
+  "ui.ring_time_fast": "快速粗掃（抽樣，約 1–3 秒）",
+  "ui.ring_time_square": "方形預篩 + 精修（全圖約 3.5–4 分鐘）",
+  "ui.ring_time_k3": "k=3 環帶上界 + B&B（全圖約 3.5–4 分鐘，不保證最優）",
+  "ui.ring_time_exact": "精確逐區塊（耗時隨範圍顯著增加）"
 }

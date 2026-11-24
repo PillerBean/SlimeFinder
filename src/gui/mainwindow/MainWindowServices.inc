@@ -214,7 +214,7 @@ void MainWindow::setInputsEnabled(bool on)
         m_w->importCache, m_w->clearCache, m_w->useCache,
         m_w->stopAtTarget, m_w->targetCount, m_w->smartRange,
         m_w->startX, m_w->startZ, m_w->convX, m_w->convZ, m_w->convertBtn,
-        m_w->threads, m_w->gpuCheck, m_w->copyBtn
+        m_w->threads, m_w->gpuCheck
     };
     for (QWidget* w : controls) w->setEnabled(on);
     applyVersionUi(); // 版本相关禁用状态（种子/缓存/预设仅限对应版本）
@@ -652,27 +652,18 @@ SearchOptions MainWindow::wholeMapOptions(int halfSpan) const
 // 整图确认对话框（v3.1.1：动态耗时估算）
 bool MainWindow::confirmWholeMapSearch(bool applyRange, int halfSpan)
 {
+    // 预设按钮/命令只负责应用范围；耗时提醒统一延迟到“开始搜索”时，
+    // 避免预设阶段弹一次、开始又跳过（用户反馈部分模式没有预计时间提醒）。
+    if (applyRange) {
+        applyPreset(halfSpan);
+        m_wholeMapConfirmed = false;
+        return true;
+    }
     SearchOptions opt = wholeMapOptions(halfSpan);
-    const bool hasPattern = (opt.mode != Mode::Strict) || (!opt.pattern.empty());
     const bool java = (opt.version == Version::Java);
 
     if (m_uiQuiet) { // 自检模式：直接放行
-        if (applyRange) {
-            applyPreset(halfSpan);
-            m_wholeMapConfirmed = true;
-        }
         return true;
-    }
-
-    if (!hasPattern) {
-        // 未绘制图案时按严格模式仍可估算扫描部分（匹配窗口按空图案估计不可靠 → 提示先绘制）
-        // 实际进入 startSearch 时会报“请先绘制图案”，此处直接放行由 startSearch 处理。
-        if (applyRange) {
-            QMessageBox::warning(this, slime::ui::t("ui.ab3656a956f5"),
-                                 slime::ui::t("ui.719d10c91481"));
-            applyPreset(halfSpan);
-        }
-        return false;
     }
 
     SearchEstimate est;

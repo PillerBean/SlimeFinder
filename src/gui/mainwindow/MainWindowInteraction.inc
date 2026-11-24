@@ -178,6 +178,16 @@ void MainWindow::updateElapsedUi()
                                   1000.0)
                                : 0.0;
     m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(elapsed, 0, 'f', 1));
+    // 某些后端（单次 GPU 派发、构建/缓存路径）没有中间进度回调：
+    // 用 liveScanned/liveTotal 定时补一行统计，避免进度区一直空白。
+    if (!m_progressCallbackSeen && !m_buildActive && m_w->progressInfo) {
+        const int64_t scanned = m_task.liveScannedCount();
+        const int64_t total = displayTotalChunks();
+        const double cps = elapsed > 0.05 ? static_cast<double>(scanned) / elapsed : 0.0;
+        m_streamScanned = scanned;
+        m_w->progressInfo->setText(progressStatsText(scanned, total, cps,
+                                                      m_task.liveMatchCount(), m_settings.rateUnit));
+    }
     // v3.5.28：工具栏状态面板的阶段文字（搜索中 / 匹配中 / 排序中）
     if (m_w->searchStage) {
         const bool matching = m_stageWasMatching || m_task.livePhase() >= 2;
