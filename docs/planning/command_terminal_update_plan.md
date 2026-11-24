@@ -1,4 +1,4 @@
-# 命令终端更新规划
+﻿# 命令终端更新规划
 
 日期：2026-11-24  
 状态：规划，未实施  
@@ -49,7 +49,7 @@ status    [detail|json]
 search    start|cancel|estimate|status
 build     on|off|start|status
 cache     status|list|import <path>|clear|open|build
-result    list [n]|copy <n>|copy-all|export <path>|sort <distance|density>
+result    list [n]|copy <n>|copy_all|export <path>|sort <distance|density>
 preset    range <near|local|global|world|bedrock>
           result <balanced|fast|precision>
 setting   <path> [value]
@@ -72,7 +72,26 @@ setting 接管全部设置
 page 接管页面跳转
 ```
 
-### 3.2 setting 分支
+### 3.2 命名约定
+
+```text
+命令名/子命令：小写单词，空格分层
+  search start
+  result copy
+
+设置键：小写下划线
+  search_mode
+  result_stop
+  ring_scan
+
+不使用点号（search.mode ❌）
+不使用连字符（result-stop ❌）
+CLI 选项仍用 --flag（如 --yes），不属于设置键命名
+```
+
+内部注册表用 token 列表保存路径，不保存 `a.b` 字符串。
+
+### 3.3 setting 分支
 
 语法：
 
@@ -80,14 +99,13 @@ page 接管页面跳转
 setting <path> [value]
 ```
 
-`path` 可以写点号，也可以按空格写：
+`path` 统一使用小写下划线命名，不再使用点号；命令层级仍用空格分隔：
 
 ```text
 setting theme dark
-setting search.mode density
-setting search mode density     # 同上，按空白分段解析
-setting result.stop on
-setting ring.scan k3
+setting search_mode density
+setting result_stop on
+setting ring_scan k3
 ```
 
 完整路径：
@@ -95,38 +113,38 @@ setting ring.scan k3
 ```text
 theme                    light|dark|system
 language                 zh|zh-TW|en
-search.mode              strict|density
-search.algorithm         exact|layered|sample|brute
-search.grid              1..512
-search.density           0.0..1.0
-search.ignore-threshold  on|off
-search.lock-direction    on|off
-result.target            1..上限
-result.stop              on|off
-result.smart             on|off
-ring.inner               0..64
-ring.outer               16..1024
-ring.scan                fast|square|k3|exact
-ring.sim-distance        区块数
-cache.enabled            on|off
-gpu.enabled              on|off
-gpu.stream               on|off
-gpu.self-optimize        on|off
-gpu.limit                1..100
+search_mode              strict|density
+search_algorithm         exact|layered|sample|brute
+search_grid              1..512
+search_density           0.0..1.0
+search_ignore_threshold  on|off
+search_lock_direction    on|off
+result_target            1..上限
+result_stop              on|off
+result_smart             on|off
+ring_inner               0..64
+ring_outer               16..1024
+ring_scan                fast|square|k3|exact
+ring_sim_distance        区块数
+cache_enabled            on|off
+gpu_enabled              on|off
+gpu_stream               on|off
+gpu_self_optimize        on|off
+gpu_limit                1..100
 threads                  0..逻辑核心
-log.mode                 off|brief|detailed
-log.startup              on|off
-display.rate-unit        auto|wan|yi
-sound.enabled            on|off
-sound.volume             0..100
-window.remember          on|off
+log_mode                 off|brief|detailed
+log_startup              on|off
+display_rate_unit        auto|wan|yi
+sound_enabled            on|off
+sound_volume             0..100
+window_remember          on|off
 ```
 
 查询形式：
 
 ```text
 setting                    # 列出分组
-setting search             # 列出 search 子树
+setting search             # 列出 search_* 前缀键
 setting theme              # 当前值 + 可选值
 setting theme dark         # 设置并立即生效
 ```
@@ -138,16 +156,16 @@ setting theme dark         # 设置并立即生效
 | 旧命令 | 新位置 | 处理 |
 |---|---|---|
 | `theme` | `setting theme` | 保留旧名一个版本，提示弃用 |
-| `log` | `setting log.mode` | 同上 |
-| `stop` | `setting result.stop` | 避免与 `cancel` 混淆 |
-| `smart` | `setting result.smart` | 旧名隐藏 |
-| `lock` | `setting search.lock-direction` | 旧名隐藏 |
-| `grid` | `setting search.grid` | 旧名隐藏 |
-| `density` | `setting search.density` | 旧名隐藏 |
+| `log` | `setting log_mode` | 同上 |
+| `stop` | `setting result_stop` | 避免与 `cancel` 混淆 |
+| `smart` | `setting result_smart` | 旧名隐藏 |
+| `lock` | `setting search_lock_direction` | 旧名隐藏 |
+| `grid` | `setting search_grid` | 旧名隐藏 |
+| `density` | `setting search_density` | 旧名隐藏 |
 | `threads` | `setting threads` | 旧名隐藏 |
-| `target` | `setting result.target` | 旧名隐藏 |
-| `gpu` | `setting gpu.enabled` | 保留只读 `gpu` 查询？建议统一 |
-| `mode` | `search mode` / `search algorithm` | 拆分，旧名只做迁移提示 |
+| `target` | `setting result_target` | 旧名隐藏 |
+| `gpu` | `setting gpu_enabled` | 保留只读 `gpu` 查询？建议统一 |
+| `mode` | `setting search_mode` / `setting search_algorithm` | 拆分，旧名只做迁移提示 |
 | `copy` | `result copy` | 删除顶层重复入口 |
 | `seed` | `search seed` | 保留短别名 |
 | `range` | `search range` | 保留短别名 |
@@ -195,14 +213,14 @@ mode 的 strict/density 与 exact/layered 混用语义
   setting theme <light|dark|system>
 示例：
   setting theme dark
-  setting search.mode density
+  setting search_mode density
 
 > setting theme
 当前值：dark
 用法：setting theme <light|dark|system>
 
-> setting search mode density
-已设置 search.mode = density
+> setting search_mode density
+已设置 search_mode = density
 ```
 
 ### 5.3 与 Tab 的关系
@@ -225,18 +243,17 @@ Tab：只负责补全/切换候选，不写提示
 
 ```text
 > setting se
-候选：setting search
-      setting search.mode
-      setting search.algorithm
-提示：setting search <mode|algorithm|grid|density|...>
+候选：setting search_mode
+      setting search_algorithm
+提示：setting search_<key> <value>（如 setting search_mode density）
 ```
 
 补全支持多级路径：
 
 ```text
 setting <Tab>
-setting search <Tab>
-setting search.mode <Tab>
+setting search_<Tab>
+setting search_mode <Tab>
 ```
 
 ## 6. 功能增强
@@ -255,7 +272,7 @@ cache list
 
 ```text
 result copy 3
-result copy-all
+result copy_all
 result export results.csv
 result sort density
 ```
@@ -305,7 +322,7 @@ src/gui/terminal/CommandHints.h/.cpp
 
 ```cpp
 struct CommandSpec {
-    QString path;                 // "setting.search.mode"
+    QString path;                 // "setting search_mode"
     QStringList aliases;          // 兼容旧名
     QString usageKey;             // i18n
     QVector<ArgSpec> args;        // 类型/范围/枚举
@@ -354,7 +371,7 @@ MainWindow：实现 setting/action handler
 
 ```text
 - 迁移 theme/log/stop/smart/lock/grid/density/threads/target
-- 新增 ring.*、search.*、result.*、gpu.*
+- 新增 ring_*、search_*、result_*、gpu_* 设置键
 - 读写 AppSettings 与 UI 控件
 - 旧名输出迁移提示
 ```
@@ -371,7 +388,7 @@ MainWindow：实现 setting/action handler
 ### Phase 4：结果/缓存/页面
 
 ```text
-- result copy-all/export/sort
+- result copy_all/export/sort
 - cache list/open/--yes
 - page/map/pattern/afk
 ```
@@ -418,3 +435,7 @@ P3：删除旧别名、清理文档
 ```
 
 命令终端是本轮最大改动，先做 P0；不要在没建立 registry 前继续往 `runCommand` 堆 if 分支。
+
+
+
+
