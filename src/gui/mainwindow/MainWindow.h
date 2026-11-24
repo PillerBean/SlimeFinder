@@ -104,6 +104,7 @@ public:
     QString runCommand(const QString& cmd, const QStringList& args) override;
     QStringList commandNames() const override;
     QString commandHelp(const QString& cmd) const override;
+    QString commandFormatHint(const QString& line) const override;
 
 protected:
     void closeEvent(QCloseEvent* ev) override;
@@ -168,6 +169,12 @@ private slots:
 
 private:
     struct Widgets;
+    // v3.15.x：命令终端 setting 分支（键名统一 lower_snake_case）。
+    QString runSettingCommand(const QStringList& args);
+    QStringList settingKeys() const;
+    QString settingAllowed(const QString& key) const;
+    QString settingCurrent(const QString& key) const;
+    QString applySetting(const QString& key, const QString& value, bool* ok);
     struct RunInfo {
         Version version = Version::Java;
         Mode mode = Mode::Strict;

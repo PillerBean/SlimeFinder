@@ -31,6 +31,8 @@ public:
     virtual QStringList commandNames() const = 0;
     // 每个命令的一行说明（供 help 与补全提示），键为命令名
     virtual QString commandHelp(const QString& cmd) const = 0;
+    // v3.15.x：输入行的只读格式提示（不修改文本、不抢焦点；返回空串则不显示）
+    virtual QString commandFormatHint(const QString& line) const { return QString(); }
 };
 
 class CommandTerminal : public QWidget {
@@ -57,6 +59,7 @@ public:
     QRect popupGeometry() const;          // 候选框几何（自检断言「在输入行上方」）
     void hidePopup();                     // 外部请求关闭（执行命令后调用）
     void appendLine(const QString& text);  // 追加输出（不含提示符）
+    QString hintText() const;              // v3.15.x：当前格式提示（空 = 隐藏）
 
 signals:
     void historyChanged(const QStringList& history);  // 供主窗口持久化

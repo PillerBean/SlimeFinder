@@ -10,12 +10,14 @@
 #include <QFont>
 #include <QFontDatabase>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QScrollBar>
 #include <QListWidget> // v3.4.11：Tab 候选框
 #include <QStringListModel>
 #include <QTextCursor>
+#include <QTimer>
 #include <QVBoxLayout>
 
 namespace {
@@ -57,6 +59,8 @@ struct CommandTerminal::Impl : public QObject {
     CommandHost* host = nullptr;        // 命令宿主（可为空）
     QPlainTextEdit* output = nullptr;   // 只读输出区
     QLineEdit* input = nullptr;         // 单行输入
+    QLabel* hintLabel = nullptr;        // v3.15.x：只读格式提示（不抢焦点）
+    QTimer* hintTimer = nullptr;        // 250ms 防抖
     QStringListModel* model = nullptr;  // 补全数据源
     // ---- v3.4.11：Tab 候选框（Minecraft Java 风格，不抢焦点）----
     QListWidget* popup = nullptr;       // 候选列表（Qt::ToolTip + NoFocus）
@@ -324,6 +328,17 @@ struct CommandTerminal::Impl : public QObject {
         popupList = items;
     }
 
+    // v3.15.x：格式提示只更新一个只读 QLabel，绝不修改输入、绝不抢焦点。
+    void refreshHint()
+    {
+        if (!hintLabel || !input || !host) return;
+        if (selfWrite) return;
+        const QString hint = host->commandFormatHint(input->text());
+        hintLabel->setText(hint);
+        hintLabel->setVisible(!hint.isEmpty());
+        if (self) self->updateGeometry();
+    }
+
     // 返回是否消费了本次 Tab
     bool tabCycle(int dir)
     {
@@ -402,6 +417,8 @@ struct CommandTerminal::Impl : public QObject {
             if (watched == input) {
                 if (key == Qt::Key_Tab || key == Qt::Key_Backtab) {
                     // v3.4.11：Minecraft 风格 —— 补全 + 候选框循环；绝不触发焦点切换
+                    if (hintTimer) hintTimer->stop();
+                    if (hintLabel) hintLabel->hide();
                     const bool back = (key == Qt::Key_Backtab) || (ke->modifiers() & Qt::ShiftModifier);
                     tabCycle(back ? -1 : 1);
                     if (input) {
@@ -464,12 +481,27 @@ CommandTerminal::CommandTerminal(CommandHost* host, QWidget* parent)
     d->input->setPlaceholderText(inputPlaceholder());
     d->input->setClearButtonEnabled(false);
 
+    // v3.15.x：只读格式提示（不参与 Tab 候选，不抢焦点）
+    d->hintLabel = new QLabel(this);
+    d->hintLabel->setObjectName(QStringLiteral("cmdHint"));
+    d->hintLabel->setWordWrap(true);
+    d->hintLabel->setFocusPolicy(Qt::NoFocus);
+    d->hintLabel->setTextInteractionFlags(Qt::NoTextInteraction);
+    d->hintLabel->hide();
+    d->hintTimer = new QTimer(this);
+    d->hintTimer->setSingleShot(true);
+    d->hintTimer->setInterval(250);
+    connect(d->hintTimer, &QTimer::timeout, this, [this]() {
+        if (m_impl) m_impl->refreshHint();
+    });
+
     // ---------- 布局：输出占满，输入在底部 ----------
     QVBoxLayout* lay = new QVBoxLayout(this);
     lay->setContentsMargins(4, 4, 4, 4);
     lay->setSpacing(4);
     lay->addWidget(d->output, 1);
     lay->addWidget(d->input, 0);
+    lay->addWidget(d->hintLabel, 0);
 
     // ---------- 补全：命令名列表（前缀匹配、忽略大小写、**内联**补全）----------
     // v3.3.5 Bug 1：不再使用 QCompleter 的弹出候选窗（弹窗会抢焦点，导致 Tab 后焦点跳到别的控件）。
@@ -479,7 +511,11 @@ CommandTerminal::CommandTerminal(CommandHost* host, QWidget* parent)
     // v3.4.12：文本被外部改动（程序化 setText / 历史翻页 / 清空）后，候选框状态必须重置，
     // 否则下一次 Tab 会拿上一轮的候选去循环（自检实测：唯一匹配补全等用例被污染）。
     connect(d->input, &QLineEdit::textChanged, this, [this](const QString&) {
-        if (m_impl && !m_impl->selfWrite) m_impl->hidePopupNow();
+        if (m_impl && !m_impl->selfWrite) {
+            m_impl->hidePopupNow();
+            if (m_impl->hintTimer) m_impl->hintTimer->stop();
+            if (m_impl->hintLabel) m_impl->hintLabel->hide();
+        }
     });
 
     // ---------- v3.4.11：Tab 候选框（Minecraft Java 风格；**不抢焦点**）----------
@@ -490,6 +526,7 @@ CommandTerminal::CommandTerminal(CommandHost* host, QWidget* parent)
         CommandTerminal::Impl* dd = d;
         QObject::connect(d->input, &QLineEdit::textEdited, this, [dd](const QString&) {
             if (dd->input && dd->popup) dd->refreshPopupFromInput();   // 边输入边提示
+            if (dd->hintTimer) dd->hintTimer->start();
         });
     }
     d->popup = new QListWidget(this);
@@ -584,6 +621,8 @@ void CommandTerminal::execute(const QString& line)
     d->recordHistory(trimmed);
     d->resetNav();
     d->hidePopupNow(); // v3.4.11：执行后收起候选框
+    if (d->hintTimer) d->hintTimer->stop();
+    if (d->hintLabel) d->hintLabel->hide();
     if (d->input)
         d->input->clear();
 }
@@ -626,4 +665,10 @@ void CommandTerminal::appendLine(const QString& text)
     if (!m_impl)
         return;
     m_impl->appendRaw(text);
+}
+
+QString CommandTerminal::hintText() const
+{
+    if (!m_impl || !m_impl->hintLabel || !m_impl->hintLabel->isVisible()) return QString();
+    return m_impl->hintLabel->text();
 }

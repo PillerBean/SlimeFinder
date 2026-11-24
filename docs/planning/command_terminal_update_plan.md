@@ -439,3 +439,17 @@ P3：删除旧别名、清理文档
 
 
 
+
+## 11. P0 实施进度（2026-11-24）
+
+已完成第一增量：
+
+- 新增 `setting <key> [value]` 命令，键名统一 lower_snake_case
+- 支持 theme/language/search_*/result_*/ring_*/gpu_*/cache_enabled/threads/log_*/display_rate_unit/sound_*/window_remember
+- `setting <key>` 返回当前值与可用范围；非法值返回范围
+- `setting search` 等前缀键可列组
+- `CommandHost::commandFormatHint` 与终端只读提示条接入
+- 250ms 防抖；Tab 时立即取消提示，不修改输入、不抢焦点
+- `set`/`sett` 显示 setting 用法示例
+- 旧顶层命令暂保留，后续阶段再隐藏/删除
+- 仍待：CommandRegistry 独立文件、多级 Tab 语义候选、旧命令弃用提示、result/cache/page/map 新分支

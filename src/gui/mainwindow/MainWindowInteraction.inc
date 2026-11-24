@@ -1,4 +1,4 @@
-// v3.12.0：输入过滤、日志/反馈/命令等交互逻辑。
+﻿// v3.12.0：输入过滤、日志/反馈/命令等交互逻辑。
 
 void MainWindow::installWheelFilter()
 {
@@ -316,7 +316,8 @@ QStringList MainWindow::commandNames() const
              QStringLiteral("grid"),   QStringLiteral("help"),    QStringLiteral("lock"),
              QStringLiteral("log"),    QStringLiteral("mode"),    QStringLiteral("open"),
              QStringLiteral("preset"), QStringLiteral("range"),   QStringLiteral("result"),
-             QStringLiteral("search"), QStringLiteral("seed"),    QStringLiteral("smart"),
+             QStringLiteral("search"), QStringLiteral("seed"),    QStringLiteral("setting"),
+             QStringLiteral("smart"),
              QStringLiteral("status"), QStringLiteral("stop"),    QStringLiteral("target"),
              QStringLiteral("theme"),  QStringLiteral("threads"), QStringLiteral("version") };
 }
@@ -327,6 +328,7 @@ QString MainWindow::commandHelp(const QString& cmd) const
         { QStringLiteral("help"), slime::ui::t("ui.f4f64b027abd") },
         { QStringLiteral("version"), slime::ui::t("ui.bd2fc88197ae") },
         { QStringLiteral("seed"), slime::ui::t("ui.be84b2c5322f") },
+        { QStringLiteral("setting"), slime::ui::t("ui.cmd_setting_help") },
         { QStringLiteral("range"), slime::ui::t("ui.c9951d36a841") },
         { QStringLiteral("center"), slime::ui::t("ui.14074052b097") },
         { QStringLiteral("preset"), slime::ui::t("ui.d72ad001dcdf") },
@@ -353,6 +355,292 @@ QString MainWindow::commandHelp(const QString& cmd) const
         { QStringLiteral("clear"), slime::ui::t("ui.9db4f6f902f7") },
     };
     return aHelp.value(cmd, slime::ui::t("ui.6535b7b34aa5"));
+}
+
+QStringList MainWindow::settingKeys() const
+{
+    return {
+        QStringLiteral("theme"), QStringLiteral("language"),
+        QStringLiteral("search_mode"), QStringLiteral("search_algorithm"),
+        QStringLiteral("search_grid"), QStringLiteral("search_density"),
+        QStringLiteral("search_ignore_threshold"), QStringLiteral("search_lock_direction"),
+        QStringLiteral("result_target"), QStringLiteral("result_stop"), QStringLiteral("result_smart"),
+        QStringLiteral("ring_inner"), QStringLiteral("ring_outer"), QStringLiteral("ring_scan"),
+        QStringLiteral("ring_sim_distance"),
+        QStringLiteral("cache_enabled"),
+        QStringLiteral("gpu_enabled"), QStringLiteral("gpu_stream"), QStringLiteral("gpu_self_optimize"),
+        QStringLiteral("gpu_limit"),
+        QStringLiteral("threads"),
+        QStringLiteral("log_mode"), QStringLiteral("log_startup"),
+        QStringLiteral("display_rate_unit"),
+        QStringLiteral("sound_enabled"), QStringLiteral("sound_volume"),
+        QStringLiteral("window_remember")
+    };
+}
+
+QString MainWindow::settingAllowed(const QString& key) const
+{
+    static const QHash<QString, QString> a = {
+        { QStringLiteral("theme"), QStringLiteral("light|dark|system") },
+        { QStringLiteral("language"), QStringLiteral("zh|zh-TW|en") },
+        { QStringLiteral("search_mode"), QStringLiteral("strict|density") },
+        { QStringLiteral("search_algorithm"), QStringLiteral("exact|layered|sample|brute") },
+        { QStringLiteral("search_grid"), QStringLiteral("1..512") },
+        { QStringLiteral("search_density"), QStringLiteral("0.0..1.0") },
+        { QStringLiteral("search_ignore_threshold"), QStringLiteral("on|off") },
+        { QStringLiteral("search_lock_direction"), QStringLiteral("on|off") },
+        { QStringLiteral("result_target"), QStringLiteral("1..1000000") },
+        { QStringLiteral("result_stop"), QStringLiteral("on|off") },
+        { QStringLiteral("result_smart"), QStringLiteral("on|off") },
+        { QStringLiteral("ring_inner"), QStringLiteral("0..64") },
+        { QStringLiteral("ring_outer"), QStringLiteral("16..1024") },
+        { QStringLiteral("ring_scan"), QStringLiteral("fast|square|k3|exact") },
+        { QStringLiteral("ring_sim_distance"), QStringLiteral("0..64") },
+        { QStringLiteral("cache_enabled"), QStringLiteral("on|off") },
+        { QStringLiteral("gpu_enabled"), QStringLiteral("on|off") },
+        { QStringLiteral("gpu_stream"), QStringLiteral("on|off") },
+        { QStringLiteral("gpu_self_optimize"), QStringLiteral("on|off") },
+        { QStringLiteral("gpu_limit"), QStringLiteral("1..100") },
+        { QStringLiteral("threads"), QStringLiteral("0..逻辑核心") },
+        { QStringLiteral("log_mode"), QStringLiteral("off|brief|detailed") },
+        { QStringLiteral("log_startup"), QStringLiteral("on|off") },
+        { QStringLiteral("display_rate_unit"), QStringLiteral("auto|wan|yi") },
+        { QStringLiteral("sound_enabled"), QStringLiteral("on|off") },
+        { QStringLiteral("sound_volume"), QStringLiteral("0..100") },
+        { QStringLiteral("window_remember"), QStringLiteral("on|off") }
+    };
+    return a.value(key, QStringLiteral("—"));
+}
+
+QString MainWindow::settingCurrent(const QString& key) const
+{
+    if (!m_w) return QStringLiteral("?");
+    const auto yn = [](bool v) { return v ? QStringLiteral("on") : QStringLiteral("off"); };
+    if (key == QLatin1String("theme")) return slime::ThemeManager::modeToString(slime::ThemeManager::instance().mode());
+    if (key == QLatin1String("language")) return m_settings.language;
+    if (key == QLatin1String("search_mode")) return m_w->densityRadio->isChecked() ? QStringLiteral("density") : QStringLiteral("strict");
+    if (key == QLatin1String("search_algorithm")) return currentAlgorithm() == Algorithm::Layered ? QStringLiteral("layered")
+                                                        : currentAlgorithm() == Algorithm::Sample ? QStringLiteral("sample")
+                                                        : currentAlgorithm() == Algorithm::Brute ? QStringLiteral("brute")
+                                                                                                 : QStringLiteral("exact");
+    if (key == QLatin1String("search_grid")) return QString::number(m_w->gridSize->value());
+    if (key == QLatin1String("search_density")) return QString::number(m_w->minDensity->value(), 'f', 3);
+    if (key == QLatin1String("search_ignore_threshold")) return yn(m_w->ignoreThreshold->isChecked());
+    if (key == QLatin1String("search_lock_direction")) return yn(m_w->lockDir->isChecked());
+    if (key == QLatin1String("result_target")) return QString::number(m_w->targetCount->value());
+    if (key == QLatin1String("result_stop")) return yn(m_w->stopAtTarget->isChecked());
+    if (key == QLatin1String("result_smart")) return yn(m_w->smartRange->isChecked());
+    if (key == QLatin1String("ring_inner")) return QString::number(m_settings.afkRingInner);
+    if (key == QLatin1String("ring_outer")) return QString::number(m_settings.afkRingOuter);
+    if (key == QLatin1String("ring_scan")) {
+        const int d = m_w->ringScanCombo ? m_w->ringScanCombo->currentData().toInt() : 0;
+        return d == 2 ? QStringLiteral("square") : d == 3 ? QStringLiteral("k3")
+             : d == 1 ? QStringLiteral("exact") : QStringLiteral("fast");
+    }
+    if (key == QLatin1String("ring_sim_distance")) return QString::number(m_w->simDistance->value());
+    if (key == QLatin1String("cache_enabled")) return yn(m_w->useCache->isChecked());
+    if (key == QLatin1String("gpu_enabled")) return yn(m_w->gpuCheck->isChecked());
+    if (key == QLatin1String("gpu_stream")) return yn(m_w->gpuStreamCheck->isChecked());
+    if (key == QLatin1String("gpu_self_optimize")) return yn(m_w->gpuSelfOptCheck->isChecked());
+    if (key == QLatin1String("gpu_limit")) return QString::number(m_w->gpuLimitSpin->value());
+    if (key == QLatin1String("threads")) return QString::number(m_w->threads->value());
+    if (key == QLatin1String("log_mode")) return !m_settings.logAtStartup ? QStringLiteral("off")
+                                                        : (m_settings.logLevel == 1 ? QStringLiteral("detailed")
+                                                                                    : QStringLiteral("brief"));
+    if (key == QLatin1String("log_startup")) return yn(m_settings.logAtStartup);
+    if (key == QLatin1String("display_rate_unit")) return m_settings.rateUnit == 1 ? QStringLiteral("wan")
+                                                              : m_settings.rateUnit == 2 ? QStringLiteral("yi")
+                                                                                         : QStringLiteral("auto");
+    if (key == QLatin1String("sound_enabled")) return yn(m_settings.soundOnComplete);
+    if (key == QLatin1String("sound_volume")) return QString::number(m_settings.soundVolume);
+    if (key == QLatin1String("window_remember")) return yn(m_settings.rememberWindow);
+    return QStringLiteral("?");
+}
+
+QString MainWindow::applySetting(const QString& key, const QString& valueIn, bool* ok)
+{
+    if (ok) *ok = false;
+    if (!m_w || !settingKeys().contains(key)) return QString();
+    const QString v = valueIn.trimmed();
+    const auto parseBool = [&v](bool* out) {
+        const QString l = v.toLower();
+        if (l == QLatin1String("on") || l == QLatin1String("true") || l == QLatin1String("1")) { *out = true; return true; }
+        if (l == QLatin1String("off") || l == QLatin1String("false") || l == QLatin1String("0")) { *out = false; return true; }
+        return false;
+    };
+    bool b = false;
+    const auto applyApp = [this](const AppSettings& s) {
+        applyAppSettings(s);
+        flushPendingConfigWrite();
+    };
+    if (key == QLatin1String("theme")) {
+        const QString l = v.toLower();
+        if (l != QLatin1String("light") && l != QLatin1String("dark") && l != QLatin1String("system")) return QString();
+        AppSettings s = m_settings; s.theme = l; applyApp(s);
+    } else if (key == QLatin1String("language")) {
+        const QString l = v.toLower();
+        if (l != QLatin1String("zh") && l != QLatin1String("zh-tw") && l != QLatin1String("en")) return QString();
+        AppSettings s = m_settings; s.language = l; applyApp(s);
+    } else if (key == QLatin1String("search_mode")) {
+        if (v == QLatin1String("strict")) m_w->strictRadio->setChecked(true);
+        else if (v == QLatin1String("density")) m_w->densityRadio->setChecked(true);
+        else return QString();
+    } else if (key == QLatin1String("search_algorithm")) {
+        if (v == QLatin1String("exact")) m_w->algExactRadio->setChecked(true);
+        else if (v == QLatin1String("layered")) m_w->algLayeredRadio->setChecked(true);
+        else if (v == QLatin1String("sample")) m_w->algSampleRadio->setChecked(true);
+        else if (v == QLatin1String("brute")) m_w->algBruteRadio->setChecked(true);
+        else return QString();
+        updateAlgorithmPanels(); saveAlgorithmToConfig();
+    } else if (key == QLatin1String("search_grid")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        if (!nOk || n < 1 || n > 512) return QString();
+        m_w->gridSize->setValue(n);
+    } else if (key == QLatin1String("search_density")) {
+        bool nOk = false; const double n = v.toDouble(&nOk);
+        if (!nOk || n < 0.0 || n > 1.0) return QString();
+        m_w->minDensity->setValue(n);
+    } else if (key == QLatin1String("search_ignore_threshold")) {
+        if (!parseBool(&b)) return QString(); m_w->ignoreThreshold->setChecked(b);
+    } else if (key == QLatin1String("search_lock_direction")) {
+        if (!parseBool(&b)) return QString(); m_w->lockDir->setChecked(b);
+    } else if (key == QLatin1String("result_target")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        if (!nOk || n < 1) return QString(); m_w->targetCount->setValue(n);
+    } else if (key == QLatin1String("result_stop")) {
+        if (!parseBool(&b)) return QString(); m_w->stopAtTarget->setChecked(b);
+    } else if (key == QLatin1String("result_smart")) {
+        if (!parseBool(&b)) return QString(); m_w->smartRange->setChecked(b);
+    } else if (key == QLatin1String("ring_inner") || key == QLatin1String("ring_outer")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        const bool inner = key == QLatin1String("ring_inner");
+        if (!nOk || (inner ? (n < 0 || n > 64) : (n < 16 || n > 1024))) return QString();
+        AppSettings s = m_settings;
+        if (inner) s.afkRingInner = n; else s.afkRingOuter = n;
+        applyApp(s);
+    } else if (key == QLatin1String("ring_scan")) {
+        const QString l = v.toLower();
+        const int data = l == QLatin1String("square") ? 2 : l == QLatin1String("k3") ? 3
+                       : l == QLatin1String("exact") ? 1 : l == QLatin1String("fast") ? 0 : -1;
+        if (data < 0 || !m_w->ringScanCombo) return QString();
+        const int idx = m_w->ringScanCombo->findData(data);
+        if (idx >= 0) m_w->ringScanCombo->setCurrentIndex(idx);
+    } else if (key == QLatin1String("ring_sim_distance")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        if (!nOk || n < 0 || n > 64) return QString(); m_w->simDistance->setValue(n);
+    } else if (key == QLatin1String("cache_enabled")) {
+        if (!parseBool(&b)) return QString(); m_w->useCache->setChecked(b);
+    } else if (key == QLatin1String("gpu_enabled")) {
+        if (!parseBool(&b)) return QString(); m_w->gpuCheck->setChecked(b);
+    } else if (key == QLatin1String("gpu_stream")) {
+        if (!parseBool(&b)) return QString(); m_w->gpuStreamCheck->setChecked(b);
+    } else if (key == QLatin1String("gpu_self_optimize")) {
+        if (!parseBool(&b)) return QString(); m_w->gpuSelfOptCheck->setChecked(b);
+    } else if (key == QLatin1String("gpu_limit")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        if (!nOk || n < 1 || n > 100) return QString(); m_w->gpuLimitSpin->setValue(n);
+    } else if (key == QLatin1String("threads")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        if (!nOk || n < 0) return QString(); m_w->threads->setValue(n);
+    } else if (key == QLatin1String("log_mode")) {
+        const QString l = v.toLower();
+        if (l != QLatin1String("off") && l != QLatin1String("brief") && l != QLatin1String("detailed")) return QString();
+        AppSettings s = m_settings;
+        s.logAtStartup = (l != QLatin1String("off"));
+        s.logLevel = (l == QLatin1String("detailed")) ? 1 : 0;
+        applyApp(s);
+    } else if (key == QLatin1String("log_startup")) {
+        if (!parseBool(&b)) return QString();
+        AppSettings s = m_settings; s.logAtStartup = b; applyApp(s);
+    } else if (key == QLatin1String("display_rate_unit")) {
+        const QString l = v.toLower();
+        const int n = l == QLatin1String("wan") ? 1 : l == QLatin1String("yi") ? 2 : l == QLatin1String("auto") ? 0 : -1;
+        if (n < 0) return QString();
+        AppSettings s = m_settings; s.rateUnit = n; applyApp(s);
+        if (m_w->rateUnitCombo) {
+            const int idx = m_w->rateUnitCombo->findData(n);
+            if (idx >= 0) m_w->rateUnitCombo->setCurrentIndex(idx);
+        }
+    } else if (key == QLatin1String("sound_enabled")) {
+        if (!parseBool(&b)) return QString();
+        AppSettings s = m_settings; s.soundOnComplete = b; applyApp(s);
+    } else if (key == QLatin1String("sound_volume")) {
+        bool nOk = false; const int n = v.toInt(&nOk);
+        if (!nOk || n < 0 || n > 100) return QString();
+        AppSettings s = m_settings; s.soundVolume = n; applyApp(s);
+    } else if (key == QLatin1String("window_remember")) {
+        if (!parseBool(&b)) return QString();
+        AppSettings s = m_settings; s.rememberWindow = b; applyApp(s);
+    }
+    scheduleConfigWrite();
+    if (ok) *ok = true;
+    return settingCurrent(key);
+}
+
+QString MainWindow::runSettingCommand(const QStringList& args)
+{
+    if (args.isEmpty()) {
+        return slime::ui::t("ui.cmd_setting_usage") + QLatin1Char('\n') +
+               settingKeys().join(QStringLiteral("  "));
+    }
+    const QString key = args[0].toLower();
+    if (!settingKeys().contains(key)) {
+        QStringList nearKeys;
+        for (const QString& k : settingKeys())
+            if (k.startsWith(key)) nearKeys << k;
+        if (!nearKeys.isEmpty() && args.size() == 1)
+            return slime::ui::t("ui.cmd_setting_group").arg(key, nearKeys.join(QStringLiteral("  ")));
+        return slime::ui::t("ui.cmd_setting_unknown_key").arg(key);
+    }
+    if (args.size() == 1) {
+        return slime::ui::t("ui.cmd_setting_current")
+            .arg(key, settingCurrent(key), settingAllowed(key));
+    }
+    bool ok = false;
+    const QString value = args.mid(1).join(QLatin1Char(' '));
+    const QString now = applySetting(key, value, &ok);
+    if (!ok) return slime::ui::t("ui.cmd_setting_bad_value").arg(value, key, settingAllowed(key));
+    return slime::ui::t("ui.cmd_setting_changed").arg(key, now);
+}
+
+QString MainWindow::commandFormatHint(const QString& line) const
+{
+    const QString trimmed = line.trimmed();
+    if (trimmed.isEmpty()) return QString();
+    const QStringList parts = trimmed.simplified().split(QLatin1Char(' '));
+    const QString first = parts.value(0).toLower();
+
+    if (first == QLatin1String("setting")) {
+        if (parts.size() < 2) {
+            return slime::ui::t("ui.cmd_hint_setting_usage");
+        }
+        const QString key = parts[1].toLower();
+        if (!settingKeys().contains(key)) {
+            QStringList nearKeys;
+            for (const QString& k : settingKeys())
+                if (k.startsWith(key)) nearKeys << k;
+            if (!nearKeys.isEmpty()) return slime::ui::t("ui.cmd_hint_setting_group").arg(key, nearKeys.join(QStringLiteral("  ")));
+            return slime::ui::t("ui.cmd_hint_setting_unknown").arg(key);
+        }
+        if (parts.size() == 2)
+            return slime::ui::t("ui.cmd_hint_setting_current")
+                .arg(key, settingCurrent(key), settingAllowed(key));
+        return QString();
+    }
+
+    const QStringList names = commandNames();
+    if (names.contains(first)) return QString();
+    if (first == QLatin1String("set") || first == QLatin1String("sett"))
+        return slime::ui::t("ui.cmd_hint_set_typo");
+
+    QStringList nearKeys;
+    for (const QString& n : names)
+        if (n.startsWith(first)) nearKeys << n;
+    if (!nearKeys.isEmpty()) {
+        return slime::ui::t("ui.cmd_hint_command_prefix")
+            .arg(first, nearKeys.join(QStringLiteral("  ")));
+    }
+    return slime::ui::t("ui.cmd_hint_unknown").arg(first);
 }
 
 QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
@@ -407,6 +695,9 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
             return slime::ui::t("ui.e4f8211e4809").arg(one).arg(commandNames().size());
         }
         return QStringLiteral("%1 - %2").arg(one, commandHelp(one));
+    }
+    if (c == QLatin1String("setting")) {
+        return runSettingCommand(args);
     }
     if (c == QLatin1String("theme")) {
         if (args.isEmpty()) {
@@ -792,4 +1083,6 @@ int64_t MainWindow::displayTotalChunks() const
 // v3.5.27（用户反馈：英文覆盖面不够）：把主界面所有可见文本按翻译表改写一遍。
 //   做法：首次记录中文原文（存到 dynamicProperty "zhText"），之后按语言在「原文/译文」之间切换，
 //   这样来回切换不会丢失原文，也不需要把上千处 QStringLiteral 逐个改写。
+
+
 

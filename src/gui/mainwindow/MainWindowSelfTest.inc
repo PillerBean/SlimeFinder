@@ -4553,6 +4553,25 @@ int MainWindow::runSelfTest()
                       names.contains(QStringLiteral("cache")) && names.contains(QStringLiteral("copy")) &&
                       names.contains(QStringLiteral("open")) && names.contains(QStringLiteral("clear")),
                   "新增命令齐备（theme/build/cache/copy/open/clear）");
+            check(names.contains(QStringLiteral("setting")), "新命令 setting 已注册");
+            check(commandFormatHint(QStringLiteral("set")).contains(QStringLiteral("setting")),
+                  "输入 set（缺空格）时提示 setting 用法");
+            check(runCommand(QStringLiteral("setting"), QStringList()).contains(QStringLiteral("search_mode")),
+                  "setting 无参数时列出可用键");
+            check(runCommand(QStringLiteral("setting"), QStringList{ QStringLiteral("search_mode") })
+                      .contains(QStringLiteral("=")),
+                  "setting <key> 返回当前值和可用值");
+            const bool keepDensity = m_w->densityRadio->isChecked();
+            runCommand(QStringLiteral("setting"), QStringList{ QStringLiteral("search_mode"), QStringLiteral("density") });
+            const bool switchedDensity = m_w->densityRadio->isChecked();
+            runCommand(QStringLiteral("setting"),
+                       QStringList{ QStringLiteral("search_mode"), keepDensity ? QStringLiteral("density")
+                                                                           : QStringLiteral("strict") });
+            check(switchedDensity, "setting search_mode density 真正切换模式");
+            check(runCommand(QStringLiteral("setting"),
+                             QStringList{ QStringLiteral("theme"), QStringLiteral("wat") })
+                      .contains(QStringLiteral("light|dark|system")),
+                  "setting 非法值返回可用范围");
         }
 
         // ② 状态类命令确实改状态（可观测的第二种：改状态）
@@ -4668,6 +4687,22 @@ int MainWindow::runSelfTest()
                 if (!canFocus) {
                     std::fprintf(stderr, "[UI自检]   提示：当前平台未把焦点交给输入框，改用「焦点不被抢走」降级判定\n");
                 }
+                // v3.15.x：格式提示与 Tab 分离（此时终端已由 showDock(3) 显示）
+                in->setText(QStringLiteral("set"));
+                QMetaObject::invokeMethod(in, "textEdited", Qt::DirectConnection,
+                                          Q_ARG(QString, QStringLiteral("set")));
+                QElapsedTimer hintWait;
+                hintWait.start();
+                while (hintWait.elapsed() < 350) QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
+                check(m_terminal->hintText().contains(QStringLiteral("setting")),
+                      "set 缺空格时显示 setting 用法提示");
+                QKeyEvent tabHint(QEvent::KeyPress, Qt::Key_Tab, Qt::NoModifier, QStringLiteral("\t"));
+                QApplication::sendEvent(in, &tabHint);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
+                check(in->text() == QStringLiteral("set") && m_terminal->hintText().isEmpty(),
+                      "Tab 不写入格式提示，且提示不干扰候选");
+                m_terminal->hidePopup();
+                in->clear();
                 in->setText(QStringLiteral("s")); // 候选：search/seed/smart/status/stop
                 in->setCursorPosition(1);
                 int focusKept = 0;
