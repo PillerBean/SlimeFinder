@@ -287,7 +287,7 @@ int main(int argc, char** argv)
     }
 
     if (heightMode && prescanUsed && !o.seedCandidates.empty()) {
-        struct HeightHit { double area; int h; int cx; int cz; };
+        struct HeightHit { double area; int h; int cx; int cz; int ox = 8; int oz = 8; };
         const auto th0 = Clock::now();
         std::vector<HeightHit> hits;
         hits.reserve(o.seedCandidates.size());
@@ -334,13 +334,89 @@ int main(int argc, char** argv)
         std::sort(hits.begin(), hits.end(), [](const HeightHit& a, const HeightHit& b) {
             return a.area > b.area;
         });
+        // v3.15.x: refine the top chunk centers over all 16×16 in-chunk offsets.
+        const bool refineOffsets = !std::getenv("RING_HEIGHT_REFINE") ||
+                                   std::string(std::getenv("RING_HEIGHT_REFINE")) != "0";
+        if (refineOffsets) {
+            const size_t top = (std::min)(hits.size(), static_cast<size_t>(heightTopN));
+            for (size_t i = 0; i < top; ++i) {
+                const int cx0 = hits[i].cx;
+                const int cz0 = hits[i].cz;
+                double wchunk[17][17] = {};
+                for (int dz = -8; dz <= 8; ++dz) {
+                    for (int dx = -8; dx <= 8; ++dx) {
+                        const int bx = (cx0 + dx) * 16 + 8;
+                        const int bz = (cz0 + dz) * 16 + 8;
+                        wchunk[dz + 8][dx + 8] =
+                            spawnWeight(biome.biomeAt(bx, bz), Platform::Java);
+                    }
+                }
+                double bestArea = hits[i].area;
+                int bestH = hits[i].h;
+                int bestOx = 8, bestOz = 8;
+                for (int oy = 0; oy < 16; ++oy) {
+                    for (int ox = 0; ox < 16; ++ox) {
+                        double diff2[32] = {};
+                        for (int dz = -8; dz <= 8; ++dz) {
+                            for (int dx = -8; dx <= 8; ++dx) {
+                                if (!pred(cx0 + dx, cz0 + dz)) continue;
+                                const double w = wchunk[dz + 8][dx + 8];
+                                if (w <= 0.0) continue;
+                                const int rx = dx * 16 + 8 - ox;
+                                const int rz = dz * 16 + 8 - oy;
+                                const int rho2 = rx * rx + rz * rz;
+                                int lo2 = inner * inner - rho2;
+                                if (lo2 < 0) lo2 = 0;
+                                const int hi2 = outer * outer - rho2;
+                                if (hi2 < lo2) continue;
+                                int lo = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(lo2))));
+                                int hi = static_cast<int>(std::floor(std::sqrt(static_cast<double>(hi2))));
+                                if (lo < 0) lo = 0;
+                                if (hi > 24) hi = 24;
+                                if (lo > hi) continue;
+                                const double area = w * 256.0;
+                                diff2[lo] += area;
+                                diff2[hi + 1] -= area;
+                            }
+                        }
+                        double cur = 0.0;
+                        for (int h = 0; h <= 24; ++h) {
+                            cur += diff2[h];
+                            if (cur > bestArea + 1e-9) {
+                                bestArea = cur;
+                                bestH = h;
+                                bestOx = ox;
+                                bestOz = oy;
+                            }
+                        }
+                    }
+                }
+                hits[i].area = bestArea;
+                hits[i].h = bestH;
+                hits[i].ox = bestOx;
+                hits[i].oz = bestOz;
+                // Encode the refined block center into chunk coordinates+offset in output.
+                hits[i].cx = cx0;
+                hits[i].cz = cz0;
+                // Keep offset for output via a side table.
+                if (bestOx != 8 || bestOz != 8) {
+                    std::fprintf(stderr, "[HEIGHT] refine cx=%d cz=%d offset=(%d,%d) area=%.3f h=%d\n",
+                                 cx0, cz0, bestOx, bestOz, bestArea, bestH);
+                }
+            }
+            std::sort(hits.begin(), hits.end(), [](const HeightHit& a, const HeightHit& b) {
+                return a.area > b.area;
+            });
+        }
         const size_t keep = (std::min)(hits.size(), static_cast<size_t>(heightTopN));
         const double ms = msSince(th0);
         std::printf("HEIGHT seeds=%zu evaluated=%zu topN=%zu ms=%.1f total_ms=%.1f\n",
                     o.seedCandidates.size(), hits.size(), keep, ms, msSince(tTotal));
         for (size_t i = 0; i < keep; ++i)
-            std::printf("HEIGHT_RESULT rank=%zu cx=%d cz=%d h=%d area=%.3f\n",
-                        i + 1, hits[i].cx, hits[i].cz, hits[i].h, hits[i].area);
+            std::printf("HEIGHT_RESULT rank=%zu cx=%d cz=%d bx=%d bz=%d h=%d area=%.3f\n",
+                        i + 1, hits[i].cx, hits[i].cz,
+                        hits[i].cx * 16 + hits[i].ox, hits[i].cz * 16 + hits[i].oz,
+                        hits[i].h, hits[i].area);
         return 0;
     }
 
