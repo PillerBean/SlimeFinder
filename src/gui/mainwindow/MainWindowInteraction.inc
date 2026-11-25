@@ -310,16 +310,13 @@ void MainWindow::applyThemeFromSettings()
 QStringList MainWindow::commandNames() const
 {
     // v3.4.11（用户拍板：扩展命令表）：新增命令均对应真实功能；help/补全都读这一张表
-    return { QStringLiteral("about"),  QStringLiteral("build"),   QStringLiteral("cache"),
-             QStringLiteral("cancel"), QStringLiteral("center"),  QStringLiteral("clear"),
-             QStringLiteral("copy"),   QStringLiteral("density"), QStringLiteral("gpu"),
-             QStringLiteral("grid"),   QStringLiteral("help"),    QStringLiteral("lock"),
-             QStringLiteral("log"),    QStringLiteral("mode"),    QStringLiteral("open"),
-             QStringLiteral("preset"), QStringLiteral("range"),   QStringLiteral("result"),
-             QStringLiteral("search"), QStringLiteral("seed"),    QStringLiteral("setting"),
-             QStringLiteral("smart"),
-             QStringLiteral("status"), QStringLiteral("stop"),    QStringLiteral("target"),
-             QStringLiteral("theme"),  QStringLiteral("threads"), QStringLiteral("version") };
+    return { QStringLiteral("about"),   QStringLiteral("afk"),     QStringLiteral("build"),
+             QStringLiteral("cache"),   QStringLiteral("cancel"),  QStringLiteral("center"),
+             QStringLiteral("clear"),   QStringLiteral("help"),    QStringLiteral("map"),
+             QStringLiteral("open"),    QStringLiteral("page"),    QStringLiteral("pattern"),
+             QStringLiteral("preset"),  QStringLiteral("range"),   QStringLiteral("result"),
+             QStringLiteral("search"),  QStringLiteral("seed"),    QStringLiteral("setting"),
+             QStringLiteral("status"),  QStringLiteral("version") };
 }
 
 QString MainWindow::commandHelp(const QString& cmd) const
@@ -352,6 +349,10 @@ QString MainWindow::commandHelp(const QString& cmd) const
         { QStringLiteral("copy"), slime::ui::t("ui.60a473d46989") },
         { QStringLiteral("open"), slime::ui::t("ui.e2bc2f6e629e") },
         { QStringLiteral("about"), slime::ui::t("ui.b223e9759bc5") },
+        { QStringLiteral("afk"), slime::ui::t("ui.cmd_afk_help") },
+        { QStringLiteral("map"), slime::ui::t("ui.cmd_map_help") },
+        { QStringLiteral("page"), slime::ui::t("ui.cmd_page_help") },
+        { QStringLiteral("pattern"), slime::ui::t("ui.cmd_pattern_help") },
         { QStringLiteral("clear"), slime::ui::t("ui.9db4f6f902f7") },
     };
     return aHelp.value(cmd, slime::ui::t("ui.6535b7b34aa5"));
@@ -860,6 +861,28 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
                 .arg(static_cast<qlonglong>(m_cache->ranges().size()))
                 .arg(QString::fromStdWString(m_cacheFile.wstring()));
         }
+        if (sub == QLatin1String("list")) {
+            if (!m_cacheStore) return slime::ui::t("ui.cmd_cache_none");
+            const auto& packs = m_cacheStore->packs();
+            QString out = slime::ui::t("ui.cmd_cache_list_head").arg(packs.size());
+            int shown = 0;
+            for (const auto& p : packs) {
+                if (shown++ >= 20) break;
+                out += QLatin1Char('\n') + QString::fromStdString(p.file) +
+                       QStringLiteral("  [%1..%2, %3..%4]  %5 MB")
+                           .arg(p.rect.minX).arg(p.rect.maxX).arg(p.rect.minZ).arg(p.rect.maxZ)
+                           .arg(static_cast<double>(p.compressedBytes) / (1024.0 * 1024.0), 0, 'f', 1);
+            }
+            return out;
+        }
+        if (sub == QLatin1String("open")) {
+            const std::filesystem::path root = m_cacheStore ? m_cacheStore->root() : m_cacheDir;
+            std::error_code ec;
+            std::filesystem::create_directories(root, ec);
+            if (!m_uiQuiet)
+                QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdWString(root.wstring())));
+            return slime::ui::t("ui.cmd_cache_open").arg(QString::fromStdWString(root.wstring()));
+        }
         if (sub == QLatin1String("clear")) {
             if (m_running || m_buildActive) return slime::ui::t("ui.cf0237994529");
             m_cache->clear();
@@ -976,6 +999,68 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         m_w->startZ->setValue(z);
         return slime::ui::t("ui.ccc1c03a364a").arg(x).arg(z);
     }
+    if (c == QLatin1String("page")) {
+        const QString p = argAt(0).toLower();
+        int page = -1;
+        if (p == QLatin1String("search")) page = kPageSearch;
+        else if (p == QLatin1String("build")) page = kPageBuild;
+        else if (p == QLatin1String("settings")) page = kPageSettings;
+        if (page < 0) return slime::ui::t("ui.cmd_page_usage");
+        showPage(page);
+        return slime::ui::t("ui.cmd_page_changed").arg(p);
+    }
+    if (c == QLatin1String("map")) {
+        const QString sub = argAt(0).toLower();
+        if (sub.isEmpty() || sub == QLatin1String("open")) {
+            showPage(kPageSearch);
+            if (m_mapPanel && !m_mapPanel->isVisible()) toggleMapPanel();
+            return slime::ui::t("ui.cmd_map_open");
+        }
+        if (sub == QLatin1String("close")) {
+            if (m_mapPanel && m_mapPanel->isVisible()) toggleMapPanel();
+            return slime::ui::t("ui.cmd_map_close");
+        }
+        if (sub == QLatin1String("fit")) {
+            if (m_map) m_map->fitToContent();
+            return slime::ui::t("ui.cmd_map_fit");
+        }
+        return slime::ui::t("ui.cmd_map_usage");
+    }
+    if (c == QLatin1String("afk")) {
+        if (argAt(0).toLower() != QLatin1String("open"))
+            return slime::ui::t("ui.cmd_afk_usage");
+        showAfkDialog();
+        return slime::ui::t("ui.cmd_afk_open");
+    }
+    if (c == QLatin1String("pattern")) {
+        const QString sub = argAt(0).toLower();
+        if (sub == QLatin1String("clear")) {
+            m_pattern = Pattern();
+            m_patternSet = false;
+            if (m_w->inlinePattern) m_w->inlinePattern->setPattern(m_pattern);
+            updateStartEnabled();
+            return slime::ui::t("ui.cmd_pattern_cleared");
+        }
+        if (sub == QLatin1String("rotate")) {
+            if (m_pattern.rows() <= 0 || m_pattern.cols() <= 0) return slime::ui::t("ui.cmd_pattern_empty");
+            m_pattern = m_pattern.rotated();
+            m_patternSet = m_pattern.activeCount() > 0;
+            if (m_w->inlinePattern) m_w->inlinePattern->setPattern(m_pattern);
+            updateStartEnabled();
+            return slime::ui::t("ui.cmd_pattern_rotated");
+        }
+        if (sub == QLatin1String("size")) {
+            bool nOk = false;
+            const int n = argAt(1).toInt(&nOk);
+            if (!nOk || n < 1 || n > 64) return slime::ui::t("ui.cmd_pattern_size_usage");
+            m_pattern = Pattern(n, n);
+            m_patternSet = false;
+            if (m_w->inlinePattern) m_w->inlinePattern->setPattern(m_pattern);
+            updateStartEnabled();
+            return slime::ui::t("ui.cmd_pattern_sized").arg(n);
+        }
+        return slime::ui::t("ui.cmd_pattern_usage");
+    }
     if (c == QLatin1String("preset")) {
         if (args.isEmpty()) return slime::ui::t("ui.998dc8cd0df2");
         const QString p = args[0].toLower();
@@ -1010,9 +1095,34 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
         return slime::ui::t("ui.f165abcfb21a").arg(m);
     }
     if (c == QLatin1String("search")) {
-        if (m_running) return slime::ui::t("ui.c7ef04e0e586");
-        startSearch(); // 立即返回（后台线程执行）
-        return slime::ui::t("ui.baac3862490e");
+        const QString sub = argAt(0).toLower();
+        if (sub.isEmpty() || sub == QLatin1String("start")) {
+            if (m_running) return slime::ui::t("ui.c7ef04e0e586");
+            startSearch();
+            return slime::ui::t("ui.baac3862490e");
+        }
+        if (sub == QLatin1String("cancel")) {
+            if (!m_running) return slime::ui::t("ui.38f3015a3657");
+            cancelSearch();
+            return slime::ui::t("ui.304ad94d91b1");
+        }
+        if (sub == QLatin1String("status")) return runCommand(QStringLiteral("status"), QStringList());
+        if (sub == QLatin1String("estimate")) {
+            SearchOptions o = wholeMapOptions(versionBound());
+            o.minX = m_w->minX->value(); o.maxX = m_w->maxX->value();
+            o.minZ = m_w->minZ->value(); o.maxZ = m_w->maxZ->value();
+            o.threads = m_w->threads->value();
+            SearchEstimate est;
+            if (!SlimeEngine::estimateSearch(o, o.threads, est))
+                return slime::ui::t("ui.cmd_search_estimate_fail");
+            return slime::ui::t("ui.cmd_search_estimate")
+                .arg(formatDurationRange(est.totalSec * (est.calibrated ? 0.85 : 0.5),
+                                         est.totalSec * (est.calibrated ? 1.2 : 2.0)))
+                .arg(static_cast<qlonglong>(est.areaChunks))
+                .arg(est.calibrated ? slime::ui::t("ui.cmd_calibrated")
+                                    : slime::ui::t("ui.cmd_uncalibrated"));
+        }
+        return slime::ui::t("ui.cmd_search_usage");
     }
     if (c == QLatin1String("cancel")) {
         if (!m_running) return slime::ui::t("ui.38f3015a3657");
@@ -1089,6 +1199,28 @@ QString MainWindow::runCommand(const QString& cmd, const QStringList& args)
             const QString cmdText = cacheCommandFor(m_lastOutcome.results[static_cast<size_t>(n - 1)]);
             QApplication::clipboard()->setText(cmdText);
             return slime::ui::t("ui.d62ce9956d42").arg(n).arg(cmdText);
+        }
+        if (sub == QLatin1String("copy_all")) {
+            if (!m_hasLastOutcome || m_lastOutcome.results.empty()) return slime::ui::t("ui.ff2587f7bcb9");
+            QStringList cmds;
+            const size_t shown = std::min<size_t>(m_lastOutcome.results.size(), static_cast<size_t>(kMaxCards));
+            for (size_t i = 0; i < shown; ++i) cmds << cacheCommandFor(m_lastOutcome.results[i]);
+            QApplication::clipboard()->setText(cmds.join(QLatin1Char('\n')));
+            return slime::ui::t("ui.cmd_result_copy_all").arg(cmds.size());
+        }
+        if (sub == QLatin1String("export")) {
+            const QString path = args.mid(1).join(QLatin1Char(' ')).trimmed();
+            if (path.isEmpty()) return slime::ui::t("ui.cmd_result_export_usage");
+            if (!m_hasLastOutcome) return slime::ui::t("ui.ff2587f7bcb9");
+            std::ofstream out(std::filesystem::path(path.toStdWString()));
+            if (!out) return slime::ui::t("ui.cmd_result_export_fail").arg(path);
+            out << "rank\tchunk_x_min\tchunk_z_min\tchunk_x_max\tchunk_z_max\tdensity_percent\ttp\n";
+            for (size_t i = 0; i < m_lastOutcome.results.size(); ++i) {
+                const MatchResult& r = m_lastOutcome.results[i];
+                out << (i + 1) << '\t' << r.minX << '\t' << r.minZ << '\t' << r.maxX << '\t' << r.maxZ
+                    << '\t' << (r.density * 100.0) << '\t' << cacheCommandFor(r).toStdString() << '\n';
+            }
+            return slime::ui::t("ui.cmd_result_export_ok").arg(m_lastOutcome.results.size()).arg(path);
         }
         // result list [n]（默认 10 条）
         int limit = 10;

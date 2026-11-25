@@ -461,3 +461,32 @@ P3：删除旧别名、清理文档
 - 旧顶层设置命令迁移到 setting，并输出弃用提示；旧名保留
 - 新增 `ui.cmd_deprecated`
 - GUI 自检覆盖设置键/值补全与提示不干扰 Tab
+
+## P0 收尾（2026-11-25）
+
+已完成：
+
+- `search start|cancel|status|estimate`
+- `result copy_all|export`
+- `cache list|open`
+- `page search|build|settings`
+- `map open|close|fit`
+- `pattern clear|rotate|size`
+- `afk open`
+- 旧顶层设置命令从 help/补全隐藏，但仍兼容并提示迁移
+- 命令提示与 setting 输出加入英文/繁体回归断言
+- i18n 审计：1447 keys × 3 语言，占位符 0 不一致
+
+未做（后续）：
+
+- 独立 CommandRegistry 文件（当前行为已在 MainWindow 内注册）
+- `preset result`、`result sort`、`status json`、`cache --yes`
+- 彻底删除旧别名
+
+多语言检查：
+
+```text
+check_ui_text.py：通过
+占位符一致性：0 issues
+英文/繁体 command hint / setting query：自检通过
+```

@@ -4548,11 +4548,15 @@ int MainWindow::runSelfTest()
             check(missingHelp == 0, "每条命令都有帮助文本（help 表与实现一致）");
             check(unknownRun == 0, "每条命令都已实现（无幽灵指令）");
             check(emptyOut == 0, "每条命令都可观测（查询态必有输出）");
-            check(names.size() >= 24, "命令表已扩展（≥24 条）");
-            check(names.contains(QStringLiteral("theme")) && names.contains(QStringLiteral("build")) &&
-                      names.contains(QStringLiteral("cache")) && names.contains(QStringLiteral("copy")) &&
-                      names.contains(QStringLiteral("open")) && names.contains(QStringLiteral("clear")),
-                  "新增命令齐备（theme/build/cache/copy/open/clear）");
+            check(names.size() >= 18, "命令表已收敛（≥18 条）");
+            check(names.contains(QStringLiteral("setting")) && names.contains(QStringLiteral("search")) &&
+                      names.contains(QStringLiteral("result")) && names.contains(QStringLiteral("cache")) &&
+                      names.contains(QStringLiteral("page")) && names.contains(QStringLiteral("map")) &&
+                      names.contains(QStringLiteral("pattern")) && names.contains(QStringLiteral("afk")),
+                  "新命令树齐备（setting/search/result/cache/page/map/pattern/afk）");
+            check(!names.contains(QStringLiteral("theme")) && !names.contains(QStringLiteral("copy")) &&
+                      !names.contains(QStringLiteral("mode")),
+                  "旧顶层设置命令已从 help/补全隐藏");
             check(names.contains(QStringLiteral("setting")), "新命令 setting 已注册");
             check(commandFormatHint(QStringLiteral("set")).contains(QStringLiteral("setting")),
                   "输入 set（缺空格）时提示 setting 用法");
@@ -4572,12 +4576,27 @@ int MainWindow::runSelfTest()
                              QStringList{ QStringLiteral("theme"), QStringLiteral("wat") })
                       .contains(QStringLiteral("light|dark|system")),
                   "setting 非法值返回可用范围");
+            const QString keepTheme = m_settings.theme;
+            const QString legacyOut = runCommand(QStringLiteral("theme"), QStringList{ QStringLiteral("dark") });
+            check(legacyOut.contains(QStringLiteral("setting theme")), "旧 theme 命令提示迁移目标");
+            runCommand(QStringLiteral("setting"), QStringList{ QStringLiteral("theme"), keepTheme });
             const auto keyComp = completeCommand(QStringLiteral("setting se"), 10);
             check(keyComp.items.contains(QStringLiteral("search_mode")),
                   "setting <prefix> Tab 补全到下划线设置键");
             const auto valueComp = completeCommand(QStringLiteral("setting theme d"), 15);
             check(valueComp.items.contains(QStringLiteral("dark")) && !valueComp.appendSpace,
                   "setting <key> <prefix> Tab 补全枚举值且不追加空格");
+            const auto oldLang = slime::ui::language();
+            slime::ui::setLanguage(slime::ui::Language::English);
+            check(commandFormatHint(QStringLiteral("set")).contains(QStringLiteral("setting")) &&
+                      runCommand(QStringLiteral("setting"), QStringList{ QStringLiteral("theme") })
+                          .contains(QStringLiteral("Allowed")),
+                  "命令提示与 setting 查询有英文翻译");
+            slime::ui::setLanguage(slime::ui::Language::Traditional);
+            check(runCommand(QStringLiteral("setting"), QStringList{ QStringLiteral("theme") })
+                      .contains(QStringLiteral("可用")),
+                  "命令提示与 setting 查询有繁体翻译");
+            slime::ui::setLanguage(oldLang);
         }
 
         // ② 状态类命令确实改状态（可观测的第二种：改状态）
