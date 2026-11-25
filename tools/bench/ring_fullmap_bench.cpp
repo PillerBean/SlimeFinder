@@ -75,6 +75,7 @@ int main(int argc, char** argv)
     const bool pointMode = std::getenv("RING_POINT") && std::string(std::getenv("RING_POINT")) == "1";
     const bool heightMode = std::getenv("RING_HEIGHT") && std::string(std::getenv("RING_HEIGHT")) == "1";
     const int heightTopN = std::max(1, std::atoi(std::getenv("RING_HEIGHT_TOP_N") ? std::getenv("RING_HEIGHT_TOP_N") : "20"));
+    const int blockTopN = std::max(1, std::atoi(std::getenv("RING_HEIGHT_BLOCK_TOPN") ? std::getenv("RING_HEIGHT_BLOCK_TOPN") : "10"));
     if (pointMode) {
         errno = 0;
         const char* seedText = std::getenv("RING_SEED") ? std::getenv("RING_SEED") : "0";
@@ -407,6 +408,60 @@ int main(int argc, char** argv)
             std::sort(hits.begin(), hits.end(), [](const HeightHit& a, const HeightHit& b) {
                 return a.area > b.area;
             });
+        }
+        // Block-level biome weights for the best refined centers.
+        const bool blockEval = !std::getenv("RING_HEIGHT_BLOCK") ||
+                               std::string(std::getenv("RING_HEIGHT_BLOCK")) != "0";
+        if (blockEval) {
+            const size_t bt = (std::min)(hits.size(), static_cast<size_t>(blockTopN));
+            const auto tb0 = Clock::now();
+            for (size_t i = 0; i < bt; ++i) {
+                const int bx = hits[i].cx * 16 + hits[i].ox;
+                const int bz = hits[i].cz * 16 + hits[i].oz;
+                double diff3[32] = {};
+                for (int dz = -8; dz <= 8; ++dz) {
+                    for (int dx = -8; dx <= 8; ++dx) {
+                        const int cx = hits[i].cx + dx;
+                        const int cz = hits[i].cz + dz;
+                        if (!pred(cx, cz)) continue;
+                        for (int pz = 0; pz < 16; ++pz) {
+                            for (int px = 0; px < 16; ++px) {
+                                const int wx = cx * 16 + px;
+                                const int wz = cz * 16 + pz;
+                                const double w = spawnWeight(biome.biomeAt(wx, wz), Platform::Java);
+                                if (w <= 0.0) continue;
+                                const int rx = wx - bx;
+                                const int rz = wz - bz;
+                                const int rho2 = rx * rx + rz * rz;
+                                int lo2 = inner * inner - rho2;
+                                if (lo2 < 0) lo2 = 0;
+                                const int hi2 = outer * outer - rho2;
+                                if (hi2 < lo2) continue;
+                                int lo = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(lo2))));
+                                int hi = static_cast<int>(std::floor(std::sqrt(static_cast<double>(hi2))));
+                                if (lo < 0) lo = 0;
+                                if (hi > 24) hi = 24;
+                                if (lo > hi) continue;
+                                diff3[lo] += w;
+                                diff3[hi + 1] -= w;
+                            }
+                        }
+                    }
+                }
+                double cur = 0.0, bestBlock = 0.0;
+                int bestBlockH = 0;
+                for (int h = 0; h <= 24; ++h) {
+                    cur += diff3[h];
+                    if (cur > bestBlock + 1e-9) {
+                        bestBlock = cur;
+                        bestBlockH = h;
+                    }
+                }
+                std::printf("BLOCK_RESULT rank=%zu bx=%d bz=%d h=%d area=%.3f chunk_area=%.3f delta=%.3f\n",
+                            i + 1, bx, bz, bestBlockH, bestBlock, hits[i].area,
+                            bestBlock - hits[i].area);
+            }
+            std::printf("BLOCK_EVAL topN=%zu ms=%.1f\n", bt, msSince(tb0));
         }
         const size_t keep = (std::min)(hits.size(), static_cast<size_t>(heightTopN));
         const double ms = msSince(th0);
