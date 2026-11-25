@@ -73,6 +73,8 @@ int main(int argc, char** argv)
     const int inner = std::max(0, std::atoi(std::getenv("RING_INNER") ? std::getenv("RING_INNER") : "24"));
 
     const bool pointMode = std::getenv("RING_POINT") && std::string(std::getenv("RING_POINT")) == "1";
+    const bool heightMode = std::getenv("RING_HEIGHT") && std::string(std::getenv("RING_HEIGHT")) == "1";
+    const int heightTopN = std::max(1, std::atoi(std::getenv("RING_HEIGHT_TOP_N") ? std::getenv("RING_HEIGHT_TOP_N") : "20"));
     if (pointMode) {
         errno = 0;
         const char* seedText = std::getenv("RING_SEED") ? std::getenv("RING_SEED") : "0";
@@ -282,6 +284,64 @@ int main(int argc, char** argv)
             prescanFallback = true;
         }
         prescanMs = msSince(t0);
+    }
+
+    if (heightMode && prescanUsed && !o.seedCandidates.empty()) {
+        struct HeightHit { double area; int h; int cx; int cz; };
+        const auto th0 = Clock::now();
+        std::vector<HeightHit> hits;
+        hits.reserve(o.seedCandidates.size());
+        const int radiusChunks = outer / 16;  // 128 blocks -> 8 chunks
+        for (const auto& s : o.seedCandidates) {
+            const int bx = s.first * 16 + 8;
+            const int bz = s.second * 16 + 8;
+            double diff[32] = {};
+            for (int dz = -radiusChunks; dz <= radiusChunks; ++dz) {
+                for (int dx = -radiusChunks; dx <= radiusChunks; ++dx) {
+                    const int cx = s.first + dx;
+                    const int cz = s.second + dz;
+                    if (!pred(cx, cz)) continue;
+                    const int wx = bx + dx * 16;
+                    const int wz = bz + dz * 16;
+                    const double w = spawnWeight(biome.biomeAt(wx, wz), Platform::Java);
+                    if (w <= 0.0) continue;
+                    const int rho2 = dx * dx * 256 + dz * dz * 256;
+                    int lo2 = inner * inner - rho2;
+                    if (lo2 < 0) lo2 = 0;
+                    const int hi2 = outer * outer - rho2;
+                    if (hi2 < lo2) continue;
+                    int lo = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(lo2))));
+                    int hi = static_cast<int>(std::floor(std::sqrt(static_cast<double>(hi2))));
+                    if (lo < 0) lo = 0;
+                    if (hi > 24) hi = 24;  // H>24 is dominated by H=24 for non-negative weights
+                    if (lo > hi) continue;
+                    const double area = w * 256.0;
+                    diff[lo] += area;
+                    diff[hi + 1] -= area;
+                }
+            }
+            double cur = 0.0, best = 0.0;
+            int bestH = 0;
+            for (int h = 0; h <= 24; ++h) {
+                cur += diff[h];
+                if (cur > best + 1e-9) {
+                    best = cur;
+                    bestH = h;
+                }
+            }
+            if (best > 0.0) hits.push_back(HeightHit{ best, bestH, s.first, s.second });
+        }
+        std::sort(hits.begin(), hits.end(), [](const HeightHit& a, const HeightHit& b) {
+            return a.area > b.area;
+        });
+        const size_t keep = (std::min)(hits.size(), static_cast<size_t>(heightTopN));
+        const double ms = msSince(th0);
+        std::printf("HEIGHT seeds=%zu evaluated=%zu topN=%zu ms=%.1f total_ms=%.1f\n",
+                    o.seedCandidates.size(), hits.size(), keep, ms, msSince(tTotal));
+        for (size_t i = 0; i < keep; ++i)
+            std::printf("HEIGHT_RESULT rank=%zu cx=%d cz=%d h=%d area=%.3f\n",
+                        i + 1, hits[i].cx, hits[i].cz, hits[i].h, hits[i].area);
+        return 0;
     }
 
     const auto tPlan = Clock::now();
