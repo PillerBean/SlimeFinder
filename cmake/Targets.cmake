@@ -511,6 +511,15 @@ if(MSVC)
     target_compile_options(slime_thread_scaling_bench PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_biome_weight_dump
+    tools/bench/biome_weight_dump.cpp
+)
+target_include_directories(slime_biome_weight_dump PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_biome_weight_dump PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_biome_weight_dump PRIVATE /utf-8 /EHsc /permissive-)
+endif()
+
 add_executable(slime_cache_store_tests
     tests/integration/cache_store_test.cpp
 )
