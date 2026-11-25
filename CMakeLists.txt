@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(SlimeFinder
-    VERSION 3.13.15
+    VERSION 3.13.16
     DESCRIPTION "史莱姆区块查找器 - Slime Chunk Finder (C++/Qt)"
     LANGUAGES CXX C)
 
