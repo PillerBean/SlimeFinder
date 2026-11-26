@@ -1447,5 +1447,6 @@
   "ui.cmd_cache_list_head": "快取包：%1 個",
   "ui.cmd_cache_open": "已開啟快取目錄：%1",
   "ui.afk_height": "高度 H",
-  "ui.afk_effective_area": "有效面積"
+  "ui.afk_effective_area": "有效面積",
+  "ui.afk_height_suffix": "高度 H=%1，有效面積=%2"
 }

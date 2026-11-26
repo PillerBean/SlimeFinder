@@ -1447,5 +1447,6 @@
   "ui.cmd_cache_list_head": "Cache packs: %1",
   "ui.cmd_cache_open": "Opened cache directory: %1",
   "ui.afk_height": "Height H",
-  "ui.afk_effective_area": "Effective area"
+  "ui.afk_effective_area": "Effective area",
+  "ui.afk_height_suffix": "height H=%1, effective area=%2"
 }

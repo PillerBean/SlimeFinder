@@ -1447,5 +1447,6 @@
   "ui.cmd_cache_list_head": "缓存包：%1 个",
   "ui.cmd_cache_open": "已打开缓存目录：%1",
   "ui.afk_height": "高度 H",
-  "ui.afk_effective_area": "有效面积"
+  "ui.afk_effective_area": "有效面积",
+  "ui.afk_height_suffix": "高度 H=%1，有效面积=%2"
 }

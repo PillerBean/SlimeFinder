@@ -35,7 +35,7 @@ QString AfkDialog::commandFor(const slime::AfkCandidate& c)
 
 QString AfkDialog::cellTextFor(const slime::AfkCandidate& c)
 {
-    return slime::ui::t("ui.d5a72d5948cc")
+    QString text = slime::ui::t("ui.d5a72d5948cc")
         .arg(c.x)
         .arg(c.z)
         .arg(c.chunkX)
@@ -43,6 +43,12 @@ QString AfkDialog::cellTextFor(const slime::AfkCandidate& c)
         .arg(static_cast<long long>(c.coveredBlocks))
         .arg(c.coveredChunks)
         .arg(QString::number(c.coveragePercent, 'f', 1));
+    if (c.hasHeight) {
+        text += QStringLiteral("  |  ") + slime::ui::t("ui.afk_height_suffix")
+                                                 .arg(c.bestHeight)
+                                                 .arg(QString::number(c.effectiveArea, 'f', 1));
+    }
+    return text;
 }
 
 AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_ctx(ctx)

@@ -3285,6 +3285,28 @@ int MainWindow::runSelfTest()
             ctx.seed = 0;
             ctx.minX = -8; ctx.maxX = 8; ctx.minZ = -8; ctx.maxZ = 8;
             ctx.source = slime::ui::t("ui.7f6458c909de");
+            const auto oldAfkLang = slime::ui::language();
+            slime::ui::setLanguage(slime::ui::Language::English);
+            AfkDialog enDlg(ctx, this);
+            check(enDlg.table() && enDlg.table()->horizontalHeaderItem(9) &&
+                      enDlg.table()->horizontalHeaderItem(9)->text() == QStringLiteral("Height H") &&
+                      enDlg.table()->horizontalHeaderItem(10) &&
+                      enDlg.table()->horizontalHeaderItem(10)->text() == QStringLiteral("Effective area"),
+                  "挂机点：英文高度/有效面积表头");
+            check(!enDlg.results().empty() &&
+                      AfkDialog::cellTextFor(enDlg.results().front()).contains(QStringLiteral("effective area")),
+                  "挂机点：英文高度摘要");
+            slime::ui::setLanguage(slime::ui::Language::Traditional);
+            AfkDialog twDlg(ctx, this);
+            check(twDlg.table() && twDlg.table()->horizontalHeaderItem(9) &&
+                      twDlg.table()->horizontalHeaderItem(9)->text() == QStringLiteral("高度 H") &&
+                      twDlg.table()->horizontalHeaderItem(10) &&
+                      twDlg.table()->horizontalHeaderItem(10)->text() == QStringLiteral("有效面積"),
+                  "挂机点：繁体高度/有效面积表头");
+            check(!twDlg.results().empty() &&
+                      AfkDialog::cellTextFor(twDlg.results().front()).contains(QStringLiteral("有效面積")),
+                  "挂机点：繁体高度摘要");
+            slime::ui::setLanguage(slime::ui::Language::Chinese);
             AfkDialog dlg(ctx, this);
             dlg.setModal(false);
             const auto& res = dlg.results();
@@ -3328,6 +3350,7 @@ int MainWindow::runSelfTest()
             check(AfkDialog::commandFor(res.empty() ? AfkCandidate{} : res.front())
                       .split(QLatin1Char(' ')).size() == 5,
                   "挂机点：/tp 命令含 X/Y/Z 三个坐标");
+            slime::ui::setLanguage(oldAfkLang);
         }
 
         // ⑩ v3.5.2（任务 2）：地图预览（缩放 / 史莱姆区块 / 挂机点）
