@@ -38,6 +38,14 @@ struct AfkCandidate {
     double centroidX = 0.0;       // 覆盖到的史莱姆区块的几何重心（方块坐标，便于地图预览）
     double centroidZ = 0.0;
     double centerDist = 0.0;      // 该点到重心的距离（打平覆盖面积时的取点依据）
+
+    // v3.15.x：高度感知最终评分（基岩底层固定，H=0..24）。
+    bool hasHeight = false;
+    int bestHeight = 0;
+    int heightBandLo = 0;
+    int heightBandHi = 0;
+    double effectiveArea = 0.0;   // 块级群系加权有效面积
+    int64_t heightBlocks = 0;     // 有效方块数
 };
 
 struct AfkPlanOptions {

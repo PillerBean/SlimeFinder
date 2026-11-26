@@ -3310,6 +3310,24 @@ int MainWindow::runSelfTest()
             check(!res.empty() && res.front().coveredWeight > 0.0, "挂机点：加权覆盖 > 0（群系权重已生效）");
             check(!res.empty() && res.front().avgWeight > 0.0 && res.front().avgWeight <= 1.2,
                   "挂机点：平均权重在合理区间（0~1.2）");
+            check(!res.empty() && res.front().hasHeight,
+                  "挂机点：高度感知最终评分已启用");
+            check(!res.empty() && res.front().bestHeight >= 0 && res.front().bestHeight <= 24,
+                  "挂机点：推荐高度在 0..24");
+            check(!res.empty() && res.front().effectiveArea > 0.0,
+                  "挂机点：块级有效面积 > 0");
+            check(dlg.table() && dlg.table()->columnCount() == 11 &&
+                      dlg.table()->item(0, 9) && dlg.table()->item(0, 9)->text() != QStringLiteral("-") &&
+                      dlg.table()->item(0, 10) && dlg.table()->item(0, 10)->text() != QStringLiteral("-"),
+                  "挂机点：表格显示高度与有效面积");
+            std::fprintf(stderr, "[UI自检]   高度：H=%d 有效面积=%.1f 高度带=%d..%d\n",
+                         res.empty() ? -1 : res.front().bestHeight,
+                         res.empty() ? 0.0 : res.front().effectiveArea,
+                         res.empty() ? -1 : res.front().heightBandLo,
+                         res.empty() ? -1 : res.front().heightBandHi);
+            check(AfkDialog::commandFor(res.empty() ? AfkCandidate{} : res.front())
+                      .split(QLatin1Char(' ')).size() == 5,
+                  "挂机点：/tp 命令含 X/Y/Z 三个坐标");
         }
 
         // ⑩ v3.5.2（任务 2）：地图预览（缩放 / 史莱姆区块 / 挂机点）

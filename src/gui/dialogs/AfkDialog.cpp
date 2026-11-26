@@ -1,6 +1,7 @@
 // v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
 #include "i18n/UiText.h"
 #include "gui/dialogs/AfkDialog.h"
+#include "core/HeightRefiner.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -12,6 +13,8 @@
 #include <QSpinBox>
 #include <QTableWidget>
 #include <QVBoxLayout>
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <limits>
 
@@ -25,8 +28,9 @@ slime::SlimeChunkPredicate makePredicate(int version, int64_t seed)
 
 QString AfkDialog::commandFor(const slime::AfkCandidate& c)
 {
-    // 挂机点在地面以上即可；Y 用 100 只是占位，玩家可用 /tp 后自行下降
-    return QStringLiteral("/tp @s %1 100 %2").arg(c.x).arg(c.z);
+    // v3.15.x：基岩底层 Y=-64，平台顶面 -63；高度最优时直接给出绝对 Y。
+    const int y = c.hasHeight ? (-63 + c.bestHeight) : 100;
+    return QStringLiteral("/tp @s %1 %2 %3").arg(c.x).arg(y).arg(c.z);
 }
 
 QString AfkDialog::cellTextFor(const slime::AfkCandidate& c)
@@ -84,11 +88,13 @@ AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     lay->addWidget(m_summary);
 
     m_table = new QTableWidget(this);
-    m_table->setColumnCount(9);
+    m_table->setColumnCount(11);
     m_table->setHorizontalHeaderLabels({ QStringLiteral("#"), QStringLiteral("X"), QStringLiteral("Z"),
                                          slime::ui::t("ui.3da82d85c5de"), slime::ui::t("ui.6e1a9b47c22b"),
                                          slime::ui::t("ui.30c8ff494553"), slime::ui::t("ui.d5d366170935"),
-                                         slime::ui::t("ui.d5f4497fa38f"), slime::ui::t("ui.977c87ae5b09") });
+                                         slime::ui::t("ui.d5f4497fa38f"), slime::ui::t("ui.977c87ae5b09"),
+                                         slime::ui::t("ui.afk_height"),
+                                         slime::ui::t("ui.afk_effective_area") });
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -175,6 +181,35 @@ void AfkDialog::recompute()
     const auto pred = makePredicate(m_ctx.version, m_ctx.seed);
     m_results = slime::AfkPlanner::plan(o, pred);
 
+    // v3.15.x：最终评分改为“高度可变的有效面积”，不再作为可选算法。
+    if (!m_results.empty()) {
+        const slime::Version ver = (m_ctx.version == 1) ? slime::Version::Bedrock : slime::Version::Java;
+        const slime::Platform plat = (platform == 1) ? slime::Platform::Bedrock : slime::Platform::Java;
+        slime::HeightRefiner refiner(ver, m_ctx.seed, versionId, plat, m_weighted);
+        if (refiner.valid()) {
+            for (auto& c : m_results) {
+                const auto r = refiner.refine(c.x, c.z, 24, radius, 16);
+                if (!r.valid) continue;
+                c.hasHeight = true;
+                c.bestHeight = r.bestHeight;
+                c.heightBandLo = r.bandLo;
+                c.heightBandHi = r.bandHi;
+                c.effectiveArea = r.effectiveArea;
+                c.heightBlocks = r.coveredBlocks;
+                c.x = r.x;
+                c.z = r.z;
+                c.chunkX = c.x >= 0 ? c.x / 16 : -((-c.x + 15) / 16);
+                c.chunkZ = c.z >= 0 ? c.z / 16 : -((-c.z + 15) / 16);
+            }
+            std::stable_sort(m_results.begin(), m_results.end(), [](const auto& a, const auto& b) {
+                if (a.hasHeight != b.hasHeight) return a.hasHeight;
+                if (std::abs(a.effectiveArea - b.effectiveArea) > 1e-9)
+                    return a.effectiveArea > b.effectiveArea;
+                return a.coveredWeight > b.coveredWeight;
+            });
+        }
+    }
+
     fillTable();
 
     if (m_summary) {
@@ -228,6 +263,8 @@ void AfkDialog::fillTable()
         m_table->setItem(i, 6, new QTableWidgetItem(QStringLiteral("%1%").arg(QString::number(c.coveragePercent, 'f', 1))));
         m_table->setItem(i, 7, new QTableWidgetItem(QString::number(c.coveredWeight, 'f', 0)));
         m_table->setItem(i, 8, new QTableWidgetItem(QString::number(c.avgWeight, 'f', 2)));
+        m_table->setItem(i, 9, new QTableWidgetItem(c.hasHeight ? QString::number(c.bestHeight) : QStringLiteral("-")));
+        m_table->setItem(i, 10, new QTableWidgetItem(c.hasHeight ? QString::number(c.effectiveArea, 'f', 1) : QStringLiteral("-")));
         if (c.onChunkCorner) {
             m_table->item(i, 1)->setToolTip(slime::ui::t("ui.c327477ff7e5"));
         }

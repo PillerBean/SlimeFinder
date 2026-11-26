@@ -1,4 +1,4 @@
-# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
+﻿# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
 
 # ---------------------------------------------------------------- zstd（BSD）：缓存块压缩
 # 自包含 vendored 源码，不依赖系统 zstd。
@@ -63,6 +63,7 @@ add_library(slime_core STATIC
     src/core/SearchJob.cpp
     src/core/MemoryBudget.cpp
     src/core/AfkPlanner.cpp   # v3.5.2（任务 1）：环形覆盖挂机点规划（1/16 区块精度）
+    src/core/HeightRefiner.cpp # v3.15.x：高度感知最终评分
     src/core/BiomeMap.cpp     # v3.5.2（任务 2/3）：cubiomes 群系地图（彩色预览 / 权重数据底座）
     src/core/SpawnWeights.cpp # v3.5.2（任务 3）：群系 → 史莱姆刷怪效率权重（Wiki 数据）
     src/core/PerfLog.cpp        # E3.3.7.2（任务书步骤 2 / P1-D）：引擎侧性能事件
@@ -626,3 +627,4 @@ target_link_libraries(slime_height_region_local PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_height_region_local PRIVATE /utf-8 /EHsc /permissive-)
 endif()
+

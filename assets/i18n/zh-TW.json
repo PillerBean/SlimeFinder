@@ -1445,5 +1445,7 @@
   "ui.cmd_result_export_ok": "已匯出 %1 條結果到 %2",
   "ui.cmd_cache_none": "目前沒有 v3 快取包",
   "ui.cmd_cache_list_head": "快取包：%1 個",
-  "ui.cmd_cache_open": "已開啟快取目錄：%1"
+  "ui.cmd_cache_open": "已開啟快取目錄：%1",
+  "ui.afk_height": "高度 H",
+  "ui.afk_effective_area": "有效面積"
 }

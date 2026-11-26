@@ -1445,5 +1445,7 @@
   "ui.cmd_result_export_ok": "Exported %1 results to %2",
   "ui.cmd_cache_none": "No v3 cache packs",
   "ui.cmd_cache_list_head": "Cache packs: %1",
-  "ui.cmd_cache_open": "Opened cache directory: %1"
+  "ui.cmd_cache_open": "Opened cache directory: %1",
+  "ui.afk_height": "Height H",
+  "ui.afk_effective_area": "Effective area"
 }
