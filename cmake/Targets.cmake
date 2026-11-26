@@ -618,3 +618,11 @@ if(MSVC)
     endforeach()
 endif()
 
+add_executable(slime_height_region_local
+    tools/bench/height_region_local.cpp
+)
+target_include_directories(slime_height_region_local PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(slime_height_region_local PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_height_region_local PRIVATE /utf-8 /EHsc /permissive-)
+endif()
