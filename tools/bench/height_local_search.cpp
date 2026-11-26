@@ -30,7 +30,6 @@ int main(int argc, char** argv)
     std::vector<BlockW> blocks;
     for (int dz = -win; dz <= win; ++dz) {
         for (int dx = -win; dx <= win; ++dx) {
-            if (dx * dx + dz * dz > 128 * 128) continue;
             const int wx = bx + dx, wz = bz + dz;
             const int cx = wx >= 0 ? wx / 16 : -((-wx + 15) / 16);
             const int cz = wz >= 0 ? wz / 16 : -((-wz + 15) / 16);
