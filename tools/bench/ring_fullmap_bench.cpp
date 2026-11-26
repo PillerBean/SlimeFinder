@@ -463,9 +463,84 @@ int main(int argc, char** argv)
             }
             std::printf("BLOCK_EVAL topN=%zu ms=%.1f\n", bt, msSince(tb0));
         }
+        // v3.15.x: local block-level neighborhood search around top candidates.
+        {
+            const int lr = std::max(1, std::atoi(std::getenv("RING_HEIGHT_LOCAL_RADIUS")
+                                                    ? std::getenv("RING_HEIGHT_LOCAL_RADIUS") : "16"));
+            const int lt = std::max(1, std::atoi(std::getenv("RING_HEIGHT_LOCAL_TOPN")
+                                                    ? std::getenv("RING_HEIGHT_LOCAL_TOPN") : "20"));
+            struct LB { int rx, rz; double w; };
+            double bestLocal = -1.0;
+            int bestLocalH = 0, bestLocalX = 0, bestLocalZ = 0;
+            const size_t nt = (std::min)(hits.size(), static_cast<size_t>(lt));
+            for (size_t i = 0; i < nt; ++i) {
+                const int baseX = hits[i].cx * 16 + 8;
+                const int baseZ = hits[i].cz * 16 + 8;
+                const int win = 128 + lr;
+                std::vector<LB> blocks;
+                for (int dz = -win; dz <= win; ++dz) {
+                    for (int dx = -win; dx <= win; ++dx) {
+                        const int wx = baseX + dx, wz = baseZ + dz;
+                        const int cx = wx >= 0 ? wx / 16 : -((-wx + 15) / 16);
+                        const int cz = wz >= 0 ? wz / 16 : -((-wz + 15) / 16);
+                        if (!pred(cx, cz)) continue;
+                        const double w = spawnWeight(biome.biomeAt(wx, wz), Platform::Java);
+                        if (w > 0.0) blocks.push_back(LB{ dx, dz, w });
+                    }
+                }
+                auto eval = [&](int ox, int oz, int& outH) {
+                    double diff[32] = {};
+                    for (const auto& b : blocks) {
+                        const int rx = b.rx - ox, rz = b.rz - oz;
+                        const int rho2 = rx * rx + rz * rz;
+                        if (rho2 > outer * outer) continue;
+                        int lo2 = inner * inner - rho2;
+                        if (lo2 < 0) lo2 = 0;
+                        const int hi2 = outer * outer - rho2;
+                        if (hi2 < lo2) continue;
+                        int lo = static_cast<int>(std::ceil(std::sqrt(static_cast<double>(lo2))));
+                        int hi = static_cast<int>(std::floor(std::sqrt(static_cast<double>(hi2))));
+                        if (lo < 0) lo = 0;
+                        if (hi > 24) hi = 24;
+                        if (lo <= hi) { diff[lo] += b.w; diff[hi + 1] -= b.w; }
+                    }
+                    double cur = 0.0, best = 0.0;
+                    int bh = 0;
+                    for (int h = 0; h <= 24; ++h) {
+                        cur += diff[h];
+                        if (cur > best) { best = cur; bh = h; }
+                    }
+                    outH = bh;
+                    return best;
+                };
+                int coarseH = 0, bOx = 0, bOz = 0;
+                double coarse = -1.0;
+                for (int oz = -lr; oz <= lr; oz += 4) {
+                    for (int ox = -lr; ox <= lr; ox += 4) {
+                        int hh = 0;
+                        const double a = eval(ox, oz, hh);
+                        if (a > coarse) { coarse = a; coarseH = hh; bOx = ox; bOz = oz; }
+                    }
+                }
+                for (int oz = bOz - 4; oz <= bOz + 4; ++oz) {
+                    for (int ox = bOx - 4; ox <= bOx + 4; ++ox) {
+                        int hh = 0;
+                        const double a = eval(ox, oz, hh);
+                        if (a > bestLocal) {
+                            bestLocal = a;
+                            bestLocalH = hh;
+                            bestLocalX = baseX + ox;
+                            bestLocalZ = baseZ + oz;
+                        }
+                    }
+                }
+                (void)coarseH;
+            }
+            std::printf("LOCAL_RESULT bx=%d bz=%d h=%d area=%.3f topN=%zu radius=%d\n",
+                        bestLocalX, bestLocalZ, bestLocalH, bestLocal, nt, lr);
+        }
         const size_t keep = (std::min)(hits.size(), static_cast<size_t>(heightTopN));
-        const double ms = msSince(th0);
-        std::printf("HEIGHT seeds=%zu evaluated=%zu topN=%zu ms=%.1f total_ms=%.1f\n",
+        const double ms = msSince(th0);        std::printf("HEIGHT seeds=%zu evaluated=%zu topN=%zu ms=%.1f total_ms=%.1f\n",
                     o.seedCandidates.size(), hits.size(), keep, ms, msSince(tTotal));
         for (size_t i = 0; i < keep; ++i)
             std::printf("HEIGHT_RESULT rank=%zu cx=%d cz=%d bx=%d bz=%d h=%d area=%.3f\n",
