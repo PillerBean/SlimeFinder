@@ -231,14 +231,14 @@ void MainWindow::applyAppSettings(const AppSettings& s)
     // 否则挂起的「设置自动生效」定时器 60ms 后会用**过期页面值**把刚改的设置改回去
     //（自检实测：主题被改回并多出一次 QSS 重放）。
     syncSettingsPageFromState();
-    updateMemoryBudgetUi();   // v3.15.x：内存上限变化后刷新搜索页 C 组摘要
-    syncRingRadiusFromSettings();   // v3.15.x：环形半径设置变化后同步搜索页 B 组控件
+    updateMemoryBudgetUi();   // v3.16.x：内存上限变化后刷新搜索页 ④ 执行设置摘要
+    syncRingRadiusFromSettings();   // v3.16.x：环形半径设置变化后同步搜索页 ③ 结果要求的环形选项控件
     addFeedback(2, slime::ui::tr(slime::ui::t("ui.c68f92da9c8f")));
     setStatus(slime::ui::tr(slime::ui::t("ui.c5c0ada6fbc6")));
     slime::LogBus::info("程序设置已应用");
 }
 
-// v3.15.x（搜索页 C 组）：RAM 预算摘要 —— 与 runSearch 完全同源（MemoryBudget::fromSettingMB），
+// v3.15.x（搜索页 ④ 执行设置）：RAM 预算摘要 —— 与 runSearch 完全同源（MemoryBudget::fromSettingMB），
 //   只读展示「自动/手动 + 分块位图 / pack LRU / GPU 主机」三档；上限仍在设置页调整。
 void MainWindow::updateMemoryBudgetUi()
 {
@@ -259,7 +259,7 @@ void MainWindow::updateMemoryBudgetUi()
         m_w->memoryBudgetLabel->setToolTip(slime::ui::t("ui.memory_budget_tip"));
 }
 
-// v3.15.x（第二阶段）：m_settings 的环形内外半径 → 搜索页 B 环形选项控件。
+// v3.15.x（第二阶段）：m_settings 的环形内外半径 → 搜索页 ③ 结果要求的环形选项控件。
 //   设置页的高级项已移除；命令终端 set ring_inner/ring_outer 与配置文件加载都走这里同步。
 void MainWindow::syncRingRadiusFromSettings()
 {
@@ -745,11 +745,11 @@ void MainWindow::updateAdvancedVisibility()
     const int customIdx = patternMode ? 3 : (ringShape ? 2 : 8);
     const bool custom = m_w->presetCombo && m_w->presetCombo->currentIndex() == customIdx;
     const bool showAdvanced = custom;
-    // v3.15.x（A/B/C 重排）：B「结果要求」与其中的目标数量/停止方式**始终可见**，
+    // v3.16.x（搜索页四组重排）：③「结果要求」与其中的目标数量/停止方式**始终可见**，
     //   方案冲突只用控件自身 enable/disable 表达（applyResultConflicts），不再整组收起。
-    //   A「搜索方式」里显示哪一块由 updateSearchShapeEnabled 决定（环形=扫描方式，其它=匹配算法）。
-    //   densityAdvanced 只剩「正方形网格」等高级项，仍保持「仅自定义方案显示」的原语义。
-    if (m_w->densityAdvanced) m_w->densityAdvanced->setVisible(showAdvanced && !patternMode);
+    //   ②「搜索方式」里显示哪一块由 updateSearchShapeEnabled 决定（环形=扫描方式，其它=匹配算法）。
+    //   densityAdvanced 只剩「正方形网格」，仅自定义方案 + 正方形密度显示（环形/图案模式整块隐藏）。
+    if (m_w->densityAdvanced) m_w->densityAdvanced->setVisible(showAdvanced && !patternMode && !ringShape);
     if (m_w->lockDir) m_w->lockDir->setVisible(showAdvanced && patternMode);
     updatePresetDisclaimer();
 }
@@ -775,7 +775,7 @@ void MainWindow::markPresetCustom(const QString& reason)
 // v3.5.6：区域形状 = 环形覆盖时，把「正方形/密度搜索」相关控件全部置灰
 void MainWindow::updateSearchShapeEnabled()
 {
-    if (!m_w || !m_w->densityPanel) return;
+    if (!m_w || !m_w->shapeRow) return;
     // v3.5.18（用户要求）：一级二选一 → 下方只显示能调的选项，不再简单置灰。
     const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
     const bool ringShape = m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
@@ -785,17 +785,21 @@ void MainWindow::updateSearchShapeEnabled()
         return;
     }
 
+    // ① 搜索内容：图案模式显示图案编辑器；密度模式显示区域形状（方形 / 环形）。
     if (m_w->strictPanel) m_w->strictPanel->setVisible(patternMode);
-    if (m_w->densityPanel) m_w->densityPanel->setVisible(!patternMode);
+    if (m_w->shapeRow) m_w->shapeRow->setVisible(!patternMode);
+    // ③ 结果要求：最低密度 / 忽略阈值只属于密度模式，图案模式整行隐藏（密度模式下常显）。
+    if (m_w->densityThresholdRow) m_w->densityThresholdRow->setVisible(!patternMode);
     // v3.9.11：模式决定方案数量与内容（仅在模式真正变化时重建，避免重置用户选择）
     const int expectedPresetCount = patternMode ? 4 : (ringShape ? 3 : 9);
     if (m_w->presetCombo && (m_presetPatternMode != (patternMode ? 1 : 0) ||
                               m_w->presetCombo->count() != expectedPresetCount))
         rebuildPresets();
     applyResultConflicts();
+    // ③ 结果要求：正方形网格 / 环形选项按形状二选一。
     if (m_w->squareOpts) m_w->squareOpts->setVisible(!patternMode && !ringShape);
     if (m_w->ringOpts) m_w->ringOpts->setVisible(!patternMode && ringShape);
-    // v3.15.x（A/B/C 重排）：A「搜索方式」—— 环形显示「环形扫描方式」，图案/正方形显示「匹配方式」
+    // ② 搜索方式：环形显示「环形扫描方式」，图案 / 正方形显示「匹配方式」。
     if (m_w->ringScanRow) m_w->ringScanRow->setVisible(!patternMode && ringShape);
     if (m_w->matchGroup) m_w->matchGroup->setVisible(!ringShape);
     if (m_w->smartRange) m_w->smartRange->setVisible(!ringShape);

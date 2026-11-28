@@ -1466,5 +1466,6 @@
   "ui.weight_biome": "按群系权重排序（Java）",
   "ui.weight_biome_tip": "仅 Java + 环形模式可用。默认勾选，与现有行为一致；取消后按纯方块数统计（Bedrock 无群系数据，始终按纯方块数）。",
   "ui.result_limits_group": "停止与数量",
-  "ui.ring_radius_moved": "环形内/外半径已移到搜索页「结果要求」里的环形选项（默认 24 / 128 格）。"
+  "ui.ring_radius_moved": "环形内/外半径已移到搜索页「结果要求」里的环形选项（默认 24 / 128 格）。",
+  "ui.search_content_group": "搜索内容"
 }

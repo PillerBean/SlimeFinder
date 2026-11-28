@@ -1466,5 +1466,6 @@
   "ui.weight_biome": "Rank by biome weight (Java)",
   "ui.weight_biome_tip": "Java + ring mode only. On by default to match current behavior; when off, rank by raw block count (Bedrock has no biome data and always uses raw block count).",
   "ui.result_limits_group": "Stop & Count",
-  "ui.ring_radius_moved": "Ring inner/outer radius moved to the search page (Requirements -> ring options; default 24 / 128 blocks)."
+  "ui.ring_radius_moved": "Ring inner/outer radius moved to the search page (Requirements -> ring options; default 24 / 128 blocks).",
+  "ui.search_content_group": "Search Content"
 }
