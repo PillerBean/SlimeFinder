@@ -1448,5 +1448,10 @@
   "ui.cmd_cache_open": "已打开缓存目录：%1",
   "ui.afk_height": "高度 H",
   "ui.afk_effective_area": "有效面积",
-  "ui.afk_height_suffix": "高度 H=%1，有效面积=%2"
+  "ui.afk_height_suffix": "高度 H=%1，有效面积=%2",
+  "ui.bedrock_river_helper_missing": "Bedrock 河流过滤未执行：缺少群系查询工具 slime_bedrock_biome_query.exe",
+  "ui.bedrock_river_helper_failed": "Bedrock 河流过滤未执行：群系查询工具失败",
+  "ui.bedrock_river_filtered": "已按 Bedrock 河流规则移除 %1 条结果",
+  "ui.bedrock_version_tip": "Bedrock 群系生成版本（用于河流过滤）",
+  "ui.bedrock_river_seed_required": "Bedrock 河流过滤需要世界种子；当前种子为空，结果未过滤。"
 }

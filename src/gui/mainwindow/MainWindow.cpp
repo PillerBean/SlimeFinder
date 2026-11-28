@@ -1,5 +1,6 @@
 ﻿// MainWindow.cpp - 主窗口实现（v3.2.1）
 #include "i18n/UiText.h"
+#include "core/BedrockBiomeVersions.h"
 #include "gui/mainwindow/MainWindow.h"
 #include "gui/widgets/CacheCoverageMap.h"
 #include "gui/dialogs/CacheDownloadDialog.h"
@@ -83,6 +84,7 @@
 #include <QTime>
 #include <QEventLoop>
 #include <QSignalBlocker>
+#include <QFileInfo>
 #include <QProcess>
 #include <QTimer>
 #include <QToolBar>
@@ -118,7 +120,8 @@
 #include "utils/SoundPlayer.h"   // v3.3.6（任务书 4.2）：搜索完成提示音（winmm，带音量）
 #include "utils/ThemeManager.h"  // v3.3.6（任务书 4.7）：夜间模式三档（浅色/深色/跟随系统）
 
-#include "gui/dialogs/AfkDialog.h"   // v3.5.2（任务 1）：挂机点（环形覆盖）对话框
+#include "gui/dialogs/AfkDialog.h"
+#include "gui/services/BedrockRiverFilter.h"   // v3.5.2（任务 1）：挂机点（环形覆盖）对话框
 #include "gui/widgets/MapPreviewWidget.h" // v3.5.2（任务 2）：自检里直接读地图控件状态
 #include "gui/dialogs/MapDialog.h"       // v3.5.2（任务 2）：地图预览对话框
 #include "gui/dialogs/HelpDialog.h" // v3.3.3：帮助 / 使用教程对话框
@@ -722,6 +725,7 @@ struct MainWindow::Widgets {
     QRadioButton* javaRadio = nullptr;
     QRadioButton* bedrockRadio = nullptr;
     QComboBox* mapVersionCombo = nullptr;   // v3.5.26：群系/世界算法版本（影响地图上色）
+    QComboBox* bedrockVersionCombo = nullptr; // Bedrock 群系生成版本（独立于 Java）
     QLineEdit* seedEdit = nullptr;
         QLabel* seedLabel = nullptr;   // v3.6.12：基岩版切换文案用
 
@@ -1335,6 +1339,11 @@ static bool selftestArea(const char* area)
 #include "MainWindowSelfTest.inc"
 
 } // namespace slime
+
+
+
+
+
 
 
 

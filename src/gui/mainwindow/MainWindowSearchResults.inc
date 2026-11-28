@@ -1,4 +1,4 @@
-// v3.12.0：搜索、构建与结果处理逻辑。
+﻿// v3.12.0：搜索、构建与结果处理逻辑。
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {
@@ -1191,8 +1191,35 @@ void MainWindow::onSearchFinishedReport(const SearchReport& report, const RunInf
     if (runId == m_runId) m_lastReport = report;
 }
 
-void MainWindow::onSearchFinished(const SearchOutcome& out, const RunInfo& info, int runId)
+void MainWindow::onSearchFinished(const SearchOutcome& in, const RunInfo& info, int runId)
 {
+    SearchOutcome out = in;
+    // v3.15.x：Bedrock 的 river/frozen_river 不生成史莱姆。
+    // 群系查询由独立的 slime_bedrock_biome_query.exe 完成，Java/Bedrock 算法不混链。
+    if (!m_buildActive && runId == m_runId && out.ok && info.version == Version::Bedrock &&
+        !out.results.empty()) {
+        const QString seedText = m_w->seedEdit ? m_w->seedEdit->text().trimmed() : QString();
+        if (seedText.isEmpty()) {
+            addFeedback(1, slime::ui::t("ui.bedrock_river_seed_required"));
+            Logger::warning("Bedrock 河流过滤跳过：种子为空");
+        } else {
+            const QString exe = QCoreApplication::applicationDirPath() +
+                                QStringLiteral("/slime_bedrock_biome_query.exe");
+            const QString version = m_w->bedrockVersionCombo
+                                        ? m_w->bedrockVersionCombo->currentText()
+                                        : QStringLiteral("1.21.60");
+            const auto fr = slime::BedrockRiverFilter::filter(
+                out.results, info.options.worldSeed, version, exe);
+            if (!fr.executed) {
+                addFeedback(1, slime::ui::t("ui.bedrock_river_helper_failed"));
+                Logger::warning("Bedrock 河流过滤跳过：" + fr.error.toStdString());
+            } else if (fr.removed > 0) {
+                out.totalFound = (std::max)(int64_t{0}, out.totalFound - fr.removed);
+                addFeedback(2, slime::ui::t("ui.bedrock_river_filtered").arg(fr.removed));
+                Logger::info("Bedrock 河流过滤：移除 " + std::to_string(fr.removed) + " 条结果");
+            }
+        }
+    }
     // v3.3.9（任务书 1.1）：缓存构建模式的分段续跑（每段落盘 → 继续下一段 / 收尾）
     if (m_buildActive) {
         handleBuildBandFinished(out, runId);
@@ -1945,5 +1972,6 @@ void MainWindow::copyResults()
     QApplication::clipboard()->setText(m_lastResultText);
     setStatus(slime::ui::tr(slime::ui::t("ui.a48bb5b20557")));
 }
+
 
 

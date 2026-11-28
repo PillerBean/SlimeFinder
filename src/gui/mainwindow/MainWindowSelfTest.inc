@@ -2326,14 +2326,37 @@ int MainWindow::runSelfTest()
                 }
                 check(all && titles.size() >= 5, "左侧包含规定的 5 个设置分组（游戏设置已上移顶部栏）");
                 bool topBarOk = m_topBar && m_w->javaRadio && m_w->bedrockRadio && m_w->mapVersionCombo &&
-                                m_w->seedEdit;
+                                m_w->bedrockVersionCombo && m_w->seedEdit;
                 if (topBarOk) {
                     topBarOk = m_topBar->isAncestorOf(m_w->javaRadio) &&
                                m_topBar->isAncestorOf(m_w->bedrockRadio) &&
                                m_topBar->isAncestorOf(m_w->mapVersionCombo) &&
+                               m_topBar->isAncestorOf(m_w->bedrockVersionCombo) &&
                                m_topBar->isAncestorOf(m_w->seedEdit);
                 }
                 check(topBarOk, "顶部全局设置栏包含 平台/游戏版本/世界种子");
+                check(m_w->mapVersionCombo && m_w->mapVersionCombo->minimumWidth() >= 150 &&
+                          m_w->mapVersionCombo->view() &&
+                          m_w->mapVersionCombo->view()->minimumWidth() >= 220,
+                      "Java 版本下拉宽度足以显示 Beta 系列");
+                check(m_w->bedrockVersionCombo && m_w->bedrockVersionCombo->count() >= 6,
+                      "Bedrock 群系版本选择器已提供 1.18+ 版本");
+                {
+                    std::vector<MatchResult> riverResults(2);
+                    riverResults[0].minX = 0; riverResults[0].maxX = 0;
+                    riverResults[0].minZ = 0; riverResults[0].maxZ = 0;
+                    riverResults[1].minX = 6; riverResults[1].maxX = 6;
+                    riverResults[1].minZ = 6; riverResults[1].maxZ = 6;
+                    const auto fr = BedrockRiverFilter::filter(
+                        riverResults, 0, QStringLiteral("1.21.60"),
+                        QCoreApplication::applicationDirPath() +
+                            QStringLiteral("/slime_bedrock_biome_query.exe"));
+                    std::fprintf(stderr, "[UI自检]   Bedrock filter: executed=%d removed=%d left=%zu err=%s\n",
+                                 fr.executed ? 1 : 0, fr.removed, riverResults.size(),
+                                 fr.error.toUtf8().constData());
+                    check(fr.executed && fr.removed == 1 && riverResults.size() == 1,
+                          "Bedrock 河流过滤：river 被移除，非河流保留");
+                }
                 check(m_w->seedEdit && m_w->seedEdit->validator() != nullptr &&
                           m_w->seedEdit->maxLength() == 20,
                       "种子框限制为可选负号 + 最多 19 位十进制");

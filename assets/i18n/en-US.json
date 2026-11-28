@@ -1448,5 +1448,10 @@
   "ui.cmd_cache_open": "Opened cache directory: %1",
   "ui.afk_height": "Height H",
   "ui.afk_effective_area": "Effective area",
-  "ui.afk_height_suffix": "height H=%1, effective area=%2"
+  "ui.afk_height_suffix": "height H=%1, effective area=%2",
+  "ui.bedrock_river_helper_missing": "Bedrock river filter skipped: slime_bedrock_biome_query.exe is missing",
+  "ui.bedrock_river_helper_failed": "Bedrock river filter skipped: biome query helper failed",
+  "ui.bedrock_river_filtered": "Removed %1 result(s) under Bedrock river rules",
+  "ui.bedrock_version_tip": "Bedrock biome generation version (used for river filtering)",
+  "ui.bedrock_river_seed_required": "Bedrock river filtering needs a world seed; the seed is empty, so results were not filtered."
 }

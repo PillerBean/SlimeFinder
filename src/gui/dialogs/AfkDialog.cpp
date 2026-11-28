@@ -1,10 +1,11 @@
-// v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
+﻿// v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
 #include "i18n/UiText.h"
 #include "gui/dialogs/AfkDialog.h"
 #include "core/HeightRefiner.h"
 
 #include <QApplication>
 #include <QClipboard>
+#include <QAbstractItemView>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -97,6 +98,9 @@ AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     top->addWidget(new QLabel(slime::ui::t("ui.257d31e37e28"), this));
     m_version = new QComboBox(this);
     for (const auto& v : slime::javaVersionOptions()) m_version->addItem(QString::fromUtf8(v.label), v.id);
+    m_version->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_version->setMinimumWidth(150);
+    if (m_version->view()) m_version->view()->setMinimumWidth(230);
     top->addWidget(m_version);
     auto* btnRe = new QPushButton(slime::ui::t("ui.3635d74e2884"), this);
     top->addWidget(btnRe);
@@ -297,4 +301,6 @@ void AfkDialog::fillTable()
     }
     if (!m_results.empty()) m_table->selectRow(0);
 }
+
+
 

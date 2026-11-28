@@ -161,6 +161,7 @@ add_executable(SlimeFinder WIN32
     src/app/main.cpp
     assets/appicon.qrc    # v3.3.9（任务书 5.1）：程序图标（窗口/任务栏/托盘）
     src/gui/dialogs/AfkDialog.cpp   # v3.5.2（任务 1）：挂机点（环形覆盖）对话框
+    src/gui/services/BedrockRiverFilter.cpp # v3.15.x：Bedrock 河流结果过滤
     src/gui/widgets/MapPreviewWidget.cpp # v3.5.2（任务 2）：地图预览控件（缩放/平移/图层）
     src/gui/widgets/CacheCoverageMap.cpp # v3.12.3：缓存覆盖地图
     src/gui/dialogs/CacheDownloadDialog.cpp
@@ -656,6 +657,7 @@ target_link_libraries(slime_height_region_local PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_height_region_local PRIVATE /utf-8 /EHsc /permissive-)
 endif()
+
 
 
 

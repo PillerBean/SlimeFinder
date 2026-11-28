@@ -1,4 +1,4 @@
-// v3.12.0：从 MainWindow.cpp 拆出的主界面/页面构建实现。
+﻿// v3.12.0：从 MainWindow.cpp 拆出的主界面/页面构建实现。
 
 void MainWindow::buildUi()
 {
@@ -199,9 +199,22 @@ void MainWindow::buildUi()
         m_w->mapVersionCombo = new QComboBox(m_topBar);
         for (const auto& v : slime::javaVersionOptions())
             m_w->mapVersionCombo->addItem(QString::fromUtf8(v.label), v.id);
+        m_w->mapVersionCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+        m_w->mapVersionCombo->setMinimumWidth(150);
+        if (m_w->mapVersionCombo->view()) m_w->mapVersionCombo->view()->setMinimumWidth(230);
         m_w->mapVersionCombo->setCurrentIndex(0);
         m_w->mapVersionCombo->setToolTip(slime::ui::t("ui.9820d2a24e2e"));
         topLeftLay->addWidget(m_w->mapVersionCombo);
+        m_w->bedrockVersionCombo = new QComboBox(m_topBar);
+        for (std::size_t i = 0; i < slime::bedrockBiomeVersionCount(); ++i)
+            m_w->bedrockVersionCombo->addItem(QString::fromUtf8(slime::kBedrockBiomeVersions[i].label));
+        m_w->bedrockVersionCombo->setCurrentIndex(m_w->bedrockVersionCombo->findText(QStringLiteral("1.21.60")));
+        m_w->bedrockVersionCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+        m_w->bedrockVersionCombo->setMinimumWidth(130);
+        if (m_w->bedrockVersionCombo->view()) m_w->bedrockVersionCombo->view()->setMinimumWidth(160);
+        m_w->bedrockVersionCombo->setVisible(false);
+        m_w->bedrockVersionCombo->setToolTip(slime::ui::t("ui.bedrock_version_tip"));
+        topLeftLay->addWidget(m_w->bedrockVersionCombo);
 
         topLeftLay->addSpacing(10);
         m_w->seedLabel = new QLabel(slime::ui::t("ui.df62e1c428e6"), m_topBar);
@@ -1251,9 +1264,13 @@ void MainWindow::buildUi()
         connect(m_w->targetCount, QOverload<int>::of(&QSpinBox::valueChanged), this,
                 [this](int) { updateStartEnabled(); });
     connect(m_w->javaRadio, &QRadioButton::toggled, this, [this](bool on) {
+        if (m_w->bedrockVersionCombo) m_w->bedrockVersionCombo->setVisible(!on);
+        if (m_w->mapVersionCombo) m_w->mapVersionCombo->setVisible(on);
         if (on) onVersionChanged();
     });
     connect(m_w->bedrockRadio, &QRadioButton::toggled, this, [this](bool on) {
+        if (m_w->bedrockVersionCombo) m_w->bedrockVersionCombo->setVisible(on);
+        if (m_w->mapVersionCombo) m_w->mapVersionCombo->setVisible(!on);
         if (on) onVersionChanged();
     });
     connect(m_w->strictRadio, &QRadioButton::toggled, this, [this](bool on) {
@@ -2180,4 +2197,9 @@ void MainWindow::showBuildEstimate()
 // ============================================================================
 // v3.3.4（任务书 1.2/1.3）：菜单栏与工具栏（全部使用 QMainWindow 原生接口）
 // ============================================================================
+
+
+
+
+
 

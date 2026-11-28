@@ -1,10 +1,11 @@
-// v3.5.2（任务 2）：地图预览对话框 —— 实现（含群系彩色底图与版本选择）
+﻿// v3.5.2（任务 2）：地图预览对话框 —— 实现（含群系彩色底图与版本选择）
 #include "i18n/UiText.h"
 #include "gui/dialogs/MapDialog.h"
 
 #include "gui/widgets/MapPreviewWidget.h"
 
 #include <QCheckBox>
+#include <QAbstractItemView>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -49,6 +50,9 @@ MapDialog::MapDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     m_versionCombo = new QComboBox(this);
     for (const auto& v : slime::javaVersionOptions())
         m_versionCombo->addItem(QString::fromUtf8(v.label), v.id);
+    m_versionCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_versionCombo->setMinimumWidth(150);
+    if (m_versionCombo->view()) m_versionCombo->view()->setMinimumWidth(230);
     m_versionCombo->setCurrentIndex(0);
     bar2->addWidget(m_versionCombo);
     bar2->addSpacing(12);
@@ -228,3 +232,5 @@ bool MapDialog::biomeAvailable() const
 {
     return m_map && m_map->layer().biomeAvailable;
 }
+
+

@@ -1,4 +1,4 @@
-// v3.5.2（任务 2/3 的公共底座）：群系地图 —— 实现（cubiomes，MIT）
+﻿// v3.5.2（任务 2/3 的公共底座）：群系地图 —— 实现（cubiomes，MIT）
 #include "core/BiomeMap.h"
 
 #include <algorithm>
@@ -56,6 +56,7 @@ const VersionRow kVersions[] = {
     { 24, "1.0",     MC_1_0_0 },
     { 25, "Beta 1.8", MC_B1_8 },
     { 26, "Beta 1.7", MC_B1_7 },
+    { 27, "1.21 WD", MC_1_21_WD },
 };const int kVersionCount = static_cast<int>(sizeof(kVersions) / sizeof(kVersions[0]));
 
 const VersionRow* rowForId(int id)
@@ -284,3 +285,4 @@ double BiomeWeightGrid::weightAt(int blockX, int blockZ) const
 }
 
 } // namespace slime
+

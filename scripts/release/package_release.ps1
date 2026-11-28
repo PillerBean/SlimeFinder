@@ -37,7 +37,7 @@ Set-Location $Repo
 $distDir = Join-Path $Repo "dist\SlimeFinder"
 $zipPath = Join-Path $Repo ("dist\SlimeFinder-{0}-win64.zip" -f $Version)
 $binDir = Join-Path $Repo "build"
-$artifacts = @("SlimeFinder.exe", "slime_tests.exe", "slime_ocl_probe.exe", "slime_kernel_tests.exe")
+$artifacts = @("SlimeFinder.exe", "slime_bedrock_biome_query.exe", "slime_tests.exe", "slime_ocl_probe.exe", "slime_kernel_tests.exe")
 
 Write-Host "== SlimeFinder packaging (v$Version) ==" -ForegroundColor Cyan
 Write-Host "repo: $Repo"
@@ -249,3 +249,4 @@ if ($fail -ne 0) {
 }
 Write-Host "PACKAGE OK" -ForegroundColor Green
 exit 0
+
