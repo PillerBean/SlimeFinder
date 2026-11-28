@@ -1453,5 +1453,6 @@
   "ui.bedrock_river_helper_failed": "Bedrock 河流过滤未执行：群系查询工具失败",
   "ui.bedrock_river_filtered": "已按 Bedrock 河流规则移除 %1 条结果",
   "ui.bedrock_version_tip": "Bedrock 群系生成版本（用于河流过滤）",
-  "ui.bedrock_river_seed_required": "Bedrock 河流过滤需要世界种子；当前种子为空，结果未过滤。"
+  "ui.bedrock_river_seed_required": "Bedrock 河流过滤需要世界种子；当前种子为空，结果未过滤。",
+  "ui.bedrock_version_experimental": "实验性版本：未通过上游 Java 哈希基准，Bedrock 结果尚未独立验证"
 }

@@ -1453,5 +1453,6 @@
   "ui.bedrock_river_helper_failed": "Bedrock river filter skipped: biome query helper failed",
   "ui.bedrock_river_filtered": "Removed %1 result(s) under Bedrock river rules",
   "ui.bedrock_version_tip": "Bedrock biome generation version (used for river filtering)",
-  "ui.bedrock_river_seed_required": "Bedrock river filtering needs a world seed; the seed is empty, so results were not filtered."
+  "ui.bedrock_river_seed_required": "Bedrock river filtering needs a world seed; the seed is empty, so results were not filtered.",
+  "ui.bedrock_version_experimental": "Experimental: did not match the upstream Java hash baseline; Bedrock result not independently verified"
 }

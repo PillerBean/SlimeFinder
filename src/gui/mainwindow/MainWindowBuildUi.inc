@@ -206,8 +206,14 @@ void MainWindow::buildUi()
         m_w->mapVersionCombo->setToolTip(slime::ui::t("ui.9820d2a24e2e"));
         topLeftLay->addWidget(m_w->mapVersionCombo);
         m_w->bedrockVersionCombo = new QComboBox(m_topBar);
-        for (std::size_t i = 0; i < slime::bedrockBiomeVersionCount(); ++i)
+        for (std::size_t i = 0; i < slime::bedrockBiomeVersionCount(); ++i) {
             m_w->bedrockVersionCombo->addItem(QString::fromUtf8(slime::kBedrockBiomeVersions[i].label));
+            const QString label = QString::fromUtf8(slime::kBedrockBiomeVersions[i].label);
+            if (label == QStringLiteral("1.16") || label == QStringLiteral("1.17") ||
+                label == QStringLiteral("1.17.30"))
+                m_w->bedrockVersionCombo->setItemData(static_cast<int>(i),
+                    slime::ui::t("ui.bedrock_version_experimental"), Qt::ToolTipRole);
+        }
         m_w->bedrockVersionCombo->setCurrentIndex(m_w->bedrockVersionCombo->findText(QStringLiteral("1.21.60")));
         m_w->bedrockVersionCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
         m_w->bedrockVersionCombo->setMinimumWidth(130);
@@ -2197,6 +2203,7 @@ void MainWindow::showBuildEstimate()
 // ============================================================================
 // v3.3.4（任务书 1.2/1.3）：菜单栏与工具栏（全部使用 QMainWindow 原生接口）
 // ============================================================================
+
 
 
 
