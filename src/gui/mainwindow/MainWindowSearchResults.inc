@@ -1444,6 +1444,11 @@ void MainWindow::onSearchFinished(const SearchOutcome& in, const RunInfo& info, 
                              slime::IncidentLog::memorySummary());
     setStatus(slime::ui::tr(slime::ui::t("ui.8174d1168fce")));
     writePerformanceLog(out, info);
+    if (info.options.useCache) {
+        Logger::info("缓存诊断 | banded=" + std::string(out.chunkedPath ? "1" : "0") +
+                     " hitPoints=" + std::to_string(out.cacheHitPoints) +
+                     " fillSkipped=" + std::string(out.cacheFillSkipped ? "1" : "0"));
+    }
     // v3.3.4（任务书 2.2）：关键事件同时进入反馈栏与日志总线
     addFeedback(out.results.empty() ? 2 : 3,
                 slime::ui::t("ui.f6cc745d6f70")
@@ -1972,6 +1977,7 @@ void MainWindow::copyResults()
     QApplication::clipboard()->setText(m_lastResultText);
     setStatus(slime::ui::tr(slime::ui::t("ui.a48bb5b20557")));
 }
+
 
 
 
