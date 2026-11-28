@@ -5,10 +5,13 @@
 [![license](https://img.shields.io/github/license/PillerBean/SlimeFinder?label=license)](LICENSE)
 [![platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-informational)](https://github.com/PillerBean/SlimeFinder/releases)
 
+> 🌐 **语言 / Language：** **简体中文** · [繁體中文](README.zh-TW.md) · [English](README.en.md)
+>
+> 🤖 翻译说明：繁體中文与 English 页面为 **AI 翻译**（简体中文为原文），翻译问题欢迎
+> [反馈](https://github.com/PillerBean/SlimeFinder/issues)。
+
 Minecraft **Java / 基岩版史莱姆区块查找工具**：原生 **C++20 + Qt 6**，支持 GPU 加速与超大范围搜索。
 判定结果与已验证的参考实现逐位一致。
-
-> 英文简介：A slime chunk finder for Minecraft Java/Bedrock, native C++20/Qt6 with optional GPU acceleration.
 
 [下载](#下载) · **[📦 版本索引（按版本号排序）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index)** · [Wiki](https://github.com/PillerBean/SlimeFinder/wiki) · [功能](#功能) · [常见问题](#常见问题) · [更新历史（GitHub）](https://github.com/PillerBean/SlimeFinder/wiki/Version-Index) · [问题反馈](https://github.com/PillerBean/SlimeFinder/issues)
 
