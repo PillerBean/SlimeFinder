@@ -673,6 +673,19 @@ if(MSVC)
     target_compile_options(slime_height_region_local PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+# 环形/k3 预筛对拍探针（GPU prescanDensitySeeds vs cachePrescanSeeds）
+add_executable(k3_prescan_parity_probe
+    tools/bench/k3_prescan_parity_probe.cpp
+)
+target_include_directories(k3_prescan_parity_probe PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(k3_prescan_parity_probe PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(k3_prescan_parity_probe PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+if(WIN32)
+    target_link_libraries(k3_prescan_parity_probe PRIVATE dbghelp)
+endif()
+
 
 
 
