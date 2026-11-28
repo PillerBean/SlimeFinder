@@ -791,3 +791,36 @@ flow-integration 与 main 的 version-beta.json、Wiki 版本索引均已回滚�
 
 已知待办见 docs/planning/HANDOFF_2026-11-29.md（CacheManager::lookup 重叠 range 缺陷、
 audit_corruption.py/run_all_tests.ps1 路径过期、CPU 预筛 AVX2 提速、内存上限镜像控件）。
+
+## 2026-11-28 22:25 搜索页顺序 / 建议挂机坐标 / 地图按高度覆盖 / 环形进度（未发布）
+
+按用户反馈做的四项 UX 修复（只更新仓库代码，未打包/未发布）。
+
+1) 搜索页顺序：先选「搜什么」再选「怎么搜」——
+```text
+① 搜索内容（图案/密度、区域形状、方案预设、图案编辑器）
+② 搜索方式（环形四档 / 匹配算法，候选池由 ① 决定）
+③ 结果要求（范围、最低密度、网格、环形半径/模拟距离/群系权重、停止与数量）
+④ 执行设置
+```
+分段：分支 flow-ui-order 完成，已合并回 flow-integration（commit 57eb106 + 937f0da）。
+文档：docs/planning/search_page_order_rework.md。
+
+2) 结果列表「建议挂机坐标」：X/Y/Z 合并为一列（一格里显示 x / y / z）。
+计算按研究文档既有规划：HeightRefiner（H=0..24，块级群系权重，±16 域、粗 4 细 1）+ 
+绝对 Y = afkBaseY + H（1.18+/Bedrock 基岩层 -63，旧版 1）；候选上限 64；不改变排序与覆盖统计口径。
+传送指令/跳转使用建议坐标。新增 fkBaseYForVersion 统一 AfkDialog 与主搜索。
+
+3) 地图覆盖按建议高度变化：球壳与基岩层交集
+_out=sqrt(R²−H²)、_in = H≥inner ? 0 : sqrt(inner²−H²)；H≥inner 时画圆盘（不再永远画环），
+史莱姆区块高亮与缩放同步；无高度信息回退原环形画法。
+
+4) 环形搜索进度接线：此前环形走独立后台任务，底部「进度」页永远空白（只有反馈页有内容）。
+现在阶段（预筛/基线精修/k3/严格统计/建议坐标）、顶部已用时、每 0.5s 进度流水、
+完成/取消汇总行、100% 收尾全部接入；普通搜索/构建路径不变。
+
+验证：构建 exit 0；slime_tests --unit 全绿；参考对拍 117 项全过；
+GUI offscreen 自检 GPU 关/开均 exit 0「全部通过」（新增建议坐标/进度流水/表头断言）；
+i18n 1492 keys × 3 语言。截图：docs/screenshots/ux-2026-11-28/。
+
+未发布：等待用户批准发布流程；发布前需再确认版本号与 Release 资产清单。
