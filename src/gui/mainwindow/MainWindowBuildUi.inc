@@ -1,4 +1,4 @@
-﻿// v3.12.0：从 MainWindow.cpp 拆出的主界面/页面构建实现。
+// v3.12.0：从 MainWindow.cpp 拆出的主界面/页面构建实现。
 
 void MainWindow::buildUi()
 {
@@ -1091,21 +1091,22 @@ void MainWindow::buildUi()
         m_w->resultTable = new QTableWidget(m_resultPane);
         auto* tb = m_w->resultTable;
         tb->setObjectName(QStringLiteral("resultTable"));
-        tb->setColumnCount(8);
-        // v3.10.0：结果独立成第三列（约 340px）⇒ 表头缩短、列宽固定，避免窄列裁字
-        tb->setHorizontalHeaderLabels({ slime::ui::t("ui.db669ff2ab99"), QStringLiteral("X"), QStringLiteral("Z"),
+        tb->setColumnCount(7);
+        // v3.15.x（UX-3）：X/Y/Z 合并为一列「建议挂机坐标」（只占一格）；非环形模式显示「坐标 X/Z」。
+        //   列序：# / 建议坐标 / 距离 / 密度(覆盖) / 有效格 · 总权重(仅环形) / 定位 / 传送。
+        tb->setHorizontalHeaderLabels({ slime::ui::t("ui.db669ff2ab99"),
+                                        slime::ui::t("ui.result_afk_coord_header"),
                                         slime::ui::t("ui.b3480678b68e"), slime::ui::t("ui.f90554a29e42"),
                                         slime::ui::t("ui.3592ccaf66db"), QStringLiteral(""),
                                         slime::ui::t("ui.tp_command_header") });
-        tb->setColumnWidth(0, 40);
-        tb->setColumnWidth(1, 56);
-        tb->setColumnWidth(2, 56);
+        tb->setColumnWidth(0, 38);
+        tb->setColumnWidth(1, 132);
+        tb->setColumnWidth(2, 50);
         tb->setColumnWidth(3, 50);
-        tb->setColumnWidth(4, 62);
-        tb->setColumnWidth(5, 62);
-        tb->setColumnWidth(6, 52);
-        tb->setColumnWidth(7, 58);
-        tb->setColumnHidden(5, true);   // v3.5.9：仅环形模式显示「有效格 · 总权重」
+        tb->setColumnWidth(4, 60);
+        tb->setColumnWidth(5, 50);
+        tb->setColumnWidth(6, 56);
+        tb->setColumnHidden(4, true);   // v3.5.9：仅环形模式显示「有效格 · 总权重」
         tb->verticalHeader()->setVisible(false);
         tb->setAlternatingRowColors(true);
         tb->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -1115,9 +1116,9 @@ void MainWindow::buildUi()
         tb->setSortingEnabled(true);
         tb->horizontalHeader()->setStretchLastSection(true);
         static OneDecimalDelegate oneDecimal;
+        tb->setItemDelegateForColumn(2, &oneDecimal);
         tb->setItemDelegateForColumn(3, &oneDecimal);
         tb->setItemDelegateForColumn(4, &oneDecimal);
-        tb->setItemDelegateForColumn(5, &oneDecimal);
         resLay->addWidget(tb, 1);
         resLay->addWidget(m_w->resultView, 0);
         m_w->resultView->hide();
@@ -1130,18 +1131,17 @@ void MainWindow::buildUi()
         connect(m_resultToggle, &QToolButton::clicked, this, [this]() { toggleResultPane(); });
         connect(tb, &QTableWidget::cellDoubleClicked, this, [this](int row, int) {
             if (!m_w || !m_w->resultTable) return;
-            const auto* xi = m_w->resultTable->item(row, 1);
-            const auto* zi = m_w->resultTable->item(row, 2);
-            if (!xi || !zi) return;
             const auto* idxItem = m_w->resultTable->item(row, 0);
             const int original = idxItem ? idxItem->data(Qt::UserRole).toInt() : -1;
             if (!m_lastAfk.empty() && original >= 0 && original < static_cast<int>(m_lastAfk.size())) {
                 focusAfkCandidate(original);
                 return;
             }
+            const auto* coord = m_w->resultTable->item(row, 1);
             if (m_map && idxItem) m_map->setFocusedResult(original);
-            const int bx = xi->data(Qt::UserRole).toInt();
-            const int bz = zi->data(Qt::UserRole).toInt();
+            if (!coord) return;
+            const int bx = coord->data(Qt::UserRole + 1).toInt();
+            const int bz = coord->data(Qt::UserRole + 3).toInt();
             focusMapOnChunk(bx >= 0 ? bx >> 4 : -((-bx + 15) >> 4), bz >= 0 ? bz >> 4 : -((-bz + 15) >> 4));
         });
         // v3.5.10：点结果行 = 选中该环形候选（地图只画这一条环，并联动脉动选中行）

@@ -169,7 +169,10 @@ void MainWindow::addError(const QString& message)
 void MainWindow::updateElapsedUi()
 {
     if (!m_w || !m_w->progressElapsed || !m_w->progressEta) return;
-    if (!m_running) return;
+    // v3.15.x（UX-4）：环形搜索也接进度行 —— 此前只有普通搜索/构建会刷新，
+    //   环形搜索期间顶部「阶段/已用时」与底部「进度」页全空（反馈页正常），用户已反馈。
+    const bool ring = m_ringSearching;
+    if (!m_running && !ring) return;
     const double elapsed = m_searchStartMs > 0
                                ? (static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(
                                                           std::chrono::system_clock::now().time_since_epoch())
@@ -178,6 +181,13 @@ void MainWindow::updateElapsedUi()
                                   1000.0)
                                : 0.0;
     m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(elapsed, 0, 'f', 1));
+    if (ring) {
+        const int phase = m_ringUiState ? m_ringUiState->phase.load(std::memory_order_relaxed) : 0;
+        if (m_w->progressStage) m_w->progressStage->setText(ringPhaseName(phase));
+        if (m_w->searchStage) m_w->searchStage->setText(slime::ui::t("ui.ring_progress_started"));
+        if (m_w->progressEta) m_w->progressEta->setText(slime::ui::t("ui.f00785313fdc"));
+        return;
+    }
     // 某些后端（单次 GPU 派发、构建/缓存路径）没有中间进度回调：
     // 用 liveScanned/liveTotal 定时补一行统计，避免进度区一直空白。
     if (!m_progressCallbackSeen && !m_buildActive && m_w->progressInfo) {
@@ -248,7 +258,8 @@ void MainWindow::updateNavBadges()
 // v3.3.6（任务书 调整 3）：每 0.5 秒向「进度」分类追加一条流水
 void MainWindow::appendProgressStreamLine()
 {
-    if (!m_progressStream || !m_running) return;
+    if (!m_progressStream) return;
+    if (!m_running && !m_ringSearching) return;
     const double elapsed = m_searchStartMs > 0
                                ? (static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(
                                                           std::chrono::system_clock::now().time_since_epoch())
@@ -256,6 +267,23 @@ void MainWindow::appendProgressStreamLine()
                                                       m_searchStartMs) /
                                   1000.0)
                                : 0.0;
+    // v3.15.x（UX-4）：环形搜索的进度流水 —— 每 0.5 秒一条「阶段 + 已用时」。
+    //   环形没有细粒度扫描进度，不伪造 N/M；阶段来自 worker 写入的 RingSearchResult::phase。
+    if (m_ringSearching) {
+        const int phase = m_ringUiState ? m_ringUiState->phase.load(std::memory_order_relaxed) : 0;
+        m_progressStream->appendRawLine(
+            slime::ui::t("ui.ring_progress_line")
+                .arg(QTime::currentTime().toString(QStringLiteral("HH:mm:ss")))
+                .arg(ringPhaseName(phase))
+                .arg(elapsed, 0, 'f', 1));
+        if (++m_streamTick >= 10) {
+            m_streamTick = 0;
+            slime::IncidentLog::note("环形进度：已用时 " + std::to_string(static_cast<long long>(elapsed)) +
+                                     "s 阶段 " + std::to_string(phase) + " | " +
+                                     slime::IncidentLog::memorySummary());
+        }
+        return;
+    }
     const int64_t found = m_task.liveMatchCount(); // v3.3.7（P0-2）：计数由 SearchTask 持有
     const int64_t scanned = m_task.liveScannedCount(); // v3.3.7（P0-3）：真实扫描计数（与进度条同源）
     // v3.3.9（任务书 1.1/1.4）：缓存构建模式的流水行 —— 四项（已记录 / 百分比 / 速度 / 已花费）+ 阶段区分

@@ -474,7 +474,30 @@ void MainWindow::toggleResultPane()
 
 }
 
-// v3.5.5：结果灌进列表（排名/X/Z/距离/密度或覆盖/跳转按钮）；表头点击可排序
+namespace {
+// v3.15.x（UX-3）：结果列表「建议挂机坐标」列 —— X/Y/Z 合并到一格；
+//   排序按数值 (x, y, z) 而不是文本字面序；Y 缺失（>64 候选/非环形）时退回 (x, z)。
+class ResultCoordItem : public QTableWidgetItem {
+public:
+    explicit ResultCoordItem(const QString& text) : QTableWidgetItem(text) {}
+    bool operator<(const QTableWidgetItem& other) const override
+    {
+        const auto* o = dynamic_cast<const ResultCoordItem*>(&other);
+        if (!o) return QTableWidgetItem::operator<(other);
+        if (x != o->x) return x < o->x;
+        if (y != o->y) return y < o->y;
+        return z < o->z;
+    }
+    int x = 0;
+    int y = 0;
+    int z = 0;
+    bool hasY = false;
+};
+} // namespace
+
+// v3.5.5：结果灌进列表（排名/建议挂机坐标 X/Y/Z/距离/密度或覆盖/跳转按钮）；表头点击可排序
+// v3.15.x（UX-3）：X、Z 两列合并为「建议挂机坐标」一列；环形结果显示高度模型精修后的
+//   (x, y, z)（y = 基岩层 + H），非环形窗口结果显示窗口中心 (x, z)。
 void MainWindow::fillResultTable()
 {
     if (!m_w || !m_w->resultTable) return;
@@ -486,18 +509,24 @@ void MainWindow::fillResultTable()
     const int shown = static_cast<int>((std::min)(results.size(), static_cast<size_t>(kResultDisplayCap)));
     t->setRowCount(shown);
     const bool ring = !m_lastAfk.empty();
-    t->setColumnHidden(5, !ring);   // v3.5.9：环形模式才显示「有效格 · 总权重」
+    t->setColumnHidden(4, !ring);   // v3.5.9：环形模式才显示「有效格 · 总权重」
+    // v3.15.x：表头随模式切换（环形 = 建议挂机坐标；其它 = 窗口坐标）。
+    if (QTableWidgetItem* hdr = t->horizontalHeaderItem(1)) {
+        hdr->setText(ring ? slime::ui::t("ui.result_afk_coord_header")
+                          : slime::ui::t("ui.result_coord_header"));
+        hdr->setToolTip(slime::ui::t("ui.result_afk_coord_tip"));
+    }
     // v3.10.3（用户要求）：极窄结果列的自适应 —— 压缩列宽、按视口宽度隐藏次要列、
     //   列宽仍可由用户拖动；视口比内容更窄时出现横向滚动条。
     {
         const int vw = t->viewport() ? t->viewport()->width() : 0;
-        t->setColumnWidth(0, 36);
-        t->setColumnWidth(1, 52);
-        t->setColumnWidth(2, 52);
+        t->setColumnWidth(0, 34);
+        t->setColumnWidth(1, 124);
+        t->setColumnWidth(2, 48);
         t->setColumnWidth(3, 48);
-        t->setColumnWidth(4, 52);
-        t->setColumnHidden(3, vw > 0 && vw < 300);   // 距离列：窄列先折叠
-        t->setColumnHidden(4, vw > 0 && vw < 200);   // 密度列：更窄才折叠
+        t->setColumnWidth(4, 58);
+        t->setColumnHidden(2, vw > 0 && vw < 300);   // 距离列：窄列先折叠
+        t->setColumnHidden(3, vw > 0 && vw < 200);   // 密度列：更窄才折叠
         t->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         t->horizontalHeader()->setMinimumSectionSize(32);
         t->horizontalHeader()->setStretchLastSection(true);
@@ -506,39 +535,50 @@ void MainWindow::fillResultTable()
         const auto& r = results[static_cast<size_t>(i)];
         int blockX = (r.minX + r.maxX + 1) * 8;
         int blockZ = (r.minZ + r.maxZ + 1) * 8;
+        int blockY = 0;
+        bool hasY = false;
         double value = r.density * 100.0;
+        const slime::AfkCandidate* afk = nullptr;
         if (ring && i < static_cast<int>(m_lastAfk.size())) {
-            blockX = m_lastAfk[static_cast<size_t>(i)].x;
-            blockZ = m_lastAfk[static_cast<size_t>(i)].z;
-            value = m_lastAfk[static_cast<size_t>(i)].coveragePercent;
+            afk = &m_lastAfk[static_cast<size_t>(i)];
+            blockX = afk->x;
+            blockZ = afk->z;
+            value = afk->coveragePercent;
+            if (afk->hasHeight) {
+                hasY = true;
+                blockY = afk->afkBaseY + afk->bestHeight;
+            }
         }
         const double dist = std::hypot(static_cast<double>(blockX >> 4) - m_lastInfo.startX,
                                        static_cast<double>(blockZ >> 4) - m_lastInfo.startZ);
         auto* it0 = new QTableWidgetItem();
         it0->setData(Qt::DisplayRole, i + 1);
         it0->setData(Qt::UserRole, i);
-        auto* it1 = new QTableWidgetItem();
-        it1->setData(Qt::DisplayRole, blockX);
-        it1->setData(Qt::UserRole, blockX);
+        auto* it1 = new ResultCoordItem(hasY ? QStringLiteral("%1 / %2 / %3").arg(blockX).arg(blockY).arg(blockZ)
+                                              : QStringLiteral("%1 / %2").arg(blockX).arg(blockZ));
+        it1->x = blockX;
+        it1->y = hasY ? blockY : 0;
+        it1->z = blockZ;
+        it1->hasY = hasY;
+        it1->setData(Qt::UserRole + 1, blockX);
+        it1->setData(Qt::UserRole + 2, hasY ? blockY : 0);
+        it1->setData(Qt::UserRole + 3, blockZ);
+        it1->setData(Qt::UserRole + 4, hasY);
+        it1->setToolTip(slime::ui::t("ui.result_afk_coord_tip"));
         auto* it2 = new QTableWidgetItem();
-        it2->setData(Qt::DisplayRole, blockZ);
-        it2->setData(Qt::UserRole, blockZ);
+        it2->setData(Qt::DisplayRole, dist);
         auto* it3 = new QTableWidgetItem();
-        it3->setData(Qt::DisplayRole, dist);
-        auto* it4 = new QTableWidgetItem();
-        it4->setData(Qt::DisplayRole, value);
+        it3->setData(Qt::DisplayRole, value);
         t->setItem(i, 0, it0);
         t->setItem(i, 1, it1);
         t->setItem(i, 2, it2);
         t->setItem(i, 3, it3);
-        t->setItem(i, 4, it4);
-        if (ring && i < static_cast<int>(m_lastAfk.size())) {
-            const auto& cd = m_lastAfk[static_cast<size_t>(i)];
-            auto* it5 = new QTableWidgetItem();
-            it5->setText(slime::ui::t("ui.aca2c2cb22cf")
-                             .arg(static_cast<qlonglong>(cd.coveredBlocks))
-                             .arg(cd.coveredWeight, 0, 'f', 0));
-            t->setItem(i, 5, it5);
+        if (afk != nullptr) {
+            auto* it4 = new QTableWidgetItem();
+            it4->setText(slime::ui::t("ui.aca2c2cb22cf")
+                             .arg(static_cast<qlonglong>(afk->coveredBlocks))
+                             .arg(afk->coveredWeight, 0, 'f', 0));
+            t->setItem(i, 4, it4);
         }
         auto* jump = new QPushButton(slime::ui::t("ui.28cd2efd8fa8"), t);
         jump->setAutoDefault(false);
@@ -548,16 +588,15 @@ void MainWindow::fillResultTable()
             if (!table) return;
             int row = -1;
             for (int rr = 0; rr < table->rowCount(); ++rr) {
-                if (table->cellWidget(rr, 6) == jump) { row = rr; break; }
+                if (table->cellWidget(rr, 5) == jump) { row = rr; break; }
             }
             if (row < 0) return;
             const auto* idxItem = table->item(row, 0);
-            const auto* xi = table->item(row, 1);
-            const auto* zi = table->item(row, 2);
-            if (!idxItem || !xi || !zi) return;
+            const auto* coord = table->item(row, 1);
+            if (!idxItem || !coord) return;
             const int original = idxItem->data(Qt::UserRole).toInt();
-            const int bx = xi->data(Qt::UserRole).toInt();
-            const int bz = zi->data(Qt::UserRole).toInt();
+            const int bx = coord->data(Qt::UserRole + 1).toInt();
+            const int bz = coord->data(Qt::UserRole + 3).toInt();
             if (ring && original >= 0 && original < static_cast<int>(m_lastAfk.size())) {
                 focusAfkCandidate(original);
             } else {
@@ -565,31 +604,33 @@ void MainWindow::fillResultTable()
                 focusMapOnChunk(bx >= 0 ? bx >> 4 : -((-bx + 15) >> 4), bz >= 0 ? bz >> 4 : -((-bz + 15) >> 4));
             }
         });
-        t->setCellWidget(i, 6, jump);
+        t->setCellWidget(i, 5, jump);
 
         // v3.15.x：每个结果独立的「复制传送指令」按钮（与定位按钮同表但各自对应本行）。
+        //   环形结果用建议挂机坐标（含建议 Y）；其它模式沿用 y=64。
         auto* copyTp = new QPushButton(slime::ui::t("ui.copy_tp_command"), t);
         copyTp->setAutoDefault(false);
         copyTp->setObjectName(QStringLiteral("copyTpButton"));
-        copyTp->setToolTip(slime::ui::t("ui.tp_copied").arg(QStringLiteral("/tp @s <x> 64 <z>")));
+        copyTp->setToolTip(slime::ui::t("ui.tp_copied").arg(QStringLiteral("/tp @s <x> <y> <z>")));
         connect(copyTp, &QPushButton::clicked, this, [this, copyTp]() {
             auto* table = m_w ? m_w->resultTable : nullptr;
             if (!table) return;
             int row = -1;
             for (int rr = 0; rr < table->rowCount(); ++rr) {
-                if (table->cellWidget(rr, 7) == copyTp) { row = rr; break; }
+                if (table->cellWidget(rr, 6) == copyTp) { row = rr; break; }
             }
             if (row < 0) return;
-            const auto* xi = table->item(row, 1);
-            const auto* zi = table->item(row, 2);
-            if (!xi || !zi) return;
-            const int bx = xi->data(Qt::UserRole).toInt();
-            const int bz = zi->data(Qt::UserRole).toInt();
-            const QString cmd = QStringLiteral("/tp @s %1 64 %2").arg(bx).arg(bz);
+            const auto* coord = table->item(row, 1);
+            if (!coord) return;
+            const int bx = coord->data(Qt::UserRole + 1).toInt();
+            const int bz = coord->data(Qt::UserRole + 3).toInt();
+            const bool hasY = coord->data(Qt::UserRole + 4).toBool();
+            const int by = hasY ? coord->data(Qt::UserRole + 2).toInt() : 64;
+            const QString cmd = QStringLiteral("/tp @s %1 %2 %3").arg(bx).arg(by).arg(bz);
             QApplication::clipboard()->setText(cmd);
             setStatus(slime::ui::tr(slime::ui::t("ui.tp_copied")).arg(cmd));
         });
-        t->setCellWidget(i, 7, copyTp);
+        t->setCellWidget(i, 6, copyTp);
     }
     if (m_resultCountLabel) {
         m_resultCountLabel->setText(shown > 0 ? slime::ui::t("ui.1389cca29639")

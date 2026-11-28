@@ -22,6 +22,12 @@ struct HeightResult {
     int64_t coveredBlocks = 0; // unweighted valid blocks
 };
 
+// v3.15.x: 建议挂机点的平台顶面绝对 Y（“基岩层”）：
+//   Java 1.18+ / Bedrock = -63；Java 1.18 之前 = 1。
+//   建议挂机绝对 Y = afkBaseYForVersion(...) + HeightResult::bestHeight。
+//   挂机点对话框与主搜索结果列表共用同一函数，避免两处口径漂移。
+int afkBaseYForVersion(int javaVersionId, bool bedrock) noexcept;
+
 class HeightRefiner {
 public:
     HeightRefiner(Version version, int64_t seed, int javaVersionId, Platform platform,

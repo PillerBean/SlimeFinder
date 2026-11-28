@@ -1,4 +1,4 @@
-﻿// v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
+// v3.5.2（任务 1 的界面）：挂机点（环形覆盖）对话框 —— 实现
 #include "i18n/UiText.h"
 #include "gui/dialogs/AfkDialog.h"
 #include "core/HeightRefiner.h"
@@ -24,20 +24,6 @@ slime::SlimeChunkPredicate makePredicate(int version, int64_t seed)
 {
     const slime::Version v = (version == 1) ? slime::Version::Bedrock : slime::Version::Java;
     return [v, seed](int cx, int cz) { return slime::SlimeEngine::isSlimeChunk(v, seed, cx, cz); };
-}
-
-int afkBaseYFor(int versionId, int platform)
-{
-    // v3.5.8：洞穴更新前世界倒数第二层为 y=1；1.18+ 为 y=-63。
-    // 基岩版当前按现代世界底部处理。
-    if (platform == 1) return -63;
-    for (const auto& v : slime::javaVersionOptions()) {
-        if (v.id != versionId) continue;
-        int major = 0, minor = 0;
-        if (std::sscanf(v.label, "%d.%d", &major, &minor) == 2)
-            return (major > 1 || (major == 1 && minor >= 18)) ? -63 : 1;
-    }
-    return -63;
 }
 } // namespace
 
@@ -213,7 +199,7 @@ void AfkDialog::recompute()
         const slime::Platform plat = (platform == 1) ? slime::Platform::Bedrock : slime::Platform::Java;
         slime::HeightRefiner refiner(ver, m_ctx.seed, versionId, plat, m_weighted);
         if (refiner.valid()) {
-            const int baseY = afkBaseYFor(versionId, platform);
+            const int baseY = slime::afkBaseYForVersion(versionId, platform == 1);
             for (auto& c : m_results) {
                 const auto r = refiner.refine(c.x, c.z, 24, radius, 16);
                 if (!r.valid) continue;

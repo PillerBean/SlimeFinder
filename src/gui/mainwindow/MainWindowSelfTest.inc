@@ -1,4 +1,4 @@
-﻿// v3.12.0：从 MainWindow.cpp 拆出的 GUI 自检实现。
+// v3.12.0：从 MainWindow.cpp 拆出的 GUI 自检实现。
 // 本文件在 MainWindow.cpp 的命名空间内被 include，因此可访问同一编译单元的
 // 私有成员和文件级 helper；后续可继续拆为独立 TU。
 
@@ -3802,6 +3802,20 @@ int MainWindow::runSelfTest()
             check(m_w->start && !m_w->start->isEnabled(), "环形：运行中开始按钮禁用");
             check(m_w->cancel && m_w->cancel->isEnabled(), "环形：运行中取消按钮可用");
             check(m_w->progress && m_w->progress->maximum() == 0, "环形：运行中进度条为忙碌滚动");
+            // v3.15.x（UX-4）：环形搜索已接进度体系 —— 顶部进度行 + 底部「进度」流水不再空白。
+            check(m_streamTimer && m_streamTimer->isActive(), "环形：进度流水定时器已启动");
+            check(m_w->progressStage && !m_w->progressStage->text().isEmpty(),
+                  "环形：顶部进度行有阶段文字（不再空白）");
+            if (m_progressStream) {
+                const int n0 = m_progressStream->lineCount();
+                appendProgressStreamLine();
+                const int n1 = m_progressStream->lineCount();
+                const QStringList lines = m_progressStream->allText().split(QLatin1Char('\n'));
+                const QString line = lines.isEmpty() ? QString() : lines.last();
+                std::fprintf(stderr, "[UI自检]   环形进度流水：%d → %d 行，末行=\"%s\"\n", n0, n1,
+                             line.toUtf8().constData());
+                check(n1 == n0 + 1 && line.contains(QStringLiteral("环形")), "环形：进度流水每 0.5 秒追加一行");
+            }
             const bool ringFinishedAsync = waitForRingSearchIdle(30000);
             check(ringFinishedAsync, "环形：后台规划在 30s 内完成并回到空闲");
             check(!m_ringSearching && !m_ringJob.active(), "环形：完成后清除 m_ringSearching");
@@ -3815,6 +3829,42 @@ int MainWindow::runSelfTest()
                          m_lastAfk.empty() ? 0 : m_lastAfk.front().z,
                          m_lastAfk.empty() ? 0LL : static_cast<long long>(m_lastAfk.front().coveredBlocks));
             check(!m_lastAfk.empty(), "环形覆盖能算出挂机点候选");
+            // v3.15.x（UX-3/UX-4）：建议挂机坐标（高度精修）+ 环形进度收尾。
+            if (!m_lastAfk.empty()) {
+                const auto& cc = m_lastAfk.front();
+                const int absY = cc.afkBaseY + cc.bestHeight;
+                std::fprintf(stderr,
+                             "[UI自检]   建议挂机坐标：x=%d y=%d z=%d H=%d 带=[%d..%d] 有效面积=%.2f "
+                             "基准Y=%d\n",
+                             cc.x, absY, cc.z, cc.bestHeight, cc.heightBandLo, cc.heightBandHi,
+                             cc.effectiveArea, cc.afkBaseY);
+                check(cc.hasHeight, "环形结果带建议挂机高度（HeightRefiner 已接入主搜索）");
+                check(cc.bestHeight >= 0 && cc.bestHeight <= 24, "建议高度 H 在 0..24（研究结论：H>24 由 24 支配）");
+                check(cc.afkBaseY == -63 || cc.afkBaseY == 1, "建议坐标基准 Y 合法（1.18+/Bedrock=-63，旧版=1）");
+                check(cc.effectiveArea > 0.0 && cc.heightBlocks > 0, "建议坐标附带有效面积/有效方块数");
+                focusAfkCandidate(0);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
+                check(m_map && m_map->focusedAfk() == 0, "跳转选中候选后地图聚焦该候选（按建议高度画覆盖）");
+            }
+            check(m_w->progressStage && m_w->progressStage->text() == ringPhaseName(6),
+                  "环形：完成后顶部阶段文字=完成");
+            check(m_w->progressElapsed && !m_w->progressElapsed->text().isEmpty(),
+                  "环形：完成后已用时文字非空");
+            if (m_progressStream) {
+                const QString all = m_progressStream->allText();
+                check(all.contains(QStringLiteral("环形完成")), "环形：进度流水有完成汇总行（候选/用时/预筛来源）");
+            }
+            // v3.15.x（UX-3）：非环形结果表头回到「坐标 X/Z」。
+            {
+                const auto keepAfk = m_lastAfk;
+                m_lastAfk.clear();
+                fillResultTable();
+                const auto* hdr = m_w->resultTable ? m_w->resultTable->horizontalHeaderItem(1) : nullptr;
+                check(hdr && hdr->text() == slime::ui::t("ui.result_coord_header"),
+                      "非环形结果表头为「坐标 X/Z」");
+                m_lastAfk = keepAfk;
+                fillResultTable();
+            }
             // v3.14.5（flow-ring-async）：取消与关闭路径 —— 都在后台任务运行中触发。
             {
                 const int keepRange[4] = { m_w->minX->value(), m_w->maxX->value(), m_w->minZ->value(),
@@ -4053,41 +4103,60 @@ int MainWindow::runSelfTest()
             std::fprintf(stderr, "[UI自检]   结果列表：行数=%d 候选=%zu\n", rows, m_lastAfk.size());
             check(rows > 0, "搜索后结果列表有数据");
             if (rows > 0) {
-                check(m_w->resultTable->cellWidget(0, 6) != nullptr, "每行都有「跳转」按钮");
-                check(m_w->resultTable->cellWidget(0, 7) != nullptr, "每行都有「复制传送指令」按钮");
-                if (auto* copyTp = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 7))) {
-                    const int bx = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
-                    const int bz = m_w->resultTable->item(0, 2)->data(Qt::UserRole).toInt();
-                    const QString expected = QStringLiteral("/tp @s %1 64 %2").arg(bx).arg(bz);
+                // v3.15.x（UX-3）：X/Y/Z 合并为一列「建议挂机坐标」；按钮列前移到 5/6。
+                check(m_w->resultTable->cellWidget(0, 5) != nullptr, "每行都有「跳转」按钮");
+                check(m_w->resultTable->cellWidget(0, 6) != nullptr, "每行都有「复制传送指令」按钮");
+                check(m_w->resultTable->columnCount() == 7, "结果列表列数 = 7（坐标合并为一列）");
+                const auto* hdr1 = m_w->resultTable->horizontalHeaderItem(1);
+                check(hdr1 && hdr1->text() == slime::ui::t("ui.result_afk_coord_header"),
+                      "环形结果列表显示「建议挂机坐标」表头");
+                const auto* coord0 = m_w->resultTable->item(0, 1);
+                check(coord0 != nullptr, "结果行有坐标单元格");
+                const bool hasY0 = coord0 && coord0->data(Qt::UserRole + 4).toBool();
+                const int cx0 = coord0 ? coord0->data(Qt::UserRole + 1).toInt() : 0;
+                const int cy0 = coord0 ? coord0->data(Qt::UserRole + 2).toInt() : 0;
+                const int cz0 = coord0 ? coord0->data(Qt::UserRole + 3).toInt() : 0;
+                std::fprintf(stderr, "[UI自检]   建议挂机坐标：(%d, %d, %d) hasY=%d 文本=\"%s\"\n", cx0, cy0, cz0,
+                             hasY0 ? 1 : 0, coord0 ? coord0->text().toUtf8().constData() : "");
+                check(hasY0 && !m_lastAfk.empty() && m_lastAfk.front().hasHeight,
+                      "环形结果带「建议挂机高度」（高度精修已接入）");
+                if (hasY0 && !m_lastAfk.empty()) {
+                    const auto& c = m_lastAfk.front();
+                    check(cx0 == c.x && cz0 == c.z && cy0 == c.afkBaseY + c.bestHeight,
+                          "建议挂机坐标 = 精修中心 (x,z) + 绝对 Y（基岩层 + H）");
+                    check(coord0->text().count(QStringLiteral("/")) == 2, "建议坐标以 X / Y / Z 单格显示");
+                }
+                if (auto* copyTp = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 6))) {
+                    const QString expected = hasY0 ? QStringLiteral("/tp @s %1 %2 %3").arg(cx0).arg(cy0).arg(cz0)
+                                                   : QStringLiteral("/tp @s %1 64 %2").arg(cx0).arg(cz0);
                     copyTp->click();
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 30);
                     check(QApplication::clipboard()->text() == expected,
-                          "复制传送按钮对应当前结果行坐标");
+                          "复制传送按钮使用建议挂机坐标（含建议 Y）");
                 }
-                auto* jump = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 6));
+                auto* jump = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 5));
                 if (jump && m_map) {
-                    const int bx = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
-                    const int bz = m_w->resultTable->item(0, 2)->data(Qt::UserRole).toInt();
                     jump->click();
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
                     const QPointF ctr = m_map->centerBlock();
-                    std::fprintf(stderr, "[UI自检]   列表跳转：第1行(%d,%d) → 地图中心(%.0f,%.0f)\n", bx, bz, ctr.x(),
+                    std::fprintf(stderr, "[UI自检]   列表跳转：第1行(%d,%d) → 地图中心(%.0f,%.0f)\n", cx0, cz0, ctr.x(),
                                  ctr.y());
-                    check(std::abs(ctr.x() - (bx + 8)) < 40.0 && std::abs(ctr.y() - (bz + 8)) < 40.0,
-                          "点「跳转」把地图定位到该行");
+                    check(std::abs(ctr.x() - (cx0 + 0.5)) < 20.0 && std::abs(ctr.y() - (cz0 + 0.5)) < 20.0,
+                          "点「跳转」把地图定位到该行建议坐标");
                     check(m_map && m_map->focusedAfk() == 0, "点「跳转」同时选中该行的环（只显示一条）");
                 }
                 // 按距离列排序
                 check(m_w->resultTable->isSortingEnabled(), "结果列表有结果时仍可按列排序");
-                m_w->resultTable->sortItems(3, Qt::AscendingOrder);
+                m_w->resultTable->sortItems(2, Qt::AscendingOrder);
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
-                const double d0 = m_w->resultTable->item(0, 3)->data(Qt::DisplayRole).toDouble();
-                const double dN = m_w->resultTable->item(rows - 1, 3)->data(Qt::DisplayRole).toDouble();
+                const double d0 = m_w->resultTable->item(0, 2)->data(Qt::DisplayRole).toDouble();
+                const double dN = m_w->resultTable->item(rows - 1, 2)->data(Qt::DisplayRole).toDouble();
                 std::fprintf(stderr, "[UI自检]   列表排序：首行距离=%.1f 末行距离=%.1f\n", d0, dN);
                 check(d0 <= dN + 1e-6, "结果列表可按列排序");
-                if (auto* jump0 = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 6))) {
-                    const int bx0 = m_w->resultTable->item(0, 1)->data(Qt::UserRole).toInt();
-                    const int bz0 = m_w->resultTable->item(0, 2)->data(Qt::UserRole).toInt();
+                if (auto* jump0 = qobject_cast<QPushButton*>(m_w->resultTable->cellWidget(0, 5))) {
+                    const auto* coord = m_w->resultTable->item(0, 1);
+                    const int bx0 = coord ? coord->data(Qt::UserRole + 1).toInt() : 0;
+                    const int bz0 = coord ? coord->data(Qt::UserRole + 3).toInt() : 0;
                     jump0->click();
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 120);
                     const QPointF ctr = m_map->centerBlock();

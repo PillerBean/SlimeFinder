@@ -1,4 +1,4 @@
-﻿// v3.5.3（地图优化）：地图预览控件 —— 实现
+// v3.5.3（地图优化）：地图预览控件 —— 实现
 #include "i18n/UiText.h"
 #include "gui/widgets/MapPreviewWidget.h"
 #include "utils/ThemeManager.h"
@@ -693,8 +693,26 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
                 p.setBrush(Qt::NoBrush);
                 continue;
             }
-            const double rad = m_layer.afkRadius * m_scale;
-            const double radIn = m_layer.afkInnerRadius * m_scale;
+            // v3.15.x（UX-4）：选中候选按「建议挂机高度」画**地面可刷范围**。
+            //   三维球壳模型：内半径 inner、外半径 R，玩家在基岩层上方 H 格；
+            //   与基岩层（刷怪面，y=baseY）的交集：
+            //     r_out = sqrt(R² − H²)；r_in = H ≥ inner ? 0 : sqrt(inner² − H²)
+            //   H ≥ 内半径时内圈消失（显示为圆盘）—— 这正对应“较高挂机高度下空心球
+            //   与基岩层的重合面变成圆形”，不再永远画成环。
+            const int innerB = (std::max)(0, m_layer.afkInnerRadius);
+            const int outerB = (std::max)(1, m_layer.afkRadius);
+            double outerGround = static_cast<double>(outerB);
+            double innerGround = static_cast<double>(innerB);
+            const bool hasHeight = c.hasHeight;
+            if (hasHeight) {
+                const double H = static_cast<double>(c.bestHeight);
+                const double R = static_cast<double>(outerB);
+                const double I = static_cast<double>(innerB);
+                outerGround = std::sqrt((std::max)(0.0, R * R - H * H));
+                innerGround = (H >= I) ? 0.0 : std::sqrt((std::max)(0.0, I * I - H * H));
+            }
+            const double rad = outerGround * m_scale;
+            const double radIn = innerGround * m_scale;
             // 方案 A：细环双层描边（深色主环 + 浅色内描边），环带不填充 —— 不遮挡地图
             if (rad > 2.0 && rad < 20000.0) {
                 p.setPen(QPen(ringCol, 3.6));
@@ -703,7 +721,7 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
                 p.setPen(QPen(ringLight, 1.0));
                 p.drawEllipse(ctr, rad - 1.8, rad - 1.8);
             }
-            // 环形 = 内圈（过近不刷）
+            // 环形 = 内圈（过近不刷）；H ≥ 内半径时不画内圈（地面覆盖为圆盘）
             if (radIn > 2.0 && radIn < rad) {
                 p.setPen(QPen(ringCol, 2.6));
                 p.drawEllipse(ctr, radIn, radIn);
@@ -718,38 +736,49 @@ void MapPreviewWidget::paintEvent(QPaintEvent*)
             p.setPen(QPen(QColor(255, 255, 255), 2.0));
             p.drawEllipse(ctr, 4.6, 4.6);
             p.setBrush(Qt::NoBrush);
-            // 标签 + 环带内史莱姆区块描边高亮
+            // 标签 + 地面覆盖范围内史莱姆区块描边高亮
             p.setPen(QPen(ringCol, 1));
-            const QString tag = m_layer.afkInnerRadius > 0
-                                    ? slime::ui::t("ui.38461719f80b").arg(m_layer.afkInnerRadius).arg(m_layer.afkRadius)
-                                    : QStringLiteral("R%1").arg(m_layer.afkRadius);
+            QString tag;
+            if (hasHeight) {
+                const int absY = c.afkBaseY + c.bestHeight;
+                const int rIn = static_cast<int>(std::lround(innerGround));
+                const int rOut = static_cast<int>(std::lround(outerGround));
+                tag = (innerGround > 0.5)
+                          ? slime::ui::t("ui.afk_footprint_ring").arg(absY).arg(c.bestHeight).arg(rIn).arg(rOut)
+                          : slime::ui::t("ui.afk_footprint_disc").arg(absY).arg(c.bestHeight).arg(rOut);
+            } else {
+                tag = m_layer.afkInnerRadius > 0
+                          ? slime::ui::t("ui.38461719f80b").arg(m_layer.afkInnerRadius).arg(m_layer.afkRadius)
+                          : QStringLiteral("R%1").arg(m_layer.afkRadius);
+            }
             p.drawText(ctr + QPointF(11, -11), tag);
-                if (m_layer.afkInnerRadius > 0 && m_layer.showSlime) {
-                    const int c0x = static_cast<int>((c.x - m_layer.afkRadius) / kChunk) - 1;
-                    const int c1x = static_cast<int>((c.x + m_layer.afkRadius) / kChunk) + 1;
-                    const int c0z = static_cast<int>((c.z - m_layer.afkRadius) / kChunk) - 1;
-                    const int c1z = static_cast<int>((c.z + m_layer.afkRadius) / kChunk) + 1;
-                    p.setPen(QPen(QColor(64, 255, 170, 220), 2.0));
-                    p.setBrush(Qt::NoBrush);
-                    const double in2 = static_cast<double>(m_layer.afkInnerRadius) * m_layer.afkInnerRadius;
-                    const double out2 = static_cast<double>(m_layer.afkRadius) * m_layer.afkRadius;
-                    for (int cz = c0z; cz <= c1z; ++cz) {
-                        for (int cx = c0x; cx <= c1x; ++cx) {
-                            if (!predicate(cx, cz)) continue;
-                            const double bx = cx * 16.0, bz = cz * 16.0;
-                            const double nx = (std::max)(bx, (std::min)(static_cast<double>(c.x), bx + 16.0));
-                            const double nz = (std::max)(bz, (std::min)(static_cast<double>(c.z), bz + 16.0));
-                            const double d2min = (nx - c.x) * (nx - c.x) + (nz - c.z) * (nz - c.z);
-                            const double fx = (std::abs(bx - c.x) > std::abs(bx + 16.0 - c.x)) ? bx : bx + 16.0;
-                            const double fz = (std::abs(bz - c.z) > std::abs(bz + 16.0 - c.z)) ? bz : bz + 16.0;
-                            const double d2max = (fx - c.x) * (fx - c.x) + (fz - c.z) * (fz - c.z);
-                            if (d2min > out2 || d2max < in2) continue;   // 不与环带相交
-                            const QPointF tl = blockToPx(QPointF(bx, bz));
-                            const QPointF br = blockToPx(QPointF(bx + 16.0, bz + 16.0));
-                            p.drawRect(QRectF(tl, br).adjusted(1, 1, -1, -1));
-                        }
+            if (outerGround > 0.5 && m_layer.showSlime) {
+                const int bound = static_cast<int>(std::ceil(outerGround)) + 16;
+                const int c0x = static_cast<int>((c.x - bound) / kChunk) - 1;
+                const int c1x = static_cast<int>((c.x + bound) / kChunk) + 1;
+                const int c0z = static_cast<int>((c.z - bound) / kChunk) - 1;
+                const int c1z = static_cast<int>((c.z + bound) / kChunk) + 1;
+                p.setPen(QPen(QColor(64, 255, 170, 220), 2.0));
+                p.setBrush(Qt::NoBrush);
+                const double in2 = innerGround * innerGround;
+                const double out2 = outerGround * outerGround;
+                for (int cz = c0z; cz <= c1z; ++cz) {
+                    for (int cx = c0x; cx <= c1x; ++cx) {
+                        if (!predicate(cx, cz)) continue;
+                        const double bx = cx * 16.0, bz = cz * 16.0;
+                        const double nx = (std::max)(bx, (std::min)(static_cast<double>(c.x), bx + 16.0));
+                        const double nz = (std::max)(bz, (std::min)(static_cast<double>(c.z), bz + 16.0));
+                        const double d2min = (nx - c.x) * (nx - c.x) + (nz - c.z) * (nz - c.z);
+                        const double fx = (std::abs(bx - c.x) > std::abs(bx + 16.0 - c.x)) ? bx : bx + 16.0;
+                        const double fz = (std::abs(bz - c.z) > std::abs(bz + 16.0 - c.z)) ? bz : bz + 16.0;
+                        const double d2max = (fx - c.x) * (fx - c.x) + (fz - c.z) * (fz - c.z);
+                        if (d2min > out2 || d2max < in2) continue;   // 不与地面覆盖范围相交
+                        const QPointF tl = blockToPx(QPointF(bx, bz));
+                        const QPointF br = blockToPx(QPointF(bx + 16.0, bz + 16.0));
+                        p.drawRect(QRectF(tl, br).adjusted(1, 1, -1, -1));
                     }
                 }
+            }
         }
     }
 

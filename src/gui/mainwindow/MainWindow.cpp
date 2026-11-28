@@ -116,6 +116,8 @@
 // v3.15.x（flow-k3-cache）：缓存位图密度预筛（MainWindowRingMap.inc 在 namespace slime 内展开，
 // 头文件必须在这里的全局作用域先包含，否则会形成嵌套 namespace）。
 #include "core/CachePrescan.h"
+// v3.15.x（UX-3）：建议挂机坐标（高度精修）—— 与挂机点对话框共用同一套模型。
+#include "core/HeightRefiner.h"
 #include "utils/CrashDump.h"     // v3.3.7：崩溃转储开关（设置接线）
 #include "utils/IncidentLog.h"   // v3.3.7：关键信息日志（常开，崩溃/取消取证）
 #include "utils/LogBus.h"        // v3.3.4：日志总线（按日期分文件 + 两级模式）

@@ -1,4 +1,4 @@
-﻿// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
+// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
 //
 // 交互流程：游戏版本 → 种子 → 范围(快速预设/边界截断) → 模式（严格图案 / 密度）→
 // 搜索算法（精确 / 分层 / 快速估算 / 保守）→ 查询起点 → 开始搜索；
@@ -462,6 +462,8 @@ private:
     //   即使窗口析构后线程被安全丢弃，也不会解引用 MainWindow 成员。
     std::shared_ptr<std::atomic<bool>> m_ringCancel = std::make_shared<std::atomic<bool>>(false);
     std::shared_ptr<RingUiGate> m_ringUiGate = std::make_shared<RingUiGate>();
+    // v3.15.x（UX-4）：正在运行的环形任务（GUI 线程只读 phase，用于顶部进度行/底部进度流水）。
+    RingSearchResultPtr m_ringUiState;
     bool m_ringSearching = false;             // v3.10.12.11：环形搜索（含预筛）进行中
     bool m_ringFinishDiscard = false;         // v3.14.5：关闭窗口时丢弃排队中的完成回调（不触碰销毁中的控件）
     QLabel* m_resultsNotice = nullptr;   // v3.6.5：结果区上方提醒   // v3.6.4：语言巡检定时器

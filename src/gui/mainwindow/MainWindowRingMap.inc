@@ -41,8 +41,32 @@ struct MainWindow::RingSearchResult {
     bool cancelled = false;
     bool outOfMemory = false;
     bool emptyAfterFilter = false;
+    // v3.15.x（UX-4）：环形搜索阶段（GUI 线程只读）——
+    //   0=准备 1=预筛 2=基线精修 3=k3 上界复核 4=严格统计 5=建议挂机坐标 6=完成。
+    //   原先环形搜索完全没有进度文字，底部「进度」页与顶部进度行都是空的，只有「反馈」有内容。
+    std::atomic<int> phase{ 0 };
+    bool heightRefined = false;   // v3.15.x：建议挂机坐标（高度精修）是否执行过
+    int heightRefinedCount = 0;
+    double heightRefineMs = 0.0;
     uint64_t runId = 0;
 };
+
+namespace {
+// v3.15.x（UX-4）：环形搜索阶段名 —— 顶部进度行 progressStage 与底部「进度」流水共用，
+//   避免两处各写一套映射。阶段编号与 RingSearchResult::phase 一致。
+QString ringPhaseName(int phase)
+{
+    switch (phase) {
+    case 1: return slime::ui::t("ui.ring_phase_prescan");
+    case 2: return slime::ui::t("ui.ring_phase_base");
+    case 3: return slime::ui::t("ui.ring_phase_k3");
+    case 4: return slime::ui::t("ui.ring_phase_stats");
+    case 5: return slime::ui::t("ui.ring_phase_height");
+    case 6: return slime::ui::t("ui.ring_phase_finish");
+    default: return slime::ui::t("ui.ring_phase_prepare");
+    }
+}
+} // namespace
 
 void MainWindow::runRingSearch()
 {
@@ -301,6 +325,20 @@ void MainWindow::runRingSearch()
     m_ringCancel->store(false, std::memory_order_relaxed);
     m_ringSearching = true;
     m_ringFinishDiscard = false;
+    // v3.15.x（UX-4）：环形搜索接进度体系 —— 顶部进度行（阶段/已用时）+ 底部「进度」流水。
+    //   此前环形只有忙碌进度条，底部「进度」页永远空白（反馈页反而正常），用户已反馈。
+    m_ringUiState = state;
+    m_searchStartMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          std::chrono::system_clock::now().time_since_epoch())
+                          .count();
+    m_streamScanned = 0;
+    m_streamTick = 0;
+    if (m_elapsedTimer) m_elapsedTimer->start(200);
+    if (m_streamTimer) m_streamTimer->start(500);
+    if (m_w->progressStage) m_w->progressStage->setText(ringPhaseName(0));
+    if (m_w->progressElapsed) m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(0.0, 0, 'f', 1));
+    if (m_w->progressEta) m_w->progressEta->setText(slime::ui::t("ui.f00785313fdc"));
+    if (m_w->progressInfo) m_w->progressInfo->setText(slime::ui::t("ui.ring_progress_started"));
     {
         const QString scanText = k3Mode ? slime::ui::t("ui.ring_scan_k3")
                                         : (autoPrescan ? slime::ui::t("ui.7ae0cd5f9a0b")
@@ -354,6 +392,7 @@ void MainWindow::runRingSearch()
         if (cancelRequested()) ringCancel->store(true, std::memory_order_relaxed);
         try {
             if (autoPrescan) {
+                state->phase.store(1, std::memory_order_relaxed);   // 预筛
                 // v3.15.x（flow-k3-cache）：预设参数对两种种子来源完全一致。
                 slime::DensityPrescanParams pp;
                 pp.version = v;
@@ -403,11 +442,13 @@ void MainWindow::runRingSearch()
                                      seeds.size(), pp.minDensity);
                     }
                     if (k3Mode) {
+                        state->phase.store(2, std::memory_order_relaxed);   // 基线精修
                         AfkPlanOptions base = o;
                         const auto baseCands = slime::AfkPlanner::plan(base, pred, ringCancel.get());
                         const int lower = baseCands.empty()
                                               ? 0
                                               : static_cast<int>(baseCands.front().coveredBlocks);
+                        state->phase.store(3, std::memory_order_relaxed);   // k3 上界复核
                         const auto filtered = slime::AfkPlanner::k3UpperBoundSeeds(
                             o, o.seedCandidates, pred, lower);
                         state->k3Candidates = static_cast<int>(filtered.size());
@@ -429,6 +470,7 @@ void MainWindow::runRingSearch()
             if (cancelRequested()) {
                 ringCancelled = true;
             } else {
+                state->phase.store(2, std::memory_order_relaxed);   // 基线精修（快速/精确档）
                 cands = slime::AfkPlanner::plan(o, pred, ringCancel.get());
                 // 规划器已在主循环内检查取消；返回后仍复核一次并丢弃不完整结果。
                 if (cancelRequested()) {
@@ -444,6 +486,7 @@ void MainWindow::runRingSearch()
     // v3.5.9：plan() 的粗扫/卷积是近似值 —— 对每个候选做「严格 1 格」重算：
     //   用游戏地形的最小单位 1:4 群系网格逐格累加，得到游戏口径的有效格与总权重。
     if (!cands.empty()) {
+        state->phase.store(4, std::memory_order_relaxed);   // 严格 1 格统计
         // v3.5.12：8 个候选的 1:4 群系网格互相独立 → OpenMP 并行（每个线程用自己的 BiomeMap：
         //           cubiomes 生成器有状态，不可共用；init 仅 ~0.1ms，开销可忽略）。
         //           这一步原本是环形搜索的最大头（8 个候选 × 18ms ≈ 150ms）。
@@ -498,6 +541,54 @@ void MainWindow::runRingSearch()
         }
         if (static_cast<int>(cands.size()) > state->requestedTopN)
             cands.resize(static_cast<size_t>(state->requestedTopN));
+        // v3.15.x（UX-3）：建议挂机坐标 —— 复用挂机点对话框（AfkDialog）同一套高度模型：
+        //   H=0..24（研究结论：H>24 由 H=24 支配）、块级群系权重、±16 格邻域（粗 4 细 1）、
+        //   三维球壳 24 ≤ 三维距离 ≤ 128 与基岩层（刷怪面）的交集。
+        //   建议坐标 = 精修后的 (x,z) + 绝对 Y = afkBaseY + H。
+        //   注意：本步**只服务显示/地图**，不改变结果排序与规划口径（用户要求“只显示建议坐标”）。
+        //   依据：docs/research/ring_problem_solution/height_fullmap_test.md、
+        //         height_region_prototype.md（球壳模型/H>24 支配/块级权重/邻域精修）。
+        if (!cands.empty() && !cancelRequested()) {
+            state->phase.store(5, std::memory_order_relaxed);   // 建议挂机坐标
+            const auto th = std::chrono::steady_clock::now();
+            const slime::Platform platform = bedrock ? slime::Platform::Bedrock : slime::Platform::Java;
+            const bool useBiome = !bedrock && state->useBiomeWeight;
+            slime::HeightRefiner refiner(v, seed, biomeVersionForStats, platform, useBiome);
+            if (refiner.valid()) {
+                const int baseY = slime::afkBaseYForVersion(biomeVersionForStats, bedrock);
+                const int inner = (std::max)(0, o.innerRadius);
+                const int outer = (std::max)(1, state->ringOuter);
+                // 候选数通常 = 目标数量；给大目标数量加保护，避免一次高度扫描拖慢搜索数秒。
+                const size_t cap = 64;
+                int done = 0;
+                for (size_t i = 0; i < cands.size() && i < cap; ++i) {
+                    if (cancelRequested()) break;
+                    auto& c = cands[i];
+                    const auto r = refiner.refine(c.x, c.z, inner, outer, 16);
+                    if (!r.valid) continue;
+                    c.hasHeight = true;
+                    c.bestHeight = r.bestHeight;
+                    c.heightBandLo = r.bandLo;
+                    c.heightBandHi = r.bandHi;
+                    c.effectiveArea = r.effectiveArea;
+                    c.heightBlocks = r.coveredBlocks;
+                    c.afkBaseY = baseY;
+                    c.x = r.x;
+                    c.z = r.z;
+                    c.chunkX = c.x >= 0 ? c.x / 16 : -((-c.x + 15) / 16);
+                    c.chunkZ = c.z >= 0 ? c.z / 16 : -((-c.z + 15) / 16);
+                    ++done;
+                }
+                state->heightRefined = done > 0;
+                state->heightRefinedCount = done;
+                state->heightRefineMs = std::chrono::duration<double, std::milli>(
+                                            std::chrono::steady_clock::now() - th)
+                                            .count();
+                std::fprintf(stderr,
+                             "[环形] 建议挂机坐标（高度精修）：%d/%zu 个候选，%.1f ms（内=%d 外=%d 基准Y=%d）\n",
+                             done, cands.size(), state->heightRefineMs, inner, outer, baseY);
+            }
+        }
         // v3.6.1：结果少于目标数量时在日志里说明被什么限制（避免以为程序只能出这么几个）
         if (static_cast<int>(cands.size()) < state->requestedTopN)
             std::fprintf(stderr, "[环形] 结果 %zu < 目标 %d：受最小密度(%.3f)/间距(%d)/质量种类限制\n",
@@ -537,6 +628,9 @@ void MainWindow::runRingSearch()
     if (!m_ringJob.start(SearchOptions{}, SearchProgressSink{}, ringDone, ringRunner)) {
         // 启动失败（线程未创建/状态机拒绝）也必须恢复界面，不能在运行态卡死。
         m_ringSearching = false;
+        m_ringUiState.reset();
+        if (m_elapsedTimer) m_elapsedTimer->stop();
+        if (m_streamTimer) m_streamTimer->stop();
         updateStartEnabled();
         if (m_w->start) m_w->start->setEnabled(true);
         if (m_w->cancel) {
@@ -610,6 +704,42 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         m_w->progress->setRange(0, 1000);
         m_w->progress->setValue(1000);
         if (m_w->progressPercent) m_w->progressPercent->setText(QStringLiteral("100%"));
+    }
+    // v3.15.x（UX-4）：环形进度收尾 —— 停表、补最终流水行、清运行态（取消/异常也走这里）。
+    {
+        const double elapsedSecs =
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - result->started).count();
+        if (m_elapsedTimer) m_elapsedTimer->stop();
+        if (m_streamTimer) m_streamTimer->stop();
+        m_ringUiState.reset();
+        if (m_w->progressStage) m_w->progressStage->setText(ringPhaseName(6));
+        if (m_w->progressElapsed)
+            m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(elapsedSecs, 0, 'f', 1));
+        if (m_w->progressInfo)
+            m_w->progressInfo->setText(result->cancelled ? slime::ui::t("ui.ring_progress_cancelled_short")
+                                                         : slime::ui::t("ui.ring_progress_done_short"));
+        if (m_progressStream) {
+            const QString stamp = QTime::currentTime().toString(QStringLiteral("HH:mm:ss"));
+            if (result->cancelled) {
+                m_progressStream->appendRawLine(
+                    slime::ui::t("ui.ring_progress_cancelled").arg(stamp).arg(elapsedSecs, 0, 'f', 1));
+            } else {
+                QString source = slime::ui::t("ui.ring_source_sampling");
+                if (result->prescanUsed)
+                    source = result->cachePrescanUsed ? slime::ui::t("ui.ring_source_cache")
+                                                      : slime::ui::t("ui.ring_source_gpu");
+                QString extra;
+                if (result->k3Used)
+                    extra = slime::ui::t("ui.ring_progress_final_k3").arg(result->k3Candidates);
+                m_progressStream->appendRawLine(
+                    slime::ui::t("ui.ring_progress_final")
+                        .arg(stamp)
+                        .arg(static_cast<int>(cands.size()))
+                        .arg(elapsedSecs, 0, 'f', 1)
+                        .arg(source)
+                        .arg(extra));
+            }
+        }
     }
     if (result->cancelled) {
         m_lastAfk.clear();
@@ -971,29 +1101,51 @@ void MainWindow::focusMapOnChunk(int chunkX, int chunkZ)
                  chunkZ * 16 + 8);
 }
 
-// v3.5.10：选中某个环形候选（点地图环心 / 点结果行）—— 地图只画这一条的环，中心落在环心
+// v3.5.10：选中某个环形候选（点地图环心 / 点结果行）—— 地图只画这一条的地面覆盖范围，中心落在候选点
+// v3.15.x（UX-4）：如果候选带建议挂机高度 H，则按三维球壳与基岩层的交集缩放（H≥内半径时为圆盘），
+//   span 按有效外半径 sqrt(R²−H²) 计算；状态栏同时给出建议坐标 (x, y, z)。
 void MainWindow::focusAfkCandidate(int index)
 {
     if (!m_map || index < 0 || index >= static_cast<int>(m_lastAfk.size())) return;
     const auto& cd = m_lastAfk[static_cast<size_t>(index)];
     if (m_map && !m_map->isVisible()) toggleMapPanel();   // v3.6.2：按内容可见性判断
     const QSize sz = (m_map->width() > 80 && m_map->height() > 80) ? m_map->size() : QSize(720, 480);
-    // 让「环带 24~128」整体落在视口内（留 18% 余量）
-    const double span = 2.0 * 128.0 * 1.18;
+    // 让「地面覆盖范围」整体落在视口内（留 18% 余量）；带高度时外半径 = sqrt(R² − H²)。
+    const double outer = (std::max)(1, m_lastRingOuter > 0 ? m_lastRingOuter : 128);
+    double groundOuter = outer;
+    if (cd.hasHeight) {
+        const double H = static_cast<double>(cd.bestHeight);
+        groundOuter = std::sqrt((std::max)(0.0, outer * outer - H * H));
+    }
+    const double span = 2.0 * (std::max)(8.0, groundOuter) * 1.18;
     double zoom = (std::min)(sz.width(), sz.height()) / span;
     zoom = (std::max)(0.25, (std::min)(8.0, zoom));
     m_map->setView(static_cast<double>(cd.x) + 0.5, static_cast<double>(cd.z) + 0.5, zoom);
     m_map->setFocusedAfk(index);
     m_map->refreshNow();
-    setStatus(slime::ui::tr(slime::ui::t("ui.be49a883050c"))
-                  .arg(index + 1)
-                  .arg(cd.x)
-                  .arg(cd.z)
-                  .arg(static_cast<qlonglong>(cd.coveredBlocks))
-                  .arg(cd.coveredWeight, 0, 'f', 0)
-                  .arg(cd.coveredChunks));
-    std::fprintf(stderr, "[地图面板] 选中环心 #%d：(%d,%d) 有效格 %lld\n", index, cd.x, cd.z,
-                 static_cast<long long>(cd.coveredBlocks));
+    if (cd.hasHeight) {
+        const int absY = cd.afkBaseY + cd.bestHeight;
+        setStatus(slime::ui::tr(slime::ui::t("ui.afk_focus_status_y"))
+                      .arg(index + 1)
+                      .arg(cd.x)
+                      .arg(absY)
+                      .arg(cd.z)
+                      .arg(static_cast<qlonglong>(cd.coveredBlocks))
+                      .arg(cd.coveredWeight, 0, 'f', 0)
+                      .arg(cd.coveredChunks));
+        std::fprintf(stderr, "[地图面板] 选中候选 #%d：建议挂机坐标 (%d, %d, %d) H=%d 基准Y=%d\n", index,
+                     cd.x, absY, cd.z, cd.bestHeight, cd.afkBaseY);
+    } else {
+        setStatus(slime::ui::tr(slime::ui::t("ui.be49a883050c"))
+                      .arg(index + 1)
+                      .arg(cd.x)
+                      .arg(cd.z)
+                      .arg(static_cast<qlonglong>(cd.coveredBlocks))
+                      .arg(cd.coveredWeight, 0, 'f', 0)
+                      .arg(cd.coveredChunks));
+        std::fprintf(stderr, "[地图面板] 选中环心 #%d：(%d,%d) 有效格 %lld\n", index, cd.x, cd.z,
+                     static_cast<long long>(cd.coveredBlocks));
+    }
 }
 
 void MainWindow::computeAfkForMap()

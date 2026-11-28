@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 
 namespace slime {
@@ -18,6 +19,20 @@ struct AreaAt {
     int h = 0;
 };
 } // namespace
+
+int afkBaseYForVersion(int javaVersionId, bool bedrock) noexcept
+{
+    // v3.5.8：洞穴更新前世界倒数第二层为 y=1；1.18+ 为 y=-63。
+    // 基岩版当前按现代世界底部处理（与 AfkDialog 旧逻辑一致）。
+    if (bedrock) return -63;
+    for (const auto& v : javaVersionOptions()) {
+        if (v.id != javaVersionId) continue;
+        int major = 0, minor = 0;
+        if (std::sscanf(v.label, "%d.%d", &major, &minor) == 2)
+            return (major > 1 || (major == 1 && minor >= 18)) ? -63 : 1;
+    }
+    return -63;
+}
 
 HeightRefiner::HeightRefiner(Version version, int64_t seed, int javaVersionId,
                              Platform platform, bool useBiome)
