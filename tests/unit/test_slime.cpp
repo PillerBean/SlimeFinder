@@ -3536,22 +3536,27 @@ static void testSpawnWeights()
     const auto deepDark = slime::spawnWeightForName("deep_dark");
     CHECK(deepDark.javaWeight == 0.0 && deepDark.bedrockWeight == 0.0, "深暗之地（1.19+）：不刷怪 ⇒ 0");
 
-    // 硫磺洞穴（26.2+）：用户表格要求 Java 折算 = 0；英文 Wiki 基岩版列 100/1 ⇒ 基岩 1.0。
+    // 硫磺洞穴（26.2+）：普通史莱姆 25/315（只在史莱姆区块、每群 1 只）；
+    //   硫方怪（100/315）是被动生物，只掉吸收的方块+经验、不掉黏液球 ⇒ 按用户规则采用 Wiki 折算。
     const auto sulfur = slime::spawnWeightForName("sulfur_caves");
-    std::printf("      硫磺洞穴：java=%.3f bedrock=%.3f known=%d\n", sulfur.javaWeight, sulfur.bedrockWeight,
-                sulfur.known ? 1 : 0);
-    CHECK(sulfur.known && sulfur.javaWeight == 0.0 && sulfur.bedrockWeight == 1.0,
-          "硫磺洞穴（26.2+）：Java 折算 0（按用户表格）/ 基岩 1.0（英文 Wiki 100）");
+    const double sulfurWant = (25.0 / 315.0) / (100.0 / 515.0);
+    std::printf("      硫磺洞穴：java=%.6f（=25/315÷100/515=%.6f）bedrock=%.3f known=%d\n",
+                sulfur.javaWeight, sulfurWant, sulfur.bedrockWeight, sulfur.known ? 1 : 0);
+    CHECK(sulfur.known && std::abs(sulfur.javaWeight - sulfurWant) < 1e-9 &&
+              sulfur.bedrockWeight == 1.0,
+          "硫磺洞穴：Java 折算 = wiki 25/315 相对 100/515 ≈ 0.4087（硫方怪不掉黏液球）");
+    CHECK(sulfur.javaWeight > 0.40 && sulfur.javaWeight < 0.42, "硫磺洞穴 Java 折算在 0.41 档");
 
     const auto unknown = slime::spawnWeightForName("some_unknown_biome");
     CHECK(!unknown.known && unknown.javaWeight == 1.0, "未收录群系：按最高档 1.0（保守）");
 
-    // ② 基岩版：英文 Wiki 表内群系 spawn weight 恒 100、每群 1 只 ⇒ 无群系差异（统一 1.0）；
-    //   河流/冻河不再例外；蘑菇岛/深暗之地 0（不在表内）。
+    // ② 基岩版：英文 Wiki 表内群系 spawn weight 恒 100、每群 1 只 ⇒ 名义上无群系差异；
+    //   但河流/冻河在基岩版从未加入 monster 生成类别（中文 Wiki + Mojira MCPE-161245）⇒ 实际 0。
     CHECK(slime::spawnWeight(1, slime::Platform::Bedrock) == 1.0, "基岩版：平原权重 1.0（各群系恒 100）");
-    CHECK(slime::spawnWeight(7, slime::Platform::Bedrock) == 1.0,
-          "基岩版：河流也生成（英文 Wiki 100/1，旧中文 Wiki 例外已按用户要求移除）");
-    CHECK(slime::spawnWeight(11, slime::Platform::Bedrock) == 1.0, "基岩版：冻河同样 1.0（无群系差异）");
+    CHECK(slime::spawnWeight(7, slime::Platform::Bedrock) == 0.0,
+          "基岩版：河流实际不刷史莱姆（无 monster 类别，MCPE-161245）");
+    CHECK(slime::spawnWeight(11, slime::Platform::Bedrock) == 0.0, "基岩版：冻河同样不刷（MCPE-161245）");
+    CHECK(slime::spawnWeight(7, slime::Platform::Java) > 0.83, "Java 版：河流仍生成史莱姆");
     CHECK(slime::spawnWeight(15, slime::Platform::Bedrock) == 0.0, "基岩版：蘑菇岛 0（不在英文 Wiki 表内）");
     CHECK(slime::spawnWeight(174, slime::Platform::Bedrock) == 1.0, "基岩版：溶洞 1.0（英文 Wiki 100/1）");
     CHECK(slime::spawnWeight(183, slime::Platform::Bedrock) == 0.0, "基岩版：深暗之地 0");
