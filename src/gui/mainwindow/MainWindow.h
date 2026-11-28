@@ -122,6 +122,9 @@ private slots:
     void cancelSearch();
     void copyResults();
     void updateCacheStatusUi();
+    void updateMemoryBudgetUi();   // v3.15.x：搜索页 C 组 RAM 预算摘要（只读）
+    void syncRingRadiusFromSettings();    // v3.15.x：m_settings 环形内外半径 → 搜索页控件
+    void updateRingWeightBiomeEnabled();  // v3.15.x：群系权重开关仅 Java + 环形可编辑
     void showContact();
     void showCredits();   // v3.7.5：鸣谢名单
     void showTelemetryDialog();   // v3.10.12.12：匿名统计说明/开关

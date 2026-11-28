@@ -761,7 +761,7 @@ struct MainWindow::Widgets {
     QCheckBox* ignoreThreshold = nullptr;   // v3.9.12：最优候选模式（忽略阈值）
     QComboBox* rateUnitCombo = nullptr;     // v3.10.2：速率单位（自动/万/亿）
     QLabel* presetDisclaimer = nullptr;     // v3.10.9：自定义方案速度声明
-    QGroupBox* resultGroup = nullptr;       // v3.10.9：结果要求（仅自定义/环形显示）
+    QGroupBox* resultGroup = nullptr;       // v3.15.x：B 内的「结果要求」子分组（始终可见）
     QToolButton* gpuAdvBtn = nullptr;       // v3.10.9：GPU 设置展开按钮
     QWidget* gpuAdvPanel = nullptr;         // v3.10.9：GPU 相关设置面板
     QCheckBox* gpuStreamCheck = nullptr;    // v3.10.9：图案 GPU 流式
@@ -856,6 +856,18 @@ struct MainWindow::Widgets {
     // v3.3.0：设置区滚动容器 + 搜索模式组（自检截图定位用）
     QScrollArea* mainScroll = nullptr;
     QWidget* modeGroup = nullptr;
+
+    // v3.15.x（搜索页 A/B/C 重排）：三个顶层分组 + A 组内的环形扫描方式行
+    QGroupBox* searchMethodGroup = nullptr;   // A 搜索方式（环形扫描方式 / 匹配算法）
+    QGroupBox* requirementGroup = nullptr;    // B 结果要求（范围/模式/方案/形状/密度/目标）
+    QGroupBox* executionGroup = nullptr;      // C 执行设置（线程/GPU/内存/缓存）
+    QWidget* ringScanRow = nullptr;           // A：环形扫描方式行（仅环形形状可见）
+    QLabel* memoryBudgetLabel = nullptr;      // C：RAM 预算摘要（只读）
+
+    // v3.15.x（第二阶段）：环形内外半径 + 群系权重
+    QSpinBox* ringInner = nullptr;
+    QSpinBox* ringOuter = nullptr;
+    QCheckBox* weightBiome = nullptr;
 };
 
 // ---------------- 构造 ----------------
@@ -960,6 +972,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     // ---------------- v3.3.5（优化 4/5）：程序设置、滚轮过滤器、窗口大小记忆 ----------------
     loadAppSettings();
+    syncRingRadiusFromSettings();   // v3.15.x：config 里的环形内外半径 → 搜索页 B 组控件
     updateStartEnabled();   // v3.6.5：初始按条件决定是否可开始
     applyLanguage();   // v3.5.27：按当前语言把界面文案统一改写一遍
     checkGpuCrashLoopOnStartup();   // v3.6.2：上次若死在 GPU 驱动上，自动关 GPU

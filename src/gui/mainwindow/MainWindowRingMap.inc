@@ -30,6 +30,7 @@ struct MainWindow::RingSearchResult {
     double uiMinDensity = 0.0;
     bool autoPrescan = false;
     bool bedrock = false;
+    bool useBiomeWeight = true;   // v3.15.x：Java 环形是否按群系权重（默认开 = 旧行为）
     bool gpuScanEnabled = false;
     bool prescanUsed = false;
     bool prescanFallback = false;
@@ -186,9 +187,12 @@ void MainWindow::runRingSearch()
         o.rowSlime = [seed](int cz, int cx0, int n, uint8_t* out) {
             slime::SlimeEngine::fillSlimeRowJava(seed, cz, cx0, n, out);
         };
+    // v3.15.x：群系权重可关（仅 Java 环形）。默认勾选 = 与旧行为完全一致；
+    //   关闭后不建群系图、不设 weightAt，排序/统计退化为纯方块数口径（Bedrock 始终如此）。
+    const bool useBiomeWeight = !bedrock && (!m_w->weightBiome || m_w->weightBiome->isChecked());
     // v3.5.7：Java 版把「群系刷怪权重」一并算进去（建农场时效率优先）
     // v3.5.7：复用同一个 BiomeMap（setupGenerator 一次性 ~0.8s，反复创建会明显拖慢连续搜索）
-    if (!bedrock) {
+    if (useBiomeWeight) {
         if (!m_ringBiome || m_ringBiomeVersion != m_mapJavaVersionId || m_ringBiomeSeed != seed) {
             m_ringBiome = std::make_unique<slime::BiomeMap>();
             if (!m_ringBiome->init(m_mapJavaVersionId, seed)) m_ringBiome.reset();
@@ -199,7 +203,7 @@ void MainWindow::runRingSearch()
         m_ringBiome.reset();
     }
     slime::BiomeMap* biome = m_ringBiome.get();
-    if (biome && biome->valid()) {
+    if (useBiomeWeight && biome && biome->valid()) {
         // 一次性预取权重网格：v3.5.14 起按范围自适应 1:64 / 1:128 / 1:256
         //（只用于候选排序；最终统计仍是 1:4 逐格精确。大范围用 1:256，采样量只有 1:64 的 1/16）
         int gs = slime::AfkPlanner::rankingGridScale((std::max)(spanX, spanZ));
@@ -289,6 +293,7 @@ void MainWindow::runRingSearch()
     state->autoPrescan = autoPrescan;
     state->k3Used = k3Mode;
     state->bedrock = bedrock;
+    state->useBiomeWeight = useBiomeWeight;
     state->gpuScanEnabled = (state->options.gpuScan != nullptr);
     // 预筛/覆盖计算用到的 GPU 会话用 shared_ptr 持有，避免后台线程读到已被释放的成员。
     if (m_gpuScan && m_gpuAvailable) state->gpu = m_gpuScan;
@@ -445,7 +450,8 @@ void MainWindow::runRingSearch()
         // v3.5.14：把「候选 × 行带」摊成任务并行走（8 个候选 × 6 条行带 = 48 个任务），
         //           每个线程自带一个 BiomeMap，不必每个候选都重建生成器。实现见 core（基准也复用它）。
         const slime::AfkPlanner::StrictStatsInfo info =
-            slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed, !bedrock,
+            slime::AfkPlanner::measureStrictForCandidates(cands, o, pred, biomeVersionForStats, seed,
+                                                          !bedrock && state->useBiomeWeight,
                                                           ringCancel.get());
         if (ringCancel->load(std::memory_order_relaxed)) {
             ringCancelled = true;

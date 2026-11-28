@@ -1455,5 +1455,16 @@
   "ui.bedrock_version_tip": "Bedrock 群系生成版本（用于河流过滤）",
   "ui.bedrock_river_seed_required": "Bedrock 河流过滤需要世界种子；当前种子为空，结果未过滤。",
   "ui.bedrock_version_legacy": "旧版 Bedrock 分层生成器；早期基岩版与 Java 算法不同，Java 哈希基准不适用",
-  "ui.afk_y": "绝对 Y"
+  "ui.afk_y": "绝对 Y",
+  "ui.search_method_group": "搜索方式",
+  "ui.execution_group": "执行设置",
+  "ui.memory_budget_label": "内存预算:",
+  "ui.memory_budget_summary": "%1 · 分块位图 %2 MB · pack LRU %3 MB · GPU 主机 %4 MB",
+  "ui.memory_budget_manual": "手动 %1 MB",
+  "ui.memory_budget_clamped": "（已按可用内存收敛）",
+  "ui.memory_budget_tip": "在设置页调整内存上限（0 = 自动）。这里显示下一次任务将使用的 RAM 预算分配：分块位图 / pack LRU / GPU 主机。",
+  "ui.weight_biome": "按群系权重排序（Java）",
+  "ui.weight_biome_tip": "仅 Java + 环形模式可用。默认勾选，与现有行为一致；取消后按纯方块数统计（Bedrock 无群系数据，始终按纯方块数）。",
+  "ui.result_limits_group": "停止与数量",
+  "ui.ring_radius_moved": "环形内/外半径已移到搜索页「结果要求」里的环形选项（默认 24 / 128 格）。"
 }

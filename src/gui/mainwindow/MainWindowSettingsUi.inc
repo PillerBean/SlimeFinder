@@ -231,9 +231,55 @@ void MainWindow::applyAppSettings(const AppSettings& s)
     // 否则挂起的「设置自动生效」定时器 60ms 后会用**过期页面值**把刚改的设置改回去
     //（自检实测：主题被改回并多出一次 QSS 重放）。
     syncSettingsPageFromState();
+    updateMemoryBudgetUi();   // v3.15.x：内存上限变化后刷新搜索页 C 组摘要
+    syncRingRadiusFromSettings();   // v3.15.x：环形半径设置变化后同步搜索页 B 组控件
     addFeedback(2, slime::ui::tr(slime::ui::t("ui.c68f92da9c8f")));
     setStatus(slime::ui::tr(slime::ui::t("ui.c5c0ada6fbc6")));
     slime::LogBus::info("程序设置已应用");
+}
+
+// v3.15.x（搜索页 C 组）：RAM 预算摘要 —— 与 runSearch 完全同源（MemoryBudget::fromSettingMB），
+//   只读展示「自动/手动 + 分块位图 / pack LRU / GPU 主机」三档；上限仍在设置页调整。
+void MainWindow::updateMemoryBudgetUi()
+{
+    if (!m_w || !m_w->memoryBudgetLabel) return;
+    const slime::MemoryBudget b = slime::MemoryBudget::fromSettingMB(m_settings.memLimitMB);
+    const auto mb = [](int64_t bytes) { return bytes / (1024 * 1024); };
+    const QString mode = b.automatic
+                             ? slime::ui::t("ui.4afad877551a")
+                             : slime::ui::t("ui.memory_budget_manual").arg(m_settings.memLimitMB);
+    QString text = slime::ui::t("ui.memory_budget_summary")
+                       .arg(mode)
+                       .arg(mb(b.chunkBitmapBytes))
+                       .arg(mb(b.packCacheBytes))
+                       .arg(mb(b.gpuHostBytes));
+    if (b.clamped) text += slime::ui::t("ui.memory_budget_clamped");
+    m_w->memoryBudgetLabel->setText(text);
+    if (m_w->memoryBudgetLabel->toolTip().isEmpty())
+        m_w->memoryBudgetLabel->setToolTip(slime::ui::t("ui.memory_budget_tip"));
+}
+
+// v3.15.x（第二阶段）：m_settings 的环形内外半径 → 搜索页 B 环形选项控件。
+//   设置页的高级项已移除；命令终端 set ring_inner/ring_outer 与配置文件加载都走这里同步。
+void MainWindow::syncRingRadiusFromSettings()
+{
+    if (!m_w || !m_w->ringInner || !m_w->ringOuter) return;
+    QSignalBlocker bi(m_w->ringInner);
+    QSignalBlocker bo(m_w->ringOuter);
+    m_w->ringInner->setValue(std::clamp(m_settings.afkRingInner, 0, 64));
+    const int outer = std::clamp(m_settings.afkRingOuter, 16, 1024);
+    m_w->ringOuter->setValue((std::max)(outer, m_w->ringInner->value() + 8));
+    updateSimDistanceNote();   // 外沿/内半径变化 → 模拟距离提示同步
+}
+
+// v3.15.x（第二阶段）：群系权重只对 Java + 环形有意义（Bedrock 无群系数据）。
+void MainWindow::updateRingWeightBiomeEnabled()
+{
+    if (!m_w || !m_w->weightBiome) return;
+    const bool java = m_w->javaRadio && m_w->javaRadio->isChecked();
+    const bool ring = m_w->densityRadio && m_w->densityRadio->isChecked() && m_w->shapeRingRadio &&
+                      m_w->shapeRingRadio->isChecked();
+    m_w->weightBiome->setEnabled(java && ring);
 }
 
 void MainWindow::showProgramSettings()
@@ -694,17 +740,17 @@ void MainWindow::updatePresetDisclaimer()
 void MainWindow::updateAdvancedVisibility()
 {
     if (!m_w) return;
-    const bool pattern = m_w->strictRadio && m_w->strictRadio->isChecked();
-    const bool ringShape = !pattern && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
-    const int customIdx = pattern ? 3 : (ringShape ? 2 : 8);
-    const bool custom = m_w->presetCombo && m_w->presetCombo->currentIndex() == customIdx;
-    const bool ring = m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
     const bool patternMode = m_w->strictRadio && m_w->strictRadio->isChecked();
+    const bool ringShape = !patternMode && m_w->shapeRingRadio && m_w->shapeRingRadio->isChecked();
+    const int customIdx = patternMode ? 3 : (ringShape ? 2 : 8);
+    const bool custom = m_w->presetCombo && m_w->presetCombo->currentIndex() == customIdx;
     const bool showAdvanced = custom;
-    if (m_w->resultGroup) m_w->resultGroup->setVisible(showAdvanced);
-    if (m_w->matchGroup) m_w->matchGroup->setVisible(showAdvanced && !ring);
+    // v3.15.x（A/B/C 重排）：B「结果要求」与其中的目标数量/停止方式**始终可见**，
+    //   方案冲突只用控件自身 enable/disable 表达（applyResultConflicts），不再整组收起。
+    //   A「搜索方式」里显示哪一块由 updateSearchShapeEnabled 决定（环形=扫描方式，其它=匹配算法）。
+    //   densityAdvanced 只剩「正方形网格」等高级项，仍保持「仅自定义方案显示」的原语义。
     if (m_w->densityAdvanced) m_w->densityAdvanced->setVisible(showAdvanced && !patternMode);
-    if (m_w->lockDir) m_w->lockDir->setVisible(showAdvanced);
+    if (m_w->lockDir) m_w->lockDir->setVisible(showAdvanced && patternMode);
     updatePresetDisclaimer();
 }
 
@@ -749,7 +795,8 @@ void MainWindow::updateSearchShapeEnabled()
     applyResultConflicts();
     if (m_w->squareOpts) m_w->squareOpts->setVisible(!patternMode && !ringShape);
     if (m_w->ringOpts) m_w->ringOpts->setVisible(!patternMode && ringShape);
-    // v3.6.0（用户反馈：环形模式下方仍有 4 个匹配算法，和环形只有 2 种扫描不同步）
+    // v3.15.x（A/B/C 重排）：A「搜索方式」—— 环形显示「环形扫描方式」，图案/正方形显示「匹配方式」
+    if (m_w->ringScanRow) m_w->ringScanRow->setVisible(!patternMode && ringShape);
     if (m_w->matchGroup) m_w->matchGroup->setVisible(!ringShape);
     if (m_w->smartRange) m_w->smartRange->setVisible(!ringShape);
     if (m_w->smartRange) m_w->smartRange->setEnabled(!ringShape);
@@ -758,6 +805,7 @@ void MainWindow::updateSearchShapeEnabled()
     if (ringShape && !patternMode) {
         setStatus(slime::ui::tr(slime::ui::t("ui.9e6da9fa6c38")));
     }
+    updateRingWeightBiomeEnabled();   // v3.15.x：群系权重仅 Java + 环形可编辑
     updateAdvancedVisibility();
 }
 
