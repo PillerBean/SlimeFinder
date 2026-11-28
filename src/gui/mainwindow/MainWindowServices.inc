@@ -300,6 +300,7 @@ void MainWindow::applyVersionUi()
     } else {
         updateCacheStatusUi();
     }
+    updateRingWeightBiomeEnabled();   // v3.15.x：群系权重仅 Java + 环形可编辑
 }
 
 void MainWindow::onVersionChanged()

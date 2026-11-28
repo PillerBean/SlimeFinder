@@ -1465,5 +1465,6 @@
   "ui.memory_budget_tip": "在設定頁調整記憶體上限（0 = 自動）。這裡顯示下一次任務將使用的 RAM 預算分配：分塊位圖 / pack LRU / GPU 主機。",
   "ui.weight_biome": "依群系權重排序（Java）",
   "ui.weight_biome_tip": "僅 Java + 環形模式可用。預設勾選，與現有行為一致；取消後按純方塊數統計（Bedrock 無群系資料，始終按純方塊數）。",
-  "ui.result_limits_group": "停止與數量"
+  "ui.result_limits_group": "停止與數量",
+  "ui.ring_radius_moved": "環形內/外半徑已移到搜尋頁「結果要求」裡的環形選項（預設 24 / 128 格）。"
 }

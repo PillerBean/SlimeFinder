@@ -3962,6 +3962,78 @@ int MainWindow::runSelfTest()
                       "最小密度只筛选、结果数量仍按目标数量截取（不再一次返回几十个）");
                 m_w->minDensity->setValue(0.0);
             }
+            // ⑫b v3.15.x（第二阶段）：环形内外半径迁移 + 群系权重开关
+            {
+                std::fprintf(stderr, "[UI自检] 环形半径 / 群系权重检查…\n");
+                check(m_w->ringInner && m_w->ringOuter && m_w->ringInner->isVisible() &&
+                          m_w->ringOuter->isVisible() && m_w->ringInner->isEnabled() &&
+                          m_w->ringOuter->isEnabled(),
+                      "环形：内/外半径控件可见且可调（B 环形选项）");
+                check(m_w->ringInner->value() == m_settings.afkRingInner &&
+                          m_w->ringOuter->value() == m_settings.afkRingOuter,
+                      "环形半径控件初值与 m_settings 一致");
+                m_w->ringInner->setValue(32);
+                m_w->ringOuter->setValue(200);
+                check(m_settings.afkRingInner == 32 && m_settings.afkRingOuter == 200,
+                      "改环形半径写回 m_settings");
+                m_w->ringInner->setValue(64);
+                check(m_w->ringOuter->value() >= 72 && m_settings.afkRingOuter == m_w->ringOuter->value(),
+                      "内半径过大时外半径自动保持 ≥ 内+8");
+                m_w->ringOuter->setValue(16);
+                check(m_w->ringInner->value() == 8, "外半径过小时内半径自动回退到 外-8");
+                m_w->ringInner->setValue(24);
+                m_w->ringOuter->setValue(128);
+                check(m_settings.afkRingInner == 24 && m_settings.afkRingOuter == 128, "半径恢复默认 24/128");
+                flushPendingConfigWrite();
+                {
+                    std::ifstream in(appDirPath() / kConfigFileName);
+                    const std::string cfg((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                    check(cfg.find("\"ringInner\": 24") != std::string::npos &&
+                              cfg.find("\"ringOuter\": 128") != std::string::npos,
+                          "环形半径写回 config.json");
+                }
+                if (m_settingsPage) {
+                    bool dup = false;
+                    for (QLabel* lb : m_settingsPage->findChildren<QLabel*>()) {
+                        if (lb->text() == slime::ui::text(slime::ui::Key::RingInner)) dup = true;
+                    }
+                    check(!dup, "设置页不再重复提供环形内半径（已迁移到搜索页）");
+                }
+                check(m_w->weightBiome && m_w->weightBiome->isVisible() && m_w->weightBiome->isEnabled() &&
+                          m_w->weightBiome->isChecked(),
+                      "群系权重：Java + 环形下默认勾选且可编辑");
+                m_w->bedrockRadio->setChecked(true);
+                onVersionChanged();
+                check(m_w->weightBiome && !m_w->weightBiome->isEnabled(), "群系权重：Bedrock 下置灰");
+                m_w->javaRadio->setChecked(true);
+                onVersionChanged();
+                check(m_w->weightBiome->isEnabled(), "群系权重：切回 Java 恢复可编辑");
+                // 关闭群系权重 → 纯方块数口径（weight 与 blocks 相等）；默认勾选行为见已有环形用例
+                m_w->minX->setValue(-20);
+                m_w->maxX->setValue(20);
+                m_w->minZ->setValue(-20);
+                m_w->maxZ->setValue(20);
+                m_w->seedEdit->setText(QStringLiteral("12345"));
+                m_w->weightBiome->setChecked(false);
+                m_lastAfk.clear();
+                runRingSearch();
+                waitForRingSearchIdle(30000);
+                bool pureBlockCount = !m_lastAfk.empty();
+                for (const auto& c : m_lastAfk) {
+                    if (std::abs(c.coveredWeight - static_cast<double>(c.coveredBlocks)) > 1e-6) {
+                        pureBlockCount = false;
+                        break;
+                    }
+                }
+                std::fprintf(stderr, "[UI自检]   关闭群系权重：候选=%zu 纯方块数口径=%d\n", m_lastAfk.size(),
+                             pureBlockCount ? 1 : 0);
+                check(pureBlockCount, "关闭群系权重：环形结果按纯方块数统计（weight=blocks）");
+                m_w->weightBiome->setChecked(true);
+                m_lastAfk.clear();
+                runRingSearch();
+                waitForRingSearchIdle(30000);
+                check(!m_lastAfk.empty(), "恢复群系权重（默认）后环形搜索仍能出结果");
+            }
             m_w->algExactRadio->setChecked(true);
         }
         // ⑬ v3.5.5：结果列表（排序 / 每行跳转 / 折叠）

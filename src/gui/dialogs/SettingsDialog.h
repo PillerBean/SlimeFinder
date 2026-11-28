@@ -200,8 +200,6 @@ private:
     QComboBox* mFullscreenMode = nullptr;   // v3.5.20：全屏方式
     QCheckBox* m_debugMode = nullptr;
     // v3.5.18：高级调试参数
-    QSpinBox* m_ringInner = nullptr;
-    QSpinBox* m_ringOuter = nullptr;
     QSpinBox* m_ringCoarseStep = nullptr;
     QSpinBox* m_ringStatBands = nullptr;
     QPushButton* m_resetAllBtn = nullptr;

@@ -232,6 +232,7 @@ void MainWindow::applyAppSettings(const AppSettings& s)
     //（自检实测：主题被改回并多出一次 QSS 重放）。
     syncSettingsPageFromState();
     updateMemoryBudgetUi();   // v3.15.x：内存上限变化后刷新搜索页 C 组摘要
+    syncRingRadiusFromSettings();   // v3.15.x：环形半径设置变化后同步搜索页 B 组控件
     addFeedback(2, slime::ui::tr(slime::ui::t("ui.c68f92da9c8f")));
     setStatus(slime::ui::tr(slime::ui::t("ui.c5c0ada6fbc6")));
     slime::LogBus::info("程序设置已应用");
@@ -256,6 +257,29 @@ void MainWindow::updateMemoryBudgetUi()
     m_w->memoryBudgetLabel->setText(text);
     if (m_w->memoryBudgetLabel->toolTip().isEmpty())
         m_w->memoryBudgetLabel->setToolTip(slime::ui::t("ui.memory_budget_tip"));
+}
+
+// v3.15.x（第二阶段）：m_settings 的环形内外半径 → 搜索页 B 环形选项控件。
+//   设置页的高级项已移除；命令终端 set ring_inner/ring_outer 与配置文件加载都走这里同步。
+void MainWindow::syncRingRadiusFromSettings()
+{
+    if (!m_w || !m_w->ringInner || !m_w->ringOuter) return;
+    QSignalBlocker bi(m_w->ringInner);
+    QSignalBlocker bo(m_w->ringOuter);
+    m_w->ringInner->setValue(std::clamp(m_settings.afkRingInner, 0, 64));
+    const int outer = std::clamp(m_settings.afkRingOuter, 16, 1024);
+    m_w->ringOuter->setValue((std::max)(outer, m_w->ringInner->value() + 8));
+    updateSimDistanceNote();   // 外沿/内半径变化 → 模拟距离提示同步
+}
+
+// v3.15.x（第二阶段）：群系权重只对 Java + 环形有意义（Bedrock 无群系数据）。
+void MainWindow::updateRingWeightBiomeEnabled()
+{
+    if (!m_w || !m_w->weightBiome) return;
+    const bool java = m_w->javaRadio && m_w->javaRadio->isChecked();
+    const bool ring = m_w->densityRadio && m_w->densityRadio->isChecked() && m_w->shapeRingRadio &&
+                      m_w->shapeRingRadio->isChecked();
+    m_w->weightBiome->setEnabled(java && ring);
 }
 
 void MainWindow::showProgramSettings()
@@ -781,6 +805,7 @@ void MainWindow::updateSearchShapeEnabled()
     if (ringShape && !patternMode) {
         setStatus(slime::ui::tr(slime::ui::t("ui.9e6da9fa6c38")));
     }
+    updateRingWeightBiomeEnabled();   // v3.15.x：群系权重仅 Java + 环形可编辑
     updateAdvancedVisibility();
 }
 

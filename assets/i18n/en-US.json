@@ -1465,5 +1465,6 @@
   "ui.memory_budget_tip": "Adjust the memory cap on the Settings page (0 = automatic). This shows the RAM budget the next task will use: chunk bitmap / pack LRU / GPU host.",
   "ui.weight_biome": "Rank by biome weight (Java)",
   "ui.weight_biome_tip": "Java + ring mode only. On by default to match current behavior; when off, rank by raw block count (Bedrock has no biome data and always uses raw block count).",
-  "ui.result_limits_group": "Stop & Count"
+  "ui.result_limits_group": "Stop & Count",
+  "ui.ring_radius_moved": "Ring inner/outer radius moved to the search page (Requirements -> ring options; default 24 / 128 blocks)."
 }

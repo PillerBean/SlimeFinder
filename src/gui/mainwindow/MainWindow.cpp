@@ -969,6 +969,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     // ---------------- v3.3.5（优化 4/5）：程序设置、滚轮过滤器、窗口大小记忆 ----------------
     loadAppSettings();
+    syncRingRadiusFromSettings();   // v3.15.x：config 里的环形内外半径 → 搜索页 B 组控件
     updateStartEnabled();   // v3.6.5：初始按条件决定是否可开始
     applyLanguage();   // v3.5.27：按当前语言把界面文案统一改写一遍
     checkGpuCrashLoopOnStartup();   // v3.6.2：上次若死在 GPU 驱动上，自动关 GPU

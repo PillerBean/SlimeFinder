@@ -84,8 +84,9 @@ tooltip 说明「在设置页调整内存上限（0 = 自动）」。第二阶�
 | `ui.memory_budget_manual` | 手动 %1 MB |
 | `ui.memory_budget_clamped` | （已按可用内存收敛） |
 | `ui.memory_budget_tip` | 在设置页调整内存上限（0 = 自动）…… |
-| `ui.weight_biome` | 按群系权重排序（Java） —— 第二阶段用 |
-| `ui.weight_biome_tip` | 仅 Java + 环形模式可用…… —— 第二阶段用 |
+| `ui.weight_biome` | 按群系权重排序（Java） |
+| `ui.weight_biome_tip` | 仅 Java + 环形模式可用…… |
+| `ui.ring_radius_moved` | 环形内/外半径已移到搜索页「结果要求」里的环形选项（默认 24 / 128 格）。 |
 
 顺带修复 `retranslateModeUi` 的环形扫描 4 档文案：原实现只改前两项，会把「预筛精修」误写成
 「暴力遍布」，现按 `itemData` 恢复各档文案。
@@ -101,7 +102,9 @@ tooltip 说明「在设置页调整内存上限（0 = 自动）」。第二阶�
 - 预设/自定义方案：结果要求始终可见、正方形网格仅自定义可见；内存预算摘要非空且含 MB 数字与 tooltip。
 - 保留原有「无横向滚动条」断言（1280×860 / 1000×650 / 1920×1080 / 左栏 splitter 最左）。
 
-## 3. 验证（第一阶段）
+## 3. 验证
+
+### 3.1 第一阶段
 
 ```powershell
 # build-abc 独立构建目录
@@ -114,23 +117,50 @@ Start-Process build-abc\SlimeFinder.exe -Wait -PassThru   # 退出码 0，stdout
 py -3 scripts\qa\check_ui_text.py                # 1467 keys x 3 languages
 ```
 
-结果：构建成功；单测全通过；GUI 自检 `exit=0` 且「全部通过」；i18n 检查通过。
+结果（commit `c3c5f72`）：构建成功；单测全通过；GUI 自检 `exit=0` 且「全部通过」；i18n 通过。
+
+### 3.2 第二阶段
+
+同一条构建/单测/GUI 自检/i18n 命令链，结果：构建成功；单测全通过；GUI 自检 `exit=0` 且
+「全部通过」（新增环形半径迁移、联动、config 落盘、设置页去重、群系权重默认/置灰/纯方块数口径断言）；
+i18n `1468 keys x 3 languages` 通过。
 
 > 备注：全新 build 目录首次运行会由程序写 `config.json` 默认 `cache.maxSizeMB=10240`，
 > 而自检断言「config 默认 1024MB」按仓库既有参考环境（`build/config.json`）为 1024。
 > 因此自检前需把 `build-abc/config.json` 预置为参考格式；这是环境差异，与本次改动无关。
+> GPU 探测为原生 OpenCL 调用；若同一时间有其它进程（例如并行 worktree 的 GUI 自检）在用 GPU，
+> 探测可能偶发原生崩溃（项目已知风险，重跑即可），与本次改动无关。
 
-## 4. 第二阶段计划（第一阶段绿 + commit 后）
+## 4. 第二阶段：环形半径 / 群系权重 / 内存摘要（已完成，除镜像 QSpinBox）
 
-1. 环形内外半径：B 的环形选项加 `内半径(0..64)` / `外半径(16..1024)` QSpinBox，
-   初值/写回 `m_settings.afkRingInner/afkRingOuter`，改后 `scheduleConfigWrite()` +
-   `updateSimDistanceNote()`；`runRingSearch` 已读 `m_settings`，无需改。
-   设置页 `SettingsDialog` 里同项优先迁移移除（保留 `m_settings` 读写），
-   `syncSettingsPageFromState`/命令 `set ring_inner/ring_outer` 后同步新控件。
-2. 群系权重：环形选项加复选框 `weightBiome`「按群系权重排序（Java）」，默认勾选，
-   仅 Java + 环形可编辑，其它情况置灰。`MainWindowRingMap.inc` 小改：Java 环形且未勾选时
-   不设 `o.weightAt` 且 `measureStrictForCandidates` 的 useBiome=false（默认勾选行为与现在一致）。
-3. 内存上限镜像（可选）：C 加 QSpinBox 镜像 `memLimitMB` 并写回；风险大则维持只读摘要 + 设置页入口。
+第一阶段 commit `c3c5f72` 且构建+单测+GUI 自检+i18n 全绿后实施。
+
+### 4.1 环形内/外半径迁移
+
+- B 的环形选项新增：内半径 `QSpinBox(0..64)`、外半径 `QSpinBox(16..1024)`（标签/提示复用
+  `ui.key.RingInner/RingInnerTip/RingOuter/RingOuterTip`，单位「格」在框外）。
+- 数据源仍是 `m_settings.afkRingInner/afkRingOuter`：改动立即写回 + `scheduleConfigWrite()` +
+  `updateSimDistanceNote()`；`runRingSearch` 原本就读 `m_settings`，无需改动。
+- 内外联动：外半径自动保持 ≥ 内半径+8（与 `runRingSearch` 的模拟距离兜底口径一致）。
+- 设置页 `SettingsDialog` 的高级项里**移除**这两个控件（保留 `m_settings` 读写与出厂默认 24/128），
+  原位留一行说明「已移到搜索页」（新 key `ui.ring_radius_moved`）。
+- 加载/命令同步：构造函数 `loadAppSettings()` 后、`applyAppSettings()` 末尾调用
+  `syncRingRadiusFromSettings()`；命令终端 `set ring_inner/ring_outer` 也因此同步控件。
+
+### 4.2 群系权重开关
+
+- B 的环形选项新增复选框 `weightBiome`（`ui.weight_biome`）「按群系权重排序（Java）」，默认勾选；
+  仅 Java + 环形可编辑（`updateRingWeightBiomeEnabled()` 在 `applyVersionUi` 与
+  `updateSearchShapeEnabled` 中维护），Bedrock 置灰。
+- `MainWindowRingMap.inc` 小改（任务书允许的「小改」）：`RingSearchResult` 增加 `useBiomeWeight`；
+  关闭时**不建群系图、不设 `o.weightAt`**，`measureStrictForCandidates` 的 `useBiome` 传 false
+  → 排序/统计为纯方块数口径（`coveredWeight == coveredBlocks`）。
+- 默认勾选时的代码路径与改动前完全一致（既有环形结果用例全部通过，作为回归证据）。
+
+### 4.3 内存上限镜像（未做）
+
+维持只读摘要 + 「在设置页调整内存上限」tooltip。未加镜像 `QSpinBox`：会与设置页控件重复，
+且写回路径（`applyAppSettings`/`scheduleConfigWrite`）已有单一入口，风险收益比低，留给 lead 决定。
 
 ## 5. 已知风险
 

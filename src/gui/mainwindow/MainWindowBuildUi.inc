@@ -532,7 +532,7 @@ void MainWindow::buildUi()
     advancedLay->addWidget(m_w->squareOpts);
     densityLay->addWidget(m_w->densityAdvanced);
 
-    // 环形专属：模拟距离（环形扫描方式在 A 组，环形内外半径见第二阶段）
+    // 环形专属：模拟距离（环形扫描方式在 A 组）
     m_w->ringOpts = new QWidget(m_w->densityPanel);
     auto* ringLay = new QVBoxLayout(m_w->ringOpts);
     ringLay->setContentsMargins(12, 0, 0, 0);
@@ -556,6 +556,63 @@ void MainWindow::buildUi()
     QObject::connect(m_w->simDistance, QOverload<int>::of(&QSpinBox::valueChanged), this,
                      [this](int) { updateSimDistanceNote(); });
     updateSimDistanceNote();
+
+    // v3.15.x（第二阶段）：环形内/外半径 —— 从「设置 → 高级」迁移到搜索页环形选项。
+    //   m_settings.afkRingInner/Outer 仍是唯一数据源（runRingSearch 直接读），这里只做双向同步。
+    {
+        auto* innerRow = new QHBoxLayout();
+        innerRow->addWidget(new QLabel(slime::ui::text(slime::ui::Key::RingInner), m_w->ringOpts));
+        m_w->ringInner = new QSpinBox(m_w->ringOpts);
+        m_w->ringInner->setRange(0, 64);
+        m_w->ringInner->setValue(24);
+        m_w->ringInner->setToolTip(slime::ui::text(slime::ui::Key::RingInnerTip));
+        innerRow->addWidget(m_w->ringInner);
+        innerRow->addWidget(new QLabel(slime::ui::t("ui.452463f58021"), m_w->ringOpts));
+        innerRow->addStretch();
+        ringLay->addLayout(innerRow);
+
+        auto* outerRow = new QHBoxLayout();
+        outerRow->addWidget(new QLabel(slime::ui::text(slime::ui::Key::RingOuter), m_w->ringOpts));
+        m_w->ringOuter = new QSpinBox(m_w->ringOpts);
+        m_w->ringOuter->setRange(16, 1024);
+        m_w->ringOuter->setValue(128);
+        m_w->ringOuter->setToolTip(slime::ui::text(slime::ui::Key::RingOuterTip));
+        outerRow->addWidget(m_w->ringOuter);
+        outerRow->addWidget(new QLabel(slime::ui::t("ui.452463f58021"), m_w->ringOpts));
+        outerRow->addStretch();
+        ringLay->addLayout(outerRow);
+
+        // 内外联动：外半径至少比内半径大 8 格（与 runRingSearch 的模拟距离兜底口径一致）
+        const auto applyRingRadius = [this](bool innerEdited) {
+            if (!m_w || !m_w->ringInner || !m_w->ringOuter) return;
+            int in = m_w->ringInner->value();
+            int out = m_w->ringOuter->value();
+            if (out < in + 8) {
+                if (innerEdited) out = in + 8;
+                else in = out - 8;
+            }
+            {
+                QSignalBlocker bi(m_w->ringInner);
+                QSignalBlocker bo(m_w->ringOuter);
+                m_w->ringInner->setValue(in);
+                m_w->ringOuter->setValue(out);
+            }
+            m_settings.afkRingInner = in;
+            m_settings.afkRingOuter = out;
+            scheduleConfigWrite();
+            updateSimDistanceNote();   // 外沿可能因半径变化而改变提示
+        };
+        QObject::connect(m_w->ringInner, QOverload<int>::of(&QSpinBox::valueChanged), this,
+                         [applyRingRadius](int) { applyRingRadius(true); });
+        QObject::connect(m_w->ringOuter, QOverload<int>::of(&QSpinBox::valueChanged), this,
+                         [applyRingRadius](int) { applyRingRadius(false); });
+    }
+
+    // v3.15.x（第二阶段）：群系权重开关 —— 仅 Java + 环形可编辑；默认勾选 = 现有行为。
+    m_w->weightBiome = new QCheckBox(slime::ui::t("ui.weight_biome"), m_w->ringOpts);
+    m_w->weightBiome->setChecked(true);
+    m_w->weightBiome->setToolTip(slime::ui::t("ui.weight_biome_tip"));
+    ringLay->addWidget(m_w->weightBiome);
     m_w->ringOpts->setVisible(false);
     densityLay->addWidget(m_w->ringOpts);
     modeLayout->addWidget(m_w->densityPanel);

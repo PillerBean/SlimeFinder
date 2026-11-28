@@ -597,16 +597,13 @@ QWidget* SettingsDialog::buildAdvancedPage()
     lay->addWidget(advTitle);
     auto* advForm = makeForm(120);
     int arow = 0;
-    m_ringInner = new QSpinBox(page);
-    m_ringInner->setRange(0, 64);
-    arow = addOptionRow(advForm, arow, slime::ui::text(slime::ui::Key::RingInner),
-                        withUnit(m_ringInner, slime::ui::t("ui.452463f58021")),
-                        slime::ui::text(slime::ui::Key::RingInnerTip));
-    m_ringOuter = new QSpinBox(page);
-    m_ringOuter->setRange(16, 1024);
-    arow = addOptionRow(advForm, arow, slime::ui::text(slime::ui::Key::RingOuter),
-                        withUnit(m_ringOuter, slime::ui::t("ui.452463f58021")),
-                        slime::ui::text(slime::ui::Key::RingOuterTip));
+    // v3.15.x：环形内/外半径已迁移到搜索页「结果要求 · 环形」选项（m_settings 仍由那边写回）
+    {
+        auto* movedNote = new QLabel(slime::ui::t("ui.ring_radius_moved"), page);
+        movedNote->setObjectName(QStringLiteral("topSummary"));
+        movedNote->setWordWrap(true);
+        lay->addWidget(movedNote);
+    }
     m_ringCoarseStep = new QSpinBox(page);
     m_ringCoarseStep->setRange(1, 64);
     arow = addOptionRow(advForm, arow, slime::ui::text(slime::ui::Key::RingCoarseStep),
@@ -888,8 +885,6 @@ AppSettings SettingsDialog::currentValues() const
     s.debugMode = m_debugMode->isChecked();
     if (mLanguage) s.language = mLanguage->currentData().toString();
     if (mFullscreenMode) s.fullscreenMode = mFullscreenMode->currentData().toString();
-    if (m_ringInner) s.afkRingInner = m_ringInner->value();
-    if (m_ringOuter) s.afkRingOuter = m_ringOuter->value();
     if (m_ringCoarseStep) s.ringCoarseStep = m_ringCoarseStep->value();
     if (m_ringStatBands) s.ringStatBands = m_ringStatBands->value();
     return s;
@@ -951,8 +946,6 @@ void SettingsDialog::setValues(const AppSettings& s)
         mFullscreenMode->setCurrentIndex(fi >= 0 ? fi : 0);
     }
     m_debugMode->setChecked(s.debugMode);
-    if (m_ringInner) m_ringInner->setValue(s.afkRingInner);
-    if (m_ringOuter) m_ringOuter->setValue(s.afkRingOuter);
     if (m_ringCoarseStep) m_ringCoarseStep->setValue(s.ringCoarseStep);
     if (m_ringStatBands) m_ringStatBands->setValue(s.ringStatBands);
 
