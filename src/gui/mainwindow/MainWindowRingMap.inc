@@ -36,6 +36,10 @@ struct MainWindow::RingSearchResult {
     bool prescanFallback = false;
     // v3.15.x（flow-k3-cache）：预筛种子来自缓存位图（cachePrescanSeeds）而非 GPU 全图扫描。
     bool cachePrescanUsed = false;
+    // v3.15.x（UX：撒点抽取随机化）：本档是否使用随机撒点、样本数与随机种子（日志/提示用）。
+    bool scatterUsed = false;
+    int scatterSamples = 0;
+    uint64_t scatterSeed = 0;
     bool k3Used = false;
     int k3Candidates = 0;
     bool cancelled = false;
@@ -178,6 +182,22 @@ void MainWindow::runRingSearch()
     const bool k3Mode = (ringScanMode == 3);
     const bool autoPrescan = (ringScanMode == 2 || k3Mode);
     o.scanStride = (ringScanMode == 1) ? 1 : 0;
+    // v3.15.x（UX：撒点抽取随机化）：「撒点抽取」（档位 0）改为真随机撒点 —— 每次运行不同；
+    //   预筛精修 / k3 上界复核 / 暴力遍布保持确定性（可复现）。
+    if (ringScanMode == 0) {
+        const long long cells = static_cast<long long>(spanX) * spanZ;
+        long long samples = (std::max)(512LL, cells / 2);
+        samples = (std::min)(samples, 400000LL);
+        samples = (std::min)(samples, cells);
+        const uint64_t seed =
+            static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()) *
+                0x9E3779B97F4A7C15ULL ^
+            static_cast<uint64_t>(reinterpret_cast<uintptr_t>(this));
+        o.scatterSamples = static_cast<int>(samples);
+        o.scatterSeed = seed;
+        std::fprintf(stderr, "[环形] 撒点抽取：随机撒点 %d 个（种子 %llu，范围 %lld 区块）\n",
+                     o.scatterSamples, static_cast<unsigned long long>(seed), cells);
+    }
     // v3.5.29：精确模式（逐区块）有内存/耗时上限，超了直接提示而不是跑崩
     if (o.scanStride == 1 && static_cast<long long>(spanX) * spanZ > 4000000LL) {
         setStatus(slime::ui::tr(slime::ui::t("ui.c11e33ee027d"))
@@ -311,8 +331,12 @@ void MainWindow::runRingSearch()
     state->uiMinDensity = m_w->minDensity ? m_w->minDensity->value() : 0.3;
     state->targetCount = (std::max)(1, static_cast<int>(m_w->targetCount ? m_w->targetCount->value() : 1));
     state->requestedTopN = requestedTopN;
-    state->allowHomogeneousResults = (m_presetHomogeneous >= 0) ? (m_presetHomogeneous != 0)
-                                                                 : m_settings.allowHomogeneousResults;
+    // v3.15.x（P1）：结果同质化现在由搜索页「结果要求」里的可见开关决定（方案预设会同步勾选）。
+    state->allowHomogeneousResults =
+        m_w->allowHomogeneous ? m_w->allowHomogeneous->isChecked() : m_settings.allowHomogeneousResults;
+    state->scatterUsed = (o.scatterSamples > 0);
+    state->scatterSamples = o.scatterSamples;
+    state->scatterSeed = o.scatterSeed;
     state->simDistance = m_w->simDistance ? m_w->simDistance->value() : 0;
     state->autoPrescan = autoPrescan;
     state->k3Used = k3Mode;
@@ -687,10 +711,15 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         const int want = (std::max)(1, result->targetCount);
         if (got == 0)
             m_resultsNotice->setText(slime::ui::t("ui.e682244d5bfe"));
-        else if (got < want)
-            m_resultsNotice->setText(slime::ui::t("ui.af6b2c0e44d3")
-                                         .arg(got).arg(want));
-        else
+        else if (got < want) {
+            QString text = slime::ui::t("ui.af6b2c0e44d3").arg(got).arg(want);
+            // v3.15.x（P1/B1）：同质化关闭时明确说明结果数受“不同质量种类”限制，
+            //   并指引到 ③ 结果要求里的可见开关（不再只写进反馈页）。
+            if (!result->allowHomogeneousResults) {
+                text += QLatin1Char('\n') + slime::ui::t("ui.homogeneous_short_notice").arg(got).arg(want);
+            }
+            m_resultsNotice->setText(text);
+        } else
             m_resultsNotice->setText(QString());
         m_resultsNotice->setVisible(!m_resultsNotice->text().isEmpty());
         if (!result->allowHomogeneousResults && got < result->requestedTopN) {
@@ -742,6 +771,12 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
                         .arg(elapsedSecs, 0, 'f', 1)
                         .arg(source)
                         .arg(extra));
+                if (result->scatterUsed) {
+                    m_progressStream->appendRawLine(
+                        slime::ui::t("ui.ring_scatter_note")
+                            .arg(result->scatterSamples)
+                            .arg(static_cast<qulonglong>(result->scatterSeed)));
+                }
             }
         }
     }

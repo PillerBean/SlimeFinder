@@ -803,6 +803,8 @@ struct MainWindow::Widgets {
     QComboBox* presetCombo = nullptr;
     QLabel* presetHint = nullptr;
     QSpinBox* targetCount = nullptr;
+    // v3.15.x（P1）：结果同质化开关从设置页前移到搜索页 ③ 结果要求（方案预设同步勾选）。
+    QCheckBox* allowHomogeneous = nullptr;
     QCheckBox* smartRange = nullptr;
 
     QSpinBox* startX = nullptr;
@@ -975,6 +977,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     // ---------------- v3.3.5（优化 4/5）：程序设置、滚轮过滤器、窗口大小记忆 ----------------
     loadAppSettings();
+    // v3.15.x（P1）：同质化开关从设置页前移到搜索页，启动时把持久化默认值同步到控件。
+    if (m_w->allowHomogeneous) {
+        QSignalBlocker block(m_w->allowHomogeneous);
+        m_w->allowHomogeneous->setChecked(m_settings.allowHomogeneousResults);
+    }
     syncRingRadiusFromSettings();   // v3.15.x：config 里的环形内外半径 → 搜索页 B 组控件
     updateStartEnabled();   // v3.6.5：初始按条件决定是否可开始
     applyLanguage();   // v3.5.27：按当前语言把界面文案统一改写一遍

@@ -736,6 +736,20 @@ void MainWindow::buildUi()
     m_w->smartRange->setToolTip(slime::ui::text(slime::ui::Key::SmartRangeTip));
     QObject::connect(m_w->smartRange, &QCheckBox::toggled, this,
                      [this](bool) { markPresetCustom(slime::ui::t("ui.9522c47b44f6")); });
+    // v3.15.x（P1）：同质化开关前移到 ③ 结果要求 —— 方案预设会直接勾选/取消它，
+    //   手动改动会标记方案为自定义；设置页不再有重复项。
+    m_w->allowHomogeneous = new QCheckBox(slime::ui::t("ui.allow_homogeneous_label"), gResult);
+    m_w->allowHomogeneous->setToolTip(slime::ui::t("ui.allow_homogeneous_tip"));
+    QObject::connect(m_w->allowHomogeneous, &QCheckBox::toggled, this, [this](bool on) {
+        if (m_presetApplying) return;
+        m_settings.allowHomogeneousResults = on;
+        scheduleConfigWrite();
+        markPresetCustom(slime::ui::t("ui.homogeneous_custom_reason"));
+    });
+    auto* homRow = new QHBoxLayout();
+    homRow->addWidget(m_w->allowHomogeneous);
+    homRow->addStretch();
+    resultReqLay->addLayout(homRow);
     auto* targetRow = new QHBoxLayout();
     targetRow->addWidget(new QLabel(slime::ui::t("ui.1113d292c420"), gResult));
     targetRow->addWidget(m_w->targetCount);

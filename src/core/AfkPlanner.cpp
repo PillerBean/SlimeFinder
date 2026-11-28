@@ -7,7 +7,9 @@
 #include <cstdio>
 #include <mutex>
 #include <memory>
+#include <random>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <limits>
 
@@ -438,8 +440,9 @@ std::vector<AfkCandidate> AfkPlanner::plan(const AfkPlanOptions& opt, const Slim
     //   顺带修掉旧逻辑的漏洞：加权模式的块级前缀和窗口上限只有 1024 方块，
     //   窗口 1025~2048 的中等范围（≈46~110 区块见方）以前会静默返回 0 个站位。
     const int exactLimit = weightedIn ? 0 : opt.maxWindowBlocks;
-    if (opt.forceCoarse || w <= 0 || h <= 0 || w > exactLimit || h > exactLimit) {
+    if (opt.forceCoarse || opt.scatterSamples > 0 || w <= 0 || h <= 0 || w > exactLimit || h > exactLimit) {
         // v3.5.6：范围很大时改走「区块级粗扫 + 局部精修」（半径仍是固定 R）
+        // v3.15.x：撒点抽取固定走粗扫路径（内部随机撒点），不走块级精确路径。
         return planChunkCoarse(opt, isSlime, cancel);
     }
     return planExactBlockLevel(opt, isSlime, cancel);
@@ -895,7 +898,8 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
         const long long wB = static_cast<long long>(spanX) * 16 + 2LL * padB;
         const long long hB = static_cast<long long>(spanZ) * 16 + 2LL * padB;
         const long long exactLimit = static_cast<bool>(opt.weightAt) ? 0 : 2048;
-        if (!opt.forceCoarse && opt.seedCandidates.empty() && wB <= exactLimit && hB <= exactLimit) {
+        if (!opt.forceCoarse && opt.scatterSamples <= 0 && opt.seedCandidates.empty() && wB <= exactLimit &&
+            hB <= exactLimit) {
             AfkPlanOptions bigger = opt;
             bigger.maxWindowBlocks = static_cast<int>(exactLimit);
             return planExactBlockLevel(bigger, isSlime, cancel);
@@ -1047,6 +1051,66 @@ std::vector<AfkCandidate> AfkPlanner::planChunkCoarse(const AfkPlanOptions& opt,
         if (cancel && cancel->load(std::memory_order_relaxed)) return none;
         hits.swap(all);
         std::fprintf(stderr, "[环形] 抽样粗扫：候选 %zu（%.1f ms）\n", hits.size(),
+                     std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - stageT0).count());
+    } else if (opt.scatterSamples > 0) {
+        // v3.15.x（UX：撒点抽取随机化）：真随机撒点 —— 每次运行用不同随机种子在范围内
+        //   均匀撒 scatterSamples 个区块中心，按环带覆盖核打分；后续精修/挑选流程不变。
+        //   （旧行为是等距网格粗扫，所以同一输入永远返回同一结果，没有“抽样感”。）
+        const long long cells = static_cast<long long>(spanX) * static_cast<long long>(spanZ);
+        long long want = static_cast<long long>(opt.scatterSamples);
+        want = (std::max)(1LL, (std::min)(want, cells));
+        const uint64_t seedUsed =
+            opt.scatterSeed != 0
+                ? opt.scatterSeed
+                : static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+        std::mt19937_64 rng(seedUsed);
+        std::uniform_int_distribution<int> distX(ax0, ax1);
+        std::uniform_int_distribution<int> distZ(az0, az1);
+        std::vector<std::pair<int, int>> centers;
+        centers.reserve(static_cast<size_t>(want));
+        {
+            std::unordered_set<int64_t> seen;
+            seen.reserve(static_cast<size_t>((std::min)(want * 2, cells)));
+            int guard = 0;
+            const int guardMax = static_cast<int>((std::min)(want * 8 + 1000, 20000000LL));
+            while (static_cast<long long>(centers.size()) < want && guard < guardMax) {
+                ++guard;
+                const int cx = distX(rng), cz = distZ(rng);
+                const int64_t key = (static_cast<int64_t>(cx) << 32) ^ static_cast<uint32_t>(cz);
+                if (!seen.insert(key).second) continue;
+                centers.emplace_back(cx, cz);
+                if ((centers.size() & 4095u) == 0 && cancelRequested(cancel)) return none;
+            }
+        }
+        if (cancelRequested(cancel)) return none;
+        std::vector<Hit> all;
+        all.reserve(centers.size());
+#pragma omp parallel
+        {
+            std::vector<Hit> local;
+            local.reserve(static_cast<size_t>(centers.size() / static_cast<size_t>(nThreads) + 1));
+#pragma omp for schedule(static)
+            for (int idx = 0; idx < static_cast<int>(centers.size()); ++idx) {
+                if ((idx & 1023) == 0 && cancelRequested(cancel)) continue;
+                const int cx = centers[static_cast<size_t>(idx)].first;
+                const int cz = centers[static_cast<size_t>(idx)].second;
+                int64_t score = 0;
+                for (int dj = -k; dj <= k; ++dj) {
+                    const int32_t* __restrict krow = kernSum.data() + static_cast<size_t>(dj + k) * kk;
+                    for (int di = -k; di <= k; ++di) {
+                        const int32_t w = krow[di + k];
+                        if (w && isSlime(cx + di, cz + dj)) score += w;
+                    }
+                }
+                if (score > 0) local.push_back(Hit{ score, cx, cz });
+            }
+#pragma omp critical
+            all.insert(all.end(), local.begin(), local.end());
+        }
+        if (cancel && cancel->load(std::memory_order_relaxed)) return none;
+        hits.swap(all);
+        std::fprintf(stderr, "[环形] 随机撒点：%lld 个（种子 %llu），命中 %zu（%.1f ms）\n", want,
+                     static_cast<unsigned long long>(seedUsed), hits.size(),
                      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - stageT0).count());
     } else
     for (int bz0 = az0; bz0 <= az1; bz0 += bandRows) {

@@ -182,6 +182,12 @@ void MainWindow::applyAppSettings(const AppSettings& s)
             m_w->stopAtTarget->setChecked(s.defaultStopAtTarget);
             applied << slime::ui::t("ui.787ef54c30cd");
         }
+        // v3.15.x（P1）：同质化开关已前移到搜索页；设置页改动仍作为“默认值”同步过去。
+        if (old.allowHomogeneousResults != s.allowHomogeneousResults && m_w->allowHomogeneous) {
+            QSignalBlocker block(m_w->allowHomogeneous);
+            m_w->allowHomogeneous->setChecked(s.allowHomogeneousResults);
+            applied << slime::ui::t("ui.allow_homogeneous_label");
+        }
         if (old.defaultAlgorithm != s.defaultAlgorithm) {
             if (s.defaultAlgorithm == QLatin1String("layered") && m_w->algLayeredRadio) m_w->algLayeredRadio->setChecked(true);
             else if (s.defaultAlgorithm == QLatin1String("sample") && m_w->algSampleRadio) m_w->algSampleRadio->setChecked(true);
@@ -493,6 +499,25 @@ public:
     int z = 0;
     bool hasY = false;
 };
+
+// v3.15.x：结果表「有效格 · 总权重」列 —— 显示是格式化文本，排序必须按数值
+//   （此前是纯文本 item，点击表头会按字符串排序，用户报告“按有效格数量排序有问题”）。
+class ResultQualityItem : public QTableWidgetItem {
+public:
+    explicit ResultQualityItem(qlonglong blocks, double weight) : m_blocks(blocks), m_weight(weight) {}
+    bool operator<(const QTableWidgetItem& other) const override
+    {
+        const auto* o = dynamic_cast<const ResultQualityItem*>(&other);
+        if (!o) return QTableWidgetItem::operator<(other);
+        if (m_blocks != o->m_blocks) return m_blocks < o->m_blocks;
+        return m_weight < o->m_weight;
+    }
+    qlonglong blocks() const noexcept { return m_blocks; }
+
+private:
+    qlonglong m_blocks = 0;
+    double m_weight = 0.0;
+};
 } // namespace
 
 // v3.5.5：结果灌进列表（排名/建议挂机坐标 X/Y/Z/距离/密度或覆盖/跳转按钮）；表头点击可排序
@@ -574,12 +599,14 @@ void MainWindow::fillResultTable()
         t->setItem(i, 2, it2);
         t->setItem(i, 3, it3);
         if (afk != nullptr) {
-            auto* it4 = new QTableWidgetItem();
+            auto* it4 = new ResultQualityItem(static_cast<qlonglong>(afk->coveredBlocks),
+                                             static_cast<double>(afk->coveredWeight));
             const QString blocksText = slime::ui::t("ui.aca2c2cb22cf")
                                            .arg(static_cast<qlonglong>(afk->coveredBlocks))
                                            .arg(afk->coveredWeight, 0, 'f', 0);
             it4->setText(blocksText);
             it4->setToolTip(blocksText);
+            it4->setData(Qt::UserRole + 1, static_cast<qlonglong>(afk->coveredBlocks));
             t->setItem(i, 4, it4);
         }
         auto* jump = new QPushButton(slime::ui::t("ui.28cd2efd8fa8"), t);
@@ -680,25 +707,28 @@ struct PresetDef {
     int homogeneous; // -1=跟随设置，0=关闭，1=允许
     int lockDir;     // -1=不改，0=四方向，1=锁定
     int target;      // <=0=不改
+    // v3.15.x：最小密度也是“结果要求”的一部分 —— 方案切换要一起恢复，
+    //   否则用户改过最小密度后选其它方案，提示消失了值却没变（用户反馈）。
+    double minDensity; // <0 = 不改；密度方案 = 0.3（默认），环形方案 = 0.0
 };
 const PresetDef kPresetDensity[] = {
-    { "ui.preset.quick_nearest", "ui.preset.hint_quick", true, false, false, 0, 1, -1, -1 },
-    { "ui.preset.all", "ui.preset.hint_all", false, false, false, 0, 1, -1, -1 },
-    { "ui.preset.distinct_stop", "ui.preset.hint_distinct_stop", true, false, false, 0, 0, -1, -1 },
-    { "ui.preset.distinct_all", "ui.preset.hint_distinct_all", false, false, false, 0, 0, -1, -1 },
-    { "ui.preset.best_ignore", "ui.preset.hint_best_ignore", false, false, true, 0, 1, -1, 1 },
-    { "ui.preset.exact_nearest", "ui.preset.hint_exact", false, false, false, 0, 1, -1, -1 },
-    { "ui.preset.speed_truncate", "ui.preset.hint_speed", true, false, false, 0, 0, -1, -1 },
-    { "ui.preset.coarse", "ui.preset.hint_coarse", true, false, false, 2, 1, -1, -1 },
+    { "ui.preset.quick_nearest", "ui.preset.hint_quick", true, false, false, 0, 1, -1, -1, 0.3 },
+    { "ui.preset.all", "ui.preset.hint_all", false, false, false, 0, 1, -1, -1, 0.3 },
+    { "ui.preset.distinct_stop", "ui.preset.hint_distinct_stop", true, false, false, 0, 0, -1, -1, 0.3 },
+    { "ui.preset.distinct_all", "ui.preset.hint_distinct_all", false, false, false, 0, 0, -1, -1, 0.3 },
+    { "ui.preset.best_ignore", "ui.preset.hint_best_ignore", false, false, true, 0, 1, -1, 1, 0.3 },
+    { "ui.preset.exact_nearest", "ui.preset.hint_exact", false, false, false, 0, 1, -1, -1, 0.3 },
+    { "ui.preset.speed_truncate", "ui.preset.hint_speed", true, false, false, 0, 0, -1, -1, 0.3 },
+    { "ui.preset.coarse", "ui.preset.hint_coarse", true, false, false, 2, 1, -1, -1, 0.3 },
 };
 const PresetDef kPresetPattern[] = {
-    { "ui.preset.pattern_single", "ui.preset.hint_pattern_single", true, false, false, 0, -1, 1, -1 },
-    { "ui.preset.pattern_four", "ui.preset.hint_pattern_four", true, false, false, 0, -1, 0, -1 },
-    { "ui.preset.pattern_all", "ui.preset.hint_pattern_all", false, false, false, 0, -1, -1, -1 },
+    { "ui.preset.pattern_single", "ui.preset.hint_pattern_single", true, false, false, 0, -1, 1, -1, -1.0 },
+    { "ui.preset.pattern_four", "ui.preset.hint_pattern_four", true, false, false, 0, -1, 0, -1, -1.0 },
+    { "ui.preset.pattern_all", "ui.preset.hint_pattern_all", false, false, false, 0, -1, -1, -1, -1.0 },
 };
 const PresetDef kPresetRing[] = {
-    { "ui.preset.ring_max", "ui.preset.hint_ring_max", false, false, false, 0, 1, -1, -1 },
-    { "ui.preset.ring_distinct", "ui.preset.hint_ring_distinct", false, false, false, 0, 0, -1, -1 },
+    { "ui.preset.ring_max", "ui.preset.hint_ring_max", false, false, false, 0, 1, -1, -1, 0.0 },
+    { "ui.preset.ring_distinct", "ui.preset.hint_ring_distinct", false, false, false, 0, 0, -1, -1, 0.0 },
 };
 } // namespace
 
@@ -734,7 +764,6 @@ void MainWindow::applySelectedPreset()
     m_presetLastIndex = idx;
 
     if (idx == customIdx) {
-        m_presetHomogeneous = -1;
         if (m_w->presetHint) {
             m_w->presetHint->setText(slime::ui::t("ui.7e7cf39ddc4d"));
         }
@@ -743,7 +772,11 @@ void MainWindow::applySelectedPreset()
     }
     const PresetDef& pd = pattern ? kPresetPattern[idx] : (ringShape ? kPresetRing[idx] : kPresetDensity[idx]);
     m_presetApplying = true;
-    m_presetHomogeneous = pd.homogeneous;
+    // v3.15.x（P1）：方案预设同步勾选「允许同质量重复」，用户可见、不再靠内部覆盖值。
+    if (pd.homogeneous >= 0 && m_w->allowHomogeneous)
+        m_w->allowHomogeneous->setChecked(pd.homogeneous != 0);
+    if (pd.minDensity >= 0.0 && m_w->minDensity)
+        m_w->minDensity->setValue(pd.minDensity);
     if (m_w->ignoreThreshold) m_w->ignoreThreshold->setChecked(pd.ignore && !pattern);
     if (m_w->stopAtTarget) m_w->stopAtTarget->setChecked(pd.stop);
     if (m_w->smartRange) m_w->smartRange->setChecked(pd.smart);
@@ -806,7 +839,6 @@ void MainWindow::markPresetCustom(const QString& reason)
     if (m_w->presetCombo->currentIndex() == customIdx) return;
     m_presetApplying = true;
     m_w->presetCombo->setCurrentIndex(customIdx);
-    m_presetHomogeneous = -1;
     m_presetApplying = false;
     m_presetLastIndex = customIdx;
     if (m_w->presetHint) {

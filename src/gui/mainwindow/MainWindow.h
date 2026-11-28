@@ -229,7 +229,6 @@ private:
     bool m_presetApplying = false;
     int m_presetPatternMode = -1;   // -1 未初始化；0 密度；1 图案
     int m_presetLastIndex = 0;
-    int m_presetHomogeneous = -1;   // -1=用设置；0=关闭；1=允许（预设覆盖）
     // v3.3.4：结果以文本形式显示在右侧 QTextEdit（可选中、可右键复制命令）
     void populateResultText(const SearchOutcome& out, const RunInfo& info);
     void runRingSearch();   // v3.5.5：环形覆盖搜索分支

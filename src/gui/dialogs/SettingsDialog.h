@@ -192,7 +192,9 @@ private:
     QSpinBox* m_cpuLimit = nullptr;
     QSpinBox* m_gpuLimit = nullptr;   // v3.7.1：GPU 占用率上限
     QSpinBox* m_memLimit = nullptr;
-    QCheckBox* m_allowHomogeneous = nullptr;
+    // v3.15.x（P1）：同质化开关已前移到搜索页 ③ 结果要求；设置页不再有控件，
+    //   这里只保存原值以便“应用设置”时不被重置。
+    bool m_allowHomogeneousValue = false;
     QCheckBox* m_autoCheckGpu = nullptr; // v3.3.9.1（任务书 2.1）：启动时自动检查 GPU 状态
     // v3.3.6：崩溃转储 / 调试模式 / 重置所有设置
     QCheckBox* m_crashDump = nullptr;

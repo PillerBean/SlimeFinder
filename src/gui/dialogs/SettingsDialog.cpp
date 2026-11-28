@@ -563,10 +563,8 @@ QWidget* SettingsDialog::buildAdvancedPage()
     row = addOptionRow(form, row, slime::ui::t("ui.17f9c0ba9737"), withUnit(m_memLimit, QStringLiteral("MB")),
                        slime::ui::t("ui.558c9c678bd5"));
 
-    m_allowHomogeneous = new QCheckBox(slime::ui::t("ui.allow_homogeneous"), page);
-    m_allowHomogeneous->setChecked(false);
-    row = addOptionRow(form, row, slime::ui::t("ui.allow_homogeneous_label"), m_allowHomogeneous,
-                       slime::ui::t("ui.allow_homogeneous_tip"));
+    // v3.15.x（P1）：同质化开关前移到搜索页；设置页不再显示（值由 setValues 带入、原样带回）。
+    // 注意：故意不加控件/行，避免与搜索页出现两个不一致的开关。
 
     // v3.3.9.1（任务书 2.1）：启动时自动检查 GPU 状态
     m_autoCheckGpu = new QCheckBox(slime::ui::t("ui.52da0772de3c"), page);
@@ -878,7 +876,7 @@ AppSettings SettingsDialog::currentValues() const
     s.cpuLimitPercent = m_cpuLimit->value();
     s.gpuLimitPercent = m_gpuLimit->value();
     s.memLimitMB = m_memLimit->value();
-    s.allowHomogeneousResults = m_allowHomogeneous->isChecked();
+    s.allowHomogeneousResults = m_allowHomogeneousValue;
     s.autoCheckGpuAtStartup = m_autoCheckGpu->isChecked();
     s.updateReminderDays = m_updateReminderDays->value();
     s.crashDump = m_crashDump->isChecked();
@@ -933,7 +931,7 @@ void SettingsDialog::setValues(const AppSettings& s)
     m_cpuLimit->setValue(s.cpuLimitPercent);
     m_gpuLimit->setValue(s.gpuLimitPercent);
     m_memLimit->setValue(s.memLimitMB);
-    m_allowHomogeneous->setChecked(s.allowHomogeneousResults);
+    m_allowHomogeneousValue = s.allowHomogeneousResults;
     m_autoCheckGpu->setChecked(s.autoCheckGpuAtStartup);
     m_updateReminderDays->setValue(s.updateReminderDays);
     m_crashDump->setChecked(s.crashDump);

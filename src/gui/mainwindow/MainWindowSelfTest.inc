@@ -396,7 +396,6 @@ int MainWindow::runSelfTest()
         const int t0 = m_w->threads->value();
         const int tc0 = m_w->targetCount->value();
         const int g0 = m_w->gridSize->value();
-        const double d0 = m_w->minDensity->value();
         const int sx0 = m_w->startX->value();
         const int sz0 = m_w->startZ->value();
         const bool cache0 = m_w->useCache->isChecked();
@@ -406,10 +405,10 @@ int MainWindow::runSelfTest()
                   m_w->algExactRadio->isChecked() && !m_w->ignoreThreshold->isChecked(),
               "预设只设置明面开关：找够即停（不强制由近及远）+精确算法");
         check(m_w->threads->value() == t0 && m_w->targetCount->value() == tc0 &&
-                  m_w->gridSize->value() == g0 && qFuzzyCompare(m_w->minDensity->value() + 1.0, d0 + 1.0) &&
+                  m_w->gridSize->value() == g0 &&
                   m_w->startX->value() == sx0 && m_w->startZ->value() == sz0 &&
                   m_w->useCache->isChecked() == cache0 && (m_w->gpuCheck && m_w->gpuCheck->isChecked()) == gpu0,
-              "预设不修改 线程/目标/网格/阈值/起点/缓存/GPU 等其它开关");
+              "预设不修改 线程/目标/网格/起点/缓存/GPU 等其它开关（最小密度/同质化已改为方案内可见项）");
     }
 
     // 10.9) v3.10.9（用户要求）：高级开关分级 + 自定义速度声明 + GPU 设置入口
@@ -426,9 +425,26 @@ int MainWindow::runSelfTest()
               "预设方案下「搜索内容 / 结果要求 / 匹配方式」始终可见（仅由控件可用性表达冲突）");
         check(m_w->densityAdvanced && !m_w->densityAdvanced->isVisible(),
               "预设方案下「正方形网格」高级项收起");
-        check(m_presetHomogeneous == 1, "快速最近 N 预设允许同质量");
+        // v3.15.x（P1）：同质化开关已前移到搜索页 ③ 结果要求，方案预设直接联动勾选。
+        check(m_w->allowHomogeneous && m_w->allowHomogeneous->isChecked(),
+              "快速最近 N 预设允许同质量（搜索页可见开关联动）");
         m_w->presetCombo->setCurrentIndex(2);
-        check(m_presetHomogeneous == 0, "不同质量预设关闭同质化");
+        check(m_w->allowHomogeneous && !m_w->allowHomogeneous->isChecked(),
+              "不同质量预设关闭同质化（搜索页可见开关联动）");
+        // v3.15.x（用户反馈）：改最小密度 → 自定义；再选方案要恢复该方案的最小密度默认值，
+        //   不能“提醒消失但值没变”。
+        m_w->presetCombo->setCurrentIndex(0);
+        m_w->minDensity->setValue(0.42);
+        // 手动改值在 spinbox 里通过 editingFinished 提交（与真实用户操作一致），提交后应转“自定义”。
+        QMetaObject::invokeMethod(m_w->minDensity, "editingFinished", Qt::DirectConnection);
+        std::fprintf(stderr, "[UI自检]   最小密度改 0.42 后方案索引=%d（期望 8=自定义）\n",
+                     m_w->presetCombo->currentIndex());
+        check(m_w->presetCombo->currentIndex() == 8, "修改最小密度 → 方案自动变自定义");
+        m_w->presetCombo->setCurrentIndex(2);
+        std::fprintf(stderr, "[UI自检]   方案切换最小密度恢复：0.42 → %.3f（期望 0.300）\n",
+                     m_w->minDensity->value());
+        check(qAbs(m_w->minDensity->value() - 0.3) < 1e-6,
+              "选择方案会把最小密度恢复为该方案默认值（不再静默保留自定义值）");
         check(m_w->requirementGroup->isVisible(), "切换预设不整组隐藏结果要求（只改结果语义）");
         m_w->presetCombo->setCurrentIndex(0);
         check(!m_w->presetDisclaimer->isVisible(), "预设方案不显示自定义速度声明");
@@ -442,7 +458,9 @@ int MainWindow::runSelfTest()
               "自定义速度声明挂在 ① 搜索内容组内（跟随方案）");
         check(m_w->densityAdvanced && m_w->densityAdvanced->isVisible(),
               "自定义方案展开正方形网格高级项");
-        check(m_presetHomogeneous == -1, "自定义方案恢复跟随设置");
+        // 自定义方案保留控件当前值（不再有内部“跟随设置”覆盖值重置）。
+        check(m_w->allowHomogeneous && m_w->allowHomogeneous->isChecked(),
+              "自定义方案保留当前同质化勾选状态");
         check(m_w->presetDisclaimer->isVisible() &&
                   m_w->presetDisclaimer->text().contains(slime::ui::t("ui.f2fdffbb9ed5")),
               "自定义方案显示「可能明显降低速度」声明");
@@ -2442,6 +2460,22 @@ int MainWindow::runSelfTest()
                       "基岩版种子严格限制在 int32 范围");
                 check(!parseSeedForVersion(QStringLiteral("999999999999999999999"), slime::Version::Java, nullptr),
                       "超出 int64 的种子被拒绝");
+                // v3.15.x（用户要求）：基岩版也必须填写世界种子（群系算法关系到有效格计算）。
+                {
+                    const QString keepSeed = m_w->seedEdit ? m_w->seedEdit->text() : QString();
+                    const bool wasJava = m_w->javaRadio && m_w->javaRadio->isChecked();
+                    m_w->bedrockRadio->setChecked(true);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 40);
+                    check(m_w->seedLabel && m_w->seedLabel->text() == slime::ui::t("ui.bdf0619ab5e7"),
+                          "基岩版种子标签不再写「仅用于地图」（种子已是必填）");
+                    if (m_w->seedEdit) m_w->seedEdit->clear();
+                    m_lastAfk.clear();
+                    startSearch();
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 150);
+                    check(!m_running, "基岩版未填写种子时搜索被阻止（新增强制要求）");
+                    if (m_w->seedEdit) m_w->seedEdit->setText(keepSeed);
+                    if (wasJava) m_w->javaRadio->setChecked(true);
+                }
                 check(m_w->copyBtn == nullptr, "搜索页右上角不再有「复制结果」按钮");
                 for (QGroupBox* g : groups) {
                     check(!g->isCheckable(), "设置分组不可折叠（任务书：不做折叠）");
@@ -3915,6 +3949,36 @@ int MainWindow::runSelfTest()
                 const QString all = m_progressStream->allText();
                 check(all.contains(QStringLiteral("环形完成")), "环形：进度流水有完成汇总行（候选/用时/预筛来源）");
             }
+            // v3.15.x（C1）：撒点抽取改为真随机撒点 —— 每次运行随机种子不同，进度流水有样本数/种子。
+            {
+                const int keepScan = m_w->ringScanCombo ? m_w->ringScanCombo->currentData().toInt() : 0;
+                if (m_w->ringScanCombo) {
+                    m_w->ringScanCombo->setCurrentIndex(0);   // 撒点抽取
+                    const QString key = slime::ui::t("ui.ring_scatter_note");
+                    const QString prefix = key.left(key.indexOf(QStringLiteral("%1")));
+                    auto noteOf = [this, prefix]() {
+                        if (!m_progressStream) return QString();
+                        QString last;
+                        for (const QString& ln : m_progressStream->allText().split(QLatin1Char('\n')))
+                            if (ln.contains(prefix)) last = ln;
+                        return last;
+                    };
+                    m_lastAfk.clear();
+                    runRingSearch();
+                    waitForRingSearchIdle(30000);
+                    const QString note1 = noteOf();
+                    m_lastAfk.clear();
+                    runRingSearch();
+                    waitForRingSearchIdle(30000);
+                    const QString note2 = noteOf();
+                    std::fprintf(stderr, "[UI自检]   撒点抽取随机：第一次=\"%s\" 第二次=\"%s\"\n",
+                                 note1.toUtf8().constData(), note2.toUtf8().constData());
+                    check(!note1.isEmpty(), "撒点抽取：进度流水显示随机撒点数与种子");
+                    check(!note2.isEmpty() && note2 != note1, "撒点抽取：每次运行随机种子不同（有抽样感）");
+                    m_w->ringScanCombo->setCurrentIndex(
+                        m_w->ringScanCombo->findData(keepScan) >= 0 ? m_w->ringScanCombo->findData(keepScan) : 0);
+                }
+            }
             // v3.15.x（UX-3）：非环形结果表头回到「坐标 X/Z」。
             {
                 const auto keepAfk = m_lastAfk;
@@ -4225,6 +4289,26 @@ int MainWindow::runSelfTest()
                     const double cz = bz0 + 0.5;
                     check(std::abs(ctr.x() - cx) < 2.0 && std::abs(ctr.y() - cz) < 2.0,
                           "排序后结果行跳转仍对应本行坐标");
+                }
+                // v3.15.x（用户反馈）：按「有效格数量」排序必须是数值排序（旧实现按文本字符排序）。
+                {
+                    m_w->resultTable->sortItems(4, Qt::AscendingOrder);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 80);
+                    qlonglong prev = -1;
+                    bool mono = true;
+                    QList<qlonglong> vals;
+                    for (int rr = 0; rr < rows; ++rr) {
+                        const auto* item = m_w->resultTable->item(rr, 4);
+                        if (!item) continue;
+                        const qlonglong v = item->data(Qt::UserRole + 1).toLongLong();
+                        vals << v;
+                        if (prev >= 0 && v < prev) mono = false;
+                        prev = v;
+                    }
+                    std::fprintf(stderr, "[UI自检]   按有效格排序：%lld … %lld（%d 项，单调=%d）\n",
+                                 vals.isEmpty() ? -1 : vals.first(), vals.isEmpty() ? -1 : vals.last(),
+                                 static_cast<int>(vals.size()), mono ? 1 : 0);
+                    check(vals.size() == rows && mono, "结果列表可按「有效格数量」数值排序");
                 }
             }
             // 折叠/展开

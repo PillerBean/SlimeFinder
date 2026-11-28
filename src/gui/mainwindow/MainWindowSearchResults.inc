@@ -1,4 +1,4 @@
-﻿// v3.12.0：搜索、构建与结果处理逻辑。
+// v3.12.0：搜索、构建与结果处理逻辑。
 
 QString MainWindow::successProbabilityText(int64_t areaX, int64_t areaZ) const
 {
@@ -132,8 +132,9 @@ void MainWindow::startSearch()
     const slime::MemoryBudget memoryBudget = slime::MemoryBudget::fromSettingMB(m_settings.memLimitMB);
     opt.memBudgetBytes = memoryBudget.chunkBitmapBytes;
     opt.gpuHostBudgetBytes = memoryBudget.gpuHostBytes;
-    opt.allowHomogeneousResults = (m_presetHomogeneous >= 0) ? (m_presetHomogeneous != 0)
-                                                              : m_settings.allowHomogeneousResults;
+    // v3.15.x（P1）：同质化由搜索页 ③ 结果要求里的可见开关决定（方案预设会同步勾选）。
+    opt.allowHomogeneousResults =
+        m_w->allowHomogeneous ? m_w->allowHomogeneous->isChecked() : m_settings.allowHomogeneousResults;
     if (!buildModeActive() && opt.mode == Mode::Density && !opt.allowHomogeneousResults) {
         addFeedback(2, slime::ui::t("ui.homogeneous_off_note"));
     }
@@ -165,15 +166,15 @@ void MainWindow::startSearch()
     opt.minZ = m_w->minZ->value();
     opt.maxZ = m_w->maxZ->value();
 
-    bool seedOA = true;
-    if (!buildModeActive() && opt.version == Version::Java) {
-        // v3.3.4（任务书 4.2）：Java 版必须填写合法种子 —— 种子默认空；
-        // "0" 是合法种子；纯空格视为空；"123abc" 视为非法；基岩版完全不受影响。
+    // v3.15.x（用户要求）：Java 与 Bedrock **都必须**填写合法世界种子 ——
+    //   基岩版的群系算法关系到有效格计算，没有种子无法做群系/有效面积相关计算。
+    //   仅「缓存构建」模式豁免（缓存内容与种子无关，构建只做史莱姆判定）。
+    if (!buildModeActive()) {
         const QString seedText = m_w->seedEdit->text().trimmed();
         if (seedText.isEmpty()) {
             // 弹窗 [去填写] [取消] + 反馈栏 ❌ + 日志记录（如已启用）+ 输入框高亮闪烁
             addError(slime::ui::t("ui.24599e00ffb7"));
-            slime::LogBus::error("Java 版未填写世界种子，搜索被阻止");
+            slime::LogBus::error("未填写世界种子，搜索被阻止");
             bool goFill = true;
             if (!m_uiQuiet) {
                 QMessageBox box(this);
@@ -188,15 +189,18 @@ void MainWindow::startSearch()
             if (goFill) highlightSeedField();
             return;
         }
-        opt.worldSeed = seedText.toLongLong(&seedOA);
-        if (!seedOA) {
-            addError(slime::ui::t("ui.2469f1297a2d").arg(seedText));
+        int64_t parsedSeed = 0;
+        if (!parseSeedForVersion(seedText, opt.version, &parsedSeed)) {
+            const QString errText = opt.version == Version::Bedrock
+                                        ? slime::ui::t("ui.seed_range_bedrock").arg(seedText)
+                                        : slime::ui::t("ui.2469f1297a2d").arg(seedText);
+            addError(errText);
             slime::LogBus::error("世界种子非法: " + seedText.toStdString());
             if (!m_uiQuiet) {
                 QMessageBox box(this);
                 box.setIcon(QMessageBox::Warning);
                 box.setWindowTitle(slime::ui::t("ui.733bc78b8835"));
-                box.setText(slime::ui::t("ui.f36f9429a104").arg(seedText));
+                box.setText(errText);
                 QPushButton* fill = box.addButton(slime::ui::t("ui.919e5d650bfa"), QMessageBox::AcceptRole);
                 box.addButton(slime::ui::t("ui.4d0b4688c787"), QMessageBox::RejectRole);
                 box.exec();
@@ -205,20 +209,8 @@ void MainWindow::startSearch()
             highlightSeedField();
             return;
         }
+        opt.worldSeed = parsedSeed;
         slime::LogBus::info("搜索种子: " + std::to_string(opt.worldSeed));
-    } else if (!buildModeActive() && opt.version == Version::Bedrock) {
-        // 基岩版判定不使用种子，但地图上色需要；空 = 只给纯色占位。
-        // 非空时必须是 32 位有符号整数，避免任意大数被截断后显示成另一个种子。
-        const QString seedText = m_w->seedEdit->text().trimmed();
-        int64_t parsed = 0;
-        if (!seedText.isEmpty()) {
-            if (!parseSeedForVersion(seedText, Version::Bedrock, &parsed)) {
-                addError(slime::ui::t("ui.seed_range_bedrock").arg(seedText));
-                highlightSeedField();
-                return;
-            }
-            opt.worldSeed = parsed;
-        }
     }
 
     // v3.4.12（用户实测：缓存构建时仍被要求设置搜索模式）：
@@ -1390,10 +1382,16 @@ void MainWindow::onSearchFinished(const SearchOutcome& in, const RunInfo& info, 
         const int want = (std::max)(1, m_w->targetCount ? m_w->targetCount->value() : 1);
         if (got == 0)
             m_resultsNotice->setText(slime::ui::t("ui.17533b453292"));
-        else if (got < want)
-            m_resultsNotice->setText(slime::ui::t("ui.a1e9abe326ce")
-                                         .arg(got).arg(want));
-        else
+        else if (got < want) {
+            QString text = slime::ui::t("ui.a1e9abe326ce").arg(got).arg(want);
+            // v3.15.x（P1/B1）：同质化关闭时说明“结果数 = 不同质量种类数”，并指向可见开关。
+            if (info.mode == Mode::Density && !info.options.allowHomogeneousResults &&
+                !info.options.ignoreThreshold) {
+                text += QLatin1Char('\n') +
+                        slime::ui::t("ui.homogeneous_short_notice").arg(got).arg(want);
+            }
+            m_resultsNotice->setText(text);
+        } else
             m_resultsNotice->setText(QString());
         m_resultsNotice->setVisible(!m_resultsNotice->text().isEmpty());
     }
