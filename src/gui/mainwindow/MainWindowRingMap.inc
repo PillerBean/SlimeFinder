@@ -895,6 +895,10 @@ bool MainWindow::stopRingSearchForShutdown(int timeoutMs)
     // 保证它不会在窗口销毁后触碰 this 的控件。
     m_ringFinishDiscard = true;
     m_ringSearching = false;
+    // v3.15.x（UX-4）：关闭/取消路径同样停掉环形进度定时器并清运行时状态。
+    if (m_elapsedTimer) m_elapsedTimer->stop();
+    if (m_streamTimer) m_streamTimer->stop();
+    m_ringUiState.reset();
     // 关闭路径同样要留下“空闲态”（窗口可能被其它逻辑拦下而不真正关闭）。
     updateStartEnabled();
     if (m_w) {

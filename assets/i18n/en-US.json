@@ -1489,5 +1489,6 @@
   "ui.result_afk_coord_tip": "Suggested AFK point = center and Y from the height model (H=0..24, per-block biome weights, +/-16 block neighborhood); Y = bedrock-layer base + H. The density/blocks columns still use the original planning center. Only the first 64 candidates are refined when there are more.",
   "ui.afk_focus_status_y": "Selected candidate #%1 (%2, %3, %4): %5 blocks / weight %6 / %7 chunks",
   "ui.afk_footprint_ring": "Y=%1 (H=%2) ground ring r=%3..%4",
-  "ui.afk_footprint_disc": "Y=%1 (H=%2) ground disc r<=%3"
+  "ui.afk_footprint_disc": "Y=%1 (H=%2) ground disc r<=%3",
+  "ui.search_content_group": "Search Content"
 }

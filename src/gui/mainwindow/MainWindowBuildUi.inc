@@ -139,10 +139,10 @@ void MainWindow::buildUi()
         rootLay->addWidget(bodyRow, 1);
     }
 
-    // ================= 左：设置面板（QScrollArea + 6 分组） =================
+    // ================= 左：设置面板（QScrollArea + 四组参数分组） =================
     auto* leftPanel = new QWidget(m_hSplit);
     // v3.11.2：英文/繁体文案更长；窄窗下左栏加宽，避免 QScrollArea 横向滚动截断文字。
-    // v3.15.x：A/B/C 嵌套分组自带 QGroupBox 边框/内边距（+14px），左栏最小宽随之 +10 保证无横向滚动条。
+    // v3.16.x：四组顶层分组自带 QGroupBox 边框/内边距（+14px），左栏最小宽保持 +10 保证无横向滚动条。
     const bool wideText = slime::ui::isEnglish() || slime::ui::isTraditional();
     leftPanel->setMinimumWidth(wideText ? 490 : 370);
     auto* leftLay = new QVBoxLayout(leftPanel);
@@ -255,21 +255,128 @@ void MainWindow::buildUi()
     }
 
 
-    // ================= v3.15.x：搜索页重排为 A/B/C 三个顶层分组 =================
-    //   A 搜索方式（怎么搜）：环形 = 4 档扫描方式；图案 / 正方形密度 = 匹配算法与参数
-    //   B 结果要求（搜什么）：搜索范围、搜索模式与方案、区域形状、最低密度、目标数量、停止方式
-    //   C 执行设置：线程 / GPU / 内存预算 / 缓存管理
-    //   原来的 6 个 QGroupBox 作为子分组保留（对象与内部控件不动，仅换父布局）。
+    // ================= v3.16.x：搜索页左参数列四组重排 =================
+    //   用户反馈：搜索方式（环形四档 / 匹配算法）取决于「搜索什么类型的结果」（图案/密度）
+    //   与「区域形状」（方形/环形），旧顺序把搜索方式放在搜索模式上面，用户要反复上下滚动。
+    //   新顺序（从上到下）：① 搜索内容 → ② 搜索方式 → ③ 结果要求 → ④ 执行设置。
+    //   原则：先选「搜什么」，再选「怎么搜」；最低密度/忽略阈值/环形选项/目标数量属于结果要求。
+    //   实现：复用原有控件对象与 m_w->* 指针（不重建），只调整创建顺序 / 父布局。
+
+    // ---------- ① 搜索内容（新顶层分组）：图案/密度、方案预设、图案编辑器 或 区域形状 ----------
+    auto* gContent = new QGroupBox(slime::ui::t("ui.search_content_group"), groupsHost);
+    m_w->searchContentGroup = gContent;
+    auto* contentLay = new QVBoxLayout(gContent);
+    contentLay->setContentsMargins(6, 6, 6, 6);
+    contentLay->setSpacing(6);
+    groupsLay->addWidget(gContent);
+
+    // ===== 一级：图案 / 密度（v3.5.18 用户要求）=====
+    auto* modeRow = new QHBoxLayout();
+    m_w->strictRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ModePattern), gContent);
+    m_w->densityRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ModeDensity), gContent);
+    {
+        auto* modeBtnGroup = new QButtonGroup(gContent);
+        modeBtnGroup->addButton(m_w->strictRadio, 0);
+        modeBtnGroup->addButton(m_w->densityRadio, 1);
+        m_w->modeButtonGroup = modeBtnGroup;
+    }
+    m_w->strictRadio->setChecked(true);
+    m_w->strictRadio->setToolTip(slime::ui::text(slime::ui::Key::ModePatternTip));
+    m_w->densityRadio->setToolTip(slime::ui::text(slime::ui::Key::ModeDensityTip));
+    modeRow->addWidget(m_w->strictRadio);
+    modeRow->addWidget(m_w->densityRadio);
+    modeRow->addStretch();
+    contentLay->addLayout(modeRow);
+
+    // v3.9.11（设置重构阶段 B）：先「模式」再「方案」——方案数量与内容由模式 + 区域形状决定。
+    {
+        auto* presetRow = new QHBoxLayout();
+        presetRow->addWidget(new QLabel(slime::ui::t("ui.c06ee9fb0a7e"), gContent));
+        m_w->presetCombo = new QComboBox(gContent);
+        m_w->presetCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+        m_w->presetCombo->setMinimumContentsLength(16);
+        m_w->presetCombo->setToolTip(slime::ui::t("ui.7f3854b7425e"));
+        presetRow->addWidget(m_w->presetCombo, 1);
+        contentLay->addLayout(presetRow);
+        m_w->presetHint = new QLabel(gContent);
+        m_w->presetHint->setObjectName(QStringLiteral("presetHint"));
+        m_w->presetHint->setWordWrap(true);
+        m_w->presetHint->setStyleSheet(QStringLiteral("color:#606874;font-size:11px;"));
+        contentLay->addWidget(m_w->presetHint);
+        QObject::connect(m_w->presetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                         [this](int) { applySelectedPreset(); });
+    }
+
+    // v3.10.9（用户要求）：自定义方案可能导致明显降速的声明（跟随方案切换显示，属于「搜什么」）
+    m_w->presetDisclaimer = new QLabel(gContent);
+    m_w->presetDisclaimer->setObjectName(QStringLiteral("presetDisclaimer"));
+    m_w->presetDisclaimer->setWordWrap(true);
+    m_w->presetDisclaimer->setMinimumWidth(0);
+    m_w->presetDisclaimer->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);   // 不撑最小宽
+    m_w->presetDisclaimer->setVisible(false);
+    m_w->presetDisclaimer->setStyleSheet(QStringLiteral("color:%1;font-size:11px;")
+                                             .arg(darkTheme() ? QStringLiteral("#ffb74d")
+                                                              : QStringLiteral("#b26a00")));
+    m_w->presetDisclaimer->setText(slime::ui::t("ui.08c668ef8483"));
+    contentLay->addWidget(m_w->presetDisclaimer);
+
+    // ===== 二级：图案选项（仅图案模式显示）=====
+    m_w->strictPanel = new QWidget(gContent);
+    auto* strictLay = new QVBoxLayout(m_w->strictPanel);
+    strictLay->setContentsMargins(12, 0, 0, 0);
+    strictLay->setSpacing(4);
+    m_w->lockDir = new QCheckBox(slime::ui::t("ui.4c557e552df9"), m_w->strictPanel);
+    m_w->lockDir->setChecked(true);
+    m_w->lockDir->setToolTip(slime::ui::t("ui.d6dbb5040c42"));
+    strictLay->addWidget(m_w->lockDir);
+    // v3.5.18：旧「绘制图案」按钮改为隐藏（图案编辑器已内嵌），保留对象避免其它代码空指针
+    m_w->drawPattern = new QPushButton(slime::ui::t("ui.dcac1e7a2e19"), m_w->strictPanel);
+    m_w->drawPattern->setVisible(false);
+    auto* patRow = new QHBoxLayout();
+    m_w->patternInfo = new QLabel(slime::ui::t("ui.a1b385fa0140"), m_w->strictPanel);
+    patRow->addWidget(m_w->patternInfo);
+    patRow->addStretch();
+    strictLay->addLayout(patRow);
+    // v3.5.18：图案编辑器直接内嵌（不再弹出独立窗口）
+    m_w->inlinePattern = new slime::PatternEditorPanel(m_w->strictPanel);
+    m_w->inlinePattern->setVisible(true);
+    strictLay->addWidget(m_w->inlinePattern);
+    contentLay->addWidget(m_w->strictPanel);
+
+    // ===== 二级：区域形状（仅密度模式显示；环形 = 环形覆盖搜索）=====
+    m_w->shapeRow = new QWidget(gContent);
+    {
+        auto* shapeRowLay = new QHBoxLayout(m_w->shapeRow);
+        shapeRowLay->setContentsMargins(12, 0, 0, 0);
+        shapeRowLay->setSpacing(6);
+        shapeRowLay->addWidget(new QLabel(slime::ui::t("ui.34a2f8af72f5"), m_w->shapeRow));
+        m_w->shapeSquareRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ShapeSquare), m_w->shapeRow);
+        m_w->shapeRingRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ShapeRing), m_w->shapeRow);
+        m_w->shapeSquareRadio->setChecked(true);
+        m_w->shapeSquareRadio->setToolTip(slime::ui::text(slime::ui::Key::ShapeSquareTip));
+        m_w->shapeRingRadio->setToolTip(slime::ui::text(slime::ui::Key::ShapeRingTip));
+        shapeRowLay->addWidget(m_w->shapeSquareRadio);
+        shapeRowLay->addWidget(m_w->shapeRingRadio);
+        shapeRowLay->addStretch();
+        auto* shapeGroup = new QButtonGroup(m_w->shapeRow);
+        shapeGroup->addButton(m_w->shapeSquareRadio, 0);
+        shapeGroup->addButton(m_w->shapeRingRadio, 1);
+        m_w->shapeButtonGroup = shapeGroup;
+    }
+    contentLay->addWidget(m_w->shapeRow);
+
+    // ---------- ② 搜索方式：环形 = 环形扫描四档；图案 / 正方形密度 = 匹配算法 ----------
     auto* gSearchMethod = new QGroupBox(slime::ui::t("ui.search_method_group"), groupsHost);
     m_w->searchMethodGroup = gSearchMethod;
     auto* searchMethodLay = new QVBoxLayout(gSearchMethod);
     searchMethodLay->setContentsMargins(0, 4, 0, 4);   // 嵌套子分组自带边框，外层不再重复留白（窄栏防横向滚动）
+    groupsLay->addWidget(gSearchMethod);
 
-    // A 内：环形扫描方式（仅环形形状显示；图案/正方形由「匹配方式」子分组承担）
+    // 环形扫描方式（仅环形形状显示；图案/正方形由「匹配方式」子分组承担）
     m_w->ringScanRow = new QWidget(gSearchMethod);
     {
         auto* ringModeRow = new QHBoxLayout(m_w->ringScanRow);
-        ringModeRow->setContentsMargins(0, 0, 0, 0);
+        ringModeRow->setContentsMargins(6, 0, 6, 0);
         ringModeRow->setSpacing(4);
         ringModeRow->addWidget(new QLabel(slime::ui::t("ui.637be2399ba9"), m_w->ringScanRow));
         m_w->ringScanCombo = new QComboBox(m_w->ringScanRow);
@@ -283,9 +390,89 @@ void MainWindow::buildUi()
     }
     m_w->ringScanRow->setVisible(false);
     searchMethodLay->addWidget(m_w->ringScanRow);
-    groupsLay->addWidget(gSearchMethod);
 
-    // B 结果要求（子分组按原构建顺序挂入本组；标题复用原「结果要求」 key）
+    // ---- 匹配方式（搜索算法四模式与参数；图案 / 正方形密度显示，环形隐藏）----
+    auto* gMatch = new QGroupBox(slime::ui::t("ui.6a05dbdc884c"), groupsHost);
+    m_w->matchGroup = gMatch; // v3.5.6：环形模式下整组置灰
+    auto* algLay = new QVBoxLayout(gMatch);
+    algLay->setContentsMargins(6, 6, 6, 6);
+    algLay->addWidget(new QLabel(slime::ui::t("ui.a3ff0ef4b1d2"), gMatch));
+    // v3.6.0：算法对图案/密度两种模式都生效；环形模式有独立的快速/精确扫描（组内另有说明）
+    if (auto* algLbl = qobject_cast<QLabel*>(algLay->itemAt(algLay->count() - 1)->widget()))
+        algLbl->setToolTip(slime::ui::t("ui.deabcae2b7ea"));
+    m_w->algExactRadio = new QRadioButton(slime::ui::t("ui.c0639e939430"), gMatch);
+    m_w->algLayeredRadio = new QRadioButton(slime::ui::t("ui.d9cacedddc49"), gMatch);
+    m_w->algSampleRadio = new QRadioButton(slime::ui::t("ui.8c7ae92e09a8"), gMatch);
+    m_w->algBruteRadio = new QRadioButton(slime::ui::t("ui.9c3dbfa03e7d"), gMatch);
+    m_w->algExactRadio->setToolTip(slime::ui::t("ui.af1eb6b5f9dc"));
+    m_w->algLayeredRadio->setToolTip(slime::ui::t("ui.d423affec19f"));
+    m_w->algSampleRadio->setToolTip(slime::ui::t("ui.4460ce315bf8"));
+    m_w->algBruteRadio->setToolTip(slime::ui::t("ui.650ceeaab2e6"));
+    m_w->algExactRadio->setChecked(true);
+    algLay->addWidget(m_w->algExactRadio);
+    // v3.9.11：用户手动改动「会改变结果」的开关 ⇒ 方案变自定义
+    for (QRadioButton* r : { m_w->algExactRadio, m_w->algLayeredRadio, m_w->algSampleRadio, m_w->algBruteRadio }) {
+        QObject::connect(r, &QRadioButton::toggled, this,
+                         [this](bool on) { if (on) markPresetCustom(slime::ui::t("ui.60f424bf4ef4")); });
+    }
+    algLay->addWidget(m_w->algLayeredRadio);
+    algLay->addWidget(m_w->algSampleRadio);
+    algLay->addWidget(m_w->algBruteRadio);
+
+    // v3.3.4：分层/采样参数各拆两行（原单行最小宽 ~400px）
+    auto* layerRow = new QHBoxLayout();
+    layerRow->setContentsMargins(12, 0, 0, 0);
+    layerRow->addWidget(new QLabel(slime::ui::t("ui.a82ed5c3e01c"), gMatch));
+    m_w->layerBlock = new QComboBox(gMatch);
+    m_w->layerBlock->addItem(QStringLiteral("16×16"), 16);
+    m_w->layerBlock->addItem(QStringLiteral("32×32"), 32);
+    m_w->layerBlock->addItem(QStringLiteral("64×64"), 64);
+    m_w->layerBlock->setCurrentIndex(0);
+    layerRow->addWidget(m_w->layerBlock);
+    layerRow->addStretch();
+    algLay->addLayout(layerRow);
+    auto* layerRow2 = new QHBoxLayout();
+    layerRow2->setContentsMargins(12, 0, 0, 0);
+    layerRow2->addWidget(new QLabel(slime::ui::t("ui.004c3be7d3e3"), gMatch));
+    m_w->layerRatio = new QDoubleSpinBox(gMatch);
+    m_w->layerRatio->setRange(0.2, 2.0);
+    m_w->layerRatio->setDecimals(2);
+    m_w->layerRatio->setSingleStep(0.1);
+    m_w->layerRatio->setValue(1.0);
+    // v3.4.12（用户要求）：单位从输入框里拿出来 ⇒ 框后单独放「×」标签
+    m_w->layerRatio->setToolTip(slime::ui::t("ui.e5a8256a3033"));
+    layerRow2->addWidget(m_w->layerRatio);
+    layerRow2->addStretch();
+    algLay->addLayout(layerRow2);
+
+    auto* sampleRow = new QHBoxLayout();
+    sampleRow->setContentsMargins(12, 0, 0, 0);
+    sampleRow->addWidget(new QLabel(slime::ui::t("ui.005b17520be0"), gMatch));
+    m_w->sampleStep = new QSpinBox(gMatch);
+    m_w->sampleStep->setRange(2, 64);
+    m_w->sampleStep->setValue(8);
+    m_w->sampleStep->setToolTip(slime::ui::t("ui.e33742fb2823"));
+    sampleRow->addWidget(m_w->sampleStep);
+    sampleRow->addStretch();
+    algLay->addLayout(sampleRow);
+    auto* sampleRow2 = new QHBoxLayout();
+    sampleRow2->setContentsMargins(12, 0, 0, 0);
+    m_w->sampleExact = new QCheckBox(slime::ui::t("ui.64feeab104d9"), gMatch);
+    m_w->sampleExact->setToolTip(slime::ui::t("ui.c8e19ae76760"));
+    sampleRow2->addWidget(m_w->sampleExact);
+    sampleRow2->addStretch();
+    algLay->addLayout(sampleRow2);
+
+    m_w->algSummary = new QLabel(gMatch);
+    m_w->algSummary->setWordWrap(true);
+    m_w->algSummary->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_w->algSummary->setStyleSheet(QStringLiteral("color:%1;").arg(darkTheme() ? "#9aa0a6" : "#767676"));
+    m_w->algSummary->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    algLay->addWidget(m_w->algSummary);
+    searchMethodLay->addWidget(gMatch);   // 匹配方式 → ② 搜索方式
+
+    // ---------- ③ 结果要求：搜索范围 / 密度阈值 / 正方形网格 / 环形选项 / 停止与数量 ----------
+    //   整组始终可见；方案冲突只用控件自身可用性表达（applyResultConflicts），不再整组收起。
     auto* gRequirements = new QGroupBox(slime::ui::t("ui.a62f39a46c98"), groupsHost);
     m_w->requirementGroup = gRequirements;
     auto* requirementsLay = new QVBoxLayout(gRequirements);
@@ -385,114 +572,28 @@ void MainWindow::buildUi()
     convRow2->addWidget(m_w->convertBtn);
     convRow2->addStretch();
     rangeLay->addLayout(convRow2);
-    requirementsLay->addWidget(gRange);   // v3.15.x：搜索范围 → B 结果要求
+    requirementsLay->addWidget(gRange);   // 搜索范围 → ③ 结果要求
 
-    // ---- 分组 3：搜索模式（严格/密度 + 图案 + 密度参数 + 目标数量）----
-    auto* gMode = new QGroupBox(slime::ui::t("ui.5483493bb0d8"), groupsHost);
-    m_w->modeGroup = gMode;
-    auto* modeLayout = new QVBoxLayout(gMode);
-    modeLayout->setContentsMargins(6, 6, 6, 6);
-
-    // ===== 一级：图案 / 密度（v3.5.18 用户要求）=====
-    auto* modeRow = new QHBoxLayout();
-    m_w->strictRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ModePattern), gMode);
-    m_w->densityRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ModeDensity), gMode);
-    {
-        auto* modeBtnGroup = new QButtonGroup(gMode);
-        modeBtnGroup->addButton(m_w->strictRadio, 0);
-        modeBtnGroup->addButton(m_w->densityRadio, 1);
-        m_w->modeButtonGroup = modeBtnGroup;
-    }
-    m_w->strictRadio->setChecked(true);
-    m_w->strictRadio->setToolTip(slime::ui::text(slime::ui::Key::ModePatternTip));
-    m_w->densityRadio->setToolTip(slime::ui::text(slime::ui::Key::ModeDensityTip));
-    modeRow->addWidget(m_w->strictRadio);
-    modeRow->addWidget(m_w->densityRadio);
-    modeRow->addStretch();
-    modeLayout->addLayout(modeRow);
-
-    // v3.9.11（设置重构阶段 B）：先「模式」再「方案」——方案数量与内容由模式决定。
-    {
-        auto* presetRow = new QHBoxLayout();
-        presetRow->addWidget(new QLabel(slime::ui::t("ui.c06ee9fb0a7e"), gMode));
-        m_w->presetCombo = new QComboBox(gMode);
-        m_w->presetCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
-        m_w->presetCombo->setMinimumContentsLength(16);
-        m_w->presetCombo->setToolTip(slime::ui::t("ui.7f3854b7425e"));
-        presetRow->addWidget(m_w->presetCombo, 1);
-        modeLayout->addLayout(presetRow);
-        m_w->presetHint = new QLabel(gMode);
-        m_w->presetHint->setObjectName(QStringLiteral("presetHint"));
-        m_w->presetHint->setWordWrap(true);
-        m_w->presetHint->setStyleSheet(QStringLiteral("color:#606874;font-size:11px;"));
-        modeLayout->addWidget(m_w->presetHint);
-        QObject::connect(m_w->presetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-                         [this](int) { applySelectedPreset(); });
-    }
-
-    // ===== 二级：图案选项（仅图案模式显示）=====
-    m_w->strictPanel = new QWidget(gMode);
-    auto* strictLay = new QVBoxLayout(m_w->strictPanel);
-    strictLay->setContentsMargins(12, 0, 0, 0);
-    strictLay->setSpacing(4);
-    m_w->lockDir = new QCheckBox(slime::ui::t("ui.4c557e552df9"), m_w->strictPanel);
-    m_w->lockDir->setChecked(true);
-    m_w->lockDir->setToolTip(slime::ui::t("ui.d6dbb5040c42"));
-    strictLay->addWidget(m_w->lockDir);
-    // v3.5.18：旧「绘制图案」按钮改为隐藏（图案编辑器已内嵌），保留对象避免其它代码空指针
-    m_w->drawPattern = new QPushButton(slime::ui::t("ui.dcac1e7a2e19"), m_w->strictPanel);
-    m_w->drawPattern->setVisible(false);
-    auto* patRow = new QHBoxLayout();
-    m_w->patternInfo = new QLabel(slime::ui::t("ui.a1b385fa0140"), m_w->strictPanel);
-    patRow->addWidget(m_w->patternInfo);
-    patRow->addStretch();
-    strictLay->addLayout(patRow);
-    // v3.5.18：图案编辑器直接内嵌（不再弹出独立窗口）
-    m_w->inlinePattern = new slime::PatternEditorPanel(m_w->strictPanel);
-    m_w->inlinePattern->setVisible(true);
-    strictLay->addWidget(m_w->inlinePattern);
-    modeLayout->addWidget(m_w->strictPanel);
-
-    // ===== 二级：密度选项（仅密度模式显示）=====
-    m_w->densityPanel = new QWidget(gMode);
-    auto* densityLay = new QVBoxLayout(m_w->densityPanel);
-    densityLay->setContentsMargins(12, 0, 0, 0);
-    densityLay->setSpacing(4);
-    auto* shapeRow = new QHBoxLayout();
-    shapeRow->addWidget(new QLabel(slime::ui::t("ui.34a2f8af72f5"), m_w->densityPanel));
-    m_w->shapeSquareRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ShapeSquare), m_w->densityPanel);
-    m_w->shapeRingRadio = new QRadioButton(slime::ui::text(slime::ui::Key::ShapeRing), m_w->densityPanel);
-    m_w->shapeSquareRadio->setChecked(true);
-    m_w->shapeSquareRadio->setToolTip(slime::ui::text(slime::ui::Key::ShapeSquareTip));
-    m_w->shapeRingRadio->setToolTip(slime::ui::text(slime::ui::Key::ShapeRingTip));
-    shapeRow->addWidget(m_w->shapeSquareRadio);
-    shapeRow->addWidget(m_w->shapeRingRadio);
-    shapeRow->addStretch();
-    densityLay->addLayout(shapeRow);
-    {
-        auto* shapeGroup = new QButtonGroup(m_w->densityPanel);
-        shapeGroup->addButton(m_w->shapeSquareRadio, 0);
-        shapeGroup->addButton(m_w->shapeRingRadio, 1);
-        m_w->shapeButtonGroup = shapeGroup;
-    }
-
-    // v3.15.x（A/B/C 重排 · 关键修复）：最低密度 / 忽略阈值属于「结果要求」，密度模式下常显。
+    // v3.15.x（结果要求归组 · 关键修复）：最低密度 / 忽略阈值属于「结果要求」，密度模式下常显。
     //   以前这两个控件藏在 densityAdvanced（仅自定义方案展开）里，默认/环形方案下用户看不到也调不了。
+    // v3.16.x（四组重排）：整行挂在「结果要求」里（不再属于搜索内容），图案模式整行隐藏。
+    m_w->densityThresholdRow = new QWidget(gRequirements);
     {
-        auto* densCfgRow = new QHBoxLayout();
-        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityPanel));
-        m_w->minDensity = new QDoubleSpinBox(m_w->densityPanel);
+        auto* densCfgRow = new QHBoxLayout(m_w->densityThresholdRow);
+        densCfgRow->setContentsMargins(6, 0, 6, 0);
+        densCfgRow->setSpacing(6);
+        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityThresholdRow));
+        m_w->minDensity = new QDoubleSpinBox(m_w->densityThresholdRow);
         m_w->minDensity->setRange(0.0, 1.0);
         m_w->minDensity->setDecimals(3);
         m_w->minDensity->setSingleStep(0.05);
         m_w->minDensity->setValue(0.3);
         m_w->minDensity->setToolTip(slime::ui::t("ui.9f053e5570b1"));
-        m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityPanel);
+        m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityThresholdRow);
         m_w->ignoreThreshold->setToolTip(slime::ui::t("ui.e302a43e602a"));
         densCfgRow->addWidget(m_w->minDensity);
         densCfgRow->addWidget(m_w->ignoreThreshold);
         densCfgRow->addStretch();
-        densityLay->addLayout(densCfgRow);
         m_minDensityCommitted = m_w->minDensity->value();
         QObject::connect(m_w->minDensity, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                          this, [this](double) { applyResultConflicts(); });
@@ -509,11 +610,12 @@ void MainWindow::buildUi()
             markPresetCustom(slime::ui::t("ui.4256e53c8eaf"));
         });
     }
+    requirementsLay->addWidget(m_w->densityThresholdRow);
 
-    // 自定义方案才显示：正方形网格等高级项
-    m_w->densityAdvanced = new QWidget(m_w->densityPanel);
+    // 自定义方案才显示：正方形网格等高级项（环形/图案模式整块隐藏）
+    m_w->densityAdvanced = new QWidget(gRequirements);
     auto* advancedLay = new QVBoxLayout(m_w->densityAdvanced);
-    advancedLay->setContentsMargins(0, 0, 0, 0);
+    advancedLay->setContentsMargins(12, 0, 6, 0);
     advancedLay->setSpacing(4);    // 正方形专属：网格大小
     m_w->squareOpts = new QWidget(m_w->densityAdvanced);
     auto* squareLay = new QVBoxLayout(m_w->squareOpts);
@@ -530,12 +632,12 @@ void MainWindow::buildUi()
     squareLay->addLayout(densRow);
     m_w->squareOpts->setVisible(true);
     advancedLay->addWidget(m_w->squareOpts);
-    densityLay->addWidget(m_w->densityAdvanced);
+    requirementsLay->addWidget(m_w->densityAdvanced);
 
-    // 环形专属：模拟距离（环形扫描方式在 A 组）
-    m_w->ringOpts = new QWidget(m_w->densityPanel);
+    // 环形专属选项：模拟距离 / 环形内/外半径 / 群系权重（仅环形形状可见；属于结果要求）
+    m_w->ringOpts = new QWidget(gRequirements);
     auto* ringLay = new QVBoxLayout(m_w->ringOpts);
-    ringLay->setContentsMargins(12, 0, 0, 0);
+    ringLay->setContentsMargins(6, 0, 6, 0);
     ringLay->setSpacing(4);
     // v3.6.18（用户要求）：模拟距离（区块）—— 刷怪只发生在模拟距离内（16 格/区块），
     //   16×D < 128 时环带外沿会被收窄；>=8 区块（128 格）时与默认环带一致。
@@ -614,44 +716,26 @@ void MainWindow::buildUi()
     m_w->weightBiome->setToolTip(slime::ui::t("ui.weight_biome_tip"));
     ringLay->addWidget(m_w->weightBiome);
     m_w->ringOpts->setVisible(false);
-    densityLay->addWidget(m_w->ringOpts);
-    modeLayout->addWidget(m_w->densityPanel);
+    requirementsLay->addWidget(m_w->ringOpts);
 
-    // v3.15.x：目标数量 / 停止方式 / 智能范围均属于「结果要求」，控件在这里创建（保持连接不变），
-    //   挂到下面的 gResult 子分组里。
-    m_w->targetCount = new QSpinBox(gMode);
-    m_w->targetCount->setRange(1, 1000000);
-    m_w->targetCount->setValue(1);
-    m_w->targetCount->setToolTip(slime::ui::t("ui.0405eccc6f77"));
-    m_w->stopAtTarget = new QCheckBox(slime::ui::t("ui.c4db3610d642"), gMode);
-    m_w->stopAtTarget->setToolTip(slime::ui::t("ui.804c72b80469"));
-    QObject::connect(m_w->stopAtTarget, &QCheckBox::toggled, this,
-                     [this](bool) { markPresetCustom(slime::ui::t("ui.b77bf334b0d7")); });
-    m_w->smartRange = new QCheckBox(slime::ui::text(slime::ui::Key::SmartRange), gMode);
-    m_w->smartRange->setToolTip(slime::ui::text(slime::ui::Key::SmartRangeTip));
-    QObject::connect(m_w->smartRange, &QCheckBox::toggled, this,
-                     [this](bool) { markPresetCustom(slime::ui::t("ui.9522c47b44f6")); });
-    requirementsLay->addWidget(gMode);   // v3.15.x：搜索模式 → B 结果要求
-
-    // ---- v3.10.9（用户要求）：声明「自定义方案可能导致明显降速」+ 高级开关分级 ----
-    m_w->presetDisclaimer = new QLabel(gMode);
-    m_w->presetDisclaimer->setObjectName(QStringLiteral("presetDisclaimer"));
-    m_w->presetDisclaimer->setWordWrap(true);
-    m_w->presetDisclaimer->setMinimumWidth(0);
-    m_w->presetDisclaimer->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);   // 不撑最小宽
-    m_w->presetDisclaimer->setVisible(false);
-    m_w->presetDisclaimer->setStyleSheet(QStringLiteral("color:%1;font-size:11px;")
-                                             .arg(darkTheme() ? QStringLiteral("#ffb74d")
-                                                              : QStringLiteral("#b26a00")));
-    m_w->presetDisclaimer->setText(slime::ui::t("ui.08c668ef8483"));
-    requirementsLay->addWidget(m_w->presetDisclaimer);
-
+    // 「停止与数量」子分组（目标数量 / 达到即停 / 智能范围；v3.15.x 从「搜索模式」迁出）
     auto* gResult = new QGroupBox(slime::ui::t("ui.result_limits_group"), groupsHost);
     m_w->resultGroup = gResult;
     auto* resultReqLay = new QVBoxLayout(gResult);
     resultReqLay->setContentsMargins(6, 6, 6, 6);
 
-    // v3.15.x：目标数量从「搜索模式」移入「结果要求」（结果要几个属于结果要求）
+    m_w->targetCount = new QSpinBox(gResult);
+    m_w->targetCount->setRange(1, 1000000);
+    m_w->targetCount->setValue(1);
+    m_w->targetCount->setToolTip(slime::ui::t("ui.0405eccc6f77"));
+    m_w->stopAtTarget = new QCheckBox(slime::ui::t("ui.c4db3610d642"), gResult);
+    m_w->stopAtTarget->setToolTip(slime::ui::t("ui.804c72b80469"));
+    QObject::connect(m_w->stopAtTarget, &QCheckBox::toggled, this,
+                     [this](bool) { markPresetCustom(slime::ui::t("ui.b77bf334b0d7")); });
+    m_w->smartRange = new QCheckBox(slime::ui::text(slime::ui::Key::SmartRange), gResult);
+    m_w->smartRange->setToolTip(slime::ui::text(slime::ui::Key::SmartRangeTip));
+    QObject::connect(m_w->smartRange, &QCheckBox::toggled, this,
+                     [this](bool) { markPresetCustom(slime::ui::t("ui.9522c47b44f6")); });
     auto* targetRow = new QHBoxLayout();
     targetRow->addWidget(new QLabel(slime::ui::t("ui.1113d292c420"), gResult));
     targetRow->addWidget(m_w->targetCount);
@@ -665,89 +749,10 @@ void MainWindow::buildUi()
     smartRow->addWidget(m_w->smartRange);
     smartRow->addStretch();
     resultReqLay->addLayout(smartRow);
-    requirementsLay->addWidget(gResult);   // v3.15.x：结果要求 → B 结果要求
+    requirementsLay->addWidget(gResult);   // 停止与数量 → ③ 结果要求
 
-    // ---- 分组 4：匹配方式（搜索算法四模式与参数）----
-    auto* gMatch = new QGroupBox(slime::ui::t("ui.6a05dbdc884c"), groupsHost);
-    m_w->matchGroup = gMatch; // v3.5.6：环形模式下整组置灰
-    auto* algLay = new QVBoxLayout(gMatch);
-    algLay->setContentsMargins(6, 6, 6, 6);
-    algLay->addWidget(new QLabel(slime::ui::t("ui.a3ff0ef4b1d2"), gMatch));
-    // v3.6.0：算法对图案/密度两种模式都生效；环形模式有独立的快速/精确扫描（组内另有说明）
-    if (auto* algLbl = qobject_cast<QLabel*>(algLay->itemAt(algLay->count() - 1)->widget()))
-        algLbl->setToolTip(slime::ui::t("ui.deabcae2b7ea"));
-    m_w->algExactRadio = new QRadioButton(slime::ui::t("ui.c0639e939430"), gMatch);
-    m_w->algLayeredRadio = new QRadioButton(slime::ui::t("ui.d9cacedddc49"), gMatch);
-    m_w->algSampleRadio = new QRadioButton(slime::ui::t("ui.8c7ae92e09a8"), gMatch);
-    m_w->algBruteRadio = new QRadioButton(slime::ui::t("ui.9c3dbfa03e7d"), gMatch);
-    m_w->algExactRadio->setToolTip(slime::ui::t("ui.af1eb6b5f9dc"));
-    m_w->algLayeredRadio->setToolTip(slime::ui::t("ui.d423affec19f"));
-    m_w->algSampleRadio->setToolTip(slime::ui::t("ui.4460ce315bf8"));
-    m_w->algBruteRadio->setToolTip(slime::ui::t("ui.650ceeaab2e6"));
-    m_w->algExactRadio->setChecked(true);
-    algLay->addWidget(m_w->algExactRadio);
-    // v3.9.11：用户手动改动「会改变结果」的开关 ⇒ 方案变自定义
-    for (QRadioButton* r : { m_w->algExactRadio, m_w->algLayeredRadio, m_w->algSampleRadio, m_w->algBruteRadio }) {
-        QObject::connect(r, &QRadioButton::toggled, this,
-                         [this](bool on) { if (on) markPresetCustom(slime::ui::t("ui.60f424bf4ef4")); });
-    }
-    algLay->addWidget(m_w->algLayeredRadio);
-    algLay->addWidget(m_w->algSampleRadio);
-    algLay->addWidget(m_w->algBruteRadio);
 
-    // v3.3.4：分层/采样参数各拆两行（原单行最小宽 ~400px）
-    auto* layerRow = new QHBoxLayout();
-    layerRow->setContentsMargins(12, 0, 0, 0);
-    layerRow->addWidget(new QLabel(slime::ui::t("ui.a82ed5c3e01c"), gMatch));
-    m_w->layerBlock = new QComboBox(gMatch);
-    m_w->layerBlock->addItem(QStringLiteral("16×16"), 16);
-    m_w->layerBlock->addItem(QStringLiteral("32×32"), 32);
-    m_w->layerBlock->addItem(QStringLiteral("64×64"), 64);
-    m_w->layerBlock->setCurrentIndex(0);
-    layerRow->addWidget(m_w->layerBlock);
-    layerRow->addStretch();
-    algLay->addLayout(layerRow);
-    auto* layerRow2 = new QHBoxLayout();
-    layerRow2->setContentsMargins(12, 0, 0, 0);
-    layerRow2->addWidget(new QLabel(slime::ui::t("ui.004c3be7d3e3"), gMatch));
-    m_w->layerRatio = new QDoubleSpinBox(gMatch);
-    m_w->layerRatio->setRange(0.2, 2.0);
-    m_w->layerRatio->setDecimals(2);
-    m_w->layerRatio->setSingleStep(0.1);
-    m_w->layerRatio->setValue(1.0);
-    // v3.4.12（用户要求）：单位从输入框里拿出来 ⇒ 框后单独放「×」标签
-    m_w->layerRatio->setToolTip(slime::ui::t("ui.e5a8256a3033"));
-    layerRow2->addWidget(m_w->layerRatio);
-    layerRow2->addStretch();
-    algLay->addLayout(layerRow2);
-
-    auto* sampleRow = new QHBoxLayout();
-    sampleRow->setContentsMargins(12, 0, 0, 0);
-    sampleRow->addWidget(new QLabel(slime::ui::t("ui.005b17520be0"), gMatch));
-    m_w->sampleStep = new QSpinBox(gMatch);
-    m_w->sampleStep->setRange(2, 64);
-    m_w->sampleStep->setValue(8);
-    m_w->sampleStep->setToolTip(slime::ui::t("ui.e33742fb2823"));
-    sampleRow->addWidget(m_w->sampleStep);
-    sampleRow->addStretch();
-    algLay->addLayout(sampleRow);
-    auto* sampleRow2 = new QHBoxLayout();
-    sampleRow2->setContentsMargins(12, 0, 0, 0);
-    m_w->sampleExact = new QCheckBox(slime::ui::t("ui.64feeab104d9"), gMatch);
-    m_w->sampleExact->setToolTip(slime::ui::t("ui.c8e19ae76760"));
-    sampleRow2->addWidget(m_w->sampleExact);
-    sampleRow2->addStretch();
-    algLay->addLayout(sampleRow2);
-
-    m_w->algSummary = new QLabel(gMatch);
-    m_w->algSummary->setWordWrap(true);
-    m_w->algSummary->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_w->algSummary->setStyleSheet(QStringLiteral("color:%1;").arg(darkTheme() ? "#9aa0a6" : "#767676"));
-    m_w->algSummary->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    algLay->addWidget(m_w->algSummary);
-    searchMethodLay->addWidget(gMatch);   // v3.15.x：匹配方式 → A 搜索方式
-
-    // ================= C 执行设置：性能 / 内存预算 / 缓存 =================
+    // ================= ④ 执行设置：性能 / 内存预算 / 缓存（本组保持不动） =================
     auto* gExecution = new QGroupBox(slime::ui::t("ui.execution_group"), groupsHost);
     m_w->executionGroup = gExecution;
     auto* executionLay = new QVBoxLayout(gExecution);
@@ -912,9 +917,9 @@ void MainWindow::buildUi()
             scheduleConfigWrite();
         });
     }
-    executionLay->addWidget(gPerf);   // v3.15.x：性能设置 → C 执行设置
+    executionLay->addWidget(gPerf);   // v3.16.x：性能设置 → ④ 执行设置
 
-    // C 内：RAM 预算摘要（只读；上限在设置页调整 —— 摘要会随设置/语言刷新）
+    // ④ 内：RAM 预算摘要（只读；上限在设置页调整 —— 摘要会随设置/语言刷新）
     {
         auto* memRow = new QHBoxLayout();
         memRow->addWidget(new QLabel(slime::ui::t("ui.memory_budget_label"), gExecution));
@@ -955,7 +960,7 @@ void MainWindow::buildUi()
     m_w->cacheStatus = new QLabel(slime::ui::t("ui.23c0ca294841"), gCache);
     m_w->cacheStatus->setWordWrap(true);
     cacheLay->addWidget(m_w->cacheStatus);
-    executionLay->addWidget(gCache);   // v3.15.x：缓存管理 → C 执行设置
+    executionLay->addWidget(gCache);   // v3.16.x：缓存管理 → ④ 执行设置
 
     m_paramLay = groupsLay; // v3.4.3：缓存构建「额外选项」挂到搜索页参数列
     groupsLay->addStretch();

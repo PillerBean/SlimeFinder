@@ -99,7 +99,7 @@ void MainWindow::applyLanguage()
     }
     // 窗口标题单独处理（版本号是变量，不翻译）
     setWindowTitle(slime::ui::t("ui.8e056aa8f722").arg(QLatin1String(kAppVersion)));
-    // v3.15.x：C 组 RAM 预算摘要是「自动/手动 + 数字」的运行时拼接文本，
+    // v3.15.x：④ 执行设置组 RAM 预算摘要是「自动/手动 + 数字」的运行时拼接文本，
     //   通用改写无法按 zhText 一一映射，切换语言后按当前语言重新生成一遍。
     updateMemoryBudgetUi();
 }
@@ -356,8 +356,11 @@ void MainWindow::onModeChanged(){
     // v3.6.19（用户反馈）：切换图案/密度后，列表里还留着上一种方式的结果 ⇒ 主动清场
     if (m_hasLastOutcome) clearResultsForNewSearch();
     const bool strict = m_w->strictRadio->isChecked();
-    m_w->strictPanel->setVisible(strict);
-    m_w->densityPanel->setVisible(!strict);
+    // v3.16.x（搜索页四组重排）：图案/密度开关分别控制「图案编辑器」与「区域形状 + 密度阈值行」，
+    //   两者分布在 ① 搜索内容 与 ③ 结果要求 两组里，这里先就地切换，再由 updateSearchShapeEnabled 统一收敛。
+    if (m_w->strictPanel) m_w->strictPanel->setVisible(strict);
+    if (m_w->shapeRow) m_w->shapeRow->setVisible(!strict);
+    if (m_w->densityThresholdRow) m_w->densityThresholdRow->setVisible(!strict);
     updateAlgorithmPanels(); // v3.3.0：算法选择仅在密度搜索下可用
     updateStartEnabled();    // v3.6.6：模式/形状切换后同步按钮状态
     if (strict) {

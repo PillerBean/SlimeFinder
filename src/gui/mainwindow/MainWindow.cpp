@@ -756,8 +756,7 @@ struct MainWindow::Widgets {
     QWidget* squareOpts = nullptr;        // v3.5.18：正方形专属选项容器
     QWidget* ringOpts = nullptr;          // v3.5.18：环形专属选项容器
     QLabel* patternInfo = nullptr;
-    QWidget* densityPanel = nullptr;
-    QWidget* densityAdvanced = nullptr;   // 自定义方案才显示：网格/阈值/忽略
+    QWidget* densityAdvanced = nullptr;   // 自定义方案才显示：正方形网格
     QSpinBox* gridSize = nullptr;
     QDoubleSpinBox* minDensity = nullptr;
     QCheckBox* ignoreThreshold = nullptr;   // v3.9.12：最优候选模式（忽略阈值）
@@ -855,16 +854,18 @@ struct MainWindow::Widgets {
     QTextEdit* resultView = nullptr;
     QLabel* infoStats = nullptr;
 
-    // v3.3.0：设置区滚动容器 + 搜索模式组（自检截图定位用）
+    // v3.3.0：设置区滚动容器（自检截图/滚动定位用）
     QScrollArea* mainScroll = nullptr;
-    QWidget* modeGroup = nullptr;
 
-    // v3.15.x（搜索页 A/B/C 重排）：三个顶层分组 + A 组内的环形扫描方式行
-    QGroupBox* searchMethodGroup = nullptr;   // A 搜索方式（环形扫描方式 / 匹配算法）
-    QGroupBox* requirementGroup = nullptr;    // B 结果要求（范围/模式/方案/形状/密度/目标）
-    QGroupBox* executionGroup = nullptr;      // C 执行设置（线程/GPU/内存/缓存）
-    QWidget* ringScanRow = nullptr;           // A：环形扫描方式行（仅环形形状可见）
-    QLabel* memoryBudgetLabel = nullptr;      // C：RAM 预算摘要（只读）
+    // v3.16.x（搜索页四组重排）：① 搜索内容 / ② 搜索方式 / ③ 结果要求 / ④ 执行设置
+    QGroupBox* searchContentGroup = nullptr;  // ① 搜索内容（图案/密度 + 方案预设 + 图案编辑器 / 区域形状）
+    QGroupBox* searchMethodGroup = nullptr;   // ② 搜索方式（环形扫描方式 / 匹配算法）
+    QGroupBox* requirementGroup = nullptr;    // ③ 结果要求（范围/密度阈值/正方形网格/环形选项/停止与数量）
+    QGroupBox* executionGroup = nullptr;      // ④ 执行设置（线程/GPU/内存/缓存）
+    QWidget* shapeRow = nullptr;              // ①：区域形状行（仅密度模式可见）
+    QWidget* densityThresholdRow = nullptr;   // ③：最低密度 + 忽略阈值行（仅密度模式可见）
+    QWidget* ringScanRow = nullptr;           // ②：环形扫描方式行（仅环形形状可见）
+    QLabel* memoryBudgetLabel = nullptr;      // ④：RAM 预算摘要（只读）
 
     // v3.15.x（第二阶段）：环形内外半径 + 群系权重
     QSpinBox* ringInner = nullptr;

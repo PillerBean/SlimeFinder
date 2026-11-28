@@ -67,7 +67,7 @@ int MainWindow::runSelfTest()
         check(confirmHighHitEstimate(est, true), "高命中模态警告可确认并继续");
     }
 
-    // v3.3.4（任务书 1.4）：不做折叠 —— 6 个设置分组始终展开，无需额外复位。
+    // v3.3.4（任务书 1.4）：不做折叠 —— 搜索页四组参数分组始终展开，无需额外复位。
     // v3.3.4（任务书 4.1）：种子默认空 —— 自检先把种子填成合法值，
     // 保证后续各组的真实搜索都能正常执行（空种子的拦截行为在 13.9 单独验证）。
     m_w->seedEdit->setText(QStringLiteral("12345"));
@@ -418,22 +418,28 @@ int MainWindow::runSelfTest()
         m_w->strictRadio->setChecked(false);
         m_w->densityRadio->setChecked(true);
         m_w->presetCombo->setCurrentIndex(0);   // 预设
-        // v3.15.x（A/B/C 重排）：B「结果要求」始终可见（仅用控件 enable/disable 表达冲突）；
-        //   正方形密度下「匹配方式」属于 A 搜索方式，也始终可见。
-        check(m_w->resultGroup->isVisible() && m_w->targetCount->isVisible() &&
+        // v3.16.x（四组重排）：① 搜索内容 / ③ 结果要求 始终可见（仅用控件 enable/disable 表达冲突）；
+        //   正方形密度下「匹配方式」属于 ② 搜索方式，也始终可见。
+        check(m_w->searchContentGroup->isVisible() && m_w->requirementGroup->isVisible() &&
+                  m_w->resultGroup->isVisible() && m_w->targetCount->isVisible() &&
                   m_w->matchGroup->isVisible(),
-              "预设方案下「结果要求 / 匹配方式」始终可见（仅由控件可用性表达冲突）");
+              "预设方案下「搜索内容 / 结果要求 / 匹配方式」始终可见（仅由控件可用性表达冲突）");
         check(m_w->densityAdvanced && !m_w->densityAdvanced->isVisible(),
               "预设方案下「正方形网格」高级项收起");
         check(m_presetHomogeneous == 1, "快速最近 N 预设允许同质量");
         m_w->presetCombo->setCurrentIndex(2);
         check(m_presetHomogeneous == 0, "不同质量预设关闭同质化");
+        check(m_w->requirementGroup->isVisible(), "切换预设不整组隐藏结果要求（只改结果语义）");
         m_w->presetCombo->setCurrentIndex(0);
         check(!m_w->presetDisclaimer->isVisible(), "预设方案不显示自定义速度声明");
         const int customIdx = 8;
         m_w->presetCombo->setCurrentIndex(customIdx);   // 自定义
-        check(m_w->resultGroup->isVisible() && m_w->matchGroup->isVisible(),
-              "自定义方案：结果要求 / 匹配方式保持可见（自定义只展开高级项）");
+        check(m_w->searchContentGroup->isVisible() && m_w->requirementGroup->isVisible() &&
+                  m_w->resultGroup->isVisible() && m_w->matchGroup->isVisible(),
+              "自定义方案：搜索内容 / 结果要求 / 匹配方式保持可见（自定义只展开高级项）");
+        check(m_w->presetDisclaimer->isVisible() &&
+                  m_w->searchContentGroup->isAncestorOf(m_w->presetDisclaimer),
+              "自定义速度声明挂在 ① 搜索内容组内（跟随方案）");
         check(m_w->densityAdvanced && m_w->densityAdvanced->isVisible(),
               "自定义方案展开正方形网格高级项");
         check(m_presetHomogeneous == -1, "自定义方案恢复跟随设置");
@@ -470,15 +476,18 @@ int MainWindow::runSelfTest()
             onModeChanged();
             resize(640, 720); // 最小窗口尺寸下检查
             QApplication::processEvents(QEventLoop::AllEvents, 30);
-            // v3.15.x（A/B/C 重排）诊断：横向滚动条来源（嵌套分组后逐组核对最小宽）
+            // v3.16.x（搜索页四组重排）诊断：横向滚动条来源（逐组核对最小宽）
             std::fprintf(stderr,
-                         "[UI自检] 横滚动诊断：内容min=%d 视口=%d | A=%d B=%d C=%d | gMode=%d density=%d "
-                         "gResult=%d gMatch=%d\n",
+                         "[UI自检] 横滚动诊断：内容min=%d 视口=%d | ①内容=%d ②方式=%d ③要求=%d ④执行=%d | "
+                         "阈值行=%d 高级=%d 环形选项=%d gResult=%d gMatch=%d\n",
                          m_w->mainScroll->widget()->minimumSizeHint().width(), m_w->mainScroll->viewport()->width(),
+                         m_w->searchContentGroup->minimumSizeHint().width(),
                          m_w->searchMethodGroup->minimumSizeHint().width(),
                          m_w->requirementGroup->minimumSizeHint().width(),
                          m_w->executionGroup->minimumSizeHint().width(),
-                         m_w->modeGroup->minimumSizeHint().width(), m_w->densityPanel->minimumSizeHint().width(),
+                         m_w->densityThresholdRow->minimumSizeHint().width(),
+                         m_w->densityAdvanced->minimumSizeHint().width(),
+                         m_w->ringOpts->minimumSizeHint().width(),
                          m_w->resultGroup->minimumSizeHint().width(), m_w->matchGroup->minimumSizeHint().width());
             for (QRadioButton* r : { m_w->algExactRadio, m_w->algLayeredRadio, m_w->algSampleRadio,
                                      m_w->algBruteRadio, m_w->strictRadio, m_w->densityRadio }) {
@@ -527,7 +536,7 @@ int MainWindow::runSelfTest()
                                               : m_w->algBruteRadio;
                 r->setChecked(true);
                 updateAlgorithmPanels();
-                if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
+                if (m_w->mainScroll && m_w->searchContentGroup) m_w->mainScroll->ensureWidgetVisible(m_w->searchContentGroup, 0, 0);
                 QApplication::processEvents(QEventLoop::AllEvents, 20);
                 const QFontMetrics fm(m_w->algSummary->font());
                 const QRect need = fm.boundingRect(QRect(0, 0, (std::max)(120, m_w->algSummary->width()), 100000),
@@ -569,11 +578,11 @@ int MainWindow::runSelfTest()
         m_w->densityRadio->setChecked(true);
         onModeChanged();
         check(m_w->algLayeredRadio->isEnabled() && m_w->algSampleRadio->isEnabled(), "密度模式下算法可用");
-        if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
+        if (m_w->mainScroll && m_w->searchContentGroup) m_w->mainScroll->ensureWidgetVisible(m_w->searchContentGroup, 0, 0);
         saveWindowShot(shotPrefix, QStringLiteral("mode-exact"));
         m_w->algLayeredRadio->setChecked(true);
         updateAlgorithmPanels();
-        if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
+        if (m_w->mainScroll && m_w->searchContentGroup) m_w->mainScroll->ensureWidgetVisible(m_w->searchContentGroup, 0, 0);
         saveWindowShot(shotPrefix, QStringLiteral("mode-layered"));
         check(m_w->layerBlock->isEnabled() && !m_w->sampleStep->isEnabled(), "分层参数可用/估算参数禁用");
         check(m_w->modeHeader->text().contains(slime::ui::t("ui.752b56a4f270")), "分层模式标注");
@@ -587,7 +596,7 @@ int MainWindow::runSelfTest()
         m_w->algSampleRadio->setChecked(true);
         m_w->sampleStep->setValue(8);
         updateAlgorithmPanels();
-        if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
+        if (m_w->mainScroll && m_w->searchContentGroup) m_w->mainScroll->ensureWidgetVisible(m_w->searchContentGroup, 0, 0);
         saveWindowShot(shotPrefix, QStringLiteral("mode-sample"));
         check(m_w->sampleStep->isEnabled() && !m_w->layerBlock->isEnabled(), "估算参数可用/分层参数禁用");
         check(m_w->modeWarn->isVisible(), "估算模式显示估算警告条");
@@ -632,7 +641,7 @@ int MainWindow::runSelfTest()
         }
         check(!m_running, "估算模式搜索在 60s 内完成");
         check(m_lastResultText.contains(slime::ui::t("ui.5496995eb999")), "结果文本含模式标注");
-        if (m_w->mainScroll && m_w->modeGroup) m_w->mainScroll->ensureWidgetVisible(m_w->modeGroup, 0, 0);
+        if (m_w->mainScroll && m_w->searchContentGroup) m_w->mainScroll->ensureWidgetVisible(m_w->searchContentGroup, 0, 0);
         saveWindowShot(shotPrefix, QStringLiteral("mode-sample-warn"));
         saveWindowShot(shotPrefix, QStringLiteral("full-window"));
         {
@@ -2311,7 +2320,7 @@ int MainWindow::runSelfTest()
         }
 
         // 13.8 v3.3.4（任务书 1/2）：界面结构断言 —— 菜单栏/工具栏/状态栏原生、
-        //        中部 Splitter、左侧 QScrollArea + 6 分组、右侧信息栏 + QTextEdit、底部 4 标签页
+        //        中部 Splitter、左侧 QScrollArea + 四组参数分组、右侧信息栏 + QTextEdit、底部 4 标签页
         {
             const QString shotPrefix = qEnvironmentVariable("SLIME_SHOT");
             check(menuBar() != nullptr && menuBar()->actions().size() >= 5,
@@ -2323,18 +2332,20 @@ int MainWindow::runSelfTest()
             check(m_hSplit->count() == 3 && m_rightSplit->count() == 2,
                   "三纵列（参数/地图/结果）+ 右列（结果/过程）各就位");
             check(m_w->mainScroll && m_w->mainScroll->widget() != nullptr, "左侧为 QScrollArea（含滚动内容）");
-            // v3.15.x（A/B/C 重排）：三个顶层分组 + 原 6 个 QGroupBox 作为子分组
+            // v3.16.x（搜索页四组重排）：四个顶层分组 + 原有子分组
             {
                 const QList<QGroupBox*> groups = m_w->mainScroll->widget()->findChildren<QGroupBox*>();
                 QStringList titles;
                 for (QGroupBox* g : groups) titles << g->title();
                 // v3.9.15：「游戏设置」分组上移到顶部全局设置栏（平台/版本/种子）；
-                // v3.15.x：原 5 组作为 B/C 的子分组保留，另新增 A/B/C 三个顶层分组（B 标题复用「结果要求」）。
-                const QStringList want = { slime::ui::t("ui.search_method_group"),
+                // v3.16.x：左列四组顺序 = ① 搜索内容 → ② 搜索方式 → ③ 结果要求 → ④ 执行设置，
+                //   原「搜索模式」组拆入 ①/③，不再单独存在。
+                const QStringList want = { slime::ui::t("ui.search_content_group"),
+                                           slime::ui::t("ui.search_method_group"),
                                            slime::ui::t("ui.a62f39a46c98"),
                                            slime::ui::t("ui.execution_group"),
                                            slime::ui::t("ui.2cacc1b74217"),
-                                           slime::ui::t("ui.5483493bb0d8"),
+                                           slime::ui::t("ui.result_limits_group"),
                                            slime::ui::t("ui.6a05dbdc884c"),
                                            slime::ui::t("ui.eb1f3e5ef69b"),
                                            slime::ui::t("ui.c15668b86bc6") };
@@ -2345,33 +2356,49 @@ int MainWindow::runSelfTest()
                         std::fprintf(stderr, "[UI自检] 缺少设置分组: %s\n", t.toUtf8().constData());
                     }
                 }
-                check(all && titles.size() >= 8, "左侧包含 A/B/C 顶层分组 + 原 5 个设置子分组");
-                // A→B→C 的布局顺序（groupsLay 的 indexOf 必须递增）
-                const int aIdx = m_paramLay ? m_paramLay->indexOf(m_w->searchMethodGroup) : -1;
-                const int bIdx = m_paramLay ? m_paramLay->indexOf(m_w->requirementGroup) : -1;
-                const int cIdx = m_paramLay ? m_paramLay->indexOf(m_w->executionGroup) : -1;
-                std::fprintf(stderr, "[UI自检] 顶层分组顺序：A=%d B=%d C=%d（参数列共 %d 项）\n", aIdx, bIdx,
-                             cIdx, m_paramLay ? m_paramLay->count() : -1);
-                check(m_w->searchMethodGroup && m_w->requirementGroup && m_w->executionGroup,
-                      "A/B/C 三个顶层分组对象齐全");
-                check(aIdx >= 0 && bIdx > aIdx && cIdx > bIdx, "顶层分组顺序 A→B→C（布局 indexOf 递增）");
+                check(all && titles.size() >= 9, "左侧包含四组顶层分组 + 原有设置子分组");
+                // ①→②→③→④ 的布局顺序（groupsLay 的 indexOf 必须递增）
+                const int contentIdx = m_paramLay ? m_paramLay->indexOf(m_w->searchContentGroup) : -1;
+                const int methodIdx = m_paramLay ? m_paramLay->indexOf(m_w->searchMethodGroup) : -1;
+                const int reqIdx = m_paramLay ? m_paramLay->indexOf(m_w->requirementGroup) : -1;
+                const int execIdx = m_paramLay ? m_paramLay->indexOf(m_w->executionGroup) : -1;
+                std::fprintf(stderr,
+                             "[UI自检] 顶层分组顺序：内容=%d 方式=%d 要求=%d 执行=%d（参数列共 %d 项）\n",
+                             contentIdx, methodIdx, reqIdx, execIdx,
+                             m_paramLay ? m_paramLay->count() : -1);
+                check(m_w->searchContentGroup && m_w->searchMethodGroup && m_w->requirementGroup &&
+                          m_w->executionGroup,
+                      "①/②/③/④ 四个顶层分组对象齐全");
+                check(contentIdx >= 0 && methodIdx > contentIdx && reqIdx > methodIdx && execIdx > reqIdx,
+                      "顶层分组顺序 搜索内容→搜索方式→结果要求→执行设置（布局 indexOf 递增）");
+                check(m_w->searchContentGroup->isAncestorOf(m_w->strictRadio) &&
+                          m_w->searchContentGroup->isAncestorOf(m_w->densityRadio) &&
+                          m_w->searchContentGroup->isAncestorOf(m_w->presetCombo) &&
+                          m_w->searchContentGroup->isAncestorOf(m_w->presetHint) &&
+                          m_w->searchContentGroup->isAncestorOf(m_w->presetDisclaimer) &&
+                          m_w->searchContentGroup->isAncestorOf(m_w->inlinePattern) &&
+                          m_w->searchContentGroup->isAncestorOf(m_w->shapeRingRadio),
+                      "① 搜索内容包含 图案/密度、方案预设、图案编辑器、区域形状");
                 check(m_w->searchMethodGroup->isAncestorOf(m_w->ringScanCombo) &&
                           m_w->searchMethodGroup->isAncestorOf(m_w->matchGroup),
-                      "A 搜索方式包含 环形扫描方式 / 匹配方式");
-                check(m_w->requirementGroup->isAncestorOf(m_w->minDensity) &&
+                      "② 搜索方式包含 环形扫描方式 / 匹配方式");
+                check(m_w->requirementGroup->isAncestorOf(m_w->rangeRadius) &&
+                          m_w->requirementGroup->isAncestorOf(m_w->minDensity) &&
+                          m_w->requirementGroup->isAncestorOf(m_w->ignoreThreshold) &&
+                          m_w->requirementGroup->isAncestorOf(m_w->densityAdvanced) &&
+                          m_w->requirementGroup->isAncestorOf(m_w->ringOpts) &&
                           m_w->requirementGroup->isAncestorOf(m_w->targetCount) &&
-                          m_w->requirementGroup->isAncestorOf(m_w->stopAtTarget) &&
-                          m_w->requirementGroup->isAncestorOf(m_w->shapeRingRadio),
-                      "B 结果要求包含 区域形状 / 最低密度 / 目标数量 / 停止方式");
+                          m_w->requirementGroup->isAncestorOf(m_w->stopAtTarget),
+                      "③ 结果要求包含 搜索范围 / 最低密度+忽略阈值 / 正方形网格 / 环形选项 / 停止与数量");
                 check(m_w->executionGroup->isAncestorOf(m_w->threads) &&
                           m_w->executionGroup->isAncestorOf(m_w->gpuCheck) &&
                           m_w->executionGroup->isAncestorOf(m_w->cacheStatus) &&
                           m_w->executionGroup->isAncestorOf(m_w->memoryBudgetLabel),
-                      "C 执行设置包含 线程 / GPU / 缓存 / 内存预算摘要");
+                      "④ 执行设置包含 线程 / GPU / 缓存 / 内存预算摘要");
                 check(m_w->memoryBudgetLabel && !m_w->memoryBudgetLabel->text().isEmpty() &&
                           m_w->memoryBudgetLabel->text().contains(QStringLiteral("MB")) &&
                           !m_w->memoryBudgetLabel->toolTip().isEmpty(),
-                      "C 内存预算摘要已填充（含 MB 数字与说明 tooltip）");
+                      "④ 内存预算摘要已填充（含 MB 数字与说明 tooltip）");
                 bool topBarOk = m_topBar && m_w->javaRadio && m_w->bedrockRadio && m_w->mapVersionCombo &&
                                 m_w->bedrockVersionCombo && m_w->seedEdit;
                 if (topBarOk) {
@@ -2425,7 +2452,7 @@ int MainWindow::runSelfTest()
                     std::fprintf(stderr, "[UI自检]   分组最小宽 \"%s\" = %d px\n",
                                  gg->title().toUtf8().constData(), gg->minimumSizeHint().width());
                 }
-                // v3.15.x（A/B/C 重排）诊断：定位窄栏下出现横向滚动条的最小宽来源（>260 px）
+                // v3.16.x（搜索页四组重排）诊断：定位窄栏下出现横向滚动条的最小宽来源（>260 px）
                 for (QWidget* w : m_w->mainScroll->widget()->findChildren<QWidget*>()) {
                     const int need = w->minimumSizeHint().width();
                     if (need <= 260 || !w->isVisible()) continue;
@@ -2475,6 +2502,23 @@ int MainWindow::runSelfTest()
             QApplication::processEvents(QEventLoop::AllEvents, 60);
             check(width() == 1280 && height() == 860, "窗口默认尺寸 1280×860");
             check(!m_running && m_w->start->isEnabled(), "结构断言后「开始搜索」按钮可用（未在运行中）");
+            // v3.16.x（四组重排）：搜索页左列滚动到顶部，输出「四组顺序」截图证据（默认 + 窄窗尺寸）
+            if (!shotPrefix.isEmpty() && m_w->mainScroll) {
+                const auto shotTop = [&](const QString& tag) {
+                    if (m_w->mainScroll->verticalScrollBar())
+                        m_w->mainScroll->verticalScrollBar()->setValue(0);
+                    QApplication::processEvents(QEventLoop::AllEvents, 80);
+                    saveWindowShot(shotPrefix, tag);
+                };
+                resize(1280, 860);
+                QApplication::processEvents(QEventLoop::AllEvents, 80);
+                shotTop(QStringLiteral("groups-order-1280x860"));
+                resize(1000, 650);
+                QApplication::processEvents(QEventLoop::AllEvents, 80);
+                shotTop(QStringLiteral("groups-order-1000x650"));
+                resetLayout();
+                QApplication::processEvents(QEventLoop::AllEvents, 60);
+            }
             // 8 张截图所需的布局状态由外部脚本设置尺寸/分割位置后逐张调用（见 GUI 自检截图钩子）
             // v3.3.4（任务书 7）：splitter 拖到最左（左栏 340px 最小宽）也不允许出现横向滚动条
             if (m_hSplit) {
@@ -3702,7 +3746,10 @@ int MainWindow::runSelfTest()
         {
             check(isMaximized() || isFullScreen() || width() >= 1200, "主窗口默认最大化显示");
             check(m_w->shapeRingRadio != nullptr && m_w->shapeSquareRadio != nullptr,
-                  "B 结果要求里有「区域形状」选项");
+                  "① 搜索内容里有「区域形状」选项");
+            check(m_w->searchContentGroup->isAncestorOf(m_w->shapeRingRadio) &&
+                      m_w->searchContentGroup->isAncestorOf(m_w->inlinePattern),
+                  "① 搜索内容同时承载 区域形状 / 图案编辑器（随模式切换）");
             check(m_w->ringScanCombo && m_w->ringScanCombo->findData(3) >= 0 &&
                       m_w->ringScanCombo->findData(2) >= 0 && m_w->ringScanCombo->findData(1) >= 0,
                   "环形扫描含快速/方形预筛/k=3 上界/精确四档");
@@ -3719,21 +3766,26 @@ int MainWindow::runSelfTest()
             check(m_w->ringOpts && m_w->ringOpts->isVisible(), "环形：环形专属选项（模拟距离等）可见");
             check(m_w->presetCombo && m_w->presetCombo->count() == 3, "环形模式方案数 = 2 + 自定义");
             check(!m_w->smartRange->isVisible(), "环形：智能范围不显示（不适用）");
-            // v3.15.x（A/B/C 重排）：
-            //   A 搜索方式 = 环形扫描下拉；匹配算法块隐藏（环形只有扫描方式，没有匹配算法）。
-            //   关键修复：最低密度 / 忽略阈值在环形下常显（此前藏在自定义方案高级项里，通道不可见）。
+            // v3.16.x（四组重排）：
+            //   ② 搜索方式 = 环形扫描下拉；匹配算法块隐藏（环形只有扫描方式，没有匹配算法）。
+            //   关键语义不变：最低密度 / 忽略阈值在环形下常显（属于 ③ 结果要求，不在自定义高级项里）。
             check(m_w->ringScanRow && m_w->ringScanRow->isVisible() && m_w->ringScanCombo->isVisible() &&
                       m_w->ringScanCombo->isEnabled(),
-                  "环形：A 搜索方式显示并可用「环形扫描」下拉");
-            check(!m_w->matchGroup->isVisible(), "环形：A 搜索方式隐藏「匹配方式」算法块");
+                  "环形：② 搜索方式显示并可用「环形扫描」下拉");
+            check(!m_w->matchGroup->isVisible(), "环形：② 搜索方式隐藏「匹配方式」算法块");
             check(m_w->ringOpts && m_w->ringOpts->isVisible() && m_w->simDistance &&
                       m_w->simDistance->isVisible() && m_w->simDistance->isEnabled(),
-                  "环形：模拟距离可见且可调（B 环形选项）");
+                  "环形：模拟距离可见且可调（③ 结果要求里的环形选项）");
+            check(m_w->shapeRow->isVisible(),
+                  "环形：① 搜索内容显示「区域形状」行（可切回正方形）");
+            check(m_w->densityThresholdRow->isVisible(),
+                  "环形：③ 结果要求显示最低密度行（常显，不随方案收起）");
             check(m_w->minDensity->isVisible() && m_w->minDensity->isEnabled() &&
                       m_w->ignoreThreshold->isVisible(),
                   "环形+默认方案：最低密度可见且可编辑、忽略阈值可见（不再藏在自定义高级项）");
-            check(m_w->targetCount->isVisible() && m_w->resultGroup->isVisible(),
-                  "环形：目标数量在「结果要求」组内可见");
+            check(m_w->targetCount->isVisible() && m_w->resultGroup->isVisible() &&
+                      m_w->requirementGroup->isVisible(),
+                  "环形：目标数量在「结果要求」组内可见（整组始终可见）");
             check(m_w->densityRadio->isChecked(), "环形选项出现在密度模式下");
             m_w->densityRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
@@ -3749,31 +3801,40 @@ int MainWindow::runSelfTest()
             m_w->shapeSquareRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
             check(m_w->gridSize->isEnabled() && m_w->matchGroup->isEnabled(), "切回正方形后选项恢复可用");
-            // v3.15.x：正方形密度 = A 显示匹配算法、扫描下拉隐藏；最低密度常显
+            // v3.16.x：正方形密度 = ② 显示匹配算法、环形扫描隐藏；① 区域形状行可见；③ 最低密度常显
             check(m_w->matchGroup->isVisible() && m_w->ringScanRow && !m_w->ringScanRow->isVisible(),
-                  "正方形：A 搜索方式显示「匹配方式」、隐藏「环形扫描」");
+                  "正方形：② 搜索方式显示「匹配方式」、隐藏「环形扫描」");
+            check(m_w->shapeRow->isVisible() && m_w->densityThresholdRow->isVisible(),
+                  "正方形：① 区域形状行 / ③ 最低密度行可见");
             check(m_w->minDensity->isVisible() && m_w->minDensity->isEnabled() &&
                       m_w->ignoreThreshold->isVisible(),
                   "正方形：最低密度 / 忽略阈值常显且可编辑");
+            check(m_w->ringOpts && !m_w->ringOpts->isVisible(), "正方形：环形专属选项整块隐藏");
             // 图案 / 密度 互不干扰
             m_w->strictRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
-            std::fprintf(stderr, "[UI自检]   图案模式：图案面板=%d 密度面板=%d 图案编辑器=%d 算法=%d\n",
-                         m_w->strictPanel->isVisible() ? 1 : 0, m_w->densityPanel->isVisible() ? 1 : 0,
+            std::fprintf(stderr,
+                         "[UI自检]   图案模式：图案面板=%d 形状行=%d 阈值行=%d 图案编辑器=%d 算法=%d\n",
+                         m_w->strictPanel->isVisible() ? 1 : 0, m_w->shapeRow->isVisible() ? 1 : 0,
+                         m_w->densityThresholdRow->isVisible() ? 1 : 0,
                          m_w->inlinePattern && m_w->inlinePattern->isVisible() ? 1 : 0,
                          m_w->matchGroup->isEnabled() ? 1 : 0);
             // v3.5.18（用户要求）：只显示能调的选项，不置灰
-            check(m_w->strictPanel->isVisible() && !m_w->densityPanel->isVisible() &&
-                      m_w->inlinePattern && m_w->inlinePattern->isVisible() && m_w->matchGroup->isEnabled(),
-                  "图案模式：只显示图案选项（含内嵌图案编辑器）");
-            // v3.15.x：图案模式 A 显示匹配算法块；密度专属控件（最低密度）不可见
+            check(m_w->strictPanel->isVisible() && !m_w->shapeRow->isVisible() &&
+                      !m_w->densityThresholdRow->isVisible() && m_w->inlinePattern &&
+                      m_w->inlinePattern->isVisible() && m_w->matchGroup->isEnabled(),
+                  "图案模式：① 只显示图案选项（含内嵌图案编辑器），区域形状/最低密度隐藏");
+            // v3.16.x：图案模式 ② 显示匹配算法块；③ 密度专属控件（最低密度）不可见
             check(m_w->matchGroup->isVisible() && m_w->ringScanRow && !m_w->ringScanRow->isVisible(),
-                  "图案：A 搜索方式显示「匹配方式」算法块");
+                  "图案：② 搜索方式显示「匹配方式」算法块");
             check(!m_w->minDensity->isVisible(), "图案：最低密度不显示（只属于密度模式）");
+            check(m_w->requirementGroup->isVisible(),
+                  "图案：③ 结果要求整组仍可见（搜索范围/停止与数量）");
             m_w->densityRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
-            check(!m_w->strictPanel->isVisible() && m_w->densityPanel->isVisible(),
-                  "密度模式：只显示密度选项");
+            check(!m_w->strictPanel->isVisible() && m_w->shapeRow->isVisible() &&
+                      m_w->densityThresholdRow->isVisible(),
+                  "密度模式：显示区域形状 + 最低密度行（不再显示图案编辑器）");
             m_w->shapeRingRadio->setChecked(true);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 60);
             check(m_w->ringOpts && m_w->ringOpts->isVisible() && m_w->squareOpts && !m_w->squareOpts->isVisible(),
