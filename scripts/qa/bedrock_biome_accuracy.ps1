@@ -1,4 +1,4 @@
-# Bedrock biome accuracy smoke test.
+﻿# Bedrock biome accuracy smoke test.
 # Run from repository root after building slime_bedrock_biome_query.exe.
 
 $ErrorActionPreference = 'Stop'
@@ -26,14 +26,13 @@ function Check([string]$name, $actual, $expected) {
 $known = Query '2229010591266423951' '1.21.60' -2984 4033 74
 Check 'MCPE-161245 river sample' $known.name 'river'
 
-# Version-dependent behavior: same column is not river in 1.16.
-$old = Query '2229010591266423951' '1.16' -2984 4033 74
-Check '1.16 version difference' $old.name 'birch_forest'
+# Newest supported version.
+Check '26.60 known river' (Query '2229010591266423951' '26.60' -2984 4033 74).name 'river'
 
 # Basic known samples.
 Check 'seed0 modern river' (Query '0' '1.21.60' 0 0 63).name 'river'
 Check 'seed0 modern plains' (Query '0' '1.21.60' 104 104 63).name 'plains'
-Check 'seed0 1.16 swamp' (Query '0' '1.16' 0 0 63).name 'swamp'
+Check 'seed0 26.60 river' (Query '0' '26.60' 0 0 63).name 'river'
 
 # Batch output must match single-point output.
 $batch = @('8 8 63', '104 104 63') | & $exe --batch 0 1.21.60
@@ -53,3 +52,6 @@ if ($fail -ne 0) {
     exit 1
 }
 Write-Host 'BEDROCK ACCURACY OK' -ForegroundColor Green
+
+
+

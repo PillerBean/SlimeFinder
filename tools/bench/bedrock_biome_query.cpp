@@ -1,4 +1,4 @@
-﻿// Isolated Bedrock biome query. This target links ONLY cubiomes-bedrock,
+// Isolated Bedrock biome query. This target links ONLY cubiomes-bedrock,
 // never the Java cubiomes library used by SlimeFinder's main executable.
 #include "biomes.h"
 #include "generator.h"
@@ -14,10 +14,10 @@
 struct VersionMap { const char* label; int mc; };
 
 static const VersionMap kVersions[] = {
-    { "1.16", MC_1_16 }, { "1.17", MC_1_17 }, { "1.17.30", MC_1_17_30 },
     { "1.18", MC_1_18 }, { "1.19", MC_1_19 }, { "1.20", MC_1_20 },
     { "1.21", MC_1_21 }, { "1.21.50", MC_1_21_50 }, { "1.21.60", MC_1_21_60 },
     { "26.20", MC_26_20 }, { "26.30", MC_26_30 },
+    { "26.40", MC_26_40 }, { "26.50", MC_26_50 }, { "26.60", MC_26_60 },
 };
 
 static bool parseVersion(const char* text, int* mc)
@@ -78,4 +78,5 @@ int main(int argc, char** argv)
                 (id >= 0) ? biome2str(mc, id) : "unknown");
     return 0;
 }
+
 
