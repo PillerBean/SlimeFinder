@@ -207,7 +207,8 @@ void MainWindow::buildUi()
         topLeftLay->addWidget(m_w->mapVersionCombo);
         m_w->bedrockVersionCombo = new QComboBox(m_topBar);
         for (std::size_t i = 0; i < slime::bedrockBiomeVersionCount(); ++i) {
-            m_w->bedrockVersionCombo->addItem(QString::fromUtf8(slime::kBedrockBiomeVersions[i].label));
+            m_w->bedrockVersionCombo->addItem(QString::fromUtf8(slime::kBedrockBiomeVersions[i].label),
+                QString::fromUtf8(slime::kBedrockBiomeVersions[i].queryLabel));
             const QString label = QString::fromUtf8(slime::kBedrockBiomeVersions[i].label);
             const QStringList verParts = label.split(QLatin1Char('.'));
             const bool legacy = verParts.size() >= 2 && verParts[0] == QStringLiteral("1") &&
@@ -2205,6 +2206,7 @@ void MainWindow::showBuildEstimate()
 // ============================================================================
 // v3.3.4（任务书 1.2/1.3）：菜单栏与工具栏（全部使用 QMainWindow 原生接口）
 // ============================================================================
+
 
 
 

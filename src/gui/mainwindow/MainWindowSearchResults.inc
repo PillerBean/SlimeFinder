@@ -1206,7 +1206,7 @@ void MainWindow::onSearchFinished(const SearchOutcome& in, const RunInfo& info, 
             const QString exe = QCoreApplication::applicationDirPath() +
                                 QStringLiteral("/slime_bedrock_biome_query.exe");
             const QString version = m_w->bedrockVersionCombo
-                                        ? m_w->bedrockVersionCombo->currentText()
+                                        ? m_w->bedrockVersionCombo->currentData().toString()
                                         : QStringLiteral("1.21.60");
             const auto fr = slime::BedrockRiverFilter::filter(
                 out.results, info.options.worldSeed, version, exe);
@@ -1972,6 +1972,8 @@ void MainWindow::copyResults()
     QApplication::clipboard()->setText(m_lastResultText);
     setStatus(slime::ui::tr(slime::ui::t("ui.a48bb5b20557")));
 }
+
+
 
 
 

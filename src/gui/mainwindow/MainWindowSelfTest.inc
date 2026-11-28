@@ -2339,8 +2339,11 @@ int MainWindow::runSelfTest()
                           m_w->mapVersionCombo->view() &&
                           m_w->mapVersionCombo->view()->minimumWidth() >= 220,
                       "Java 版本下拉宽度足以显示 Beta 系列");
-                check(m_w->bedrockVersionCombo && m_w->bedrockVersionCombo->count() >= 6,
-                      "Bedrock 群系版本选择器已提供 1.18+ 版本");
+                check(m_w->bedrockVersionCombo && m_w->bedrockVersionCombo->count() == 16 &&
+                          m_w->bedrockVersionCombo->findText(QStringLiteral("1.4-1.6")) >= 0 &&
+                          m_w->bedrockVersionCombo->findText(QStringLiteral("1.20-1.21")) >= 0 &&
+                          m_w->bedrockVersionCombo->findText(QStringLiteral("26.40-26.50")) >= 0,
+                      "Bedrock 版本列表已按算法分组压缩");
                 {
                     std::vector<MatchResult> riverResults(2);
                     riverResults[0].minX = 0; riverResults[0].maxX = 0;
