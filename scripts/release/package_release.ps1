@@ -1,4 +1,4 @@
-﻿# package_release.ps1 - build the SlimeFinder Windows distribution folder and zip (v3.3.8.1)
+# package_release.ps1 - build the SlimeFinder Windows distribution folder and zip (v3.3.8.1)
 #
 # Steps:
 #   1) copy build artifacts (exe + tools) into dist\SlimeFinder
@@ -22,7 +22,7 @@
 
 param(
     [string]$Repo = "",
-    [string]$Version = "3.13.8",
+    [string]$Version = "3.13.18",
     [string]$QtDir = "C:\Qt\6.11.2\msvc2022_64",
     [switch]$SkipSelfTest
 )

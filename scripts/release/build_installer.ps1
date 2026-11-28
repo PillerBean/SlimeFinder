@@ -1,4 +1,4 @@
-﻿# build_installer.ps1 - build the v3.5.0 NSIS installer from dist\SlimeFinder (ASCII only!)
+# build_installer.ps1 - build the v3.5.0 NSIS installer from dist\SlimeFinder (ASCII only!)
 #
 # Usage:  powershell -ExecutionPolicy Bypass -File scripts\release\build_installer.ps1
 #
@@ -10,7 +10,7 @@
 param(
     [string]$Repo = "",
     [string]$NsisDir = "",
-    [string]$Version = "3.13.8"
+    [string]$Version = "3.13.18"
 )
 $ErrorActionPreference = "Stop"
 

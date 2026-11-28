@@ -1,4 +1,4 @@
-﻿; SlimeFinder 安装脚本（NSIS 3.x）—— v3.5.0 首个正式版
+; SlimeFinder 安装脚本（NSIS 3.x）—— v3.5.0 首个正式版
 ; 用法：makensis install.nsi   （或用 scripts\release\build_installer.ps1 一步完成）
 ;
 ; 任务书要点（v3.5.0）：
@@ -17,7 +17,7 @@ Unicode true
 
 !define APP_NAME "史莱姆区块查找器"
 !define APP_KEY "SlimeFinder"
-!define APP_VERSION "3.13.17"
+!define APP_VERSION "3.13.18"
 !define APP_EXE "SlimeFinder.exe"
 !define APP_PUBLISHER "SlimeFinder"
 !define SOURCE_DIR "..\..\dist\SlimeFinder"
