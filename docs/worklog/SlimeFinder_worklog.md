@@ -753,3 +753,42 @@ SHA256 F52592C2E3776CECABB2B16DF8A87D66E57EBF6A0DBFCFABB3D6B1BE0A590B5B
 ZIP 25,073,382 B
 SHA256 19B4BDDBDF42FDF0FAD3AC45DED85F4C75F0ADE547189DFB68F4B370EE02561A
 ```
+
+## 2026-11-28 21:05 SlimeFinder 3.13.18 测试版（搜索页 A/B/C 重排 + 环形/k3 预筛缓存化）
+
+接管开发会话完成 P1/P2/P3 全流程。
+
+搜索页重排：
+
+```text
+A 搜索方式：环形四档扫描方式 / 图案与正方形=匹配算法
+B 结果要求：搜索范围、模式与方案、区域形状、最低密度+忽略阈值（改常显）、
+           目标数量/达到即停/智能范围（停止与数量）、环形内外半径、群系权重
+C 执行设置：线程 / GPU / RAM 预算摘要 / 缓存管理
+```
+
+环形/k3 预筛缓存化：
+
+```text
+新增 cachePrescanSeeds：缓存位图完整覆盖时 CPU 行流式生成预筛种子（确定性、免 GPU）
+实测生产参数 GPU 预筛仍快 1.5~3.5×（8192² 69 vs 111ms；16384² 190 vs 662ms）
+集成改为 GPU 优先、缓存预筛在 GPU 不可用/失败时兜底（无 GPU 的 Bedrock 用户也能用 k3 档）
+```
+
+其他修复：环形扫描四档语言切换文案错位、搜索页重复分组标题、GUI 自检补充布局断言。
+
+发布：
+
+```text
+Tag: v3.13.18-test（Pre-release）
+URL: https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.18-test
+Setup 18,070,334 B  SHA256 88C47F1DD4A9552E449D23D5042EB291C1B97737B8C99C349DDAA7863C279A1F
+ZIP   25,459,565 B  SHA256 3BA4E36D7095AA090BF066BFD5ADC5B5D1DE9F72771D6D4D7CD7BC58F06DC9ED
+```
+
+验证：单元测试（含新增 [39] cachePrescanSeeds 对拍组）、参考对拍 117 项、GUI 自检 GPU 关/开
+均 exit 0、三语文本 1468 keys 一致、干净构建。部署副本已更新 3.13.18（保留 config/cache/logs）；
+Wiki 版本索引已更新；version-beta.json 更新为 3.13.18 并同步补到 main 分支。
+
+已知待办见 docs/planning/HANDOFF_2026-11-29.md（CacheManager::lookup 重叠 range 缺陷、
+audit_corruption.py/run_all_tests.ps1 路径过期、CPU 预筛 AVX2 提速、内存上限镜像控件）。
