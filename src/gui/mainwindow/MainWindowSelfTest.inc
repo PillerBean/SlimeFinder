@@ -3338,6 +3338,16 @@ int MainWindow::runSelfTest()
                   "挂机点：推荐高度在 0..24");
             check(!res.empty() && res.front().effectiveArea > 0.0,
                   "挂机点：块级有效面积 > 0");
+            if (!res.empty()) {
+                AfkPlanOptions checkOpt;
+                checkOpt.radius = 128;
+                checkOpt.innerRadius = 24;
+                const auto rem = AfkPlanner::measureExact(
+                    res.front().x, res.front().z, checkOpt,
+                    [](int cx, int cz) { return SlimeEngine::isSlimeChunk(Version::Java, 0, cx, cz); });
+                check(rem.coveredBlocks == res.front().coveredBlocks,
+                      "挂机点：邻域移动后的 2D 覆盖已在新中心重算");
+            }
             check(dlg.table() && dlg.table()->columnCount() == 11 &&
                       dlg.table()->item(0, 9) && dlg.table()->item(0, 9)->text() != QStringLiteral("-") &&
                       dlg.table()->item(0, 10) && dlg.table()->item(0, 10)->text() != QStringLiteral("-"),
@@ -3350,6 +3360,18 @@ int MainWindow::runSelfTest()
             check(AfkDialog::commandFor(res.empty() ? AfkCandidate{} : res.front())
                       .split(QLatin1Char(' ')).size() == 5,
                   "挂机点：/tp 命令含 X/Y/Z 三个坐标");
+            AfkCandidate oldVer;
+            oldVer.hasHeight = true;
+            oldVer.bestHeight = 10;
+            oldVer.afkBaseY = 1;
+            check(AfkDialog::commandFor(oldVer).contains(QStringLiteral(" 11 ")),
+                  "挂机点：旧版本平台顶面 Y=1 的传送高度");
+            AfkCandidate modern;
+            modern.hasHeight = true;
+            modern.bestHeight = 10;
+            modern.afkBaseY = -63;
+            check(AfkDialog::commandFor(modern).contains(QStringLiteral(" -53 ")),
+                  "挂机点：1.18+ 平台顶面 Y=-63 的传送高度");
             slime::ui::setLanguage(oldAfkLang);
         }
 

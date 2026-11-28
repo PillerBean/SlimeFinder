@@ -24,12 +24,26 @@ slime::SlimeChunkPredicate makePredicate(int version, int64_t seed)
     const slime::Version v = (version == 1) ? slime::Version::Bedrock : slime::Version::Java;
     return [v, seed](int cx, int cz) { return slime::SlimeEngine::isSlimeChunk(v, seed, cx, cz); };
 }
+
+int afkBaseYFor(int versionId, int platform)
+{
+    // v3.5.8：洞穴更新前世界倒数第二层为 y=1；1.18+ 为 y=-63。
+    // 基岩版当前按现代世界底部处理。
+    if (platform == 1) return -63;
+    for (const auto& v : slime::javaVersionOptions()) {
+        if (v.id != versionId) continue;
+        int major = 0, minor = 0;
+        if (std::sscanf(v.label, "%d.%d", &major, &minor) == 2)
+            return (major > 1 || (major == 1 && minor >= 18)) ? -63 : 1;
+    }
+    return -63;
+}
 } // namespace
 
 QString AfkDialog::commandFor(const slime::AfkCandidate& c)
 {
-    // v3.15.x：基岩底层 Y=-64，平台顶面 -63；高度最优时直接给出绝对 Y。
-    const int y = c.hasHeight ? (-63 + c.bestHeight) : 100;
+    // v3.15.x：高度相对平台顶面；旧版本平台顶面 Y=1，1.18+ 为 -63。
+    const int y = c.hasHeight ? (c.afkBaseY + c.bestHeight) : 100;
     return QStringLiteral("/tp @s %1 %2 %3").arg(c.x).arg(y).arg(c.z);
 }
 
@@ -61,7 +75,7 @@ AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     auto* top = new QHBoxLayout();
     top->addWidget(new QLabel(slime::ui::t("ui.c6a32c203a5a"), this));
     m_radius = new QSpinBox(this);
-    m_radius->setRange(16, 512);
+    m_radius->setRange(32, 512);
     m_radius->setSingleStep(16);
     m_radius->setValue(128);
     m_radius->setToolTip(slime::ui::t("ui.ed1b4230d88b"));
@@ -178,6 +192,7 @@ void AfkDialog::recompute()
     slime::AfkPlanOptions o;
     o.area = slime::Rect{ minX, maxX, minZ, maxZ };
     o.radius = radius;
+    o.innerRadius = 24;
     o.topN = topN;
     o.minSeparation = 24;
     o.coarseStep = 4;
@@ -193,6 +208,7 @@ void AfkDialog::recompute()
         const slime::Platform plat = (platform == 1) ? slime::Platform::Bedrock : slime::Platform::Java;
         slime::HeightRefiner refiner(ver, m_ctx.seed, versionId, plat, m_weighted);
         if (refiner.valid()) {
+            const int baseY = afkBaseYFor(versionId, platform);
             for (auto& c : m_results) {
                 const auto r = refiner.refine(c.x, c.z, 24, radius, 16);
                 if (!r.valid) continue;
@@ -202,11 +218,15 @@ void AfkDialog::recompute()
                 c.heightBandHi = r.bandHi;
                 c.effectiveArea = r.effectiveArea;
                 c.heightBlocks = r.coveredBlocks;
+                c.afkBaseY = baseY;
                 c.x = r.x;
                 c.z = r.z;
                 c.chunkX = c.x >= 0 ? c.x / 16 : -((-c.x + 15) / 16);
                 c.chunkZ = c.z >= 0 ? c.z / 16 : -((-c.z + 15) / 16);
             }
+            // v3.15.x：中心被邻域精修移动后，旧的 2D 覆盖指标必须在新中心重算。
+            slime::AfkPlanner::measureStrictForCandidates(m_results, o, pred, versionId,
+                                                          m_ctx.seed, m_weighted);
             std::stable_sort(m_results.begin(), m_results.end(), [](const auto& a, const auto& b) {
                 if (a.hasHeight != b.hasHeight) return a.hasHeight;
                 if (std::abs(a.effectiveArea - b.effectiveArea) > 1e-9)
@@ -277,3 +297,4 @@ void AfkDialog::fillTable()
     }
     if (!m_results.empty()) m_table->selectRow(0);
 }
+

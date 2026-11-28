@@ -1,4 +1,4 @@
-#include "core/AfkPlanner.h"
+﻿#include "core/AfkPlanner.h"
 #include "core/BiomeMap.h"
 #include "core/SlimeEngine.h"
 #include "gpu/GpuScanAdapter.h"
@@ -288,7 +288,7 @@ int main(int argc, char** argv)
     }
 
     if (heightMode && prescanUsed && !o.seedCandidates.empty()) {
-        struct HeightHit { double area; int h; int cx; int cz; int ox = 8; int oz = 8; };
+        struct HeightHit { double area; int h; int cx; int cz; int ox = 8; int oz = 8; double blockArea = -1.0; int blockH = 0; };
         const auto th0 = Clock::now();
         std::vector<HeightHit> hits;
         hits.reserve(o.seedCandidates.size());
@@ -409,6 +409,8 @@ int main(int argc, char** argv)
                 return a.area > b.area;
             });
         }
+        // v3.15.x: preserve chunk-level order for the CHUNK_RESULT diagnostic.
+        const std::vector<HeightHit> chunkRank = hits;
         // Block-level biome weights for the best refined centers.
         const bool blockEval = !std::getenv("RING_HEIGHT_BLOCK") ||
                                std::string(std::getenv("RING_HEIGHT_BLOCK")) != "0";
@@ -457,12 +459,20 @@ int main(int argc, char** argv)
                         bestBlockH = h;
                     }
                 }
+                hits[i].blockArea = bestBlock;
+                hits[i].blockH = bestBlockH;
                 std::printf("BLOCK_RESULT rank=%zu bx=%d bz=%d h=%d area=%.3f chunk_area=%.3f delta=%.3f\n",
                             i + 1, bx, bz, bestBlockH, bestBlock, hits[i].area,
                             bestBlock - hits[i].area);
             }
             std::printf("BLOCK_EVAL topN=%zu ms=%.1f\n", bt, msSince(tb0));
+            // v3.15.x: local search must consume block-level order, not chunk-level order.
+            std::stable_sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) {
+                return a.blockArea > b.blockArea;
+            });
         }
+        double finalArea = -1.0;
+        int finalH = 0, finalX = 0, finalZ = 0;
         // v3.15.x: local block-level neighborhood search around top candidates.
         {
             const int lr = std::max(1, std::atoi(std::getenv("RING_HEIGHT_LOCAL_RADIUS")
@@ -531,6 +541,7 @@ int main(int argc, char** argv)
                             bestLocalH = hh;
                             bestLocalX = baseX + ox;
                             bestLocalZ = baseZ + oz;
+                            finalArea = a; finalH = hh; finalX = baseX + ox; finalZ = baseZ + oz;
                         }
                     }
                 }
@@ -539,14 +550,21 @@ int main(int argc, char** argv)
             std::printf("LOCAL_RESULT bx=%d bz=%d h=%d area=%.3f topN=%zu radius=%d\n",
                         bestLocalX, bestLocalZ, bestLocalH, bestLocal, nt, lr);
         }
-        const size_t keep = (std::min)(hits.size(), static_cast<size_t>(heightTopN));
+        const size_t keep = (std::min)(chunkRank.size(), static_cast<size_t>(heightTopN));
         const double ms = msSince(th0);        std::printf("HEIGHT seeds=%zu evaluated=%zu topN=%zu ms=%.1f total_ms=%.1f\n",
                     o.seedCandidates.size(), hits.size(), keep, ms, msSince(tTotal));
         for (size_t i = 0; i < keep; ++i)
-            std::printf("HEIGHT_RESULT rank=%zu cx=%d cz=%d bx=%d bz=%d h=%d area=%.3f\n",
-                        i + 1, hits[i].cx, hits[i].cz,
-                        hits[i].cx * 16 + hits[i].ox, hits[i].cz * 16 + hits[i].oz,
-                        hits[i].h, hits[i].area);
+            std::printf("CHUNK_RESULT rank=%zu cx=%d cz=%d bx=%d bz=%d h=%d area=%.3f\n",
+                        i + 1, chunkRank[i].cx, chunkRank[i].cz,
+                        chunkRank[i].cx * 16 + chunkRank[i].ox, chunkRank[i].cz * 16 + chunkRank[i].oz,
+                        chunkRank[i].h, chunkRank[i].area);
+        if (finalArea >= 0.0)
+            std::printf("HEIGHT_RESULT bx=%d bz=%d h=%d area=%.3f source=block_local\n",
+                        finalX, finalZ, finalH, finalArea);
+        else if (!hits.empty())
+            std::printf("HEIGHT_RESULT bx=%d bz=%d h=%d area=%.3f source=chunk_fallback\n",
+                        hits[0].cx * 16 + hits[0].ox, hits[0].cz * 16 + hits[0].oz,
+                        hits[0].h, hits[0].area);
         return 0;
     }
 
@@ -865,3 +883,7 @@ int main(int argc, char** argv)
     }
     return 0;
 }
+
+
+
+

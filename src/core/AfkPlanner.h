@@ -46,6 +46,7 @@ struct AfkCandidate {
     int heightBandHi = 0;
     double effectiveArea = 0.0;   // 块级群系加权有效面积
     int64_t heightBlocks = 0;     // 有效方块数
+    int afkBaseY = -63;           // 平台顶面绝对 Y（旧版本为 1）
 };
 
 struct AfkPlanOptions {

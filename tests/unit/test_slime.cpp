@@ -1,4 +1,4 @@
-// test_slime.cpp - SlimeFinder 引擎测试与命令行工具
+﻿// test_slime.cpp - SlimeFinder 引擎测试与命令行工具
 //
 // 三种用法：
 //   1) 参考兼容模式（与 SlimeChecker.exe 输出可逐行比对）：
@@ -19,6 +19,7 @@
 #include "core/RandomGenerators.h"
 #include "core/SearchTask.h"
 #include "core/AfkPlanner.h"
+#include "core/HeightRefiner.h"
 #include "core/BiomeMap.h"
 #include "core/SpawnWeights.h"
 #include "core/SlimeEngine.h"
@@ -3276,6 +3277,28 @@ static void testMergeScheduleInvariance()
                 static_cast<long long>(a.entryCount()) - static_cast<long long>(b.entryCount()));
 }
 
+static void testHeightRefiner()
+{
+    std::printf("\n[38] 高度感知最终评分\n");
+    slime::HeightRefiner ref(slime::Version::Java, 0, slime::defaultJavaVersionId(),
+                             slime::Platform::Java, true);
+    CHECK(ref.valid(), "HeightRefiner：Java + 群系初始化");
+    const auto r = ref.refine(3472966, -13446981, 24, 128, 16);
+    CHECK(r.valid, "HeightRefiner：有效候选返回结果");
+    CHECK(r.bestHeight >= 0 && r.bestHeight <= 24, "HeightRefiner：H 在 0..24");
+    CHECK(r.effectiveArea > 0.0, "HeightRefiner：有效面积 > 0");
+    CHECK(r.coveredBlocks > 0, "HeightRefiner：有效方块数 > 0");
+    CHECK(std::abs(r.x - 3472966) <= 16 && std::abs(r.z + 13446981) <= 16,
+          "HeightRefiner：中心在邻域内");
+    CHECK(r.bandLo <= r.bestHeight && r.bestHeight <= r.bandHi,
+          "HeightRefiner：高度带包含最佳高度");
+    const auto bad = ref.refine(3472966, -13446981, 24, 24, 16);
+    CHECK(!bad.valid, "HeightRefiner：inner >= outer 返回无效");
+    slime::HeightRefiner bed(slime::Version::Bedrock, 0, 0, slime::Platform::Bedrock, false);
+    const auto rb = bed.refine(0, 0, 24, 128, 8);
+    CHECK(rb.valid && rb.effectiveArea > 0.0, "HeightRefiner：基岩版无群系也可评分");
+}
+
 // v3.5.2（任务 1）：环形覆盖挂机点 —— 精度 1 格（1/16 区块）、圆内覆盖、与暴力解一致
 static void testAfkPlannerRing()
 {
@@ -4044,6 +4067,7 @@ static int runUnitTests()
     if (wantGroup(35)) testBestCandidatesMode();
     if (wantGroup(36)) testBestCandidatesChunked();
     if (wantGroup(37)) testZeroThresholdFastPath();
+    if (wantGroup(38)) testHeightRefiner();
     if (g_failures == 0) {
         std::printf("单元测试全部通过 ✔\n");
         return 0;
@@ -4715,3 +4739,4 @@ int main(int argc, char** argv)
     const auto rest = argsRest(argc, argv, "");
     return cmdReference(rest, findThreads(argc, argv));
 }
+
