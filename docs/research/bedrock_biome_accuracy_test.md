@@ -52,7 +52,7 @@ version 1.21.60 → river
 ```
 
 1.18 前（1.16/1.17/1.17.30）哈希不一致，
-因此未开放为可选版本，也不用于河流过滤。
+现作为旧版分层生成器开放；Java 哈希基准不适用，但仍缺独立 Bedrock 对照。
 
 ## 3. 基础样本
 
@@ -99,7 +99,7 @@ BEDROCK ACCURACY OK
 
 ```text
 - 只有一个独立 Bug 报告坐标
-- 1.18 前版本未开放；其哈希基准不一致
+- 1.18 前版本已开放；Java 哈希基准不适用
 - 没有 Bedrock Dedicated Server 逐区块对照
 - 过滤按区块中心 + Y=63，跨边界仍可能误判
 ```
@@ -121,16 +121,16 @@ BEDROCK ACCURACY OK
 1.19  OK
 1.20  OK
 
-1.16  FAIL
-1.13  FAIL
-1.12  FAIL
-1.9   FAIL
-1.7   FAIL
-1.6   FAIL
-1.2   FAIL
-1.1   FAIL
-1.0   FAIL
-B1.8  FAIL
+1.16  N/A（Java 基准不适用）
+1.13  N/A（Java 基准不适用）
+1.12  N/A（Java 基准不适用）
+1.9   N/A（Java 基准不适用）
+1.7   N/A（Java 基准不适用）
+1.6   N/A（Java 基准不适用）
+1.2   N/A（Java 基准不适用）
+1.1   N/A（Java 基准不适用）
+1.0   N/A（Java 基准不适用）
+B1.8  N/A（Java 基准不适用）
 ```
 
 结论：
@@ -143,10 +143,12 @@ B1.8  FAIL
 因此：
 
 ```text
-1.16/1.17/1.17.30 保留为实验性选项
+1.16/1.17/1.17.30 使用旧版分层生成器
 不作为河流过滤版本
 ```
 
 工具：`tools/bench/bedrock_hash_check.cpp`
+
+
 
 

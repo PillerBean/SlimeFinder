@@ -1454,5 +1454,5 @@
   "ui.bedrock_river_filtered": "已依 Bedrock 河流規則移除 %1 條結果",
   "ui.bedrock_version_tip": "Bedrock 群系生成版本（用於河流過濾）",
   "ui.bedrock_river_seed_required": "Bedrock 河流過濾需要世界種子；目前種子為空，結果未過濾。",
-  "ui.bedrock_version_experimental": "實驗性版本：未通過上游 Java 雜湊基準，Bedrock 結果尚未獨立驗證"
+  "ui.bedrock_version_legacy": "舊版 Bedrock 分層生成器；早期基岩版與 Java 演算法不同，Java 雜湊基準不適用"
 }

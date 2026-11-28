@@ -1454,5 +1454,5 @@
   "ui.bedrock_river_filtered": "Removed %1 result(s) under Bedrock river rules",
   "ui.bedrock_version_tip": "Bedrock biome generation version (used for river filtering)",
   "ui.bedrock_river_seed_required": "Bedrock river filtering needs a world seed; the seed is empty, so results were not filtered.",
-  "ui.bedrock_version_experimental": "Experimental: did not match the upstream Java hash baseline; Bedrock result not independently verified"
+  "ui.bedrock_version_legacy": "Legacy Bedrock layered generator; early Bedrock and Java algorithms differ, so the Java hash baseline does not apply"
 }

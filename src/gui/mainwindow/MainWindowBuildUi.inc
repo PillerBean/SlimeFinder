@@ -212,7 +212,7 @@ void MainWindow::buildUi()
             if (label == QStringLiteral("1.16") || label == QStringLiteral("1.17") ||
                 label == QStringLiteral("1.17.30"))
                 m_w->bedrockVersionCombo->setItemData(static_cast<int>(i),
-                    slime::ui::t("ui.bedrock_version_experimental"), Qt::ToolTipRole);
+                    slime::ui::t("ui.bedrock_version_legacy"), Qt::ToolTipRole);
         }
         m_w->bedrockVersionCombo->setCurrentIndex(m_w->bedrockVersionCombo->findText(QStringLiteral("1.21.60")));
         m_w->bedrockVersionCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
@@ -2203,6 +2203,7 @@ void MainWindow::showBuildEstimate()
 // ============================================================================
 // v3.3.4（任务书 1.2/1.3）：菜单栏与工具栏（全部使用 QMainWindow 原生接口）
 // ============================================================================
+
 
 
 
