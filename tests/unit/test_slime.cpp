@@ -3496,35 +3496,65 @@ static void testSpawnWeights()
 {
     std::printf("\n[31] 群系刷怪权重 + 加权挂机点\n");
 
-    // ① 权重表（数据来源：Minecraft Wiki「Slime」Java 列占比，基准 19.42%）
+    // ① 权重表（数据来源：Minecraft Wiki「Slime」Java 列分数，基准 100/515；
+    //    v3.15.x：与用户提供的“折算系数”表格逐项核对 —— 精确分数、不再经过百分比四舍五入）
     const auto swamp = slime::spawnWeightForName("swamp");
-    std::printf("      沼泽：java=%.3f 地表加成=%d\n", swamp.javaWeight, swamp.surfaceBonus ? 1 : 0);
+    std::printf("      沼泽：java=%.6f 地表加成=%d\n", swamp.javaWeight, swamp.surfaceBonus ? 1 : 0);
     CHECK(swamp.known, "沼泽：已收录");
     CHECK(swamp.surfaceBonus, "沼泽：标记了「额外地表生成」");
-    CHECK(std::abs(swamp.javaWeight - 19.38 / 19.42) < 2e-3, "沼泽 Java 权重 = 19.38/19.42");
+    CHECK(std::abs(swamp.javaWeight - 515.0 / 516.0) < 1e-9, "沼泽 Java 折算 = 515/516（用户表格基准）");
 
     const auto ocean = slime::spawnWeightForName("ocean");
-    CHECK(ocean.javaWeight > 0.985 && ocean.javaWeight < 0.995, "海洋：19.23/19.42 ≈ 0.990");
+    CHECK(std::abs(ocean.javaWeight - 515.0 / 520.0) < 1e-9, "海洋 Java 折算 = 515/520（19.23% 档）");
 
     const auto river = slime::spawnWeightForName("river");
-    std::printf("      河流：java=%.3f\n", river.javaWeight);
-    CHECK(river.javaWeight > 0.83 && river.javaWeight < 0.84, "河流：16.26/19.42 ≈ 0.837（明显更低）");
+    std::printf("      河流：java=%.6f（=515/615）\n", river.javaWeight);
+    CHECK(std::abs(river.javaWeight - 515.0 / 615.0) < 1e-9, "河流 Java 折算 = 515/615（用户表格一致）");
+    CHECK(slime::spawnWeight(7, slime::Platform::Java) > 0.83, "Java 版：河流仍生成史莱姆");
+
+    // 用户表格：巨型针叶林（含 1.17 丘陵）515/540、溶洞 515/610、蘑菇岛/深暗之地 0
+    const auto giantTaiga = slime::spawnWeightForName("giant_tree_taiga");
+    const auto giantTaigaHills = slime::spawnWeightForName("giant_tree_taiga_hills");
+    std::printf("      巨型针叶林：主群系=%.6f 丘陵=%.6f（=515/540）\n", giantTaiga.javaWeight,
+                giantTaigaHills.javaWeight);
+    CHECK(std::abs(giantTaiga.javaWeight - 515.0 / 540.0) < 1e-9 &&
+              std::abs(giantTaigaHills.javaWeight - 515.0 / 540.0) < 1e-9,
+          "巨型针叶林（含 1.17 丘陵）Java 折算 = 515/540");
+    const auto giantSpruce = slime::spawnWeightForName("giant_spruce_taiga");
+    CHECK(std::abs(giantSpruce.javaWeight - 515.0 / 515.0) < 1e-9, "巨型云杉针叶林 = 515/515（最高档）");
+
+    const auto dripstone = slime::spawnWeightForName("dripstone_caves");
+    std::printf("      溶洞：java=%.6f（=515/610）\n", dripstone.javaWeight);
+    CHECK(std::abs(dripstone.javaWeight - 515.0 / 610.0) < 1e-9, "溶洞（1.18+）Java 折算 = 515/610");
 
     const auto mushroom = slime::spawnWeightForName("mushroom_fields");
-    CHECK(mushroom.javaWeight == 0.0 && mushroom.bedrockWeight == 0.0, "蘑菇岛：不刷敌对生物 ⇒ 0");
+    const auto mushroomShore = slime::spawnWeightForName("mushroom_field_shore");
+    CHECK(mushroom.javaWeight == 0.0 && mushroom.bedrockWeight == 0.0 &&
+              mushroomShore.javaWeight == 0.0 && mushroomShore.bedrockWeight == 0.0,
+          "蘑菇岛（含 1.17 海岸）：不刷敌对生物 ⇒ 0");
 
     const auto deepDark = slime::spawnWeightForName("deep_dark");
-    CHECK(deepDark.javaWeight == 0.0, "深暗域：Wiki 表未收录 ⇒ 0");
+    CHECK(deepDark.javaWeight == 0.0 && deepDark.bedrockWeight == 0.0, "深暗之地（1.19+）：不刷怪 ⇒ 0");
+
+    // 硫磺洞穴（26.2+）：用户表格要求 Java 折算 = 0；英文 Wiki 基岩版列 100/1 ⇒ 基岩 1.0。
+    const auto sulfur = slime::spawnWeightForName("sulfur_caves");
+    std::printf("      硫磺洞穴：java=%.3f bedrock=%.3f known=%d\n", sulfur.javaWeight, sulfur.bedrockWeight,
+                sulfur.known ? 1 : 0);
+    CHECK(sulfur.known && sulfur.javaWeight == 0.0 && sulfur.bedrockWeight == 1.0,
+          "硫磺洞穴（26.2+）：Java 折算 0（按用户表格）/ 基岩 1.0（英文 Wiki 100）");
 
     const auto unknown = slime::spawnWeightForName("some_unknown_biome");
     CHECK(!unknown.known && unknown.javaWeight == 1.0, "未收录群系：按最高档 1.0（保守）");
 
+    // ② 基岩版：英文 Wiki 表内群系 spawn weight 恒 100、每群 1 只 ⇒ 无群系差异（统一 1.0）；
+    //   河流/冻河不再例外；蘑菇岛/深暗之地 0（不在表内）。
     CHECK(slime::spawnWeight(1, slime::Platform::Bedrock) == 1.0, "基岩版：平原权重 1.0（各群系恒 100）");
-    // 多来源核对：中文 Wiki「史莱姆区块」明确基岩版河流不生成 ⇒ 7=river、11=frozen_river
-    CHECK(slime::spawnWeight(7, slime::Platform::Bedrock) == 0.0, "基岩版：河流不生成史莱姆（中文 Wiki 除外项）");
-    CHECK(slime::spawnWeight(7, slime::Platform::Java) > 0.83, "Java 版：河流仍生成（16.26% 档）");
-    CHECK(slime::spawnWeight(11, slime::Platform::Bedrock) == 0.0, "基岩版：冻河不生成史莱姆");
-    CHECK(slime::spawnWeight(15, slime::Platform::Bedrock) == 0.0, "基岩版：蘑菇岛 0（id 15）");
+    CHECK(slime::spawnWeight(7, slime::Platform::Bedrock) == 1.0,
+          "基岩版：河流也生成（英文 Wiki 100/1，旧中文 Wiki 例外已按用户要求移除）");
+    CHECK(slime::spawnWeight(11, slime::Platform::Bedrock) == 1.0, "基岩版：冻河同样 1.0（无群系差异）");
+    CHECK(slime::spawnWeight(15, slime::Platform::Bedrock) == 0.0, "基岩版：蘑菇岛 0（不在英文 Wiki 表内）");
+    CHECK(slime::spawnWeight(174, slime::Platform::Bedrock) == 1.0, "基岩版：溶洞 1.0（英文 Wiki 100/1）");
+    CHECK(slime::spawnWeight(183, slime::Platform::Bedrock) == 0.0, "基岩版：深暗之地 0");
     CHECK(slime::spawnWeight(-1, slime::Platform::Java) == 1.0, "无群系数据（-1）：不加权 = 1.0");
 
     // ② 加权挂机点：左侧簇面积更大但群系权重 0，右侧簇更小但权重 1 ⇒ 加权模式应选右侧
