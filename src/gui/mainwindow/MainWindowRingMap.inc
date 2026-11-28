@@ -336,6 +336,7 @@ void MainWindow::runRingSearch()
     if (m_elapsedTimer) m_elapsedTimer->start(200);
     if (m_streamTimer) m_streamTimer->start(500);
     if (m_w->progressStage) m_w->progressStage->setText(ringPhaseName(0));
+    if (m_w->searchStage) m_w->searchStage->setText(slime::ui::t("ui.ring_progress_started"));
     if (m_w->progressElapsed) m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(0.0, 0, 'f', 1));
     if (m_w->progressEta) m_w->progressEta->setText(slime::ui::t("ui.f00785313fdc"));
     if (m_w->progressInfo) m_w->progressInfo->setText(slime::ui::t("ui.ring_progress_started"));
@@ -713,6 +714,9 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         if (m_streamTimer) m_streamTimer->stop();
         m_ringUiState.reset();
         if (m_w->progressStage) m_w->progressStage->setText(ringPhaseName(6));
+        if (m_w->searchStage)
+            m_w->searchStage->setText(result->cancelled ? slime::ui::t("ui.ring_progress_cancelled_short")
+                                                        : ringPhaseName(6));
         if (m_w->progressElapsed)
             m_w->progressElapsed->setText(slime::ui::t("ui.1bb9e1587450").arg(elapsedSecs, 0, 'f', 1));
         if (m_w->progressInfo)

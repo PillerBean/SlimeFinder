@@ -575,9 +575,11 @@ void MainWindow::fillResultTable()
         t->setItem(i, 3, it3);
         if (afk != nullptr) {
             auto* it4 = new QTableWidgetItem();
-            it4->setText(slime::ui::t("ui.aca2c2cb22cf")
-                             .arg(static_cast<qlonglong>(afk->coveredBlocks))
-                             .arg(afk->coveredWeight, 0, 'f', 0));
+            const QString blocksText = slime::ui::t("ui.aca2c2cb22cf")
+                                           .arg(static_cast<qlonglong>(afk->coveredBlocks))
+                                           .arg(afk->coveredWeight, 0, 'f', 0);
+            it4->setText(blocksText);
+            it4->setToolTip(blocksText);
             t->setItem(i, 4, it4);
         }
         auto* jump = new QPushButton(slime::ui::t("ui.28cd2efd8fa8"), t);
