@@ -1,4 +1,4 @@
-﻿# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
+# v3.12.0：所有构建目标从根 CMakeLists 拆出，由根文件 include。
 
 # ---------------------------------------------------------------- zstd（BSD）：缓存块压缩
 # 自包含 vendored 源码，不依赖系统 zstd。
@@ -79,6 +79,7 @@ add_library(slime_core STATIC
     src/core/FastMt.cpp
     src/core/FastJava.cpp   # v3.6.16：Java 版判定 AVX2（16 lane）
     src/core/CacheManager.cpp
+    src/core/CachePrescan.cpp # v3.15.x（flow-k3-cache）：缓存位图 → 环形/k3 密度预筛种子
     src/core/SearchTask.cpp
     src/core/SearchProgress.cpp
     src/core/SearchReport.cpp

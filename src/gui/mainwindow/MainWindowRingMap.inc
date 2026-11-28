@@ -33,6 +33,8 @@ struct MainWindow::RingSearchResult {
     bool gpuScanEnabled = false;
     bool prescanUsed = false;
     bool prescanFallback = false;
+    // v3.15.x（flow-k3-cache）：预筛种子来自缓存位图（cachePrescanSeeds）而非 GPU 全图扫描。
+    bool cachePrescanUsed = false;
     bool k3Used = false;
     int k3Candidates = 0;
     bool cancelled = false;
@@ -321,8 +323,10 @@ void MainWindow::runRingSearch()
     // v3.15.x（flow-ring-cancel2）：取消标志也按值捕获 shared_ptr —— worker 不再通过 this
     //   访问 MainWindow 成员，窗口析构时即使线程被安全丢弃也不会 UAF。
     const auto ringCancel = m_ringCancel;
-    const auto ringRunner = [state, ringCancel, autoPrescan, k3Mode, minX, maxX, minZ, maxZ, v, seed, pred,
-                             bedrock](const SearchOptions&,
+    // v3.15.x（flow-k3-cache）：ringCache 按值捕获 shared_ptr —— 后台线程可安全读取位图，
+    //   且生命周期不再依赖 runRingSearch 的栈（pred 也持有同一份引用）。
+    const auto ringRunner = [state, ringCancel, ringCache, autoPrescan, k3Mode, minX, maxX, minZ, maxZ, v,
+                             seed, pred, bedrock](const SearchOptions&,
                                       const std::atomic<bool>& jobCancel,
                                       const ProgressFn&) -> SearchOutcome {
         // v3.5.26：后台降到「低于普通」优先级，避免把 UI 线程饿死（精确模式尤其明显）
@@ -345,50 +349,70 @@ void MainWindow::runRingSearch()
         if (cancelRequested()) ringCancel->store(true, std::memory_order_relaxed);
         try {
             if (autoPrescan) {
-                if (state->gpu) {
-                    slime::DensityPrescanParams pp;
-                    pp.version = v;
-                    pp.worldSeed = seed;
-                    pp.minX = minX;
-                    pp.maxX = maxX;
-                    pp.minZ = minZ;
-                    pp.maxZ = maxZ;
-                    pp.gridSize = 15;
-                    pp.minDensity = 0.18;
-                    pp.bandRows = 4096;
-                    pp.topPerBand = 512;
-                    pp.maxSeeds = 4000;
-                    pp.minSeparation = 16;
-                    std::vector<slime::DensitySeed> seeds;
-                    std::string perr;
-                    if (state->gpu->prescanDensitySeeds(pp, *ringCancel, seeds, &perr) &&
-                        !seeds.empty() && !cancelRequested()) {
-                        o.seedCandidates.reserve(seeds.size());
-                        for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
-                        prescanUsed = true;
-                        if (k3Mode) {
-                            AfkPlanOptions base = o;
-                            const auto baseCands = slime::AfkPlanner::plan(base, pred, ringCancel.get());
-                            const int lower = baseCands.empty()
-                                                  ? 0
-                                                  : static_cast<int>(baseCands.front().coveredBlocks);
-                            const auto filtered = slime::AfkPlanner::k3UpperBoundSeeds(
-                                o, o.seedCandidates, pred, lower);
-                            state->k3Candidates = static_cast<int>(filtered.size());
-                            if (!filtered.empty()) o.seedCandidates = filtered;
-                        }
+                // v3.15.x（flow-k3-cache）：预设参数对两种种子来源完全一致。
+                slime::DensityPrescanParams pp;
+                pp.version = v;
+                pp.worldSeed = seed;
+                pp.minX = minX;
+                pp.maxX = maxX;
+                pp.minZ = minZ;
+                pp.maxZ = maxZ;
+                pp.gridSize = 15;
+                pp.minDensity = 0.18;
+                pp.bandRows = 4096;
+                pp.topPerBand = 512;
+                pp.maxSeeds = 4000;
+                pp.minSeparation = 16;
+                std::vector<slime::DensitySeed> seeds;
+                std::string perr;
+                // v3.15.x（flow-k3-cache）：Bedrock 且缓存完整覆盖本区域时，直接按位图
+                //   统计窗口密度生成种子，省掉整次 GPU 全图预筛；失败则回退 GPU（语义不变）。
+                bool cachePrescanOk = false;
+                if (ringCache) {
+                    cachePrescanOk =
+                        slime::cachePrescanSeeds(*ringCache, pp, ringCancel.get(), seeds, &perr);
+                    if (!cachePrescanOk) {
+                        std::fprintf(stderr, "[环形] 缓存预筛不可用，回退 GPU 预筛：%s\n",
+                                     perr.empty() ? "原因未知" : perr.c_str());
+                    }
+                }
+                bool prescanOk = cachePrescanOk;
+                if (!prescanOk && state->gpu) {
+                    prescanOk = state->gpu->prescanDensitySeeds(pp, *ringCancel, seeds, &perr);
+                }
+                if (prescanOk && !seeds.empty() && !cancelRequested()) {
+                    o.seedCandidates.reserve(seeds.size());
+                    for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
+                    prescanUsed = true;
+                    if (cachePrescanOk) {
+                        state->cachePrescanUsed = true;
+                        std::fprintf(stderr, "[环形] 缓存预筛：%zu 个分散种子（阈值 %.2f）\n",
+                                     seeds.size(), pp.minDensity);
+                    }
+                    if (k3Mode) {
+                        AfkPlanOptions base = o;
+                        const auto baseCands = slime::AfkPlanner::plan(base, pred, ringCancel.get());
+                        const int lower = baseCands.empty()
+                                              ? 0
+                                              : static_cast<int>(baseCands.front().coveredBlocks);
+                        const auto filtered = slime::AfkPlanner::k3UpperBoundSeeds(
+                            o, o.seedCandidates, pred, lower);
+                        state->k3Candidates = static_cast<int>(filtered.size());
+                        if (!filtered.empty()) o.seedCandidates = filtered;
+                    }
+                    if (!cachePrescanOk) {
                         std::fprintf(stderr, "[环形] 正方形预筛：%zu 个分散种子（阈值 %.2f）\n",
                                      seeds.size(), pp.minDensity);
-                    } else {
-                        prescanFallback = true;
-                        o.seedCandidates.clear();
-                        o.scanStride = 0;
-                        std::fprintf(stderr, "[环形] 正方形预筛不可用，回退快速抽样：%s\n", perr.c_str());
                     }
                 } else {
                     prescanFallback = true;
+                    o.seedCandidates.clear();
                     o.scanStride = 0;
-                    std::fprintf(stderr, "[环形] GPU 不可用，正方形预筛回退快速抽样\n");
+                    if (!state->gpu) {
+                        std::fprintf(stderr, "[环形] GPU 不可用，正方形预筛回退快速抽样\n");
+                    } else {
+                        std::fprintf(stderr, "[环形] 正方形预筛不可用，回退快速抽样：%s\n", perr.c_str());
+                    }
                 }
             }
             if (cancelRequested()) {
@@ -544,6 +568,12 @@ void MainWindow::finishRingSearch(const RingSearchResultPtr& result)
         addFeedback(2, slime::ui::tr(slime::ui::t("ui.29d84f827fc6")));
     } else if (result->autoPrescan && result->prescanFallback) {
         addFeedback(2, slime::ui::tr(slime::ui::t("ui.c736d29daa5b")));
+    }
+    // v3.15.x（flow-k3-cache）：预筛来源（缓存位图 / GPU）只进日志，不改 UI 文案。
+    if (result->autoPrescan && result->prescanUsed) {
+        std::fprintf(stderr, "[环形] 预筛来源：%s（cachePrescanUsed=%s）\n",
+                     result->cachePrescanUsed ? "缓存位图" : "GPU",
+                     result->cachePrescanUsed ? "true" : "false");
     }
     if (m_resultsNotice) {
         const int got = static_cast<int>(cands.size());

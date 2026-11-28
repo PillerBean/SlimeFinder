@@ -113,6 +113,9 @@
 #include "i18n/UiStrings.h"
 #include "gui/panels/ProgressStreamPanel.h" // v3.3.6：底部「进度」分类（累积式纯文字流水）
 #include "gpu/GpuScanAdapter.h" // v3.2.1：GPU 加速（默认关闭；用户勾选+可用才注入，自动回退）
+// v3.15.x（flow-k3-cache）：缓存位图密度预筛（MainWindowRingMap.inc 在 namespace slime 内展开，
+// 头文件必须在这里的全局作用域先包含，否则会形成嵌套 namespace）。
+#include "core/CachePrescan.h"
 #include "utils/CrashDump.h"     // v3.3.7：崩溃转储开关（设置接线）
 #include "utils/IncidentLog.h"   // v3.3.7：关键信息日志（常开，崩溃/取消取证）
 #include "utils/LogBus.h"        // v3.3.4：日志总线（按日期分文件 + 两级模式）
