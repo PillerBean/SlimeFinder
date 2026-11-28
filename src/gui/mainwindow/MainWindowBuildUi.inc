@@ -209,8 +209,10 @@ void MainWindow::buildUi()
         for (std::size_t i = 0; i < slime::bedrockBiomeVersionCount(); ++i) {
             m_w->bedrockVersionCombo->addItem(QString::fromUtf8(slime::kBedrockBiomeVersions[i].label));
             const QString label = QString::fromUtf8(slime::kBedrockBiomeVersions[i].label);
-            if (label == QStringLiteral("1.16") || label == QStringLiteral("1.17") ||
-                label == QStringLiteral("1.17.30"))
+            const QStringList verParts = label.split(QLatin1Char('.'));
+            const bool legacy = verParts.size() >= 2 && verParts[0] == QStringLiteral("1") &&
+                                verParts[1].toInt() < 18;
+            if (legacy)
                 m_w->bedrockVersionCombo->setItemData(static_cast<int>(i),
                     slime::ui::t("ui.bedrock_version_legacy"), Qt::ToolTipRole);
         }
@@ -2203,6 +2205,8 @@ void MainWindow::showBuildEstimate()
 // ============================================================================
 // v3.3.4（任务书 1.2/1.3）：菜单栏与工具栏（全部使用 QMainWindow 原生接口）
 // ============================================================================
+
+
 
 
 
