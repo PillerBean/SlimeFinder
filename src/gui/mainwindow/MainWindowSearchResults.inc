@@ -275,29 +275,48 @@ void MainWindow::startSearch()
     // v3.12.3：普通搜索不再一次性持有全量 m_cache；按 band 从 CacheStore 懒加载。
     opt.cache = nullptr;
     opt.cacheBandLoader = nullptr;
+    m_activeSearchCache.reset();
     if (cacheEnabled && !buildModeActive() && m_cacheStore) {
-        // v3.14.3: one immutable pack-index snapshot for the whole run. A cache import/clear
-        // after start cannot change which packs this task sees.
+        // v3.14.3: one immutable pack-index snapshot for the whole run.
         const slime::cache::CacheSnapshot cacheSnapshot = m_cacheStore->snapshot();
         auto* cacheStore = m_cacheStore.get();
-        opt.cacheBandMayCover = [cacheStore, cacheSnapshot](const slime::Rect& band) {
-            return cacheStore->coversRange(cacheSnapshot, band);
-        };
-        opt.cacheBandLoader = [cacheStore, cacheSnapshot](
-                                  const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
+        const int spanX = opt.maxX - opt.minX + 1;
+        const int spanZ = opt.maxZ - opt.minZ + 1;
+        // P0: small ranges skip the band wrapper. Loading one band around a
+        // 256x256 range costs more than scanning it, even when cacheHitPoints>0.
+        if (spanX <= opt.cacheBandSize && spanZ <= opt.cacheBandSize) {
+            const slime::Rect range{ opt.minX, opt.maxX, opt.minZ, opt.maxZ };
             auto cm = std::make_shared<slime::CacheManager>();
             std::string err;
-            if (!cacheStore->fillCacheManagerRange(cacheSnapshot, *cm, band, &err) && !err.empty()) {
-                // 失败时返回空缓存继续计算，结果不受影响；但不能静默吞掉。
-                static std::atomic<int> logged{ 0 };
-                if (logged.fetch_add(1, std::memory_order_relaxed) < 5) {
-                    Logger::warning("缓存band加载失败，band=(" + std::to_string(band.minX) + "," +
-                                    std::to_string(band.maxX) + "," + std::to_string(band.minZ) + "," +
-                                    std::to_string(band.maxZ) + ") " + err);
-                }
+            const bool filled = cacheStore->fillCacheManagerRange(cacheSnapshot, *cm, range, &err);
+            if (filled && cm->hasData()) {
+                opt.cache = cm.get();
+                m_activeSearchCache = cm;
+                Logger::info("缓存P0：小范围直读 range=(" + std::to_string(spanX) + "x" +
+                             std::to_string(spanZ) + ")");
+            } else {
+                Logger::warning("缓存P0：小范围直读失败，回退 banded " + err);
             }
-            return cm;
-        };
+        }
+        if (!opt.cache) {
+            opt.cacheBandMayCover = [cacheStore, cacheSnapshot](const slime::Rect& band) {
+                return cacheStore->coversRange(cacheSnapshot, band);
+            };
+            opt.cacheBandLoader = [cacheStore, cacheSnapshot](
+                                      const slime::Rect& band) -> std::shared_ptr<slime::CacheManager> {
+                auto cm = std::make_shared<slime::CacheManager>();
+                std::string err;
+                if (!cacheStore->fillCacheManagerRange(cacheSnapshot, *cm, band, &err) && !err.empty()) {
+                    static std::atomic<int> logged{ 0 };
+                    if (logged.fetch_add(1, std::memory_order_relaxed) < 5) {
+                        Logger::warning("缓存band加载失败，band=(" + std::to_string(band.minX) + "," +
+                                        std::to_string(band.maxX) + "," + std::to_string(band.minZ) + "," +
+                                        std::to_string(band.maxZ) + ") " + err);
+                    }
+                }
+                return cm;
+            };
+        }
     }
     // v3.3.9（任务书 1.2）：**普通搜索不再写缓存** —— 写入路径整体移除（只有缓存构建模式能写）
     opt.cacheWrite = nullptr;

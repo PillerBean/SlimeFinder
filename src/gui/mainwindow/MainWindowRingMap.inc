@@ -158,7 +158,27 @@ void MainWindow::runRingSearch()
         return;
     }
     const slime::Version v = bedrock ? slime::Version::Bedrock : slime::Version::Java;
-    const auto pred = [v, seed](int cx, int cz) { return slime::SlimeEngine::isSlimeChunk(v, seed, cx, cz); };
+    // v3.15.x: Bedrock 且缓存完整覆盖本区域时，环形/k3 的 predicate 直接读缓存。
+    std::shared_ptr<slime::CacheManager> ringCache;
+    if (bedrock && m_w->useCache && m_w->useCache->isChecked() && m_cacheStore) {
+        const slime::cache::CacheSnapshot snap = m_cacheStore->snapshot();
+        if (m_cacheStore->coversRange(snap, o.area)) {
+            auto cm = std::make_shared<slime::CacheManager>();
+            std::string err;
+            if (m_cacheStore->fillCacheManagerRange(snap, *cm, o.area, &err) && cm->hasData()) {
+                ringCache = cm;
+                o.cache = cm.get();
+                Logger::info("环形缓存：区域完整覆盖，使用 CacheManager");
+            }
+        }
+    }
+    const auto pred = [v, seed, ringCache](int cx, int cz) {
+        if (ringCache) {
+            const int hit = ringCache->lookup(cx, cz);
+            if (hit >= 0) return hit == 1;
+        }
+        return slime::SlimeEngine::isSlimeChunk(v, seed, cx, cz);
+    };
     // v3.5.15：Java 版给规划器一个「整行批量判定」回调（行基座只算一次，占用图快数倍）
     if (!bedrock)
         o.rowSlime = [seed](int cz, int cx0, int n, uint8_t* out) {

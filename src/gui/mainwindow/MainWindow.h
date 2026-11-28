@@ -1,4 +1,4 @@
-// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
+﻿// MainWindow.h - 主窗口（史莱姆区块查找器 GUI）
 //
 // 交互流程：游戏版本 → 种子 → 范围(快速预设/边界截断) → 模式（严格图案 / 密度）→
 // 搜索算法（精确 / 分层 / 快速估算 / 保守）→ 查询起点 → 开始搜索；
@@ -380,6 +380,7 @@ private:
 
     Widgets* m_w = nullptr;
     std::unique_ptr<CacheManager> m_cache;
+    std::shared_ptr<CacheManager> m_activeSearchCache; // v3.15.x：小范围直读缓存
     std::unique_ptr<gui::TelemetryClient> m_telemetry; // v3.10.12.12：默认关闭，用户主动开启才发送
     QLabel* m_telemetryNotice = nullptr;               // v3.10.12.12：状态栏里的开启公告
     // v3.3.9（任务书 5.1）：托盘图标（图标与窗口/任务栏一致；系统无托盘时为 nullptr）
@@ -516,3 +517,4 @@ private:
 };
 
 } // namespace slime
+

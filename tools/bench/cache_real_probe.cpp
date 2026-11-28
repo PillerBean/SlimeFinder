@@ -59,6 +59,22 @@ int main(int argc, char** argv)
                 static_cast<long long>(banded.cacheHitPoints), banded.cacheFillSkipped ? 1 : 0,
                 banded.stats.totalMs, banded.error.c_str());
 
+    // P0 direct path: whole-range CacheManager, no band wrapper.
+    {
+        auto cm = std::make_shared<slime::CacheManager>();
+        std::string err;
+        store.fillCacheManagerRange(snap, *cm, slime::Rect{minX, maxX, minZ, maxZ}, &err);
+        slime::SearchOptions direct = opt;
+        direct.cache = cm.get();
+        direct.cacheBandMayCover = nullptr;
+        direct.cacheBandLoader = nullptr;
+        slime::SearchOutcome out;
+        engine.run(direct, std::atomic<bool>{}, {}, out);
+        std::printf("direct ok=%d results=%zu hitPoints=%lld fillSkipped=%d ms=%.1f err=%s\n",
+                    out.ok ? 1 : 0, out.results.size(), static_cast<long long>(out.cacheHitPoints),
+                    out.cacheFillSkipped ? 1 : 0, out.stats.totalMs, out.error.c_str());
+    }
+
     slime::SearchOptions plainOpt = opt;
     plainOpt.useCache = false;
     plainOpt.cacheBandMayCover = nullptr;
@@ -69,6 +85,7 @@ int main(int argc, char** argv)
                 plain.ok ? 1 : 0, plain.results.size(), plain.stats.totalMs, plain.error.c_str());
     return (banded.ok && plain.ok) ? 0 : 2;
 }
+
 
 
 

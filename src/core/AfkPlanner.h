@@ -1,4 +1,4 @@
-// v3.5.2（任务 1）：环形覆盖挂机点规划（精度 1 格 = 1/16 区块）
+﻿// v3.5.2（任务 1）：环形覆盖挂机点规划（精度 1 格 = 1/16 区块）
 //
 // 为什么需要：史莱姆农场要「站对位置」—— 玩家附近 R 格（默认 128）内的史莱姆区块面积越大，
 // 可刷怪的格数越多、效率越高。史莱姆区块是 16x16，所以最优站位常常落在**区块角点**上
@@ -49,6 +49,7 @@ struct AfkCandidate {
     int afkBaseY = -63;           // 平台顶面绝对 Y（旧版本为 1）
 };
 
+class CacheManager;
 struct AfkPlanOptions {
     Rect area;                  // 候选挂机点范围（区块坐标，含边界）
     int radius = 128;           // 外半径（方块）：生物刷新的最大距离（默认 128）
@@ -65,6 +66,8 @@ struct AfkPlanOptions {
     int scanStride = 0;
     // v3.5.18：严格统计的行带数（并行度/开销权衡；高级调试参数）
     int statBands = 4;
+    // v3.15.x：可选缓存句柄；仅当调用方确认覆盖时由 predicate 使用。
+    const CacheManager* cache = nullptr;
     // v3.7.6：可选 GPU 覆盖计算（为空 / 不可用 / 区域太小 / 加权模式 ⇒ 走 CPU）
     const class GpuScan* gpuScan = nullptr;
     // v3.10.12.11：正方形密度预筛得到的种子（区块坐标）。非空时跳过粗扫/抽样，直接精修这些种子。
@@ -165,3 +168,4 @@ private:
 };
 
 } // namespace slime
+
