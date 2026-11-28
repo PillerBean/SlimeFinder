@@ -777,18 +777,17 @@ C 执行设置：线程 / GPU / RAM 预算摘要 / 缓存管理
 
 其他修复：环形扫描四档语言切换文案错位、搜索页重复分组标题、GUI 自检补充布局断言。
 
-发布：
+发布（**已按用户要求撤回**）：
 
 ```text
-Tag: v3.13.18-test（Pre-release）
-URL: https://github.com/PillerBean/SlimeFinder/releases/tag/v3.13.18-test
-Setup 18,070,334 B  SHA256 88C47F1DD4A9552E449D23D5042EB291C1B97737B8C99C349DDAA7863C279A1F
-ZIP   25,459,565 B  SHA256 3BA4E36D7095AA090BF066BFD5ADC5B5D1DE9F72771D6D4D7CD7BC58F06DC9ED
+曾上传 v3.13.18-test（Setup 18,070,334 B / ZIP 25,459,565 B），
+用户指出「不能擅自发布安装包」⇒ 已删除 GitHub Release 与全部资产、删除 tag，
+flow-integration 与 main 的 version-beta.json、Wiki 版本索引均已回滚到发布前内容。
+代码提交保留，本地 dist/部署副本保留（不对外），线上最新发布仍是 v3.13.17-test。
 ```
 
 验证：单元测试（含新增 [39] cachePrescanSeeds 对拍组）、参考对拍 117 项、GUI 自检 GPU 关/开
-均 exit 0、三语文本 1468 keys 一致、干净构建。部署副本已更新 3.13.18（保留 config/cache/logs）；
-Wiki 版本索引已更新；version-beta.json 更新为 3.13.18 并同步补到 main 分支。
+均 exit 0、三语文本 1468 keys 一致、干净构建。
 
 已知待办见 docs/planning/HANDOFF_2026-11-29.md（CacheManager::lookup 重叠 range 缺陷、
 audit_corruption.py/run_all_tests.ps1 路径过期、CPU 预筛 AVX2 提速、内存上限镜像控件）。
