@@ -824,3 +824,23 @@ GUI offscreen 自检 GPU 关/开均 exit 0「全部通过」（新增建议坐�
 i18n 1492 keys × 3 语言。截图：docs/screenshots/ux-2026-11-28/。
 
 未发布：等待用户批准发布流程；发布前需再确认版本号与 Release 资产清单。
+## 2026-11-28 22:40 开发循环规则：部署目录必须最新 + 测试版快速门禁
+
+用户规定：
+1) 本地部署目录 ...\SlimeFinder\dist\SlimeFinder\SlimeFinder.exe 是重要手工检验路径，
+   必须始终保持最新开发构建（无论版本号、无论是否发布）。
+2) 测试版开发可以省略一些耗时且不易出错的自检，加快迭代。
+
+落地：
+- 新增 `scripts/release/sync_local_deploy.ps1`：从任意 worktree 构建目录同步 exe/工具/assets/
+  build_date 到主仓库部署目录，逐个校验 SHA256，保留 config*/cache/logs/crashes；
+  若部署 exe 正在运行，则改名 `SlimeFinder.exe.old-<时间戳>` 后写入新 exe，并提示重启。
+  已执行：部署 exe 更新为最新 UX 构建 3,738,624 B SHA256 5610555…B5D9B3（与 build 一致，config/cache 保留）。
+- 新增 `scripts/qa/check_fast.ps1`：测试版快速门禁 = 增量构建 + `--unit` + 三语检查 +
+  部署同步（默认自动同步，`-NoDeploy` 可跳过）；实测十几秒~1 分钟。
+- 全量门禁（GUI 自检 GPU 关/开、参考对拍 117、kernel、打包验证）只在发布前或引擎/缓存/GPU/
+  环形算法/GUI 结构大改后跑。
+- 文档：`docs/planning/dev_loop_policy.md`；交接文档 §2.1/§6/§8 已同步。
+
+验证：`sync_local_deploy.ps1` 退出码 0、部署 exe 与 build SHA256 一致、config.json hash 未变、
+cache 目录保留；`check_fast.ps1` 退出码 0（FAST GATE OK）。
