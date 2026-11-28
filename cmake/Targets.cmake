@@ -542,6 +542,13 @@ target_link_libraries(slime_bedrock_hash_check PRIVATE cubiomes_bedrock)
 if(MSVC)
     target_compile_options(slime_bedrock_hash_check PRIVATE /utf-8 /EHsc /permissive-)
 endif()
+add_executable(slime_cache_real_probe
+    tools/bench/cache_real_probe.cpp
+)
+target_link_libraries(slime_cache_real_probe PRIVATE slime_core)
+if(MSVC)
+    target_compile_options(slime_cache_real_probe PRIVATE /utf-8 /EHsc /permissive-)
+endif()
 add_executable(slime_bedrock_biome_query
     tools/bench/bedrock_biome_query.cpp
 )
@@ -664,6 +671,7 @@ target_link_libraries(slime_height_region_local PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_height_region_local PRIVATE /utf-8 /EHsc /permissive-)
 endif()
+
 
 
 

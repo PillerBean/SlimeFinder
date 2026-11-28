@@ -142,3 +142,46 @@ P1 k3 缓存接入设计
 P2 搜索页 A/B/C 重排
 P2 缓存地图截图验收
 ```
+
+## 真实缓存测试（2026-11-28）
+
+探针：`tools/bench/cache_real_probe.cpp`
+
+缓存：部署目录 `cache`，1024 个 pack。
+
+### 256×256 / band 256
+
+```text
+banded 31.1ms  hitPoints=65536  fillSkipped=1
+plain   1.2ms
+```
+
+小范围下 band 初始化/加载开销大于缓存收益。
+
+### 1024×1024 / band 1024
+
+```text
+banded 32.1ms  hitPoints=1048576  fillSkipped=1
+plain  19.1ms
+```
+
+仍偏慢。
+
+### 8192×8192 / band 8192（完整 pack）
+
+```text
+banded 165.8ms  hitPoints=67108864  fillSkipped=1
+plain 1235.9ms
+```
+
+缓存约 7.5× 加速。
+
+结论：
+
+```text
+缓存路径本身有效；
+小范围/小 band 会被加载开销抵消；
+用户感觉“无加速”更可能是范围与 pack/band 不匹配。
+```
+
+k3 仍不读缓存，需要规划器接口。
