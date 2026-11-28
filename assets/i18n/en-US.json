@@ -1455,5 +1455,15 @@
   "ui.bedrock_version_tip": "Bedrock biome generation version (used for river filtering)",
   "ui.bedrock_river_seed_required": "Bedrock river filtering needs a world seed; the seed is empty, so results were not filtered.",
   "ui.bedrock_version_legacy": "Legacy Bedrock layered generator; early Bedrock and Java algorithms differ, so the Java hash baseline does not apply",
-  "ui.afk_y": "Absolute Y"
+  "ui.afk_y": "Absolute Y",
+  "ui.search_method_group": "Search Method",
+  "ui.execution_group": "Execution Settings",
+  "ui.memory_budget_label": "Memory budget:",
+  "ui.memory_budget_summary": "%1 · chunk bitmap %2 MB · pack LRU %3 MB · GPU host %4 MB",
+  "ui.memory_budget_manual": "Manual %1 MB",
+  "ui.memory_budget_clamped": " (clamped to available RAM)",
+  "ui.memory_budget_tip": "Adjust the memory cap on the Settings page (0 = automatic). This shows the RAM budget the next task will use: chunk bitmap / pack LRU / GPU host.",
+  "ui.weight_biome": "Rank by biome weight (Java)",
+  "ui.weight_biome_tip": "Java + ring mode only. On by default to match current behavior; when off, rank by raw block count (Bedrock has no biome data and always uses raw block count).",
+  "ui.result_limits_group": "Stop & Count"
 }

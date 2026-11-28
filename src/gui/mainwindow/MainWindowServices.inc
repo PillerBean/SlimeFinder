@@ -99,6 +99,9 @@ void MainWindow::applyLanguage()
     }
     // 窗口标题单独处理（版本号是变量，不翻译）
     setWindowTitle(slime::ui::t("ui.8e056aa8f722").arg(QLatin1String(kAppVersion)));
+    // v3.15.x：C 组 RAM 预算摘要是「自动/手动 + 数字」的运行时拼接文本，
+    //   通用改写无法按 zhText 一一映射，切换语言后按当前语言重新生成一遍。
+    updateMemoryBudgetUi();
 }
 
 void MainWindow::retranslateModeUi()
@@ -115,9 +118,14 @@ void MainWindow::retranslateModeUi()
     if (m_w->shapeSquareRadio) m_w->shapeSquareRadio->setToolTip(text(Key::ShapeSquareTip));
     if (m_w->shapeRingRadio) m_w->shapeRingRadio->setToolTip(text(Key::ShapeRingTip));
     if (m_w->ringScanCombo) {
-        if (m_w->ringScanCombo->count() >= 2) {
-            m_w->ringScanCombo->setItemText(0, text(Key::RingScanFast));
-            m_w->ringScanCombo->setItemText(1, text(Key::RingScanExact));
+        // v3.15.x：环形扫描已扩到 4 档，按 itemData 恢复各档文案（原来只改了前两项，
+        //   会把「预筛精修」误写成「暴力遍布」）。
+        for (int i = 0; i < m_w->ringScanCombo->count(); ++i) {
+            const int data = m_w->ringScanCombo->itemData(i).toInt();
+            m_w->ringScanCombo->setItemText(
+                i, data == 2 ? slime::ui::t("ui.6ff11b12c236")
+                              : data == 3 ? slime::ui::t("ui.ring_scan_k3")
+                                          : (data == 1 ? text(Key::RingScanExact) : text(Key::RingScanFast)));
         }
         m_w->ringScanCombo->setToolTip(text(Key::RingScanTip));
     }

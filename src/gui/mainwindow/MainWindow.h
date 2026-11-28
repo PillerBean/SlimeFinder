@@ -122,6 +122,7 @@ private slots:
     void cancelSearch();
     void copyResults();
     void updateCacheStatusUi();
+    void updateMemoryBudgetUi();   // v3.15.x：搜索页 C 组 RAM 预算摘要（只读）
     void showContact();
     void showCredits();   // v3.7.5：鸣谢名单
     void showTelemetryDialog();   // v3.10.12.12：匿名统计说明/开关

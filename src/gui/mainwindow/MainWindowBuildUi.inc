@@ -142,8 +142,9 @@ void MainWindow::buildUi()
     // ================= 左：设置面板（QScrollArea + 6 分组） =================
     auto* leftPanel = new QWidget(m_hSplit);
     // v3.11.2：英文/繁体文案更长；窄窗下左栏加宽，避免 QScrollArea 横向滚动截断文字。
+    // v3.15.x：A/B/C 嵌套分组自带 QGroupBox 边框/内边距（+14px），左栏最小宽随之 +10 保证无横向滚动条。
     const bool wideText = slime::ui::isEnglish() || slime::ui::isTraditional();
-    leftPanel->setMinimumWidth(wideText ? 480 : 360);
+    leftPanel->setMinimumWidth(wideText ? 490 : 370);
     auto* leftLay = new QVBoxLayout(leftPanel);
     leftLay->setContentsMargins(0, 0, 0, 0);
     leftLay->setSpacing(0);
@@ -155,7 +156,7 @@ void MainWindow::buildUi()
     mainScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     auto* groupsHost = new QWidget(mainScroll);
     auto* groupsLay = new QVBoxLayout(groupsHost);
-    groupsLay->setContentsMargins(2, 8, 2, 8); // v3.4.4：参数列上下留白（缓解标题叠字）
+    groupsLay->setContentsMargins(0, 8, 0, 8); // v3.4.4：参数列上下留白（缓解标题叠字）
     groupsLay->setSpacing(10);         // v3.4.4：卡片间距加大，标题带不再互相挤
     mainScroll->setWidget(groupsHost);
     leftLay->addWidget(mainScroll);
@@ -254,7 +255,45 @@ void MainWindow::buildUi()
     }
 
 
-    // ---- 分组 2：搜索范围（预设 + 范围 + 查询起点 + 坐标转换）----
+    // ================= v3.15.x：搜索页重排为 A/B/C 三个顶层分组 =================
+    //   A 搜索方式（怎么搜）：环形 = 4 档扫描方式；图案 / 正方形密度 = 匹配算法与参数
+    //   B 结果要求（搜什么）：搜索范围、搜索模式与方案、区域形状、最低密度、目标数量、停止方式
+    //   C 执行设置：线程 / GPU / 内存预算 / 缓存管理
+    //   原来的 6 个 QGroupBox 作为子分组保留（对象与内部控件不动，仅换父布局）。
+    auto* gSearchMethod = new QGroupBox(slime::ui::t("ui.search_method_group"), groupsHost);
+    m_w->searchMethodGroup = gSearchMethod;
+    auto* searchMethodLay = new QVBoxLayout(gSearchMethod);
+    searchMethodLay->setContentsMargins(0, 4, 0, 4);   // 嵌套子分组自带边框，外层不再重复留白（窄栏防横向滚动）
+
+    // A 内：环形扫描方式（仅环形形状显示；图案/正方形由「匹配方式」子分组承担）
+    m_w->ringScanRow = new QWidget(gSearchMethod);
+    {
+        auto* ringModeRow = new QHBoxLayout(m_w->ringScanRow);
+        ringModeRow->setContentsMargins(0, 0, 0, 0);
+        ringModeRow->setSpacing(4);
+        ringModeRow->addWidget(new QLabel(slime::ui::t("ui.637be2399ba9"), m_w->ringScanRow));
+        m_w->ringScanCombo = new QComboBox(m_w->ringScanRow);
+        m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanFast), 0);
+        m_w->ringScanCombo->addItem(slime::ui::t("ui.6ff11b12c236"), 2);
+        m_w->ringScanCombo->addItem(slime::ui::t("ui.ring_scan_k3"), 3);
+        m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanExact), 1);
+        m_w->ringScanCombo->setToolTip(slime::ui::t("ui.5201f6ebf6aa"));
+        ringModeRow->addWidget(m_w->ringScanCombo);
+        ringModeRow->addStretch();
+    }
+    m_w->ringScanRow->setVisible(false);
+    searchMethodLay->addWidget(m_w->ringScanRow);
+    groupsLay->addWidget(gSearchMethod);
+
+    // B 结果要求（子分组按原构建顺序挂入本组；标题复用原「结果要求」 key）
+    auto* gRequirements = new QGroupBox(slime::ui::t("ui.a62f39a46c98"), groupsHost);
+    m_w->requirementGroup = gRequirements;
+    auto* requirementsLay = new QVBoxLayout(gRequirements);
+    requirementsLay->setContentsMargins(0, 4, 0, 4);   // 嵌套子分组自带边框，外层不再重复留白（窄栏防横向滚动）
+    requirementsLay->setSpacing(8);
+    groupsLay->addWidget(gRequirements);
+
+    // ---- 子分组：搜索范围（预设 + 范围 + 查询起点 + 坐标转换）----
     auto* gRange = new QGroupBox(slime::ui::t("ui.2cacc1b74217"), groupsHost);
     auto* rangeLay = new QVBoxLayout(gRange);
     rangeLay->setContentsMargins(6, 6, 6, 6);
@@ -346,7 +385,7 @@ void MainWindow::buildUi()
     convRow2->addWidget(m_w->convertBtn);
     convRow2->addStretch();
     rangeLay->addLayout(convRow2);
-    groupsLay->addWidget(gRange);
+    requirementsLay->addWidget(gRange);   // v3.15.x：搜索范围 → B 结果要求
 
     // ---- 分组 3：搜索模式（严格/密度 + 图案 + 密度参数 + 目标数量）----
     auto* gMode = new QGroupBox(slime::ui::t("ui.5483493bb0d8"), groupsHost);
@@ -437,29 +476,23 @@ void MainWindow::buildUi()
         m_w->shapeButtonGroup = shapeGroup;
     }
 
-    // v3.10.9：最小密度/忽略阈值已移入「结果要求」分组（仅自定义/环形显示），此处不再重复显示
-    m_w->minDensity = new QDoubleSpinBox(m_w->densityPanel);
-    m_w->minDensity->setRange(0.0, 1.0);
-    m_w->minDensity->setDecimals(3);
-    m_w->minDensity->setSingleStep(0.05);
-    m_w->minDensity->setValue(0.3);
-    m_w->minDensity->setToolTip(slime::ui::t("ui.9f053e5570b1"));
-
-    m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityPanel);
-    m_w->ignoreThreshold->setToolTip(slime::ui::t("ui.e302a43e602a"));
-
-    // 自定义方案才显示：网格 / 最小密度 / 忽略阈值
-    m_w->densityAdvanced = new QWidget(m_w->densityPanel);
-    auto* advancedLay = new QVBoxLayout(m_w->densityAdvanced);
-    advancedLay->setContentsMargins(0, 0, 0, 0);
-    advancedLay->setSpacing(4);
+    // v3.15.x（A/B/C 重排 · 关键修复）：最低密度 / 忽略阈值属于「结果要求」，密度模式下常显。
+    //   以前这两个控件藏在 densityAdvanced（仅自定义方案展开）里，默认/环形方案下用户看不到也调不了。
     {
         auto* densCfgRow = new QHBoxLayout();
-        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityAdvanced));
+        densCfgRow->addWidget(new QLabel(slime::ui::t("ui.97aed4fd11b2"), m_w->densityPanel));
+        m_w->minDensity = new QDoubleSpinBox(m_w->densityPanel);
+        m_w->minDensity->setRange(0.0, 1.0);
+        m_w->minDensity->setDecimals(3);
+        m_w->minDensity->setSingleStep(0.05);
+        m_w->minDensity->setValue(0.3);
+        m_w->minDensity->setToolTip(slime::ui::t("ui.9f053e5570b1"));
+        m_w->ignoreThreshold = new QCheckBox(slime::ui::t("ui.1a3b758d0fda"), m_w->densityPanel);
+        m_w->ignoreThreshold->setToolTip(slime::ui::t("ui.e302a43e602a"));
         densCfgRow->addWidget(m_w->minDensity);
         densCfgRow->addWidget(m_w->ignoreThreshold);
         densCfgRow->addStretch();
-        advancedLay->addLayout(densCfgRow);
+        densityLay->addLayout(densCfgRow);
         m_minDensityCommitted = m_w->minDensity->value();
         QObject::connect(m_w->minDensity, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
                          this, [this](double) { applyResultConflicts(); });
@@ -471,15 +504,17 @@ void MainWindow::buildUi()
             m_minDensityCommitted = v;
             markPresetCustom(slime::ui::t("ui.d67b9dd37ebe"));
         });
+        QObject::connect(m_w->ignoreThreshold, &QCheckBox::toggled, this, [this](bool) {
+            applyResultConflicts();
+            markPresetCustom(slime::ui::t("ui.4256e53c8eaf"));
+        });
     }
 
-    QObject::connect(m_w->ignoreThreshold, &QCheckBox::toggled, this, [this](bool) {
-        applyResultConflicts();
-        markPresetCustom(slime::ui::t("ui.4256e53c8eaf"));
-    });
-
-
-    // 正方形专属：网格大小
+    // 自定义方案才显示：正方形网格等高级项
+    m_w->densityAdvanced = new QWidget(m_w->densityPanel);
+    auto* advancedLay = new QVBoxLayout(m_w->densityAdvanced);
+    advancedLay->setContentsMargins(0, 0, 0, 0);
+    advancedLay->setSpacing(4);    // 正方形专属：网格大小
     m_w->squareOpts = new QWidget(m_w->densityAdvanced);
     auto* squareLay = new QVBoxLayout(m_w->squareOpts);
     squareLay->setContentsMargins(0, 0, 0, 0);
@@ -497,23 +532,11 @@ void MainWindow::buildUi()
     advancedLay->addWidget(m_w->squareOpts);
     densityLay->addWidget(m_w->densityAdvanced);
 
-    // 环形专属：扫描模式 + 最小密度
+    // 环形专属：模拟距离（环形扫描方式在 A 组，环形内外半径见第二阶段）
     m_w->ringOpts = new QWidget(m_w->densityPanel);
     auto* ringLay = new QVBoxLayout(m_w->ringOpts);
     ringLay->setContentsMargins(12, 0, 0, 0);
     ringLay->setSpacing(4);
-    auto* ringModeRow = new QHBoxLayout();
-    ringModeRow->addWidget(new QLabel(slime::ui::t("ui.637be2399ba9"), m_w->ringOpts));
-    m_w->ringScanCombo = new QComboBox(m_w->ringOpts);
-    m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanFast), 0);
-    m_w->ringScanCombo->addItem(slime::ui::t("ui.6ff11b12c236"), 2);
-    m_w->ringScanCombo->addItem(slime::ui::t("ui.ring_scan_k3"), 3);
-    m_w->ringScanCombo->addItem(slime::ui::text(slime::ui::Key::RingScanExact), 1);
-    m_w->ringScanCombo->setToolTip(slime::ui::t("ui.5201f6ebf6aa"));
-    ringModeRow->addWidget(m_w->ringScanCombo);
-    ringModeRow->addStretch();
-    ringLay->addLayout(ringModeRow);
-
     // v3.6.18（用户要求）：模拟距离（区块）—— 刷怪只发生在模拟距离内（16 格/区块），
     //   16×D < 128 时环带外沿会被收窄；>=8 区块（128 格）时与默认环带一致。
     auto* simRow = new QHBoxLayout();
@@ -537,32 +560,21 @@ void MainWindow::buildUi()
     densityLay->addWidget(m_w->ringOpts);
     modeLayout->addWidget(m_w->densityPanel);
 
-    // ===== 通用选项 =====
-    auto* optRow3 = new QHBoxLayout();
-    optRow3->addWidget(new QLabel(slime::ui::t("ui.1113d292c420"), gMode));
+    // v3.15.x：目标数量 / 停止方式 / 智能范围均属于「结果要求」，控件在这里创建（保持连接不变），
+    //   挂到下面的 gResult 子分组里。
     m_w->targetCount = new QSpinBox(gMode);
     m_w->targetCount->setRange(1, 1000000);
     m_w->targetCount->setValue(1);
     m_w->targetCount->setToolTip(slime::ui::t("ui.0405eccc6f77"));
-    optRow3->addWidget(m_w->targetCount);
-    optRow3->addStretch();
-    modeLayout->addLayout(optRow3);
-    // v3.10.9：停止方式已移入「结果要求」分组（仅自定义方案显示）
-    auto* optRow1 = new QHBoxLayout();
     m_w->stopAtTarget = new QCheckBox(slime::ui::t("ui.c4db3610d642"), gMode);
     m_w->stopAtTarget->setToolTip(slime::ui::t("ui.804c72b80469"));
-    optRow1->addWidget(m_w->stopAtTarget);
-    optRow1->addStretch();
     QObject::connect(m_w->stopAtTarget, &QCheckBox::toggled, this,
                      [this](bool) { markPresetCustom(slime::ui::t("ui.b77bf334b0d7")); });
-    auto* optRow2 = new QHBoxLayout();
     m_w->smartRange = new QCheckBox(slime::ui::text(slime::ui::Key::SmartRange), gMode);
     m_w->smartRange->setToolTip(slime::ui::text(slime::ui::Key::SmartRangeTip));
-    optRow2->addWidget(m_w->smartRange);
-    optRow2->addStretch();
     QObject::connect(m_w->smartRange, &QCheckBox::toggled, this,
                      [this](bool) { markPresetCustom(slime::ui::t("ui.9522c47b44f6")); });
-    groupsLay->addWidget(gMode);
+    requirementsLay->addWidget(gMode);   // v3.15.x：搜索模式 → B 结果要求
 
     // ---- v3.10.9（用户要求）：声明「自定义方案可能导致明显降速」+ 高级开关分级 ----
     m_w->presetDisclaimer = new QLabel(gMode);
@@ -575,13 +587,19 @@ void MainWindow::buildUi()
                                              .arg(darkTheme() ? QStringLiteral("#ffb74d")
                                                               : QStringLiteral("#b26a00")));
     m_w->presetDisclaimer->setText(slime::ui::t("ui.08c668ef8483"));
-    groupsLay->addWidget(m_w->presetDisclaimer);
+    requirementsLay->addWidget(m_w->presetDisclaimer);
 
-    auto* gResult = new QGroupBox(slime::ui::t("ui.a62f39a46c98"), groupsHost);
+    auto* gResult = new QGroupBox(slime::ui::t("ui.result_limits_group"), groupsHost);
     m_w->resultGroup = gResult;
     auto* resultReqLay = new QVBoxLayout(gResult);
     resultReqLay->setContentsMargins(6, 6, 6, 6);
 
+    // v3.15.x：目标数量从「搜索模式」移入「结果要求」（结果要几个属于结果要求）
+    auto* targetRow = new QHBoxLayout();
+    targetRow->addWidget(new QLabel(slime::ui::t("ui.1113d292c420"), gResult));
+    targetRow->addWidget(m_w->targetCount);
+    targetRow->addStretch();
+    resultReqLay->addLayout(targetRow);
     auto* stopRow = new QHBoxLayout();
     stopRow->addWidget(m_w->stopAtTarget);
     stopRow->addStretch();
@@ -590,8 +608,7 @@ void MainWindow::buildUi()
     smartRow->addWidget(m_w->smartRange);
     smartRow->addStretch();
     resultReqLay->addLayout(smartRow);
-    // v3.10.12.11：最小密度/忽略阈值已移到密度面板常显，这里只保留停止方式/智能范围
-    groupsLay->addWidget(gResult);
+    requirementsLay->addWidget(gResult);   // v3.15.x：结果要求 → B 结果要求
 
     // ---- 分组 4：匹配方式（搜索算法四模式与参数）----
     auto* gMatch = new QGroupBox(slime::ui::t("ui.6a05dbdc884c"), groupsHost);
@@ -671,11 +688,20 @@ void MainWindow::buildUi()
     m_w->algSummary->setStyleSheet(QStringLiteral("color:%1;").arg(darkTheme() ? "#9aa0a6" : "#767676"));
     m_w->algSummary->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     algLay->addWidget(m_w->algSummary);
-    groupsLay->addWidget(gMatch);
+    searchMethodLay->addWidget(gMatch);   // v3.15.x：匹配方式 → A 搜索方式
 
-    // ---- 分组 5：性能设置（线程数 + GPU 加速）----
+    // ================= C 执行设置：性能 / 内存预算 / 缓存 =================
+    auto* gExecution = new QGroupBox(slime::ui::t("ui.execution_group"), groupsHost);
+    m_w->executionGroup = gExecution;
+    auto* executionLay = new QVBoxLayout(gExecution);
+    executionLay->setContentsMargins(0, 4, 0, 4);   // 嵌套子分组自带边框，外层不再重复留白（窄栏防横向滚动）
+    executionLay->setSpacing(8);
+    groupsLay->addWidget(gExecution);
+
+    // ---- 子分组：性能设置（线程数 + GPU 加速）----
     auto* gPerf = new QGroupBox(slime::ui::t("ui.eb1f3e5ef69b"), groupsHost);
     auto* runLay = new QVBoxLayout(gPerf);
+    runLay->setContentsMargins(4, 4, 4, 4);
     auto* runRow = new QHBoxLayout();
     const int cores = QThread::idealThreadCount();
     runRow->addWidget(new QLabel(slime::ui::t("ui.dc3465f048b7"), gPerf));
@@ -829,11 +855,25 @@ void MainWindow::buildUi()
             scheduleConfigWrite();
         });
     }
-    groupsLay->addWidget(gPerf);
+    executionLay->addWidget(gPerf);   // v3.15.x：性能设置 → C 执行设置
 
-    // ---- 分组 6：缓存管理 ----
+    // C 内：RAM 预算摘要（只读；上限在设置页调整 —— 摘要会随设置/语言刷新）
+    {
+        auto* memRow = new QHBoxLayout();
+        memRow->addWidget(new QLabel(slime::ui::t("ui.memory_budget_label"), gExecution));
+        m_w->memoryBudgetLabel = new QLabel(gExecution);
+        m_w->memoryBudgetLabel->setObjectName(QStringLiteral("memoryBudgetSummary"));
+        m_w->memoryBudgetLabel->setWordWrap(true);
+        m_w->memoryBudgetLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        m_w->memoryBudgetLabel->setToolTip(slime::ui::t("ui.memory_budget_tip"));
+        memRow->addWidget(m_w->memoryBudgetLabel, 1);
+        executionLay->addLayout(memRow);
+    }
+
+    // ---- 子分组：缓存管理 ----
     auto* gCache = new QGroupBox(slime::ui::t("ui.c15668b86bc6"), groupsHost);
     auto* cacheLay = new QVBoxLayout(gCache);
+    cacheLay->setContentsMargins(4, 4, 4, 4);
     auto* cacheRow = new QHBoxLayout();
     m_w->importCache = new QPushButton(slime::ui::t("ui.00e905651e85"), gCache);
     m_w->clearCache = new QPushButton(slime::ui::t("ui.291952a2abb2"), gCache);
@@ -858,7 +898,7 @@ void MainWindow::buildUi()
     m_w->cacheStatus = new QLabel(slime::ui::t("ui.23c0ca294841"), gCache);
     m_w->cacheStatus->setWordWrap(true);
     cacheLay->addWidget(m_w->cacheStatus);
-    groupsLay->addWidget(gCache);
+    executionLay->addWidget(gCache);   // v3.15.x：缓存管理 → C 执行设置
 
     m_paramLay = groupsLay; // v3.4.3：缓存构建「额外选项」挂到搜索页参数列
     groupsLay->addStretch();
