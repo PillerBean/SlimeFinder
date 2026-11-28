@@ -21,7 +21,6 @@
 #include <QString>
 #include <QStringList>
 
-class QSystemTrayIcon; // v3.3.9（任务书 5.1）：托盘图标
 class QTableWidget;    // v3.12.3：缓存包列表
 class QIcon;           // v3.4.0：左导航 / 停靠图标（QPainter 绘制）
 class QStackedWidget;  // v3.4.0：页面栈
@@ -385,8 +384,6 @@ private:
     std::shared_ptr<CacheManager> m_activeSearchCache; // v3.15.x：小范围直读缓存
     std::unique_ptr<gui::TelemetryClient> m_telemetry; // v3.10.12.12：默认关闭，用户主动开启才发送
     QLabel* m_telemetryNotice = nullptr;               // v3.10.12.12：状态栏里的开启公告
-    // v3.3.9（任务书 5.1）：托盘图标（图标与窗口/任务栏一致；系统无托盘时为 nullptr）
-    QSystemTrayIcon* m_tray = nullptr;
     std::filesystem::path m_cacheFile;
     std::filesystem::path m_cacheDir; // v3.12.3：新目录缓存
     bool saveV3Cache();

@@ -48,7 +48,6 @@
 #include <QListWidget>
 #include <QMenu>
 #include <memory>
-#include <QSystemTrayIcon> // v3.3.9（任务书 5.1）：托盘图标
 #include <QPainter>      // v3.4.0：导航/停靠图标（QPainter 绘制）
 #include <QStackedWidget> // v3.4.0：页面栈
 #include <QTreeWidget>   // v3.4.0：更新历史可展开列表
@@ -895,29 +894,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     resize(700, 920);
     setMinimumSize(640, 720);
 
-    // v3.3.9（任务书 5.1）：托盘图标（素材同 exe/窗口图标：透明底史莱姆方块）。
-    // 只提供「显示主窗口 / 退出」两个入口；关闭主窗口仍然是正常退出（不改变原有行为）。
-    if (QSystemTrayIcon::isSystemTrayAvailable()) {
-        m_tray = new QSystemTrayIcon(windowIcon().isNull() ? qApp->windowIcon() : windowIcon(), this);
-        m_tray->setToolTip(slime::ui::t("ui.8e056aa8f722").arg(QLatin1String(kAppVersion)));
-        auto* trayMenu = new QMenu(this);
-        trayMenu->addAction(slime::ui::t("ui.6db9e749dacb"), this, [this]() {
-            showNormal();
-            raise();
-            activateWindow();
-        });
-        trayMenu->addSeparator();
-        trayMenu->addAction(slime::ui::t("ui.feecb1e6adec"), this, []() { QCoreApplication::quit(); });
-        m_tray->setContextMenu(trayMenu);
-        connect(m_tray, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
-            if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
-                showNormal();
-                raise();
-                activateWindow();
-            }
-        });
-        m_tray->show();
-    }
+    // v3.15.x（用户要求：永远不让程序有托盘形式）：彻底移除系统托盘图标。
+    //   旧版会在系统托盘可用时创建 QSystemTrayIcon（显示主窗口/退出菜单），
+    //   用户反馈“最小化到托盘后无法关闭”，因此不再创建任何托盘入口：
+    //   关闭主窗口 = 正常退出；最小化 = 普通任务栏最小化；不驻留托盘。
+    //   （main.cpp 同时显式 setQuitOnLastWindowClosed(true) 作为兜底。）
 
     // v3.5.20：界面语言必须在建界面之前定下来（文案在建控件时就要取）
     {

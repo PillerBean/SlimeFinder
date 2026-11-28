@@ -7,7 +7,7 @@
 //     另有一种被动生物“硫方怪 / Sulfur Cube”（100/315）——它只掉落吸收的方块+经验，
 //     不掉黏液球、也不属于史莱姆。按用户规则“被处死不掉落（可用）物品 ⇒ 按 Wiki 折算”：
 //     Java 折算 = (25/315)/(100/515) ≈ 0.4087（普通史莱姆的刷怪占比）；
-//     若要把“每群 1 只 vs 常规 4 只”的产量差也算进农场效率，还要再 ×1/4 ≈ 0.102。
+//     用户要求“只对硫磺洞穴做产量计算”：该群系每群 1 只（常规 4 只）⇒ 再 ×1/4 ≈ **0.1022**。
 //   * 巨型针叶林丘陵（1.17 变体）与主群系同分母 540。
 //   * 基岩版：英文 Wiki 表内各群系 spawn weight 恒 100/每群 1（名义上无差异），但**河流**在
 //     基岩版从未加入 monster 生成类别（中文 Wiki 明确写“河流[仅基岩版]除外”；Mojira
@@ -109,7 +109,8 @@ const Row kRows[] = {
     { "river", 100, 615, false, "基岩版河流无 monster 类别（MCPE-161245）⇒实际不刷", false, true },
     // ---- 25/315（7.94%，26.2+ 硫磺洞穴；普通史莱姆只在史莱姆区块生成、每群 1 只）----
     // 硫方怪（Sulfur Cube，100/315）是被动生物：只掉落吸收的方块+经验，不掉黏液球。
-    // 按用户规则（凋落物不污染农场）→ 按 Wiki 折算：0.4087（未计“每群 1 只”的产量差）。
+    // 按用户规则（凋落物不污染农场）→ 按 Wiki 折算；并且用户要求“只对硫磺洞穴做产量计算”：
+    // 每群 1 只 vs 常规 4 只 ⇒ 代码里再 ×1/4（见 spawnWeightForName），等效 ≈0.1022。
     { "sulfur_caves", 25, 315, false, "26.2+：普通史莱姆 25/315（每群 1）；硫方怪不掉黏液球", false, false },
     // ---- 不刷敌对生物 / 非主世界 ----
     { "mushroom_fields", 0, 1, false, "不刷敌对生物（Wiki 表未收录）", true, true },
@@ -156,6 +157,11 @@ SpawnWeightInfo spawnWeightForName(const char* biomeName)
     // 折算系数 = (num/den) / (100/515) —— 与用户表格的 515/615、515/540、515/610 完全一致。
     info.javaWeight =
         r->javaNoSpawn ? 0.0 : ((static_cast<double>(r->num) / r->den) / (kBaselineNum / kBaselineDen));
+    // v3.15.x（用户要求：只对硫磺洞穴做产量折算）：硫磺洞穴的普通史莱姆每群 1 只，
+    //   其它群系为 4 只；农场产量与该倍数成正比 ⇒ 再乘 1/4，得到“等效折算”。
+    if (!r->javaNoSpawn && std::strcmp(r->name, "sulfur_caves") == 0) {
+        info.javaWeight *= 0.25;
+    }
     // 英文 Wiki 基岩版列：表内群系 spawn weight 恒 100、每群 1 只 ⇒ 无群系差异；
     // 不在表内（蘑菇岛/深暗之地等）⇒ 0。
     info.bedrockWeight = r->bedrockNoSpawn ? 0.0 : 1.0;

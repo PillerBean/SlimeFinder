@@ -235,9 +235,11 @@ QWidget* SettingsDialog::buildGeneralPage()
         m_wheelAdjust = new QCheckBox(slime::ui::t("ui.09e31f95953e"), page);
         // v3.5.19：界面语言（文案走 UiStrings.h，可扩展更多语言）
     mLanguage = new QComboBox(page);
+    // v3.15.x（用户要求：标注 AI 翻译语种）：简体中文为原始文案；繁体中文/英文为 AI 翻译，
+    //   在选项文字与反馈提示里明确标注，避免用户误以为是人工翻译。
     mLanguage->addItem(slime::ui::t("ui.93659150d0e5"), QStringLiteral("zh"));
     mLanguage->addItem(slime::ui::t("ui.lang.zh_tw"), QStringLiteral("zh-TW"));
-    mLanguage->addItem(QStringLiteral("English"), QStringLiteral("en"));
+    mLanguage->addItem(slime::ui::t("ui.lang.en"), QStringLiteral("en"));
     // v3.5.20：全屏方式（无边框全屏 / 窗口最大化）
     mFullscreenMode = new QComboBox(page);
     mFullscreenMode->addItem(slime::ui::t("ui.2a0936486d4a"), QStringLiteral("borderless"));

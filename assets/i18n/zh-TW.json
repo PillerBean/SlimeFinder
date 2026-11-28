@@ -266,7 +266,7 @@
   "ui.3be003594bed": "GPU 不可用",
   "ui.3c674829def4": "匿名統計已開啟，感謝幫助改進",
   "ui.3ca6b3650a98": "視窗：剪枝/取樣跳過 %1 個（非精確演算法可能漏檢）",
-  "ui.3ce5159878c4": "切換後立即套用（已遷移的介面文案生效；其餘文案逐步遷移）",
+  "ui.3ce5159878c4": "切換後立即套用（已遷移的介面文案生效；其餘文案逐步遷移）。除簡體中文外，繁體中文/英文為 AI 翻譯。",
   "ui.3d24b2f34e0a": "注意：不是合法整數，Java 版搜尋會提示去填寫",
   "ui.3d2555d8be48": "只顯示不低於所選級別的日誌（選「全部」則不過濾）",
   "ui.3d68689da69a": "GPU：尚未檢測。",
@@ -1195,8 +1195,8 @@
   "ui.tab.log": "日誌",
   "ui.tab.progress": "進度",
   "ui.key.ModePattern": "圖案搜尋",
-  "ui.lang.zh_tw": "中文（繁體）",
-  "ui.lang.feedback": "翻譯品質不佳？試試聯絡我們！",
+  "ui.lang.zh_tw": "中文（繁體，AI 翻譯）",
+  "ui.lang.feedback": "繁體中文與英文由 AI 翻譯，翻譯品質不佳？試試聯絡我們！",
   "ui.cache.download.title": "下載快取（推薦）",
   "ui.cache.download.empty": "尚無下載快取。",
   "ui.cache.download.readonly": "下載快取唯讀，可整包刪除，不可修改內容或大小。",
@@ -1493,5 +1493,6 @@
   "ui.search_content_group": "搜尋內容",
   "ui.ring_scatter_note": "撒點抽取：本次隨機撒點 %1 個（種子 %2）",
   "ui.homogeneous_short_notice": "同質化關閉：僅找到 %1 種不同的有效格數量（目標 %2）；可在「結果要求」勾選「允許同品質重複」後按目標數量返回。",
-  "ui.homogeneous_custom_reason": "允許同品質重複"
+  "ui.homogeneous_custom_reason": "允許同品質重複",
+  "ui.lang.en": "英文（AI 翻譯）"
 }

@@ -3538,14 +3538,15 @@ static void testSpawnWeights()
 
     // 硫磺洞穴（26.2+）：普通史莱姆 25/315（只在史莱姆区块、每群 1 只）；
     //   硫方怪（100/315）是被动生物，只掉吸收的方块+经验、不掉黏液球 ⇒ 按用户规则采用 Wiki 折算。
+    //   用户要求“只对硫磺洞穴做产量计算”：每群 1 只 vs 常规 4 只 ⇒ 再 ×1/4。
     const auto sulfur = slime::spawnWeightForName("sulfur_caves");
-    const double sulfurWant = (25.0 / 315.0) / (100.0 / 515.0);
-    std::printf("      硫磺洞穴：java=%.6f（=25/315÷100/515=%.6f）bedrock=%.3f known=%d\n",
+    const double sulfurWant = (25.0 / 315.0) / (100.0 / 515.0) * 0.25;
+    std::printf("      硫磺洞穴：java=%.6f（=(25/315÷100/515)×1/4=%.6f）bedrock=%.3f known=%d\n",
                 sulfur.javaWeight, sulfurWant, sulfur.bedrockWeight, sulfur.known ? 1 : 0);
     CHECK(sulfur.known && std::abs(sulfur.javaWeight - sulfurWant) < 1e-9 &&
               sulfur.bedrockWeight == 1.0,
-          "硫磺洞穴：Java 折算 = wiki 25/315 相对 100/515 ≈ 0.4087（硫方怪不掉黏液球）");
-    CHECK(sulfur.javaWeight > 0.40 && sulfur.javaWeight < 0.42, "硫磺洞穴 Java 折算在 0.41 档");
+          "硫磺洞穴：Java 等效折算 = wiki 25/315 × 每群1/4 ≈ 0.1022（只此群系做产量折算）");
+    CHECK(sulfur.javaWeight > 0.10 && sulfur.javaWeight < 0.11, "硫磺洞穴 Java 等效折算在 0.102 档");
 
     const auto unknown = slime::spawnWeightForName("some_unknown_biome");
     CHECK(!unknown.known && unknown.javaWeight == 1.0, "未收录群系：按最高档 1.0（保守）");

@@ -263,6 +263,8 @@ int main(int argc, char* argv[])
         }
     }
     QApplication app(argc, argv);
+    // v3.15.x（用户要求：永远不让程序有托盘形式）：关闭主窗口即退出进程，绝不驻留托盘。
+    app.setQuitOnLastWindowClosed(true);
     slime::ui::initTextCatalog();
     QApplication::setApplicationName(QStringLiteral("史莱姆区块查找器"));
     QApplication::setApplicationVersion(QStringLiteral("3.13.18")); // v3.4.0

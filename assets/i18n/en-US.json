@@ -266,7 +266,7 @@
   "ui.3be003594bed": "GPU unavailable",
   "ui.3c674829def4": "Anonymous stats is on, thanks for helping improve",
   "ui.3ca6b3650a98": "Window: %1 pruning/sampling skipped (non-exact algorithm may miss)",
-  "ui.3ce5159878c4": "Applies right away (migrated texts update now; the rest migrate gradually)",
+  "ui.3ce5159878c4": "Applies right away (migrated texts update now; the rest migrate gradually). Traditional Chinese and English are AI translations.",
   "ui.3d24b2f34e0a": "Note: not a valid integer; Java searches will ask you to fill it in",
   "ui.3d2555d8be48": "Only show logs that are not lower than the selected level (do not filter if you select \"All\")",
   "ui.3d68689da69a": "GPU: not detected yet.",
@@ -1195,8 +1195,8 @@
   "ui.tab.log": "Log",
   "ui.tab.progress": "Progress",
   "ui.key.ModePattern": "Pattern",
-  "ui.lang.zh_tw": "Traditional Chinese",
-  "ui.lang.feedback": "Translation quality not good? Try contacting us!",
+  "ui.lang.zh_tw": "Chinese (Traditional, AI translation)",
+  "ui.lang.feedback": "Traditional Chinese and English are AI-translated. Translation quality not good? Try contacting us!",
   "ui.cache.download.title": "Downloaded cache (recommended)",
   "ui.cache.download.empty": "No downloaded cache.",
   "ui.cache.download.readonly": "Downloaded cache is read-only; packs can be deleted, but contents and size cannot be modified.",
@@ -1493,5 +1493,6 @@
   "ui.search_content_group": "Search Content",
   "ui.ring_scatter_note": "Scatter sampling: %1 random samples this run (seed %2)",
   "ui.homogeneous_short_notice": "Homogeneous dedup is off: only %1 distinct effective-cell counts (target %2). Enable \"Allow duplicate-quality results\" in Result Requirements to reach the target count.",
-  "ui.homogeneous_custom_reason": "Allow duplicate-quality results"
+  "ui.homogeneous_custom_reason": "Allow duplicate-quality results",
+  "ui.lang.en": "English (AI translation)"
 }

@@ -67,6 +67,23 @@ int MainWindow::runSelfTest()
         check(confirmHighHitEstimate(est, true), "高命中模态警告可确认并继续");
     }
 
+    // v3.15.x（用户要求：永远不让程序有托盘形式）：主窗口内不得存在任何 QSystemTrayIcon；
+    //   关闭主窗口即退出（quitOnLastWindowClosed=true，main.cpp 已显式设置）。
+    //   注意：自检 .inc 在命名空间内 include，不能直接 include Qt 头文件，这里按类名检查。
+    {
+        bool hasTray = false;
+        const auto objects = findChildren<QObject*>();
+        for (const QObject* obj : objects) {
+            if (obj && obj->metaObject() &&
+                QLatin1String(obj->metaObject()->className()) == QLatin1String("QSystemTrayIcon")) {
+                hasTray = true;
+                break;
+            }
+        }
+        check(!hasTray, "不再创建托盘图标（程序永不进入托盘形态）");
+    }
+    check(QApplication::quitOnLastWindowClosed(), "关闭主窗口即退出（不驻留后台）");
+
     // v3.3.4（任务书 1.4）：不做折叠 —— 搜索页四组参数分组始终展开，无需额外复位。
     // v3.3.4（任务书 4.1）：种子默认空 —— 自检先把种子填成合法值，
     // 保证后续各组的真实搜索都能正常执行（空种子的拦截行为在 13.9 单独验证）。
@@ -105,7 +122,7 @@ int MainWindow::runSelfTest()
           "基岩版全局预设不超世界边界");
     applyPreset(200000);
     check(m_w->maxX->value() == kBedrockBoundChunk / 2, "基岩版局部预设按边界缩放");
-    check(m_w->seedEdit->isEnabled(), "基岩版种子框可用（仅用于地图上色，判定与种子无关）");
+    check(m_w->seedEdit->isEnabled(), "基岩版种子框可用（必填：群系/有效格计算依赖种子）");
     check(m_w->presetWorld->isEnabled() == false && m_w->presetBedrock->isEnabled() == true,
           "基岩版预设可用性");
     m_w->javaRadio->setChecked(true);
