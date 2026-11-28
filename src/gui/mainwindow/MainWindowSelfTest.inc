@@ -1,4 +1,4 @@
-// v3.12.0：从 MainWindow.cpp 拆出的 GUI 自检实现。
+﻿// v3.12.0：从 MainWindow.cpp 拆出的 GUI 自检实现。
 // 本文件在 MainWindow.cpp 的命名空间内被 include，因此可访问同一编译单元的
 // 私有成员和文件级 helper；后续可继续拆为独立 TU。
 
@@ -3374,9 +3374,10 @@ int MainWindow::runSelfTest()
                 check(rem.coveredBlocks == res.front().coveredBlocks,
                       "挂机点：邻域移动后的 2D 覆盖已在新中心重算");
             }
-            check(dlg.table() && dlg.table()->columnCount() == 11 &&
+            check(dlg.table() && dlg.table()->columnCount() == 12 &&
                       dlg.table()->item(0, 9) && dlg.table()->item(0, 9)->text() != QStringLiteral("-") &&
-                      dlg.table()->item(0, 10) && dlg.table()->item(0, 10)->text() != QStringLiteral("-"),
+                      dlg.table()->item(0, 10) && dlg.table()->item(0, 10)->text() != QStringLiteral("-") &&
+                      dlg.table()->item(0, 11) && dlg.table()->item(0, 11)->text() != QStringLiteral("-"),
                   "挂机点：表格显示高度与有效面积");
             std::fprintf(stderr, "[UI自检]   高度：H=%d 有效面积=%.1f 高度带=%d..%d\n",
                          res.empty() ? -1 : res.front().bestHeight,
@@ -5092,4 +5093,5 @@ int MainWindow::runSelfTest()
     std::printf("[UI自检] 失败 %d 项 ✘\n", fail);
     return 1;
 }
+
 

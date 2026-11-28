@@ -60,8 +60,12 @@ QPointF CacheCoverageMap::toScreen(double x, double z) const
     const View v = view();
     const double w = std::max(1, width());
     const double h = std::max(1, height());
-    return QPointF((x - v.x0) / (v.x1 - v.x0) * w,
-                   h - (z - v.z0) / (v.z1 - v.z0) * h);
+    const double s = std::min(w / (v.x1 - v.x0), h / (v.z1 - v.z0));
+    const double mw = (v.x1 - v.x0) * s;
+    const double mh = (v.z1 - v.z0) * s;
+    const double ox = (w - mw) * 0.5;
+    const double oy = (h - mh) * 0.5;
+    return QPointF(ox + (x - v.x0) * s, oy + (v.z1 - z) * s);
 }
 
 void CacheCoverageMap::paintEvent(QPaintEvent*)
@@ -74,15 +78,22 @@ void CacheCoverageMap::paintEvent(QPaintEvent*)
 
     p.fillRect(rect(), bg);
     p.setRenderHint(QPainter::Antialiasing, true);
+    const View v = view();
+    const double w = std::max(1, width());
+    const double h = std::max(1, height());
+    const double s = std::min(w / (v.x1 - v.x0), h / (v.z1 - v.z0));
+    const double mw = (v.x1 - v.x0) * s;
+    const double mh = (v.z1 - v.z0) * s;
+    const double ox = (w - mw) * 0.5;
+    const double oy = (h - mh) * 0.5;
     p.setPen(QPen(grid, 1));
     for (int i = 1; i < 10; ++i) {
-        const int x = width() * i / 10;
-        const int y = height() * i / 10;
-        p.drawLine(x, 0, x, height());
-        p.drawLine(0, y, width(), y);
+        const double x = ox + mw * i / 10.0;
+        const double y = oy + mh * i / 10.0;
+        p.drawLine(QPointF(x, oy), QPointF(x, oy + mh));
+        p.drawLine(QPointF(ox, y), QPointF(ox + mw, y));
     }
 
-    const View v = view();
     // 原点轴
     const QPointF origin = toScreen(0, 0);
     p.setPen(QPen(grid, 1, Qt::DashLine));
@@ -136,8 +147,15 @@ void CacheCoverageMap::mousePressEvent(QMouseEvent* ev)
 {
     if (m_packs.empty()) return;
     const View v = view();
-    const double x = v.x0 + (ev->position().x() / std::max(1, width())) * (v.x1 - v.x0);
-    const double z = v.z0 + ((height() - ev->position().y()) / std::max(1, height())) * (v.z1 - v.z0);
+    const double w = std::max(1, width());
+    const double h = std::max(1, height());
+    const double s = std::min(w / (v.x1 - v.x0), h / (v.z1 - v.z0));
+    const double mw = (v.x1 - v.x0) * s;
+    const double mh = (v.z1 - v.z0) * s;
+    const double ox = (w - mw) * 0.5;
+    const double oy = (h - mh) * 0.5;
+    const double x = v.x0 + (ev->position().x() - ox) / s;
+    const double z = v.z1 - (ev->position().y() - oy) / s;
     for (auto it = m_packs.rbegin(); it != m_packs.rend(); ++it) {
         if (x >= it->rect.minX && x <= it->rect.maxX && z >= it->rect.minZ && z <= it->rect.maxZ) {
             setSelected(it->file);
@@ -148,4 +166,6 @@ void CacheCoverageMap::mousePressEvent(QMouseEvent* ev)
     setSelected(std::string());
     if (onSelected) onSelected(std::string());
 }
+
+
 

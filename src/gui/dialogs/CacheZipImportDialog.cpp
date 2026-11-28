@@ -206,6 +206,7 @@ void CacheZipImportDialog::addPaths(const QStringList& paths)
         added << path;
     }
     if (added.isEmpty()) return;
+    m_hasResult = false; // new files => a new import is allowed
     if (m_inspectWorker.joinable()) m_inspectWorker.join();
     m_inspectDone = 0;
     m_inspectTotal = static_cast<int>(added.size());
@@ -289,7 +290,7 @@ void CacheZipImportDialog::refresh()
             totalPacks += item.info.packCount;
         }
     }
-    m_start->setEnabled(!m_inspecting && valid > 0);
+    m_start->setEnabled(!m_inspecting && !m_hasResult && valid > 0);
     if (!m_inspecting) {
         m_hint->setText(valid ? slime::ui::t("ui.cache.zip.validCount").arg(valid)
                               : slime::ui::t("ui.cache.zip.noValid"));
@@ -309,6 +310,9 @@ void CacheZipImportDialog::refresh()
 void CacheZipImportDialog::startImport()
 {
     if (m_importing || m_inspecting) return;
+    // A completed worker thread is joinable; reusing std::thread without joining
+    // calls std::terminate. This is the crash after a successful import.
+    if (m_worker.joinable()) m_worker.join();
     std::vector<Item> valid;
     for (const auto& item : m_items) if (item.info.ok) valid.push_back(item);
     if (valid.empty()) return;
@@ -365,7 +369,7 @@ void CacheZipImportDialog::startImport()
         QMetaObject::invokeMethod(this, [this, imported, skipped, failed, errors]() {
             m_importing = false;
             m_hasResult = true;
-            m_start->setEnabled(true);
+            m_start->setEnabled(false);
             if (m_cancel) m_cancel->setEnabled(true);
             if (m_pick) m_pick->setEnabled(true);
             if (m_table) m_table->setEnabled(true);
@@ -398,3 +402,5 @@ void CacheZipImportDialog::closeEvent(QCloseEvent* ev)
     }
     QDialog::closeEvent(ev);
 }
+
+

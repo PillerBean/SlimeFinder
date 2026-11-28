@@ -112,13 +112,14 @@ AfkDialog::AfkDialog(const Context& ctx, QWidget* parent) : QDialog(parent), m_c
     lay->addWidget(m_summary);
 
     m_table = new QTableWidget(this);
-    m_table->setColumnCount(11);
+    m_table->setColumnCount(12);
     m_table->setHorizontalHeaderLabels({ QStringLiteral("#"), QStringLiteral("X"), QStringLiteral("Z"),
                                          slime::ui::t("ui.3da82d85c5de"), slime::ui::t("ui.6e1a9b47c22b"),
                                          slime::ui::t("ui.30c8ff494553"), slime::ui::t("ui.d5d366170935"),
                                          slime::ui::t("ui.d5f4497fa38f"), slime::ui::t("ui.977c87ae5b09"),
                                          slime::ui::t("ui.afk_height"),
-                                         slime::ui::t("ui.afk_effective_area") });
+                                         slime::ui::t("ui.afk_effective_area"),
+                                         slime::ui::t("ui.afk_y") });
     m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -295,6 +296,7 @@ void AfkDialog::fillTable()
         m_table->setItem(i, 8, new QTableWidgetItem(QString::number(c.avgWeight, 'f', 2)));
         m_table->setItem(i, 9, new QTableWidgetItem(c.hasHeight ? QString::number(c.bestHeight) : QStringLiteral("-")));
         m_table->setItem(i, 10, new QTableWidgetItem(c.hasHeight ? QString::number(c.effectiveArea, 'f', 1) : QStringLiteral("-")));
+        m_table->setItem(i, 11, new QTableWidgetItem(c.hasHeight ? QString::number(c.afkBaseY + c.bestHeight) : QStringLiteral("-")));
         if (c.onChunkCorner) {
             m_table->item(i, 1)->setToolTip(slime::ui::t("ui.c327477ff7e5"));
         }
