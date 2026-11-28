@@ -17,6 +17,10 @@ Third-party components
 ----------------------
 - cubiomes (https://github.com/Cubitect/cubiomes): MIT License,
   see third_party/cubiomes/LICENSE.
+- cubiomes-bedrock (https://github.com/FragrantResult186/cubiomes-bedrock): MIT License,
+  see third_party/cubiomes-bedrock/LICENSE.
+  Used only by the isolated Bedrock biome query tool; not linked with the Java
+  cubiomes library in the main application.
 - OpenCL-Headers (Khronos Group): Apache License 2.0.
 - Qt 6 (used by the prebuilt Windows binaries): LGPLv3 / GPLv3 / commercial;
   see the Qt distribution for details.

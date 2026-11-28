@@ -35,6 +35,28 @@ else()
     target_compile_options(cubiomes PRIVATE -w)
 endif()
 
+# ---------------------------------------------------------------- cubiomes-bedrock（MIT）：基岩版群系生成
+# 来源：https://github.com/FragrantResult186/cubiomes-bedrock
+# 仅链接独立的 bedrock biome 查询工具；绝不和 Java cubiomes 进入同一可执行文件。
+add_library(cubiomes_bedrock STATIC
+    third_party/cubiomes-bedrock/biomes.c
+    third_party/cubiomes-bedrock/biomenoise.c
+    third_party/cubiomes-bedrock/generator.c
+    third_party/cubiomes-bedrock/layers.c
+    third_party/cubiomes-bedrock/mt.c
+    third_party/cubiomes-bedrock/noise.c
+    third_party/cubiomes-bedrock/util.c)
+target_include_directories(cubiomes_bedrock SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cubiomes-bedrock)
+target_compile_definitions(cubiomes_bedrock PRIVATE _CRT_SECURE_NO_WARNINGS)
+if(MSVC)
+    target_compile_definitions(cubiomes_bedrock PRIVATE "_Thread_local=__declspec(thread)")
+endif()
+if(MSVC)
+    target_compile_options(cubiomes_bedrock PRIVATE /W0)
+else()
+    target_compile_options(cubiomes_bedrock PRIVATE -w)
+endif()
+
 add_library(miniz STATIC
     third_party/miniz/miniz.c
     third_party/miniz/miniz_zip.c
@@ -512,6 +534,13 @@ if(MSVC)
     target_compile_options(slime_thread_scaling_bench PRIVATE /utf-8 /EHsc /permissive-)
 endif()
 
+add_executable(slime_bedrock_biome_query
+    tools/bench/bedrock_biome_query.cpp
+)
+target_link_libraries(slime_bedrock_biome_query PRIVATE cubiomes_bedrock)
+if(MSVC)
+    target_compile_options(slime_bedrock_biome_query PRIVATE /utf-8 /EHsc /permissive-)
+endif()
 add_executable(slime_biome_weight_dump
     tools/bench/biome_weight_dump.cpp
 )
@@ -627,4 +656,7 @@ target_link_libraries(slime_height_region_local PRIVATE slime_core)
 if(MSVC)
     target_compile_options(slime_height_region_local PRIVATE /utf-8 /EHsc /permissive-)
 endif()
+
+
+
 
