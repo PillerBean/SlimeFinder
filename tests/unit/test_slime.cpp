@@ -1,4 +1,4 @@
-﻿// test_slime.cpp - SlimeFinder 引擎测试与命令行工具
+// test_slime.cpp - SlimeFinder 引擎测试与命令行工具
 //
 // 三种用法：
 //   1) 参考兼容模式（与 SlimeChecker.exe 输出可逐行比对）：
@@ -14,6 +14,7 @@
 //        slime_tests --unit
 //        slime_tests --bench
 #include "core/CacheManager.h"
+#include "core/CachePrescan.h" // v3.15.x（flow-k3-cache）：缓存位图密度预筛
 #include "core/FastMatch.h" // v3.3.0：AVX2 状态显示
 #include "core/FastMt.h"    // v3.3.0（3.4）：基岩版 AVX2 批量 MT19937
 #include "core/RandomGenerators.h"
@@ -3693,6 +3694,511 @@ static void testStrictStats()
     }
 }
 
+// ===================== v3.15.x（flow-k3-cache）：缓存位图密度预筛 =====================
+
+// 独立暴力参考：逐窗口「逐点重新数」（不走滑动窗口），再复刻分带 / topPerBand /
+// 全局排序 / 去重 / 截断语义。去重用 O(n²) 判定（与 GPU 的 3×3 网格哈希等价：
+// 距离 < sep 的两点必落在同一或相邻网格）。
+static std::vector<DensitySeed> bruteCachePrescan(const DensityPrescanParams& p,
+                                                  const std::function<bool(int, int)>& isSlime)
+{
+    std::vector<DensitySeed> kept;
+    const int g = p.gridSize;
+    if (g < 1 || g > 15 || !isSlime) return kept;
+    const int64_t axMin = p.minX;
+    const int64_t axMax = static_cast<int64_t>(p.maxX) - g + 1;
+    const int64_t azMin = p.minZ;
+    const int64_t azMax = static_cast<int64_t>(p.maxZ) - g + 1;
+    if (axMax < axMin || azMax < azMin) return kept;
+    double thr = std::clamp(p.minDensity, 0.0, 1.0);
+    if (!(thr >= 0.0)) thr = 0.0;
+    const int thrCount = (std::max)(1, static_cast<int>(std::ceil(thr * g * g - 1e-9)));
+    const int64_t bandRows = (std::max)(64, p.bandRows);
+    const int topPerBand = (std::max)(1, p.topPerBand);
+    struct C {
+        int count = 0;
+        int cx = 0;
+        int cz = 0;
+    };
+    const auto better = [](const C& a, const C& b) {
+        if (a.count != b.count) return a.count > b.count;
+        if (a.cx != b.cx) return a.cx < b.cx;
+        return a.cz < b.cz;
+    };
+    std::vector<C> cands;
+    for (int64_t az0 = azMin; az0 <= azMax; az0 += bandRows) {
+        const int64_t az1 = (std::min)(azMax, az0 + bandRows - 1);
+        std::vector<C> band;
+        for (int64_t z = az0; z <= az1; ++z) {
+            for (int64_t x = axMin; x <= axMax; ++x) {
+                int c = 0;
+                for (int dz = 0; dz < g; ++dz) {
+                    for (int dx = 0; dx < g; ++dx) {
+                        c += isSlime(static_cast<int>(x + dx), static_cast<int>(z + dz)) ? 1 : 0;
+                    }
+                }
+                if (c < thrCount) continue;
+                band.push_back(
+                    C{ c, static_cast<int>(x) + g / 2, static_cast<int>(z) + g / 2 });
+            }
+        }
+        std::sort(band.begin(), band.end(), better);
+        if (band.size() > static_cast<size_t>(topPerBand)) {
+            band.resize(static_cast<size_t>(topPerBand));
+        }
+        cands.insert(cands.end(), band.begin(), band.end());
+    }
+    std::sort(cands.begin(), cands.end(), better);
+    const int sep = (std::max)(1, p.minSeparation);
+    const int maxSeeds = (std::max)(1, p.maxSeeds);
+    kept.reserve(static_cast<size_t>((std::min)(maxSeeds, static_cast<int>(cands.size()))));
+    for (const C& c : cands) {
+        if (static_cast<int>(kept.size()) >= maxSeeds) break;
+        bool far = true;
+        for (const DensitySeed& k : kept) {
+            const int ddx = k.cx - c.cx;
+            const int ddz = k.cz - c.cz;
+            if (ddx * ddx + ddz * ddz < sep * sep) {
+                far = false;
+                break;
+            }
+        }
+        if (far) kept.push_back(DensitySeed{ c.cx, c.cz, c.count });
+    }
+    return kept;
+}
+
+static bool prescanSame(const std::vector<DensitySeed>& a, const std::vector<DensitySeed>& b)
+{
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i].cx != b[i].cx || a[i].cz != b[i].cz || a[i].count != b[i].count) return false;
+    }
+    return true;
+}
+
+static void reportPrescanDiff(const std::vector<DensitySeed>& got, const std::vector<DensitySeed>& want,
+                              const char* tag)
+{
+    std::printf("      %s 不一致：got=%zu want=%zu\n", tag, got.size(), want.size());
+    const size_t n = (std::min)(got.size(), want.size());
+    for (size_t i = 0; i < n; ++i) {
+        if (got[i].cx != want[i].cx || got[i].cz != want[i].cz || got[i].count != want[i].count) {
+            std::printf("      首个差异 #%zu：got=(%d,%d,c=%d) want=(%d,%d,c=%d)\n", i, got[i].cx,
+                        got[i].cz, got[i].count, want[i].cx, want[i].cz, want[i].count);
+            break;
+        }
+    }
+}
+
+// 多 range 重叠场景的确定性真值：按 CacheManager 文档语义（ranges 顺序中第一个包含该点的
+// range）直接读位图。不能用 cache.lookup() 做对拍基准：其内部 thread_local「上次命中 range」
+// 快查在两个 range 重叠时会依赖访问顺序（只要上次 range 也包含该点就直接返回）。
+static std::function<bool(int, int)> firstContainingTruth(const CacheManager& cache)
+{
+    struct Reader {
+        Rect rect;
+        const uint64_t* words = nullptr;
+        int64_t wordsPerRow = 0;
+    };
+    std::vector<Reader> readers;
+    for (size_t i = 0; i < cache.ranges().size(); ++i) {
+        Reader r;
+        r.rect = cache.ranges()[i];
+        r.words = cache.rangeBitmap(i, &r.wordsPerRow);
+        readers.push_back(r);
+    }
+    return [readers](int x, int z) {
+        for (const Reader& r : readers) {
+            if (!r.rect.contains(x, z)) continue;
+            if (!r.words || r.wordsPerRow <= 0) return false;
+            const int64_t col = static_cast<int64_t>(x) - r.rect.minX;
+            const int64_t row = static_cast<int64_t>(z) - r.rect.minZ;
+            const int64_t bitIndex = row * (r.wordsPerRow * 64) + col;
+            return ((r.words[bitIndex >> 6] >> (bitIndex & 63)) & 1ULL) != 0;
+        }
+        return false;
+    };
+}
+
+static void testCachePrescanSeeds()
+{
+    std::printf("[39] 缓存密度预筛（cachePrescanSeeds）…\n");
+    const Version bedrock = Version::Bedrock;
+
+    // ---- A) 合成位图完整覆盖：负坐标 / 多带 / topPerBand 截断 / 排序 / 间距 ----
+    {
+        const Rect R{ -37, 120, -50, 77 }; // 158×128（15 窗口 ⇒ 左上角 144×114，bandRows=64 分 2 带）
+        std::vector<std::pair<int, int>> cells;
+        for (int x = R.minX; x <= R.maxX; ++x) {
+            for (int z = R.minZ; z <= R.maxZ; ++z) {
+                if (((x * 7 + z * 13) % 5) == 0) cells.emplace_back(x, z); // ≈20% 密度
+            }
+        }
+        CacheManager cache;
+        cache.mergeRegion(R, cells);
+        CHECK(cache.covers(R), "A: 合成缓存完整覆盖区域");
+        const auto isSlime = [&cache](int x, int z) { return cache.lookup(x, z) == 1; };
+
+        DensityPrescanParams p;
+        p.version = bedrock;
+        p.minX = R.minX;
+        p.maxX = R.maxX;
+        p.minZ = R.minZ;
+        p.maxZ = R.maxZ;
+        p.gridSize = 15;
+        p.minDensity = 0.18;
+        p.bandRows = 64; // 小分带：每带独立 topPerBand 截断
+        p.topPerBand = 5;
+        p.maxSeeds = 100;
+        p.minSeparation = 8;
+        std::vector<DensitySeed> got;
+        std::string err;
+        CHECK(cachePrescanSeeds(cache, p, nullptr, got, &err), "A: 完整覆盖时返回成功");
+        CHECK(err.empty(), "A: 成功时不写错误信息");
+        CHECK(!got.empty(), "A: 种子非空");
+        CHECK(got.size() <= static_cast<size_t>(2 * p.topPerBand), "A: 每带 topPerBand 截断生效");
+        const auto want = bruteCachePrescan(p, isSlime);
+        const bool same = prescanSame(got, want);
+        CHECK(same, "A: 与独立暴力实现逐种子一致（count/顺序/去重/截断）");
+        if (!same) reportPrescanDiff(got, want, "A");
+
+        bool ordered = true;
+        for (size_t i = 1; i < got.size(); ++i) {
+            const DensitySeed& a = got[i - 1];
+            const DensitySeed& b = got[i];
+            if (a.count < b.count) ordered = false;
+            else if (a.count == b.count && (a.cx > b.cx || (a.cx == b.cx && a.cz > b.cz))) ordered = false;
+        }
+        CHECK(ordered, "A: 全局排序（count 降序 / cx、cz 升序）");
+        bool spaced = true;
+        for (size_t i = 0; i < got.size() && spaced; ++i) {
+            for (size_t j = i + 1; j < got.size(); ++j) {
+                const int dx = got[i].cx - got[j].cx;
+                const int dz = got[i].cz - got[j].cz;
+                if (dx * dx + dz * dz < p.minSeparation * p.minSeparation) spaced = false;
+            }
+        }
+        CHECK(spaced, "A: minSeparation 网格去重生效");
+        bool centers = true;
+        for (const DensitySeed& s : got) {
+            const int wx = s.cx - p.gridSize / 2;
+            const int wz = s.cz - p.gridSize / 2;
+            if (wx < p.minX || wx > p.maxX - p.gridSize + 1 || wz < p.minZ ||
+                wz > p.maxZ - p.gridSize + 1) {
+                centers = false;
+            }
+        }
+        CHECK(centers, "A: 种子中心 = 窗口左上角 + gridSize/2（与 GPU 一致）");
+    }
+
+    // ---- B) maxSeeds 截断 + 大间距去重（单带、小 topPerBand）----
+    {
+        const Rect R{ -200, -100, -200, -100 }; // 101×101，全负坐标
+        std::vector<std::pair<int, int>> cells;
+        for (int x = R.minX; x <= R.maxX; ++x) {
+            for (int z = R.minZ; z <= R.maxZ; ++z) {
+                if (((x * 5 + z * 3) & 3) == 0) cells.emplace_back(x, z); // 25%
+            }
+        }
+        CacheManager cache;
+        cache.mergeRegion(R, cells);
+        const auto isSlime = [&cache](int x, int z) { return cache.lookup(x, z) == 1; };
+        DensityPrescanParams p;
+        p.version = bedrock;
+        p.minX = R.minX;
+        p.maxX = R.maxX;
+        p.minZ = R.minZ;
+        p.maxZ = R.maxZ;
+        p.gridSize = 9;
+        p.minDensity = 0.12;
+        p.bandRows = 100000; // 单带
+        p.topPerBand = 64;
+        p.maxSeeds = 3;      // 截断到 3 条
+        p.minSeparation = 24;
+        std::vector<DensitySeed> got;
+        std::string err;
+        CHECK(cachePrescanSeeds(cache, p, nullptr, got, &err), "B: 负坐标+大 bandRows 成功");
+        CHECK(got.size() == 3, "B: maxSeeds=3 截断生效");
+        const auto want = bruteCachePrescan(p, isSlime);
+        const bool same = prescanSame(got, want);
+        CHECK(same, "B: 截断/去重后与暴力实现一致");
+        if (!same) reportPrescanDiff(got, want, "B");
+    }
+
+    // ---- C) 前置条件与非法参数 ----
+    {
+        const Rect covered{ 0, 49, 0, 49 };
+        std::vector<std::pair<int, int>> cells;
+        for (int x = covered.minX; x <= covered.maxX; ++x) {
+            for (int z = covered.minZ; z <= covered.maxZ; ++z) {
+                if (((x + 2 * z) % 5) == 0) cells.emplace_back(x, z);
+            }
+        }
+        CacheManager cache;
+        cache.mergeRegion(covered, cells);
+        DensityPrescanParams p;
+        p.version = bedrock;
+        p.minX = 0;
+        p.maxX = 99; // 只覆盖 0..49 ⇒ 部分覆盖
+        p.minZ = 0;
+        p.maxZ = 99;
+        p.gridSize = 15;
+        std::vector<DensitySeed> got;
+        std::string err = "sentinel";
+        CHECK(!cachePrescanSeeds(cache, p, nullptr, got, &err), "C: 部分覆盖返回 false");
+        CHECK(err == "缓存未完整覆盖", "C: 部分覆盖 err=缓存未完整覆盖");
+        CHECK(got.empty(), "C: 失败时 out 为空");
+
+        p.maxX = 10; // 区域小于窗口
+        p.maxZ = 10;
+        err.clear();
+        CHECK(!cachePrescanSeeds(cache, p, nullptr, got, &err), "C: 区域小于窗口返回 false");
+        CHECK(!err.empty(), "C: 区域小于窗口 err 非空");
+
+        p.maxX = 49;
+        p.maxZ = 49;
+        p.gridSize = 16; // 非法窗口
+        err.clear();
+        CHECK(!cachePrescanSeeds(cache, p, nullptr, got, &err), "C: gridSize=16 返回 false");
+        CHECK(!err.empty(), "C: 非法 gridSize err 非空");
+
+        std::atomic<bool> cancel{ true };
+        p.gridSize = 15;
+        err.clear();
+        CHECK(!cachePrescanSeeds(cache, p, &cancel, got, &err), "C: 取消返回 false");
+        CHECK(err == "已取消", "C: 取消 err=已取消");
+    }
+
+    // ---- D) 多个 range：拼接/重叠/遮蔽 ----
+    {
+        const Rect R{ -20, 99, -20, 99 };
+        const auto pattern = [](int x, int z) { return ((x * 11 + z * 17) % 4) == 0; };
+        const Rect quads[4] = { { -20, 40, -20, 40 }, { 41, 99, -20, 40 }, { -20, 40, 41, 99 },
+                                { 41, 99, 41, 99 } };
+        auto fillSub = [&pattern](const Rect& s) {
+            std::vector<std::pair<int, int>> v;
+            for (int x = s.minX; x <= s.maxX; ++x) {
+                for (int z = s.minZ; z <= s.maxZ; ++z) {
+                    if (pattern(x, z)) v.emplace_back(x, z);
+                }
+            }
+            return v;
+        };
+        DensityPrescanParams p;
+        p.version = bedrock;
+        p.minX = R.minX;
+        p.maxX = R.maxX;
+        p.minZ = R.minZ;
+        p.maxZ = R.maxZ;
+        p.gridSize = 11;
+        p.minDensity = 0.15;
+        p.bandRows = 64;
+        p.topPerBand = 8;
+        p.maxSeeds = 50;
+        p.minSeparation = 10;
+        const auto bruteByPattern = [&pattern](int x, int z) { return pattern(x, z); };
+
+        // D-1) 覆盖大 range 先建（更早 ⇒ 不被遮蔽，走位图快路径），后建重叠子 range
+        {
+            CacheManager cache;
+            cache.mergeRegion(R, fillSub(R));
+            cache.mergeRegion(quads[0], fillSub(quads[0]));
+            CHECK(cache.ranges().size() == 2 && cache.covers(R), "D-1: 多 range（大 range 在前）覆盖成立");
+            std::vector<DensitySeed> got;
+            std::string err;
+            CHECK(cachePrescanSeeds(cache, p, nullptr, got, &err), "D-1: 多 range 快路径成功");
+            const auto want = bruteCachePrescan(p, bruteByPattern);
+            const bool same = prescanSame(got, want);
+            CHECK(same, "D-1: 多 range 快路径与暴力一致");
+            if (!same) reportPrescanDiff(got, want, "D-1");
+        }
+        // D-2) 子 range 先建（更早 ⇒ 遮蔽区域真实值），最后建覆盖大 range：
+        //      真实值在更早 range 的位图里，必须与 predicate 语义一致（走 lookup 慢路径）
+        {
+            CacheManager cache;
+            for (const Rect& s : quads) cache.mergeRegion(s, fillSub(s));
+            cache.mergeRegion(R, fillSub(R));
+            CHECK(cache.ranges().size() == 5 && cache.covers(R), "D-2: 多 range（子 range 在前）覆盖成立");
+            std::vector<DensitySeed> got;
+            std::string err;
+            CHECK(cachePrescanSeeds(cache, p, nullptr, got, &err), "D-2: 遮蔽场景仍成功");
+            const auto want = bruteCachePrescan(p, bruteByPattern);
+            const bool same = prescanSame(got, want);
+            CHECK(same, "D-2: 遮蔽场景与暴力一致（按第一个包含 range 判定）");
+            if (!same) reportPrescanDiff(got, want, "D-2");
+        }
+        // D-2b) 局部遮蔽（lead review 要求）：先 mergeRegion 一个与目标区域**相交**的旧 range，
+        //       旧 range 内部的史莱姆点位归属旧 range 位图；再 mergeRegion 目标区域。
+        //       此时只读目标 range 的位图会漏掉全部点（本用例把所有史莱姆都放在交集里），
+        //       实现必须检测到遮蔽并走 CacheManager::lookup 慢路径，结果与 lookup 暴力一致。
+        {
+            const Rect oldR{ -40, 10, -20, 40 };   // 旧 range：与目标区域左侧相交
+            const Rect target{ -20, 99, -20, 99 }; // 目标区域（被第二个 range 完整覆盖）
+            // 全部史莱姆都落在 oldR ∩ target 内 ⇒ 都被旧 range 拥有，目标 range 位图全 0。
+            std::vector<std::pair<int, int>> cells;
+            for (int x = target.minX; x <= 10; ++x) {
+                for (int z = target.minZ; z <= 40; ++z) {
+                    if (((x * 13 + z * 29) % 3) == 0) cells.emplace_back(x, z);
+                }
+            }
+            CacheManager cache;
+            cache.mergeRegion(oldR, cells);      // 旧 range 先建：交集内点位的真值记在这里
+            cache.mergeRegion(target, cells);    // 后建目标 range：交集点不重复进位图
+            CHECK(cache.ranges().size() == 2 && cache.covers(target), "D-2b: 局部重叠 range 覆盖成立");
+            // 校验场景构造符合预期：目标 range 自己的位图确实是空的（只剩旧 range 有位）
+            {
+                int64_t wprT = 0, rowsT = 0;
+                const uint64_t* bitsT = cache.rangeBitmap(1, &wprT, &rowsT);
+                bool emptyT = (bitsT != nullptr);
+                for (int64_t i = 0; i < wprT * rowsT && emptyT; ++i) {
+                    if (bitsT[i] != 0) emptyT = false;
+                }
+                CHECK(emptyT, "D-2b: 目标 range 位图为空（真值全在更早的旧 range 里）");
+            }
+            DensityPrescanParams ps;
+            ps.version = bedrock;
+            ps.minX = target.minX;
+            ps.maxX = target.maxX;
+            ps.minZ = target.minZ;
+            ps.maxZ = target.maxZ;
+            ps.gridSize = 11;
+            ps.minDensity = 0.02;
+            ps.bandRows = 64;
+            ps.topPerBand = 8;
+            ps.maxSeeds = 50;
+            ps.minSeparation = 10;
+            const auto truth = firstContainingTruth(cache);
+            std::vector<DensitySeed> got;
+            std::string err;
+            CHECK(cachePrescanSeeds(cache, ps, nullptr, got, &err), "D-2b: 局部遮蔽仍成功");
+            CHECK(!got.empty(), "D-2b: 局部遮蔽种子非空");
+            const auto want = bruteCachePrescan(ps, truth);
+            const bool same = prescanSame(got, want);
+            CHECK(same, "D-2b: 局部遮蔽与「第一个包含 range」确定性暴力逐种子一致");
+            if (!same) reportPrescanDiff(got, want, "D-2b");
+            // 反证：若实现只读目标 range 位图（跳过遮蔽检测），会得到空候选 —— 与本实现不同。
+            const auto fastTruth = [&cache](int x, int z) {
+                int64_t wprT = 0, rowsT = 0;
+                const uint64_t* bitsT = cache.rangeBitmap(1, &wprT, &rowsT);
+                const Rect targetRect = cache.ranges()[1];
+                const int64_t bitIndex = (static_cast<int64_t>(z) - targetRect.minZ) * (wprT * 64) +
+                                         (static_cast<int64_t>(x) - targetRect.minX);
+                return ((bitsT[bitIndex >> 6] >> (bitIndex & 63)) & 1ULL) != 0;
+            };
+            const auto wantFastOnly = bruteCachePrescan(ps, fastTruth);
+            CHECK(wantFastOnly.empty(), "D-2b: 仅读目标 range 位图会漏掉遮蔽点位（证明走了慢路径）");
+        }
+
+        // D-3) 多个 range 恰好拼接成区域、但没有单个 range 完整覆盖 ⇒ 前置条件不成立
+        {
+            CacheManager cache;
+            cache.mergeRegion(Rect{ 0, 49, -30, 29 }, fillSub(Rect{ 0, 49, -30, 29 }));
+            cache.mergeRegion(Rect{ 50, 99, -30, 29 }, fillSub(Rect{ 50, 99, -30, 29 }));
+            DensityPrescanParams pt;
+            pt.version = bedrock;
+            pt.minX = 0;
+            pt.maxX = 99;
+            pt.minZ = -30;
+            pt.maxZ = 29;
+            pt.gridSize = 11;
+            std::vector<DensitySeed> got;
+            std::string err;
+            CHECK(!cache.covers(Rect{ 0, 99, -30, 29 }), "D-3: 拼接覆盖不被 covers() 认可");
+            CHECK(!cachePrescanSeeds(cache, pt, nullptr, got, &err), "D-3: 拼接覆盖返回 false（回退 GPU）");
+            CHECK(err == "缓存未完整覆盖", "D-3: err=缓存未完整覆盖");
+        }
+    }
+
+    // ---- E) 真实 Bedrock 位图（SlimeEngine::isSlimeChunk 生成 256×96）----
+    {
+        const int64_t seed = 2229010591266423951LL;
+        const Rect R{ -128, 127, -48, 47 }; // 256×96 区块
+        const int64_t W = R.maxX - R.minX + 1;
+        std::vector<uint8_t> truth(static_cast<size_t>(W * (R.maxZ - R.minZ + 1)), 0);
+        std::vector<std::pair<int, int>> cells;
+        for (int z = R.minZ; z <= R.maxZ; ++z) {
+            for (int x = R.minX; x <= R.maxX; ++x) {
+                if (!SlimeEngine::isSlimeChunk(bedrock, seed, x, z)) continue;
+                truth[static_cast<size_t>((z - R.minZ) * W + (x - R.minX))] = 1;
+                cells.emplace_back(x, z);
+            }
+        }
+        CHECK(!cells.empty(), "E: 真实 Bedrock 区域有史莱姆区块");
+        CacheManager cache;
+        cache.mergeRegion(R, cells);
+        CHECK(cache.covers(R), "E: 真实位图缓存完整覆盖");
+        const double density = static_cast<double>(cells.size()) / static_cast<double>(R.area());
+        std::printf("      真实 Bedrock：%zu 个史莱姆区块 / %lld 区块（密度 %.1f%%）\n", cells.size(),
+                    static_cast<long long>(R.area()), density * 100.0);
+        const auto isSlime = [&truth, &R, W](int x, int z) {
+            return truth[static_cast<size_t>((z - R.minZ) * W + (x - R.minX))] != 0;
+        };
+        DensityPrescanParams p;
+        p.version = bedrock;
+        p.minX = R.minX;
+        p.maxX = R.maxX;
+        p.minZ = R.minZ;
+        p.maxZ = R.maxZ;
+        p.gridSize = 15;
+        p.minDensity = density * 0.5; // 低于平均密度 ⇒ 保证有足够多命中窗口
+        p.bandRows = 64;              // 96 行 ⇒ 2 带
+        p.topPerBand = 32;
+        p.maxSeeds = 200;
+        p.minSeparation = 8;
+        std::vector<DensitySeed> got;
+        std::string err;
+        CHECK(cachePrescanSeeds(cache, p, nullptr, got, &err), "E: 真实位图预筛成功");
+        CHECK(!got.empty(), "E: 真实位图种子非空");
+        const auto want = bruteCachePrescan(p, isSlime);
+        const bool same = prescanSame(got, want);
+        CHECK(same, "E: 真实位图与暴力窗口计数一致");
+        if (!same) reportPrescanDiff(got, want, "E");
+    }
+
+    // ---- F) 性能：8192×8192 合成缓存（与 GUI 生产参数一致；不计入断言）----
+    {
+        const Rect R{ 0, 8191, 0, 8191 };
+        const int64_t W = 8192;
+        const int64_t wpr = (W + 63) / 64;
+        std::vector<uint64_t> words(static_cast<size_t>(wpr * 8192));
+        uint64_t s = 0x9E3779B97F4A7C15ULL;
+        for (size_t i = 0; i < words.size(); ++i) { // 50% 密度（最坏命中量级）
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            words[i] = s;
+        }
+        CacheManager cache;
+        CHECK(cache.addPackedWords(R, words.data(), words.size()), "F: 8192² 合成缓存建立成功");
+        DensityPrescanParams p;
+        p.version = bedrock;
+        p.minX = R.minX;
+        p.maxX = R.maxX;
+        p.minZ = R.minZ;
+        p.maxZ = R.maxZ;
+        p.gridSize = 15;
+        p.minDensity = 0.18;
+        p.bandRows = 4096;
+        p.topPerBand = 512;
+        p.maxSeeds = 4000;
+        p.minSeparation = 16;
+        std::vector<DensitySeed> got;
+        std::string err;
+        const auto t0 = std::chrono::steady_clock::now();
+        const bool ok = cachePrescanSeeds(cache, p, nullptr, got, &err);
+        const double ms = std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
+        CHECK(ok && !got.empty(), "F: 8192² 合成缓存预筛成功");
+        const int64_t windows = static_cast<int64_t>(8192 - 15 + 1) * (8192 - 15 + 1);
+        std::printf("      8192×8192 合成缓存：%zu 个种子，cachePrescanSeeds %.1f ms"
+                    "（%.2f 亿窗口，%.1f ns/窗口）\n",
+                    got.size(), ms, static_cast<double>(windows) / 1e8,
+                    windows > 0 ? ms * 1e6 / static_cast<double>(windows) : 0.0);
+    }
+}
+
 static int g_onlyGroup = 0; // --unit N：仅运行指定编号的测试组（调试用；0 = 全部）
 static bool wantGroup(int n)
 {
@@ -4068,6 +4574,7 @@ static int runUnitTests()
     if (wantGroup(36)) testBestCandidatesChunked();
     if (wantGroup(37)) testZeroThresholdFastPath();
     if (wantGroup(38)) testHeightRefiner();
+    if (wantGroup(39)) testCachePrescanSeeds();
     if (g_failures == 0) {
         std::printf("单元测试全部通过 ✔\n");
         return 0;
