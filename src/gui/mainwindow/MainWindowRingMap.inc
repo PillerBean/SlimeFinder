@@ -365,28 +365,36 @@ void MainWindow::runRingSearch()
                 pp.minSeparation = 16;
                 std::vector<slime::DensitySeed> seeds;
                 std::string perr;
-                // v3.15.x（flow-k3-cache）：Bedrock 且缓存完整覆盖本区域时，直接按位图
-                //   统计窗口密度生成种子，省掉整次 GPU 全图预筛；失败则回退 GPU（语义不变）。
+                // v3.15.x（flow-k3-cache，集成实测后定稿）预筛来源优先级：
+                //   1) GPU 全图预筛 —— 实测生产参数（10% 命中、阈值 0.18）下比 CPU 位图预筛快
+                //      1.5~3.5×（8192²：69ms vs 111ms；16384²：190ms vs 662ms），默认仍走它；
+                //   2) GPU 不可用/失败 且 Bedrock 缓存完整覆盖本区域 ⇒ cachePrescanSeeds
+                //      （确定性种子、免 GPU 依赖；无 GPU 用户首次获得完整质量的预筛精修/k3 档）；
+                //   3) 两路都不可用 ⇒ 回退快速抽样（原行为，语义不变）。
+                // 数据与取舍见 docs/planning/k3_cache_prescan.md §6/§7。
+                const bool gpuPrescanOk =
+                    state->gpu && state->gpu->prescanDensitySeeds(pp, *ringCancel, seeds, &perr);
                 bool cachePrescanOk = false;
-                if (ringCache) {
+                if (!gpuPrescanOk && ringCache) {
+                    std::string cerr;
                     cachePrescanOk =
-                        slime::cachePrescanSeeds(*ringCache, pp, ringCancel.get(), seeds, &perr);
+                        slime::cachePrescanSeeds(*ringCache, pp, ringCancel.get(), seeds, &cerr);
+                    if (!cachePrescanOk && perr.empty()) perr = cerr;
                     if (!cachePrescanOk) {
-                        std::fprintf(stderr, "[环形] 缓存预筛不可用，回退 GPU 预筛：%s\n",
-                                     perr.empty() ? "原因未知" : perr.c_str());
+                        std::fprintf(stderr, "[环形] 缓存预筛不可用，回退快速抽样：%s\n",
+                                     cerr.empty() ? "原因未知" : cerr.c_str());
                     }
                 }
-                bool prescanOk = cachePrescanOk;
-                if (!prescanOk && state->gpu) {
-                    prescanOk = state->gpu->prescanDensitySeeds(pp, *ringCancel, seeds, &perr);
-                }
-                if (prescanOk && !seeds.empty() && !cancelRequested()) {
+                if ((gpuPrescanOk || cachePrescanOk) && !seeds.empty() && !cancelRequested()) {
                     o.seedCandidates.reserve(seeds.size());
                     for (const auto& sd : seeds) o.seedCandidates.emplace_back(sd.cx, sd.cz);
                     prescanUsed = true;
                     if (cachePrescanOk) {
                         state->cachePrescanUsed = true;
                         std::fprintf(stderr, "[环形] 缓存预筛：%zu 个分散种子（阈值 %.2f）\n",
+                                     seeds.size(), pp.minDensity);
+                    } else {
+                        std::fprintf(stderr, "[环形] 正方形预筛：%zu 个分散种子（阈值 %.2f）\n",
                                      seeds.size(), pp.minDensity);
                     }
                     if (k3Mode) {
@@ -400,16 +408,14 @@ void MainWindow::runRingSearch()
                         state->k3Candidates = static_cast<int>(filtered.size());
                         if (!filtered.empty()) o.seedCandidates = filtered;
                     }
-                    if (!cachePrescanOk) {
-                        std::fprintf(stderr, "[环形] 正方形预筛：%zu 个分散种子（阈值 %.2f）\n",
-                                     seeds.size(), pp.minDensity);
-                    }
                 } else {
                     prescanFallback = true;
                     o.seedCandidates.clear();
                     o.scanStride = 0;
                     if (!state->gpu) {
-                        std::fprintf(stderr, "[环形] GPU 不可用，正方形预筛回退快速抽样\n");
+                        std::fprintf(stderr, "[环形] GPU 不可用%s，正方形预筛回退快速抽样%s%s\n",
+                                     ringCache ? "且缓存预筛不可用" : "", perr.empty() ? "" : "：",
+                                     perr.c_str());
                     } else {
                         std::fprintf(stderr, "[环形] 正方形预筛不可用，回退快速抽样：%s\n", perr.c_str());
                     }

@@ -686,6 +686,19 @@ if(WIN32)
     target_link_libraries(k3_prescan_parity_probe PRIVATE dbghelp)
 endif()
 
+# 环形/k3 端到端对照探针（缓存预筛 vs GPU 预筛 → 规划结果/耗时；支持真实 CacheStore）
+add_executable(cache_prescan_compare
+    tools/bench/cache_prescan_compare.cpp
+)
+target_include_directories(cache_prescan_compare PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(cache_prescan_compare PRIVATE slime_core slime_gpu)
+if(MSVC)
+    target_compile_options(cache_prescan_compare PRIVATE /utf-8 /EHsc /permissive- /O2)
+endif()
+if(WIN32)
+    target_link_libraries(cache_prescan_compare PRIVATE dbghelp)
+endif()
+
 
 
 

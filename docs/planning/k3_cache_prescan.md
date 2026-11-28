@@ -16,8 +16,10 @@ v3.15.x 已把 `CacheManager` 接进环形 predicate（Bedrock + 缓存完整覆
 缓存 range 位图本身就是每个区块的确定值：只要缓存完整覆盖搜索区域，窗口密度可以直接
 在 CPU 上按行流式滑动统计，不需要 GPU 全图扫描。收益与定位：
 
-- 缓存完整覆盖时，环形/k3 的**预筛种子不再依赖 GPU**（无 GPU 会话/显存/回读；GPU 不可用、
-  被占用或驱动异常时该档位仍可用），且结果确定可复现（同输入同输出）；
+- 缓存完整覆盖时，环形/k3 的**预筛种子可以完全不依赖 GPU**（无 GPU 会话/显存/回读；
+  GPU 不可用、被占用或驱动异常时该档位仍可用），且结果确定可复现（同输入同输出）；
+  **集成时按实测取舍**：生产参数下 GPU 预筛更快，因此默认仍优先 GPU，缓存预筛只在
+  GPU 不可用/失败时兜底（见 §2、§6.4、§7）；
 - 结果（种子集合）与 GPU 语义对齐（窗口/阈值/分带/排序/去重/截断一致），k3 过滤与后续
   精修逻辑完全不变；实测对拍见 §6.2（2048² 完全逐条一致；8192² 仅跨 topPerBand 边界的
   count 平局取舍不同——GPU 本身该处也未定义）；
@@ -40,14 +42,17 @@ bool cachePrescanSeeds(const CacheManager& cache, const DensityPrescanParams& p,
   在 `namespace slime` 内展开，若在 .inc 里包含会形成嵌套 namespace）。
 - 调用点：`src/gui/mainwindow/MainWindowRingMap.inc`
   - `RingSearchResult::cachePrescanUsed`：worker 写、`finishRingSearch` 只读，用于日志/状态；
-  - `runRingSearch()` 的 `autoPrescan`（档位 2/3）分支：
-    1. `ringCache` 非空（Bedrock + 勾选缓存 + CacheStore 完整覆盖，创建条件保持原样）时
-       先调 `cachePrescanSeeds`；`ringCache` 按值捕获 `shared_ptr` 进 worker，线程安全；
-    2. 成功 → 填 `o.seedCandidates`、`prescanUsed=true`、`state->cachePrescanUsed=true`，
-       日志 `[环形] 缓存预筛：%zu 个分散种子（阈值 %.2f）`；
-    3. 失败 → 打印警告（含 err），继续走原 GPU `prescanDensitySeeds` 路径（原回退语义/日志不变）；
-    4. 两条来源的 k3 过滤完全一致：
-       `AfkPlanner::plan` 得 lowerBound → `AfkPlanner::k3UpperBoundSeeds`；
+  - `runRingSearch()` 的 `autoPrescan`（档位 2/3）分支的**来源优先级**（集成实测后定稿，见 §6.4）：
+    1. **GPU 全图预筛**（`GpuScan::prescanDensitySeeds`）—— 生产参数下实测更快，有 GPU 时保持默认路径
+       （原行为不变）；
+    2. GPU 不可用 / GPU 预筛失败，且 `ringCache` 非空（Bedrock + 勾选缓存 + CacheStore 完整覆盖，
+       创建条件保持原样）⇒ `cachePrescanSeeds`（确定性种子、免 GPU；`ringCache` 按值捕获
+       `shared_ptr` 进 worker，线程安全）；
+    3. 两路都不可用 ⇒ 回退快速抽样（原行为）。
+    - 缓存预筛成功 → 填 `o.seedCandidates`、`prescanUsed=true`、`state->cachePrescanUsed=true`，
+      日志 `[环形] 缓存预筛：%zu 个分散种子（阈值 %.2f）`；
+    - 两路种子的 k3 过滤完全一致：
+      `AfkPlanner::plan` 得 lowerBound → `AfkPlanner::k3UpperBoundSeeds`；
   - `finishRingSearch`：现有 prescan 日志后补一行 `[环形] 预筛来源：缓存位图 / GPU（cachePrescanUsed=…）`；
     **不新增 i18n key、不改任何 UI 文案**。
   - 普通（非 autoPrescan）路径、Java 路径、缓存 miss（`ringCache == nullptr`）行为完全不变。
@@ -130,6 +135,7 @@ topPerBand=512、maxSeeds=4000、minSeparation=16）：
 | 2048² | B 生产参数：bandRows=4096、topPerBand=512、阈值 0.18 | 76 / 76 | 是 | 16.2 ms | 7.1 ms | 2.3× |
 | 8192² | A 无每带截断 | 4000 / 4000 | 是 | 1832.5 ms | 233.3 ms | 7.9× |
 | 8192² | B 生产参数 | 224 / 227 | 否：33 条 count 平局 | 73.5 ms | 117.5 ms | 0.6× |
+| 16384² | B 生产参数（lead 复核） | 474 / 482 | 否：平局导致去重取舍不同 | 189.5 ms | 662.0 ms | 0.29× |
 
 真实 Bedrock 密度 ≈10%（2048²：421734/4194304=10.05%；8192²：6716287/67108864=10.01%）。
 生产阈值 18%（15×15 窗口期望 22.5 个）意味着命中窗口非常稀疏，GPU 流式扫描几乎不需要回传命中，
@@ -147,25 +153,58 @@ GPU 的 `partial_sort` 只比较 count，并列取舍由实现决定 —— 实�
 
 - worker（`MainWindowRingMap.inc`，`Console/stderr`）：
   - 缓存预筛成功：`[环形] 缓存预筛：%zu 个分散种子（阈值 %.2f）`
-  - 缓存预筛失败回退：`[环形] 缓存预筛不可用，回退 GPU 预筛：%s`
+  - 缓存预筛失败：`[环形] 缓存预筛不可用，回退快速抽样：%s`
   - GPU 预筛成功（原日志不变）：`[环形] 正方形预筛：%zu 个分散种子（阈值 %.2f）`
+  - GPU 不可用 + 缓存预筛也不可用：`[环形] GPU 不可用且缓存预筛不可用，正方形预筛回退快速抽样`
 - `finishRingSearch`（GUI 线程，预设日志后）：`[环形] 预筛来源：缓存位图（cachePrescanUsed=true）`
   或 `[环形] 预筛来源：GPU（cachePrescanUsed=false）`
 - 状态字段：`MainWindow::RingSearchResult::cachePrescanUsed`（worker 写、GUI 线程只读）；
   反馈文案沿用现有 i18n key，本任务未新增 key、未改 UI 文案。
 
+### 6.4 端到端对照（lead 集成复核）：`cache_prescan_compare.exe`
+
+`tools/bench/cache_prescan_compare.cpp`（目标 `cache_prescan_compare`）在**同一份缓存位图**上比较
+「缓存预筛 + k3 流程」与「GPU 预筛 + k3 流程」的种子/规划结果/耗时，并支持真实 `CacheStore`：
+
+```text
+# 合成缓存（引擎 Bedrock 判定构造 4096×4096 区块位图，严格对拍）
+build\cache_prescan_compare.exe synthetic 4096
+# 真实本地缓存（部署目录 cache；自动选第一个 pack 的 8192×8192 区块区域）
+build\cache_prescan_compare.exe real 8192 "dist\SlimeFinder\cache"
+```
+
+结果（本机 gfx1031，生产参数 g=15/thr=0.18/bandRows=4096/topPerBand=512/maxSeeds=4000/sep=16）：
+
+| 场景 | 种子数（缓存/GPU） | 逐条一致 | 计数多重集一致 | 缓存预筛 | GPU 预筛 | k3 过滤 | 最优候选（两条路径） |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 合成 4096² | 105 / 105 | 否（16 条平局差异） | 是 | 27.0 ms | 30.9 ms | 17.8 / 17.1 ms | 完全一致（blocks=11581, pct=23.32%） |
+| 真实缓存 8192² | 239 / 239 | 否（45 条平局差异） | 是 | 111.2 ms | 68.9 ms | 30.9 / 30.4 ms | 均为 1 条候选；GPU 路径少 1 个 k3 候选（20/21，平局取舍） |
+
+- 缓存预筛的**窗口计数已逐颗用位图重算校验**（bad=0）；GPU 种子计数同样用位图重算（bad=0），
+  因此两条路径的种子都是合法密度种子，差异只在每带 count 平局取舍；
+- k3 最终最优候选在合成/真实缓存两种场景都一致（编号/覆盖块数/覆盖率完全一致）→ 边界未丢；
+- 性能结论与 §6.2 一致：生产参数、真实 10% 密度下 GPU 预筛更快；因此 GUI 集成改为
+  **GPU 优先、缓存预筛仅在 GPU 不可用/失败时兜底**（见 §2、§7）。
+
 ## 7. 已知限制 / 风险
 
-- CPU 路径耗时与窗口数线性相关（8192² 约 120–240 ms）；实际 Bedrock 缓存 pack ≤ 8192²。
-  小区域/多带配置下比 GPU 快，但 8192² + 生产稀疏阈值下 GPU 流式扫描更快（见 §6.2）——
-  该路径的定位是免 GPU 依赖 + 确定性，而不是「所有场景都更快」；若后续要继续提速，
-  方向是把「逐位展开」换成 AVX2 位展开/行位缓存（每区块从 2 次位测试降到 1 次）。
+- **集成取舍（实测驱动）**：生产参数 + 真实 Bedrock 10% 密度下，GPU 预筛比 CPU 位图预筛快
+  1.5~3.5×（8192²：69 vs 111 ms；16384²：190 vs 662 ms）。因此 GUI 默认仍走 GPU 预筛，
+  缓存预筛只作为「GPU 不可用/失败」的兜底——不改变有 GPU 用户的耗时，同时让无 GPU 用户
+  首次拿到完整质量的「预筛精修/k3 上界复核」档位，并且结果确定可复现。若后续继续提速
+  CPU 路径（AVX2 位展开/行位缓存，预计可到 ~0.5–0.8 ns/窗口），可重新评估改为缓存优先。
+- CPU 路径耗时与窗口数线性相关（8192² 约 110–240 ms）；实际 Bedrock 缓存 pack ≤ 8192²。
+  小区域/多带配置下比 GPU 快，但 8192² + 生产稀疏阈值下 GPU 流式扫描更快（见 §6.2/§6.4）。
 - 只对 Bedrock 生效（Java 无本地缓存），调用方创建 `ringCache` 的条件完全保持原样。
-- 多 range 遮蔽场景走 `lookup` 慢路径（正确但慢；生产缓存布局不会出现）。
+- 多 range 遮蔽场景走「按 ranges 顺序读位图」慢路径（正确但慢；生产缓存布局不会出现）。
 - 高密度缓存（命中 ≫ topPerBand）时不再「抬高阈值」，仍按每带 topPerBand 取最高密度窗口；
   与 GPU 正常路径语义一致，差异仅限 GPU 触发重试的异常场景。
 - 每带 topPerBand 边界的 count 并列取舍与 GPU 不同（CPU 确定性 vs GPU partial_sort 未定义）；
   极窄场景下两条路径的种子集合会略有差异（数量一致），k3 过滤后可能选到不同的等价候选。
+- 发现但**未修改**的既有问题：`CacheManager::lookup` 的 thread_local「上次命中 range」快查在
+  两个 range 重叠时结果依赖访问顺序（与文档语义「第一个包含该点的 range」不一致）。
+  本次实现与测试都绕开了它；GUI 生产缓存（`fillCacheManagerRange` 合并不重叠 range）不受影响，
+  但应作为独立缺陷单记录（见 HANDOFF / worklog）。
 
 ## 8. 复现验证命令
 
@@ -180,6 +219,10 @@ build-k3\slime_tests.exe --unit 39
 
 # GPU vs 缓存位图对拍（需可用 OpenCL 设备；无设备时打印“GPU 不可用”并返回 2）
 build-k3\k3_prescan_parity_probe.exe
+
+# 端到端对照（缓存预筛 vs GPU 预筛 → k3 规划结果/耗时；real 模式需要本地缓存根目录）
+build-k3\cache_prescan_compare.exe synthetic 4096
+build-k3\cache_prescan_compare.exe real 8192 "dist\SlimeFinder\cache"
 
 # GUI 自检（干净 config 首次运行；退出码 0）
 $env:PATH="C:\Qt\6.11.2\msvc2022_64\bin;$env:PATH"; $env:QT_QPA_PLATFORM="offscreen"; $env:SLIME_SELFTEST="1"
